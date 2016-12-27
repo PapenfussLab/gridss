@@ -43,6 +43,9 @@ public class ReadsToBedpe extends CommandLineProgram {
     public boolean SPLIT_READS = true;
     @Option(doc="Write indel reads", optional=true)
     public boolean INDELS = true;
+    @Option(doc="Include a unique identifier for each breakpoint supported by each read. "
+    		+ "Note that this identified can be quite long for long read sequencing technologies.", optional=true)
+    public boolean UNIQUE_IDENTIFIER= true;
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -110,7 +113,11 @@ public class ReadsToBedpe extends CommandLineProgram {
 		writer.write('	');
 		writer.write(Integer.toString(bp.end2));
 		writer.write('	');
-		writer.write(e.getEvidenceID());
+		if (UNIQUE_IDENTIFIER) {
+			writer.write(e.getEvidenceID());
+		} else {
+			writer.write('.');
+		}
 		writer.write('	');
 		writer.write(Integer.toString(mapq));
 		writer.write('	');
@@ -119,6 +126,8 @@ public class ReadsToBedpe extends CommandLineProgram {
 		writer.write(bp.direction2 == BreakendDirection.Forward ? '+' : '-');
 		writer.write('	');
 		writer.write(source);
+		writer.write('	');
+		writer.write(e.getUntemplatedSequence().length());
 		writer.write('\n');
 	}
 	private void validateParameters() {
