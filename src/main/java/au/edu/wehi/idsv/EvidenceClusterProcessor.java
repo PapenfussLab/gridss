@@ -67,7 +67,10 @@ public class EvidenceClusterProcessor implements Iterator<VariantContextDirected
 			throw e;
 		} finally {
 			outstandingTasks.decrementAndGet();
-			callBuffer.add(Optional.empty());
+			try {
+				callBuffer.put(Optional.empty());
+			} catch (InterruptedException e) {
+			}
 			log.debug("Completed ", msg);
 		}
 	}
@@ -80,7 +83,10 @@ public class EvidenceClusterProcessor implements Iterator<VariantContextDirected
 			throw e;
 		} finally {
 			outstandingTasks.decrementAndGet();
-			callBuffer.add(Optional.empty());
+			try {
+				callBuffer.put(Optional.empty());
+			} catch (InterruptedException e) {
+			}
 		}
 	}
 	public void callMaximalCliques(Iterator<DirectedEvidence> it, BreakendDirection lowDir, BreakendDirection highDir, VariantIdGenerator generator, QueryInterval filter) {
