@@ -64,7 +64,7 @@ public class EvidenceClusterProcessor implements Iterator<VariantContextDirected
 		} catch (Exception e) {
 			log.debug(e);
 			backgroundThreadException = e;
-			throw e;
+			throw new RuntimeException(e);
 		} finally {
 			outstandingTasks.decrementAndGet();
 			try {
@@ -80,7 +80,7 @@ public class EvidenceClusterProcessor implements Iterator<VariantContextDirected
 		} catch (Exception e) {
 			log.debug(e);
 			backgroundThreadException = e;
-			throw e;
+			throw new RuntimeException(e);
 		} finally {
 			outstandingTasks.decrementAndGet();
 			try {
@@ -89,20 +89,20 @@ public class EvidenceClusterProcessor implements Iterator<VariantContextDirected
 			}
 		}
 	}
-	public void callMaximalCliques(Iterator<DirectedEvidence> it, BreakendDirection lowDir, BreakendDirection highDir, VariantIdGenerator generator, QueryInterval filter) {
+	public void callMaximalCliques(Iterator<DirectedEvidence> it, BreakendDirection lowDir, BreakendDirection highDir, VariantIdGenerator generator, QueryInterval filter) throws InterruptedException {
 		MaximalEvidenceCliqueIterator cliqueIt = new MaximalEvidenceCliqueIterator(processContext, it, lowDir, highDir, generator);
 		if (filter != null) {
 			while (cliqueIt.hasNext()) {
 				VariantContextDirectedEvidence v = cliqueIt.next();
 				BreakendSummary bs = v.getBreakendSummary();
 				if (bs.start >= filter.start && bs.start <= filter.end) {
-					callBuffer.add(Optional.of(v));
+					callBuffer.put(Optional.of(v));
 				}
 			}
 		} else {
 			while (cliqueIt.hasNext()) {
 				VariantContextDirectedEvidence v = cliqueIt.next();
-				callBuffer.add(Optional.of(v));
+				callBuffer.put(Optional.of(v));
 			}
 		}
 	}
