@@ -4,13 +4,28 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimaps;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
 
 public class SingleReadEvidenceTest extends TestHelper {
@@ -151,5 +166,27 @@ public class SingleReadEvidenceTest extends TestHelper {
 	public void should_clip_breakpoints_to_contig_bounds() {
 		SplitReadEvidence sr = (SplitReadEvidence)asEvidence(withAttr("SA", "polyACGT,1,+,1X1N1X10S,0,0", Read(0, 1, "2S10M"))[0]);
 		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 1, 1, FWD, 2, 1, 3), sr.getBreakendSummary());
+	}
+	@Test
+	@Category(Hg19Tests.class)
+	public void assembly_scoring_should_be_symmetrical() throws FileNotFoundException {
+		File sam = new File("src/test/resources/assembly_score_mismatch.sam");
+		File ref = Hg19Tests.findHg19Reference();
+		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
+		SAMEvidenceSource ses = SES(pc);
+		SamReader sr = SamReaderFactory.make().open(sam);
+		List<SAMRecord> in = Lists.newArrayList(sr.iterator());
+		List<SingleReadEvidence> sreList = in.stream()
+				.flatMap(record -> SingleReadEvidence.createEvidence(ses, record).stream())
+				.collect(Collectors.toList());
+		ImmutableListMultimap<String, SingleReadEvidence> mm = Multimaps.index(sreList, sre -> sre.getSAMRecord().getReadName());
+		for (Entry<String, Collection<SingleReadEvidence>> entry : mm.asMap().entrySet()) {
+			float bequal = entry.getValue().iterator().next().getBreakendQual();
+			float bpqual = ((SplitReadEvidence) entry.getValue().iterator().next()).getBreakpointQual();
+			for (SingleReadEvidence sre : entry.getValue()) {
+				assertEquals(bequal, sre.getBreakendQual(), 0);
+				assertEquals(bpqual, ((SplitReadEvidence) sre).getBreakpointQual(), 0);
+			}
+		}
 	}
 }
