@@ -243,7 +243,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 	}
 	private void loadAssemblyEvidenceAllocation(GreedyAssemblyAllocationCache cache, File in, QueryInterval qi) throws IOException {
-		log.debug("Caching assembly evidence allocation in interval " + qi.toString());
+		log.debug(String.format("Caching assembly evidence allocation in interval %s:%d-%d", getContext().getDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end));
 		QueryInterval expanded = getExpanded(qi);
 		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
 			try (SamReader reader = factory.open(in)) {
@@ -267,7 +267,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 	}
 	private void deduplicateChunk(File in, File out, QueryInterval qi, GreedyAssemblyAllocationCache cache) throws IOException {
-		log.debug("Uniquely assigning assembly evidence allocation in interval " + qi.toString());
+		log.debug(String.format("Uniquely assigning assembly evidence allocation in interval %s:%d-%d", getContext().getDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end));
 		File tmpout = FileSystemContext.getWorkingFileFor(out);
 		QueryInterval expanded = getExpanded(qi);
 		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
