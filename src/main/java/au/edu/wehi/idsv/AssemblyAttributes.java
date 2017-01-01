@@ -141,12 +141,19 @@ public class AssemblyAttributes {
 			log.warn(String.format("Sanity check failure: %s has mapq below minimum", record.getReadName()));
 		}
 	}
+	private static int uniqueEvidenceIDMessageCount = 0;
 	private static boolean ensureUniqueEvidenceID(String assemblyName, Collection<DirectedEvidence> support) {
 		boolean isUnique = true;
 		Set<String> map = new HashSet<String>();
 		for (DirectedEvidence id : support) {
 			if (map.contains(id.getEvidenceID())) {
-				log.error("Found evidenceID " + id.getEvidenceID() + " multiple times in assembly " + assemblyName);
+				if (uniqueEvidenceIDMessageCount < gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
+					log.error("Found evidenceID " + id.getEvidenceID() + " multiple times in assembly " + assemblyName);
+					uniqueEvidenceIDMessageCount++;
+					if (uniqueEvidenceIDMessageCount == gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
+						log.warn(String.format("Supressing further message regarding duplicated evidenceIDs."));
+					}
+				}
 				isUnique = false;
 			}
 			map.add(id.getEvidenceID());

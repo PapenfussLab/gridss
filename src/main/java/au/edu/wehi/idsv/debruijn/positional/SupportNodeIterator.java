@@ -68,14 +68,17 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		}
 		this.tracker = tracker;
 	}
-	private int duplicateMessagesEmited = 0;
+	private static int duplicateEvidenceIDMessageCount = 0;
 	private void process(DirectedEvidence de) {
 		if (tracker != null && tracker.isTracked(de.getEvidenceID())) {
-			if (duplicateMessagesEmited == 0) {
+			if (duplicateEvidenceIDMessageCount  < gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
 				log.warn(String.format("Attempting to add %s to assembly when already present. "
 						+ "Possible causes are: duplicate read name, alignment with multimapping aligner which writes read alignments as distinct pairs. ",
 						de.getEvidenceID()));
-				duplicateMessagesEmited++;
+				duplicateEvidenceIDMessageCount++;
+				if (duplicateEvidenceIDMessageCount == gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
+					log.warn(String.format("Supressing further warnings regarding duplicate evidenceIDs."));
+				}
 			}
 			return;
 		}

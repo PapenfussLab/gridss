@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -105,5 +105,22 @@ public class PositionalAssemblerTest extends TestHelper {
 		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator()));
 		assertEquals(1, r.size());
 		assertEquals(10000, r.get(0).getAlignmentEnd());
+	}
+	@Test
+	public void should_assemble_each_read_alignment_only_once() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		pc.getAssemblyParameters().k = 4;
+		String seq = "AACCGGTTAA";
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		input.add(SCE(FWD, withSequence(seq, Read(0, 10, "5M5S"))[0]));
+		input.add(SCE(FWD, withSequence(seq, Read(0, 10, "5M5S"))[0]));
+		input.add(SCE(FWD, withSequence(seq, Read(0, 10, "5M5S"))[0]));
+		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
+		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
+		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
+		input.sort(DirectedEvidenceOrder.ByStartEnd);
+		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator()));
+		assertEquals(2, ((int[])r.get(0).getAttribute("sc"))[0]);
 	}
 }
