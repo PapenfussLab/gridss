@@ -4,9 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 /**
  * Tracks the allocation of reads to assemblies to allow
@@ -15,6 +17,7 @@ import htsjdk.samtools.SAMRecord;
  *
  */
 public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
+	private static final Log log = Log.getInstance(GreedyAssemblyAllocationCache.class);
 	/**
 	 * read -> (event, score, read alignment)
 	 * 
@@ -22,7 +25,8 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 	 * since we don't want to allocate the mutually exclusive evidence that
 	 * results from two separate read alignments for the same read
 	 */
-	private final Map<Hash128bit, Node> bestReadAlignment;
+	private final Map<Hash128bit, AlignmentScoreNode> bestReadAlignment;
+	private final AtomicLong loaded = new AtomicLong(0);
 	public GreedyAssemblyAllocationCache() {
 		this(1);
 	}
@@ -32,9 +36,9 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 	 */
 	public GreedyAssemblyAllocationCache(int threads) {
 		if (threads <= 1) {
-			bestReadAlignment = new HashMap<>();
+			bestReadAlignment = new HashMap<>(INITIAL_HASH_MAP_SIZE);
 		} else {
-			bestReadAlignment = new ConcurrentHashMap<Hash128bit, Node>(1 << 20, 0.75f, threads);
+			bestReadAlignment = new ConcurrentHashMap<Hash128bit, AlignmentScoreNode>(INITIAL_HASH_MAP_SIZE, 0.75f, threads);
 		}
 	}
 	/**
@@ -50,11 +54,11 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 		return merged;
 	}
 	public void addAll(GreedyAssemblyAllocationCache cache) {
-		for (Entry<Hash128bit, Node> e : cache.bestReadAlignment.entrySet()) {
+		for (Entry<Hash128bit, AlignmentScoreNode> e : cache.bestReadAlignment.entrySet()) {
 			Hash128bit key = e.getKey();
-			Node value = e.getValue();
-			Node existingValue = bestReadAlignment.get(key);
-			if (existingValue == null || existingValue.score < value.score) {
+			AlignmentScoreNode value = e.getValue();
+			AlignmentScoreNode existingValue = bestReadAlignment.get(key);
+			if (existingValue == null || existingValue.getScore() < value.getScore()) {
 				bestReadAlignment.put(key, value);
 			}
 		}
@@ -70,7 +74,11 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 		String alignment = getReadAlignment(anchor);
 		Hash128bit readkey = new Hash128bit(read);
 		Hash128bit alignmentkey = new Hash128bit(alignment);
-		put(bestReadAlignment, readkey, alignmentkey, null, assemblyScore);
+		put(bestReadAlignment, readkey, alignmentkey, assemblyScore);
+		long count = loaded.incrementAndGet();
+		if (count % 1000000 == 0) {
+			log.info(String.format("Loaded %,d records. Current java heap memory usage is %,d MiB", count, (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) >> 20));
+		}
 	}
 	public boolean isBestBreakendAssemblyAllocation(DirectedEvidence evidence) {
 		SAMRecord anchor;
@@ -84,7 +92,7 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 		Hash128bit readkey = new Hash128bit(read);
 		Hash128bit alignmentkey = new Hash128bit(alignment);
 		
-		Node node = bestReadAlignment.get(readkey);
-		return node != null && node.alignment.equals(alignmentkey);
+		AlignmentScoreNode node = bestReadAlignment.get(readkey);
+		return node != null && node.getAlignment().equals(alignmentkey);
 	}
 }

@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,6 +21,7 @@ import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.TextCigarCodec;
 
 public class GreedyAllocationCache {
+	protected static final int INITIAL_HASH_MAP_SIZE = 1 << 20;
 	private static final Comparator<ChimericAlignment> ByPosition = Comparator.<ChimericAlignment, Integer>comparing(ca -> ca.pos)
 				.thenComparing(ca -> ca.isNegativeStrand)
 				.thenComparing(ca -> ca.rname)
@@ -72,41 +74,85 @@ public class GreedyAllocationCache {
 		}
 		return sb.toString();
 	}
-	protected static class Node {
-		public Node(Hash128bit event, float score, Hash128bit alignment) {
-			this.event = event;
+	protected static class AlignmentScoreNode extends Hash128bit {
+		public AlignmentScoreNode(float score, Hash128bit alignment) {
+			super(alignment.key1, alignment.key2);
 			this.score = score;
-			this.alignment = alignment;
 		}
-		public final Hash128bit event;
-		public final Hash128bit alignment;
-		public final float score;
+		private final float score;
+		public Hash128bit getAlignment() { return this; } 
+		public float getScore() { return score; }
 		public String toString() {
-			return String.format("(%s,%f,%s)", event, score, alignment);
+			return String.format("(%f,%s)", getAlignment(), getScore());
 		}
 	}
-	protected void put(Map<Hash128bit, Node> bestAlignment, Hash128bit readName, Hash128bit alignment, Hash128bit event, float score) {
+	protected static class EventAlignmentScoreNode extends AlignmentScoreNode {
+		public EventAlignmentScoreNode(Hash128bit event, float score, Hash128bit alignment) {
+			super(score, alignment);
+			this.eventKey1 = event.key1;
+			this.eventKey2 = event.key2;
+		}
+		private final long eventKey1;
+		private final long eventKey2;
+		public Hash128bit getEvent() { return new Hash128bit(eventKey1, eventKey2); }
+		public String toString() {
+			return String.format("(%s,%f,%s)", getEvent(), getScore(), getAlignment());
+		}
+	}
+	protected static class EventScoreNode extends Hash128bit {
+		public EventScoreNode(Hash128bit event, float score) {
+			super(event.key1, event.key2);
+			this.score = score;
+		}
+		private final float score;
+		public Hash128bit getEvent() { return this; } 
+		public float getScore() { return score; }
+		public String toString() {
+			return String.format("(,%s,%f)", getEvent(), getScore());
+		}
+	}
+	protected void put(Map<Hash128bit, EventAlignmentScoreNode> bestAlignment, Hash128bit readName, Hash128bit alignment, Hash128bit event, float score) {
 		if (bestAlignment == null) return;
-		Node notInLookup = new Node(event, score, alignment);
-		Node inLookup = bestAlignment.get(readName);
+		EventAlignmentScoreNode notInLookup = new EventAlignmentScoreNode(event, score, alignment);
+		EventAlignmentScoreNode inLookup = bestAlignment.get(readName);
 		// this check is a loop as when there are multiple threads writing to the same key
 		// the score that we wrote could be worse since the get and put are two separate (atomic)
 		// operations.
-		while (notInLookup != null && (inLookup == null || inLookup.score < notInLookup.score)) {
-			Node toPut = notInLookup;
+		while (notInLookup != null && (inLookup == null || inLookup.getScore() < notInLookup.getScore())) {
+			EventAlignmentScoreNode toPut = notInLookup;
 			inLookup = toPut;
 			notInLookup = bestAlignment.put(readName, toPut);
 		}
 	}
-
-	protected boolean isBestAlignment(Map<Hash128bit, Node> bestAlignment, Hash128bit readName, Hash128bit alignment) {
+	protected void put(Map<Hash128bit, AlignmentScoreNode> bestAlignment, Hash128bit readName, Hash128bit alignment, float score) {
+		// (duplicates EventAlignmentScoreNode logic)
+		if (bestAlignment == null) return;
+		AlignmentScoreNode notInLookup = new AlignmentScoreNode(score, alignment);
+		AlignmentScoreNode inLookup = bestAlignment.get(readName);
+		while (notInLookup != null && (inLookup == null || inLookup.getScore() < notInLookup.getScore())) {
+			AlignmentScoreNode toPut = notInLookup;
+			inLookup = toPut;
+			notInLookup = bestAlignment.put(readName, toPut);
+		}
+	}
+	protected void put(HashMap<Hash128bit, EventScoreNode> bestEvent, Hash128bit readName, Hash128bit event, float score) {
+		if (bestEvent == null) return;
+		EventScoreNode notInLookup = new EventScoreNode(event, score);
+		EventScoreNode inLookup = bestEvent.get(readName);
+		while (notInLookup != null && (inLookup == null || inLookup.getScore() < notInLookup.getScore())) {
+			EventScoreNode toPut = notInLookup;
+			inLookup = toPut;
+			notInLookup = bestEvent.put(readName, toPut);
+		}
+	}
+	protected boolean isBestAlignment(Map<Hash128bit, EventAlignmentScoreNode> bestAlignment, Hash128bit readName, Hash128bit alignment) {
 		if (bestAlignment == null) return true;
-		Node node = bestAlignment.get(readName);
-		return node != null && Objects.equals(alignment, node.alignment);
+		EventAlignmentScoreNode node = bestAlignment.get(readName);
+		return node != null && Objects.equals(alignment, node.getAlignment());
 	}
 	protected static class Hash128bit {
-		private final long key1;
-		private final long key2;
+		protected final long key1;
+		protected final long key2;
 		@Override
 		public int hashCode() {
 			long xor = key1 ^ key2;
@@ -114,18 +160,10 @@ public class GreedyAllocationCache {
 		}
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Hash128bit other = (Hash128bit) obj;
-			if (key1 != other.key1)
-				return false;
-			if (key2 != other.key2)
-				return false;
-			return true;
+			if (obj instanceof Hash128bit) {
+				return equals((Hash128bit)obj);
+			}
+			return false;
 		}
 		public boolean equals(Hash128bit obj) {
 			return obj != null && key1 == obj.key1 && key2 == obj.key2;
@@ -134,8 +172,12 @@ public class GreedyAllocationCache {
 		public Hash128bit(String key) {
 			HashCode hc = hf.newHasher().putString(key, StandardCharsets.UTF_8).hash();
 			ByteBuffer bb = ByteBuffer.wrap(hc.asBytes());
-			key1 = bb.getLong();
-			key2 = bb.getLong();
+			this.key1 = bb.getLong();
+			this.key2 = bb.getLong();
+		}
+		public Hash128bit(long key1, long key2) {
+			this.key1 = key1;
+			this.key2 = key2;
 		}
 		@Override
 		public String toString() {

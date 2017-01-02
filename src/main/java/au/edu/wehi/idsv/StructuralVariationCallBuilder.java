@@ -54,7 +54,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private double[] fBREAKEND_UNMAPPEDMATE_QUAL;
 	private double[] fBREAKEND_SOFTCLIP_QUAL;
 	private List<String> BREAKEND_ASSEMBLY_ID = Lists.newArrayList();
-	private static int deduplicationMessageCount = 0;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		this(processContext, parent, true);
 	}
@@ -87,6 +86,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		fBREAKEND_UNMAPPEDMATE_QUAL = new double[categories];
 		fBREAKEND_SOFTCLIP_QUAL = new double[categories];
 	}
+	private static int deduplicationMessageCount = 0;
 	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) throw new NullPointerException();
 		if (!isSupportingEvidence(evidence)) {
@@ -95,7 +95,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		String eid = evidence.getEvidenceID();
 		if (encounteredEvidenceIDs != null) {
 			if (encounteredEvidenceIDs.contains(eid)) {
-				
 				if (deduplicationMessageCount < gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) { 
 					log.debug(String.format("Deduplicating %s from %s", eid, parent.getID()));
 					deduplicationMessageCount++;
