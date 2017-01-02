@@ -40,10 +40,7 @@ public class GreedyVariantAllocationCache extends GreedyAllocationCache {
 	}
 	public void addBreakpoint(String event, float score, DirectedEvidence evidence) {
 		addBreakpoint(new Hash128bit(event), score, evidence);
-		long count = loaded.incrementAndGet();
-		if (count % 1000000 == 0) {
-			log.info(String.format("Loaded %,d records. Current java heap memory usage is %,d MiB", count, (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) >> 20));
-		}
+		
 	}
 	public void addBreakpoint(VariantContextDirectedBreakpoint variant, List<DirectedEvidence> evidence) {
 		Hash128bit event = getEvent(variant);
@@ -71,6 +68,10 @@ public class GreedyVariantAllocationCache extends GreedyAllocationCache {
 			Hash128bit readid = new Hash128bit(r.getReadName() + "#" + Integer.valueOf(SAMRecordUtil.getSegmentIndex(r)));
 			Hash128bit alignment = new Hash128bit(getReadAlignment(r));
 			put(bestReadAlignment, readid, alignment, event, score);
+		}
+		long count = loaded.incrementAndGet();
+		if (count % 1000000 == 0) {
+			log.info(String.format("Loaded %,d records. Current java heap memory usage is %,d MiB", count, (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) >> 20));
 		}
 	}
 	public boolean isBestBreakpoint(Hash128bit event, DirectedEvidence evidence) {

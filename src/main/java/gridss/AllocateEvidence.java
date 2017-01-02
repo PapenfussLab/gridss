@@ -73,7 +73,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 			log.info("Multimapping mode invoked due to existence of at least one BAM file with a non-split secondary alignment.");
 			populateCache();
 		}
-		log.info("Allocating evidence");
+		log.info("Allocating evidence"); 
 		CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-allocation");
 		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), ALLOCATE_TO_BEST);
 		Iterator<VariantContextDirectedBreakpoint> it = Iterators.transform(annotator, bp -> annotate(bp));
@@ -83,10 +83,14 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	public void populateCache() {
 		IOUtil.assertFileIsReadable(INPUT_VCF);
 		try (CloseableIterator<VariantContextDirectedBreakpoint> calls = getBreakpoints(INPUT_VCF)) {
-			populateCache(calls);
+			// Parallel populate cache requires
+			// - indexed BCF/VCF OUTPUT.vcf.breakpoint.vcf
+			// - (DONE) thread-safe cache 
+			// Cache loading can then be performed in parallel per chunk
+			populateCache_single_threaded(calls);
 		}
 	}
-	public void populateCache(CloseableIterator<VariantContextDirectedBreakpoint> calls) {
+	private void populateCache_single_threaded(CloseableIterator<VariantContextDirectedBreakpoint> calls) {
 		// TODO: only populate cache for multi-mapped sources
 		log.info("Loading variant evidence support");
 		cache = new GreedyVariantAllocationCache(true, true, ALLOCATE_TO_BEST);
