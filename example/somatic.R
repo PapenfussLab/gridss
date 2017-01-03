@@ -1,6 +1,6 @@
 # example sciprt performing simple filtering of variants to somatic calls
 library(devtools)
-install_github("d-cameron/StructuralVariantAnnotation")
+install_github("PapenfussLab/StructuralVariantAnnotation")
 library(StructuralVariantAnnotation)
 
 vcf <- readVcf("somatic.sv.vcf", "hg19")

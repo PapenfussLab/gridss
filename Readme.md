@@ -244,7 +244,7 @@ of each parameter can be found in the javadoc documentation of the au.edu.wehi.i
 
 GRIDSS is fundamentally a structural variation breakpoint caller. Variants are output as VCF breakends. Each call is a breakpoint consisting of two breakends, one from location A to location B, and a reciprocal record from location B back to A. Note that although each record fully defines the call, the VCF format required both breakend to be written as separate record.
 
-To assist in downstream analysis, the StructuralVariantAnnotation R package (https://github.com/d-cameron/StructuralVariantAnnotation) is strongly recommended. Operations such as variant filter, annotation and exporting to other formats such as BEDPE can be easily accomplished using this package in conjuction with the BioConductor annotation packages.
+To assist in downstream analysis, the StructuralVariantAnnotation R package (https://github.com/PapenfussLab/StructuralVariantAnnotation) is strongly recommended. Operations such as variant filter, annotation and exporting to other formats such as BEDPE can be easily accomplished using this package in conjuction with the BioConductor annotation packages.
 
 ## Quality score
 
