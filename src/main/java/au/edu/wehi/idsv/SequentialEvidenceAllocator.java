@@ -70,7 +70,6 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			//this.endLocation = context.getLinear().getEndLinearCoordinate(this.location);
 		}
 		private void attributeEvidence(DirectedEvidence e) {
-			assert(variant.getBreakendSummary().overlaps(e.getBreakendSummary()));
 			support.add(e);
 		}
 		public String toString() {
