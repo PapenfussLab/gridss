@@ -107,7 +107,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	@Override
 	public float getBreakendQual() {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
-			return scoreAssembly() / 2;
+			return scoreAssembly();
 		}
 		CigarElement e = indel.get(0);
 		for (int i = 1; i < indel.size(); i++) {
@@ -115,7 +115,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 				e = indel.get(i);
 			}
 		}
-		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreIndel(getEvidenceSource().getMetrics(), e.getOperator(), e.getLength(), getLocalMapq()) / 2;
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreIndel(getEvidenceSource().getMetrics(), e.getOperator(), e.getLength(), getLocalMapq());
 	}
 	@Override
 	public float getBreakpointQual() {

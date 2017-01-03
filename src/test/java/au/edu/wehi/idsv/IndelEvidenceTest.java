@@ -35,12 +35,12 @@ public class IndelEvidenceTest extends TestHelper {
 		assertEquals(2, e.size());
 	}
 	@Test
-	public void qual_should_use_library_indel_distribution_and_split_score_to_both_sides() {
+	public void qual_should_use_library_indel_distribution_and_fully_score_both_sides() {
 		SAMRecord r = Read(2, 1, "5M5D5M");
 		r.setMappingQuality(40);
 		IndelEvidence e = IndelEvidence.create(SES(), r).get(0);
-		assertEquals(5, e.getBreakendQual() + e.asRemote().getBreakendQual(), 0.01);
-		assertEquals(5, e.getBreakpointQual() + e.asRemote().getBreakpointQual(), 0.01);
+		assertEquals(10, e.getBreakendQual() + e.asRemote().getBreakendQual(), 0.01);
+		assertEquals(10, e.getBreakpointQual() + e.asRemote().getBreakpointQual(), 0.01);
 	}
 	@Test
 	public void should_allow_source_read_alignment_to_either_strand() {
