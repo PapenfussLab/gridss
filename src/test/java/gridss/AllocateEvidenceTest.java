@@ -30,10 +30,8 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.VariantCaller;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import picard.sam.BuildBamIndex;
 import htsjdk.samtools.SAMRecord;
 
 public class AllocateEvidenceTest extends IntermediateFilesTest {

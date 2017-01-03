@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.AbstractIterator;
@@ -19,7 +20,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.TreeRangeMap;
 
+import au.edu.wehi.idsv.util.RangeUtil;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.SAMRecord;
@@ -65,6 +70,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			//this.endLocation = context.getLinear().getEndLinearCoordinate(this.location);
 		}
 		private void attributeEvidence(DirectedEvidence e) {
+			assert(variant.getBreakendSummary().overlaps(e.getBreakendSummary()));
 			support.add(e);
 		}
 		public String toString() {
@@ -119,7 +125,11 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		this.callIt = calls;
 		this.evidenceIt = Iterators.peekingIterator(evidence);
 		this.assignEvidenceToSingleBreakpoint = assignEvidenceToSingleBreakpoint;
-		this.lookup = new OverlapLookup(this.context.getDictionary().getSequences().size());
+		if (assignEvidenceToSingleBreakpoint) {
+			this.lookup = new RemoteOverlapLookup(this.context.getDictionary().getSequences().size());
+		} else {
+			this.lookup = new LocalOverlapLookup(this.context.getDictionary().getSequences().size());
+		}
 	}
 	private void buffer(VariantContextDirectedEvidence variant) {
 		VariantEvidenceSupport av = new VariantEvidenceSupport(variant);
@@ -248,30 +258,12 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 				new NamedTrackedBuffer(trackedBufferName_bufferedVariantId, bufferedVariantId.size())
 				);
 	}
-	/**
-	 * Finds all variant calls overlapping the given evidence 
-	 * @author Daniel Cameron
-	 *
-	 */
-	private class OverlapLookup {
-		List<IntervalTree<List<VariantEvidenceSupport>>> localLookup;
-		public OverlapLookup(int referenceSequences) {
-			localLookup = IntStream.range(0, referenceSequences * 2)
-					.mapToObj(i -> new IntervalTree<List<VariantEvidenceSupport>>())
-					.collect(Collectors.toList());
-		}
-		public void add(VariantEvidenceSupport ves)
-		{
-			add(localLookup.get(getIndex(ves.location.referenceIndex, ves.location.direction)), ves.location.start, ves.location.end, ves);
-		}
-		public void remove(VariantEvidenceSupport ves)
-		{
-			remove(localLookup.get(getIndex(ves.location.referenceIndex, ves.location.direction)), ves.location.start, ves.location.end, ves);
-		}
-		private int getIndex(int referenceIndex, BreakendDirection dir) {
-			return referenceIndex + (dir == BreakendDirection.Forward ? 0 : 1);
-		}
-		private void add(IntervalTree<List<VariantEvidenceSupport>> lookup, int start, int end, VariantEvidenceSupport ves) {
+	private abstract class OverlapLookup {
+		public abstract void add(VariantEvidenceSupport ves);
+		public abstract void remove(VariantEvidenceSupport ves);
+		public abstract Iterator<VariantEvidenceSupport> findAllOverlapping(BreakendSummary breakend);
+		public abstract VariantEvidenceSupport findBestOverlapping(BreakendSummary breakend);
+		protected void add(IntervalTree<List<VariantEvidenceSupport>> lookup, int start, int end, VariantEvidenceSupport ves) {
 			Node<List<VariantEvidenceSupport>> node = lookup.find(start, end);
 			if (node != null) {
 				node.getValue().add(ves);
@@ -281,7 +273,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 				lookup.put(start, end, list);
 			}
 		}
-		private void remove(IntervalTree<List<VariantEvidenceSupport>> lookup, int start, int end, VariantEvidenceSupport ves) {
+		protected void remove(IntervalTree<List<VariantEvidenceSupport>> lookup, int start, int end, VariantEvidenceSupport ves) {
 			Node<List<VariantEvidenceSupport>> node = lookup.find(start, end);
 			if (node != null) {
 				node.getValue().remove(ves);
@@ -290,14 +282,16 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 				}
 			}
 		}
-		public Iterator<VariantEvidenceSupport> findAllOverlapping(BreakendSummary breakend) {
-			IntervalTree<List<VariantEvidenceSupport>> tree = localLookup.get(getIndex(breakend.referenceIndex, breakend.direction));
-			Iterator<Node<List<VariantEvidenceSupport>>> nodeit = tree.overlappers(breakend.start, breakend.end);
-			return new VariantEvidenceSupportIterator(nodeit, breakend);
+		protected int getIndex(int referenceIndex, BreakendDirection dir) {
+			return referenceIndex + (dir == BreakendDirection.Forward ? 0 : 1);
 		}
-		public VariantEvidenceSupport findBestOverlapping(BreakendSummary breakend) {
+		protected List<IntervalTree<List<VariantEvidenceSupport>>> createByReferenceIndexDirectionLookup(int referenceSequenceCount) {
+			return IntStream.range(0, referenceSequenceCount * 2)
+					.mapToObj(i -> new IntervalTree<List<VariantEvidenceSupport>>())
+					.collect(Collectors.toList());
+		}
+		protected VariantEvidenceSupport findBestOverlapping(BreakendSummary breakend, Iterator<VariantEvidenceSupport> it) {
 			VariantEvidenceSupport best = null;
-			Iterator<VariantEvidenceSupport> it = findAllOverlapping(breakend);
 			while (it.hasNext()) {
 				VariantEvidenceSupport v = it.next();
 				assert(v.location.overlaps(breakend));
@@ -308,11 +302,39 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			return best;
 		}
 	}
-	private static class VariantEvidenceSupportIterator extends AbstractIterator<VariantEvidenceSupport> {
+	/**
+	 * Finds all variant calls overlapping the given evidence 
+	 * @author Daniel Cameron
+	 *
+	 */
+	private class LocalOverlapLookup extends OverlapLookup {
+		List<IntervalTree<List<VariantEvidenceSupport>>> localLookup;
+		public LocalOverlapLookup(int referenceSequenceCount) {
+			localLookup = createByReferenceIndexDirectionLookup(referenceSequenceCount);
+		}
+		public void add(VariantEvidenceSupport ves)
+		{
+			add(localLookup.get(getIndex(ves.location.referenceIndex, ves.location.direction)), ves.location.start, ves.location.end, ves);
+		}
+		public void remove(VariantEvidenceSupport ves)
+		{
+			remove(localLookup.get(getIndex(ves.location.referenceIndex, ves.location.direction)), ves.location.start, ves.location.end, ves);
+		}
+		public Iterator<VariantEvidenceSupport> findAllOverlapping(BreakendSummary breakend) {
+			IntervalTree<List<VariantEvidenceSupport>> tree = localLookup.get(getIndex(breakend.referenceIndex, breakend.direction));
+			Iterator<Node<List<VariantEvidenceSupport>>> nodeit = tree.overlappers(breakend.start, breakend.end);
+			return new VariantEvidenceSupportNodeListIterator(nodeit, breakend);
+		}
+		public VariantEvidenceSupport findBestOverlapping(BreakendSummary breakend) {
+			Iterator<VariantEvidenceSupport> it = findAllOverlapping(breakend);
+			return findBestOverlapping(breakend, it);
+		}
+	}
+	private static class VariantEvidenceSupportNodeListIterator extends AbstractIterator<VariantEvidenceSupport> {
 		private final Iterator<Node<List<VariantEvidenceSupport>>> nodeIt;
 		private final BreakendSummary breakend;
 		private Iterator<VariantEvidenceSupport> listIt = Collections.emptyIterator();
-		public VariantEvidenceSupportIterator(Iterator<Node<List<VariantEvidenceSupport>>> nodeIt, BreakendSummary breakend) {
+		public VariantEvidenceSupportNodeListIterator(Iterator<Node<List<VariantEvidenceSupport>>> nodeIt, BreakendSummary breakend) {
 			this.nodeIt = nodeIt;
 			this.breakend = breakend;
 		}
@@ -331,6 +353,64 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 				}
 			}
 			return endOfData();
+		}
+	}
+	/**
+	 * Finds the best overlapping variant call using a 1D interval tree on the remote breakpoint
+	 * This should have better performance as, for repetitive sequence, the remote breakends
+	 * are distributed across all repeats, but the local breakends all map to the same location
+	 * (since we are doing a sequential traveral).
+	 */
+	private class RemoteOverlapLookup extends OverlapLookup {
+		List<IntervalTree<List<VariantEvidenceSupport>>> remoteLookup;
+		List<RangeMap<Integer, VariantEvidenceSupport>> bestLocal;
+		public RemoteOverlapLookup(int referenceSequenceCount) {
+			this.remoteLookup = createByReferenceIndexDirectionLookup(referenceSequenceCount);
+			this.bestLocal = IntStream.range(0, referenceSequenceCount * 2)
+					.mapToObj(i -> TreeRangeMap.<Integer,VariantEvidenceSupport>create())
+					.collect(Collectors.toList());
+		}
+		public void add(VariantEvidenceSupport ves) {
+			add(remoteLookup.get(getIndex(ves.location.referenceIndex2, ves.location.direction2)), ves.location.start2, ves.location.end2, ves);
+			// need to add over the intervals in which we are the best
+			RangeMap<Integer, VariantEvidenceSupport> rm = bestLocal.get(getIndex(ves.location.referenceIndex, ves.location.direction));
+			RangeUtil.addWhereBest(rm, Range.closedOpen(ves.location.start, ves.location.end + 1), ves, ByScoreAscPositionDesc);
+		}
+		public void remove(VariantEvidenceSupport ves) {
+			remove(remoteLookup.get(getIndex(ves.location.referenceIndex2, ves.location.direction2)), ves.location.start2, ves.location.end2, ves);
+			// we can remove all intervals before our end position as to be removed,
+			// we need to have already added all the potential support for any variant
+			// before our end position
+			RangeMap<Integer, VariantEvidenceSupport> rm = bestLocal.get(getIndex(ves.location.referenceIndex, ves.location.direction));
+			rm.remove(Range.lessThan(ves.location.end + 1));
+		}
+		@Override
+		public Iterator<VariantEvidenceSupport> findAllOverlapping(BreakendSummary breakend) {
+			throw new NotImplementedException("RemoteOverlapLookup requires unique greedy evidence assignment");
+		}
+		public VariantEvidenceSupport findBestOverlapping(BreakpointSummary breakend) {
+			IntervalTree<List<VariantEvidenceSupport>> tree = remoteLookup.get(getIndex(breakend.referenceIndex2, breakend.direction2));
+			Iterator<Node<List<VariantEvidenceSupport>>> nodeit = tree.overlappers(breakend.start2, breakend.end2);
+			Iterator<VariantEvidenceSupport> it = new VariantEvidenceSupportNodeListIterator(nodeit, breakend);
+			return findBestOverlapping(breakend, it);
+		}
+		@Override
+		public VariantEvidenceSupport findBestOverlapping(BreakendSummary breakend) {
+			if (breakend instanceof BreakpointSummary) {
+				return findBestOverlapping((BreakpointSummary)breakend);
+			}
+			// lookup bestLocal
+			RangeMap<Integer, VariantEvidenceSupport> rm = bestLocal.get(getIndex(breakend.referenceIndex, breakend.direction));
+			rm = rm.subRangeMap(Range.closedOpen(breakend.start, breakend.end + 1));
+			float bestScore = -1;
+			VariantEvidenceSupport best = null;
+			for (VariantEvidenceSupport entry : rm.asMapOfRanges().values()) {
+				if (entry.score > bestScore) {
+					bestScore =  entry.score;
+					best = entry;
+				}
+			}
+			return best;
 		}
 	}
 }

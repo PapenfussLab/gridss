@@ -71,7 +71,10 @@ public class GreedyVariantAllocationCache extends GreedyAllocationCache {
 		}
 		long count = loaded.incrementAndGet();
 		if (count % 1000000 == 0) {
-			log.info(String.format("Loaded %,d records. Current java heap memory usage is %,d MiB", count, (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) >> 20));
+			log.info(String.format("Loaded %,d records. %,d in lookups. Current java heap memory usage is %,d MiB",
+					count,
+					bestReadAlignment.size() + bestEventForEvidence.size(),
+					(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) >> 20));
 		}
 	}
 	public boolean isBestBreakpoint(Hash128bit event, DirectedEvidence evidence) {
