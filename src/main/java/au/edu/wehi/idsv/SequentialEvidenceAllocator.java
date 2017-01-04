@@ -29,6 +29,8 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.IntervalTree;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.IntervalTree.Node;
 
 /**
@@ -39,6 +41,8 @@ import htsjdk.samtools.util.IntervalTree.Node;
  *
  */
 public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceAllocator.VariantEvidenceSupport>, TrackedBuffer {
+	private static final Log log = Log.getInstance(SequentialEvidenceAllocator.class);
+	private ProgressLogger progressLogger = new ProgressLogger(log);
 	private final ProcessingContext context;
 	private final int maxCallRange;
 	private final boolean assignEvidenceToSingleBreakpoint;
@@ -205,6 +209,11 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			// write out now before we drop it
 		//	dump.writeEvidence(evidence, null);
 		//}
+		if (evidence instanceof NonReferenceReadPair) {
+			progressLogger.record(((NonReferenceReadPair)evidence).getLocalledMappedRead());
+		} else if (evidence instanceof SingleReadEvidence) {
+			progressLogger.record(((SingleReadEvidence)evidence).getSAMRecord());
+		}
 	}
 	/**
 	 * Determines which breakend to allocate evidence that overlaps both sides of the breakend
