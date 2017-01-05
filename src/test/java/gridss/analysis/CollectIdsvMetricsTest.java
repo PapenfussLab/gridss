@@ -9,20 +9,13 @@ import org.junit.Test;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.reference.ReferenceSequence;
 
 public class CollectIdsvMetricsTest extends IntermediateFilesTest {
-	public static class CollectIdsvMetricsDriver extends CollectIdsvMetrics {
-		public void setup(final SAMFileHeader header, final File samFile) { super.setup(header, samFile); }
-		public void acceptRead(final SAMRecord record, final ReferenceSequence ref) { super.acceptRead(record, ref); }
-		public void finish() { super.finish(); }
-	}
 	@Test
 	public void should_calc_max_read_length() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
-		CollectIdsvMetricsDriver c = new CollectIdsvMetricsDriver();
+		CollectIdsvMetrics c = new CollectIdsvMetrics();
 		c.OUTPUT = metricFiles;
 		c.setup(null, null);
 		c.acceptRead(RP(0, 1, 2, 1)[0], null);
@@ -37,7 +30,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	@Test
 	public void should_calc_read_statistics() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
-		CollectIdsvMetricsDriver c = new CollectIdsvMetricsDriver();
+		CollectIdsvMetrics c = new CollectIdsvMetrics();
 		c.OUTPUT = metricFiles;
 		c.setup(null, null);
 		c.acceptRead(RP(0, 1, 2, 1)[1], null);
@@ -62,7 +55,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	@Test
 	public void should_calc_read_pairing_statistics() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
-		CollectIdsvMetricsDriver c = new CollectIdsvMetricsDriver();
+		CollectIdsvMetrics c = new CollectIdsvMetrics();
 		c.OUTPUT = metricFiles;
 		c.setup(null, null);
 		c.acceptRead(RP(0, 1, 2, 1)[1], null);
@@ -89,7 +82,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	@Test
 	public void should_calc_alternate_mappings() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
-		CollectIdsvMetricsDriver c = new CollectIdsvMetricsDriver();
+		CollectIdsvMetrics c = new CollectIdsvMetrics();
 		c.OUTPUT = metricFiles;
 		c.setup(null, null);
 		c.acceptRead(Read(0, 1, "1M"), null);

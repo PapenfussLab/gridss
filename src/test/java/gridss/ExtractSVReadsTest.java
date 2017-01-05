@@ -1,13 +1,16 @@
 package gridss;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.FixedSizeReadPairConcordanceCalculator;
@@ -40,5 +43,30 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 	public void hasReadAlignmentConsistentWithReference_should_return_per_segment() {
 		List<SAMRecord> list = Lists.newArrayList(withAttr("FI", 2, Read(0, 1, "1M")));
 		assertArrayEquals(new boolean[] { false, false, true }, ExtractSVReads.hasReadAlignmentConsistentWithReference(list));
+	}
+	@Test
+	public void should_extract_sv_reads() {
+		createInput();
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.INPUT = input;
+		extract.OUTPUT = output;
+		extract.METRICS_OUTPUT = new File(output.getAbsolutePath() + ".metrics");
+		extract.setup(getHeader(), extract.INPUT);
+		extract.acceptFragment(ImmutableList.of(Read(0, 1, "50M50S")), null);
+		extract.finish();
+		List<SAMRecord> out = getRecords(output);
+		assertEquals(1, out.size());
+	}
+	@Test
+	public void should_write_metrics() {
+		createInput();
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.INPUT = input;
+		extract.OUTPUT = output;
+		extract.METRICS_OUTPUT = new File(output.getAbsolutePath() + ".metrics");
+		extract.setup(getHeader(), extract.INPUT);
+		extract.acceptFragment(ImmutableList.of(Read(0, 1, "50M50S")), null);
+		extract.finish();
+		assertTrue(extract.METRICS_OUTPUT.exists());
 	}
 }

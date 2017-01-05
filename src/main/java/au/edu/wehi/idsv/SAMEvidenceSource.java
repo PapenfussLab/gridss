@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -25,12 +26,14 @@ import gridss.ComputeSamTags;
 import gridss.ExtractSVReads;
 import gridss.SoftClipsToSplitReads;
 import gridss.analysis.CollectGridssMetrics;
+import gridss.analysis.StructuralVariantReadMetrics;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
@@ -51,6 +54,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private final int rpcMaxFragmentSize;
 	private final double rpcConcordantPercentage;
 	private IdsvSamFileMetrics metrics;
+	private StructuralVariantReadMetrics svMetrics;
 	private IntervalBed blacklist;
 	private ReadPairConcordanceCalculator rpcc;
 	public SAMEvidenceSource(ProcessingContext processContext, File file, File nameSorted, int sourceCategory) {
@@ -75,6 +79,19 @@ public class SAMEvidenceSource extends EvidenceSource {
 		ensureMetrics();
 		return metrics;
 	}
+	public StructuralVariantReadMetrics getSVMetrics() {
+		File svMetricsFile = getContext().getFileSystemContext().getSVMetrics(getFile());
+		if (svMetrics == null && svMetricsFile.exists()) {
+			for (StructuralVariantReadMetrics metric : Iterables.filter(MetricsFile.readBeans(svMetricsFile), StructuralVariantReadMetrics.class)) {
+				if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
+					svMetrics = metric;
+					break;
+				}
+			}
+		}
+		return svMetrics;
+	}
+	
 	/**
 	 * Grouping category of source. For tumour/normal analysis, normal is considered group 0, tumour group 1
 	 * @return
@@ -143,6 +160,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 							List<String> args = Lists.newArrayList(
 									"INPUT=" + in.getAbsolutePath(),
 									"OUTPUT=" + extractedFile.getAbsolutePath(),
+									"METRICS_OUTPUT=" + getContext().getFileSystemContext().getSVMetrics(getFile()),
 									"MIN_CLIP_LENGTH=" + getContext().getConfig().getSoftClip().minLength,
 									"READ_PAIR_CONCORDANCE_METHOD=" + rpcMethod.name(),
 									"FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize,

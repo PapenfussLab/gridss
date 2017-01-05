@@ -394,7 +394,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecord read5 = Read(0, 1, "5M");
 		read5.setAttribute("FI", 5);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.FI, SAMTag.TC), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.FI.name(), SAMTag.TC.name()), false, false);
 		
 		assertEquals(0, (int)read0.getIntegerAttribute("FI"));
 		assertEquals(1, (int)read1.getIntegerAttribute("FI"));
@@ -424,7 +424,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read5.setReadBases(B("GGT"));
 		read5.setBaseQualityString("890");
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.R2.name(), SAMTag.Q2.name()), false, false);
 		
 		assertEquals("AGT", read0.getStringAttribute("R2"));
 		assertEquals(null, read1.getStringAttribute("R2"));
@@ -442,7 +442,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read0.setReadBases(B("AAC"));
 		read0.setBaseQualityString("123");
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0), ImmutableSet.of(SAMTag.R2.name(), SAMTag.Q2.name()), false, false);
 		
 		assertNull(read0.getAttribute("R2"));
 		assertNull(read0.getAttribute("Q2"));
@@ -469,7 +469,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setReadBases(B("ACT"));
 		read1.setBaseQualityString("456");
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.R2.name(), SAMTag.Q2.name()), false, false);
 		
 		assertEquals("AGT", read0.getStringAttribute("R2"));
 		assertEquals("AAC", read1.getStringAttribute("R2"));
@@ -485,7 +485,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read0.setAttribute("NM", null);
 		read1.setAttribute("NM", null);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA.name()), false, false);
 		
 		assertEquals("polyA,2,+,1H1M4H,11,", read0.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,1M5H,10,", read1.getStringAttribute("SA"));
@@ -505,7 +505,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setReadBases(B("ACT"));
 		read1.setBaseQualityString("456");
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA.name()), false, false);
 		
 		assertEquals(null, read0.getStringAttribute("SA"));
 		assertEquals(null, read1.getStringAttribute("SA"));
@@ -537,7 +537,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setAttribute("NM", 2);
 		read3.setAttribute("NM", 3);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA.name()), false, false);
 		
 		assertEquals(null, alt.getStringAttribute("SA"));
 		// "0,4,+,3H1M2H,12,2,;0,1,+,1M5H,10,0,;0,2,+,1H1M4H,11,1,;0,5,+,4S2M,13,3,"
@@ -546,6 +546,26 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,5,+,4S2M,13,3", read1.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1;polyA,5,+,4S2M,13,3", read2.getStringAttribute("SA"));
 		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1", read3.getStringAttribute("SA"));
+	}
+	@Test
+	public void calculateTemplateTags_mm_should_be_total_number_of_additional_mappings() {
+		SAMRecord read0a = Read(0, 1, "1M");
+		SAMRecord read0a1 = Read(0, 1, "1M");
+		read0a1.setSupplementaryAlignmentFlag(true);
+		SAMRecord read0b = Read(0, 1, "1M");
+		
+		SAMRecord read1a = Read(0, 1, "1M");
+		SAMRecord read1b = Read(0, 1, "1M");
+		SAMRecord read1c = Read(0, 1, "1M");
+		read1a.setSecondOfPairFlag(true);
+		read1b.setSecondOfPairFlag(true);
+		read1c.setSecondOfPairFlag(true);
+		ImmutableList<SAMRecord> list = ImmutableList.of(read0a, read0a1, read0b, read1a, read1b, read1c);
+		list.stream().forEach(r -> r.setReadPairedFlag(true));
+		SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of("mm"), false, false);
+		for (SAMRecord r : list) {
+			assertEquals(1+2, (int)r.getAttribute("mm"));
+		}
 	}
 	@Test
 	public void calculateMultimappingTags_should_use_circular_pointers() {
@@ -559,7 +579,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
 		read3.setSupplementaryAlignmentFlag(true);
 		
-		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH, SAMTag.HI, SAMTag.CC, SAMTag.CP),
+		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH.name(), SAMTag.HI.name(), SAMTag.CC.name(), SAMTag.CP.name()),
 				Lists.newArrayList(ImmutableList.of(read0, read1, read2, read3)));
 		
 		assertEquals(2, (int)read0.getIntegerAttribute("CP"));
@@ -585,7 +605,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
 		read3.setSupplementaryAlignmentFlag(true);
 		
-		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH, SAMTag.HI, SAMTag.CC, SAMTag.CP),
+		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH.name(), SAMTag.HI.name(), SAMTag.CC.name(), SAMTag.CP.name()),
 				Lists.newArrayList(ImmutableList.of(read0, read1, read2, read3)));
 		
 		assertEquals(0, (int)read0.getIntegerAttribute("HI"));
@@ -605,7 +625,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
 		read3.setSupplementaryAlignmentFlag(true);
 		
-		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH, SAMTag.HI, SAMTag.CC, SAMTag.CP),
+		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH.name(), SAMTag.HI.name(), SAMTag.CC.name(), SAMTag.CP.name()),
 				Lists.newArrayList(ImmutableList.of(read0, read1, read2, read3)));
 		
 		assertEquals(4, (int)read0.getIntegerAttribute("IH"));
@@ -642,7 +662,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		r1.setMappingQuality(5);
 		r2.setMappingQuality(6);
 		r2.setReadNegativeStrandFlag(true);
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(SAMTag.MC, SAMTag.MQ), false, true);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()), false, true);
 		
 		assertEquals(2, (int)r1.getMateReferenceIndex());
 		assertEquals(3, r1.getMateAlignmentStart());
@@ -661,7 +681,7 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void fix_mate_information_should_leave_unpaired() {
 		SAMRecord r = Read(0, 15, "5M6S");
 		assertFalse(r.getReadPairedFlag());
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r), ImmutableSet.of(SAMTag.MC, SAMTag.MQ), false, true);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r), ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()), false, true);
 		assertFalse(r.getReadPairedFlag());
 	}
 	@Test

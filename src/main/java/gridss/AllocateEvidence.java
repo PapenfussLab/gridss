@@ -39,12 +39,6 @@ import picard.cmdline.Option;
 )
 public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	private static final Log log = Log.getInstance(AllocateEvidence.class);
-	/**
-	 * Greedily assigning each evidence to the best variant is fine since
-	 * we don't need to consider sub-optimal locations.
-	 * This reduces the size of the lookup cache required
-	 */
-	private static final boolean ALLOCATE_TO_BEST = true;
 	@Option(doc="Evidence allocation strategy used to uniquely assign evidence.")
 	public EvidenceAllocationStrategy ALLOCATION_STRATEGY = EvidenceAllocationStrategy.GREEDY;
 	public static enum EvidenceAllocationStrategy {
@@ -75,7 +69,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		}
 		log.info("Allocating evidence"); 
 		CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-allocation");
-		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), ALLOCATE_TO_BEST);
+		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
 		Iterator<VariantContextDirectedBreakpoint> it = Iterators.transform(annotator, bp -> annotate(bp));
 		it = Iterators.filter(it, v -> v != null);
 		return new AutoClosingIterator<>(it, calls, evidence, cache);
@@ -91,14 +85,24 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		}
 	}
 	private void populateCache_single_threaded(CloseableIterator<VariantContextDirectedBreakpoint> calls) {
-		// TODO: only populate cache for multi-mapped sources
 		log.info("Loading variant evidence support");
-		cache = new GreedyVariantAllocationCache(true, true, ALLOCATE_TO_BEST);
+		// TODO: resize this
+		long readPairCount = getSamEvidenceSources().stream()
+				.mapToLong(ses -> ses.getSVMetrics().STRUCTURAL_VARIANT_READ_PAIRS)
+				.sum();
+		long readCount = getSamEvidenceSources().stream()
+				.mapToLong(ses -> ses.getSVMetrics().STRUCTURAL_VARIANT_READS)
+				.sum();
+		cache = new GreedyVariantAllocationCache(true, readPairCount, true, readCount, false, 0);
 		try (CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-cache")) {
-			Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), ALLOCATE_TO_BEST);
+			Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
 			while (annotator.hasNext()) {
 				VariantEvidenceSupport ves = annotator.next();
-				cache.addBreakpoint((VariantContextDirectedBreakpoint)ves.variant, ves.support);
+				for (DirectedEvidence e : ves.support) {
+					if (e.isFromMultimappingFragment()) {
+						cache.addBreakpoint((VariantContextDirectedBreakpoint)ves.variant, e);
+					}
+				}
 			}
 		}
 	}
@@ -106,7 +110,11 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		VariantCallingConfiguration vc = getContext().getConfig().getVariantCalling();
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), ves.variant);
 		for (DirectedEvidence e : ves.support) {
-			if (cache == null || cache.isBestBreakpoint((VariantContextDirectedBreakpoint)ves.variant, e)) {
+			boolean shouldExclude = false;
+			if (cache != null && e.isFromMultimappingFragment()) {
+				shouldExclude = !cache.isBestBreakpoint((VariantContextDirectedBreakpoint)ves.variant, e);
+			}
+			if (!shouldExclude) {
 				builder.addEvidence(e);
 			}
 		}

@@ -103,7 +103,15 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			deduplicatedChunks = assembledChunk.stream()
 					.map(f -> FileSystemContext.getWorkingFileFor(f, "deduplicated."))
 					.collect(Collectors.toList());
-			try (GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache()) {
+			// technically this is an overestimation as a single alignment can
+			// a DP or OEA and an Indel/SC/SR.
+			long svReadAlignmentCount = source.stream()
+				.map(ses -> ses.getSVMetrics())
+				.mapToLong(m -> m.DISCORDANT_READ_PAIR_ALIGNMENTS +
+						m.UNMAPPED_MATE_READ_ALIGNMENTS +
+						m.STRUCTURAL_VARIANT_READ_ALIGNMENTS)
+				.sum();
+			try (GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache(svReadAlignmentCount)) {
 				tasks = new ArrayList<>();
 				for (int i = 0; i < chunks.size(); i++) {
 					QueryInterval chunk = chunks.get(i);
@@ -260,7 +268,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 							score = Math.max(score, assemblyEvidence.getBreakendQual());
 						}
 						for (DirectedEvidence support : allocation.support) {
-							cache.addBreakendAssemblyAllocation(score, support);
+							if (support.isFromMultimappingFragment()) {
+								cache.addBreakendAssemblyAllocation(score, support);
+							}
 						}
 					}
 				}
@@ -284,7 +294,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 							SAMRecord asm = allocation.assemblyRecord;
 							List<DirectedEvidence> newSupport = new ArrayList<>(allocation.support.size());
 							for (DirectedEvidence support : allocation.support) {
-								if (cache.isBestBreakendAssemblyAllocation(support)) {
+								if (!support.isFromMultimappingFragment() || cache.isBestBreakendAssemblyAllocation(support)) {
 									newSupport.add(support);
 								}
 							}

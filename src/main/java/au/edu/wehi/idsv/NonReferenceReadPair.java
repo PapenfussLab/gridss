@@ -6,6 +6,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MathUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -308,5 +309,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 				return getLocalledMappedRead().getReadNegativeStrandFlag() == getNonReferenceRead().getReadNegativeStrandFlag();
 		}
 		throw new IllegalStateException("Unknown read pair orientation");
+	}
+	@Override
+	public boolean isFromMultimappingFragment() {
+		return local.getAttribute(SamTags.MULTIMAPPING_FRAGMENT) != null;
 	}
 }

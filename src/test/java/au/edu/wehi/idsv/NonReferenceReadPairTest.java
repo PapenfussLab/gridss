@@ -383,4 +383,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", true)).onExpectedStrand());
 		assertFalse(NRRP(DP(0, 1, "1M", false, 1, 3, "1M", false)).onExpectedStrand());
 	}
+	@Test
+	public void multiMappingShouldUse_mm_tag() {
+		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).isFromMultimappingFragment());
+		assertTrue(NRRP(withAttr("mm", 5, DP(0, 1, "1M", true, 1, 3, "1M", false))).isFromMultimappingFragment());
+	}
 }

@@ -188,4 +188,13 @@ public class SingleReadEvidenceTest extends TestHelper {
 			}
 		}
 	}
+	@Test
+	public void multiMappingShouldUse_mm_tag() {
+		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(SES(), Read(0, 1, "10M10S"));
+		assertTrue(list.size() > 0);
+		assertTrue(list.stream().allMatch(e -> !e.isFromMultimappingFragment()));
+		list = SingleReadEvidence.createEvidence(SES(), withAttr("mm", 5, Read(0, 1, "10M10S"))[0]);
+		assertTrue(list.size() > 0);
+		assertTrue(list.stream().allMatch(e -> e.isFromMultimappingFragment()));
+	}
 }

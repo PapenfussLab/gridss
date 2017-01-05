@@ -8,6 +8,7 @@ import java.util.List;
 
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -326,5 +327,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	@Override
 	public String toString() {
 		return getEvidenceID();
+	}
+	@Override
+	public boolean isFromMultimappingFragment() {
+		return record.getAttribute(SamTags.MULTIMAPPING_FRAGMENT) != null;
 	}
 }

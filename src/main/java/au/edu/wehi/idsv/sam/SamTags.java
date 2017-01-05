@@ -6,6 +6,15 @@ import com.google.common.collect.ImmutableList;
 
 public class SamTags {
 	/**
+	 * Multiple non-chimeric mapping locations have been reported by the aligner
+	 * for at least one read in his fragments.  This fields contains the number
+	 * of additional mappings for any read in the fragment.
+	 * 
+	 * For example, if the reads in a read pair have 2 and 3 mapping locations
+	 * respectively, mm will be set to 3.
+	 */
+	public static final String MULTIMAPPING_FRAGMENT = "mm";
+	/**
 	 * Contig of the remainder of the realigned read
 	 */
 	public static final String REALIGNMENT_REFERENCE_INDEX = "rr";

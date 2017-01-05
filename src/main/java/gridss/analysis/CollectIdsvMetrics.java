@@ -55,13 +55,13 @@ public class CollectIdsvMetrics extends SinglePassSamProgram {
     }
 
     @Override
-    protected void setup(final SAMFileHeader header, final File samFile) {
+    public void setup(final SAMFileHeader header, final File samFile) {
         IOUtil.assertFileIsWritable(OUTPUT);
         idsv = new IdsvMetrics();
     }
 
     @Override
-    protected void acceptRead(final SAMRecord record, final ReferenceSequence ref) {
+    public void acceptRead(final SAMRecord record, final ReferenceSequence ref) {
     	idsv.MAX_READ_LENGTH = Math.max(idsv.MAX_READ_LENGTH, record.getReadLength());
     	if (!record.getReadUnmappedFlag()) {
     		idsv.MAX_READ_MAPPED_LENGTH = Math.max(idsv.MAX_READ_MAPPED_LENGTH, record.getAlignmentEnd() - record.getAlignmentStart() + 1);
@@ -104,7 +104,7 @@ public class CollectIdsvMetrics extends SinglePassSamProgram {
     }
     
     @Override
-    protected void finish() {
+    public void finish() {
         final MetricsFile<IdsvMetrics, Integer> metricsFile = getMetricsFile();
         metricsFile.addMetric(idsv);
         metricsFile.write(OUTPUT);

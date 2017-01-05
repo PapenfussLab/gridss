@@ -11,7 +11,6 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
 
 /**
  * Ensures that every aligned record has an associated NM tag 
@@ -20,12 +19,12 @@ import htsjdk.samtools.SAMTag;
  *
  */
 public class TemplateTagsIterator implements Iterator<SAMRecord> {
-	private final Set<SAMTag> tags;
+	private final Set<String> tags;
 	private final PeekingIterator<SAMRecord> it;
 	private final boolean softenHardClips;
 	private final boolean fixMates;
 	private final Queue<SAMRecord> queue = new ArrayDeque<>();
-	public TemplateTagsIterator(Iterator<SAMRecord> it, boolean softenHardClips, boolean fixMates, Set<SAMTag> tags) {
+	public TemplateTagsIterator(Iterator<SAMRecord> it, boolean softenHardClips, boolean fixMates, Set<String> tags) {
 		this.it = Iterators.peekingIterator(it);
 		this.softenHardClips = softenHardClips;
 		this.fixMates = fixMates;

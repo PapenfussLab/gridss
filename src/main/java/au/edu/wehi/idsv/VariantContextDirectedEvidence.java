@@ -160,4 +160,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		// TODO Auto-generated method stub
 		return null;
 	}
+	@Override
+	public boolean isFromMultimappingFragment() {
+		throw new UnsupportedOperationException();
+	}
 }

@@ -30,17 +30,26 @@ public class GreedyVariantAllocationCache extends GreedyAllocationCache {
 	 */
 	private final GreedyAllocationCacheLookup<EventScoreNode> bestEventForEvidence;
 	private final AtomicLong loaded = new AtomicLong(0);
-	public GreedyVariantAllocationCache(boolean ensureUniqueReadPairAlignment, boolean ensureUniqueReadAlignment, boolean ensureUniqueEvidenceAllocation, long uniqueReads) {
-		this.bestReadPairAlignment = ensureUniqueReadPairAlignment ? createLookup("bestReadPairAlignment", EventAlignmentScoreNode.class, uniqueReads) : null;
-		this.bestReadAlignment = ensureUniqueReadAlignment ? createLookup("bestReadAlignment", EventAlignmentScoreNode.class, uniqueReads) : null;
-		this.bestEventForEvidence = ensureUniqueEvidenceAllocation ? createLookup("bestEventForEvidence", EventScoreNode.class, uniqueReads) : null;
+	public GreedyVariantAllocationCache(
+			boolean ensureUniqueReadPairAlignment,
+			long expectedSVReadPairs,
+			boolean ensureUniqueReadAlignment,
+			long expectedSVReads,
+			boolean ensureUniqueEvidenceAllocation,
+			long expectedSVEvidence) {
+		this.bestReadPairAlignment = ensureUniqueReadPairAlignment ? createLookup("bestReadPairAlignment", EventAlignmentScoreNode.class, expectedSVReadPairs) : null;
+		this.bestReadAlignment = ensureUniqueReadAlignment ? createLookup("bestReadAlignment", EventAlignmentScoreNode.class, expectedSVReads) : null;
+		this.bestEventForEvidence = ensureUniqueEvidenceAllocation ? createLookup("bestEventForEvidence", EventScoreNode.class, expectedSVEvidence) : null;
 	}
 	private static Hash96bit getEvent(VariantContextDirectedBreakpoint variant) {
 		return new Hash96bit(variant.getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null));
 	}
 	public void addBreakpoint(String event, float score, DirectedEvidence evidence) {
 		addBreakpoint(new Hash96bit(event), score, evidence);
-		
+	}
+	public void addBreakpoint(VariantContextDirectedBreakpoint variant, DirectedEvidence e) {
+		Hash96bit event = getEvent(variant);
+		addBreakpoint(event, variant.getBreakpointQual(), e);
 	}
 	public void addBreakpoint(VariantContextDirectedBreakpoint variant, List<DirectedEvidence> evidence) {
 		Hash96bit event = getEvent(variant);

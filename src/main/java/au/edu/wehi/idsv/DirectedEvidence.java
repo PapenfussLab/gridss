@@ -53,6 +53,12 @@ public interface DirectedEvidence {
 	 * @return true if the breakend is known exactly, false otherwise
 	 */
 	boolean isBreakendExact();
+	/**
+	 * Indicates whether this any reads from the originating template
+	 * have be aligned to multiple (non-chimeric) locations.
+	 * @return
+	 */
+	boolean isFromMultimappingFragment();
 	static final Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {

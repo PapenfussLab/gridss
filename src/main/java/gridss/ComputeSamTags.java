@@ -12,6 +12,7 @@ import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.sam.TemplateTagsIterator;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
@@ -57,13 +58,14 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			+ " are converted to unpaired reads.", optional=true)
 	public boolean FIX_MATE_INFORMATION = true;
 	@Option(shortName="T", doc="Tags to calculate")
-	public Set<SAMTag> TAGS = Sets.newHashSet(
-			SAMTag.NM,
-			SAMTag.SA,
-			SAMTag.Q2,
-			SAMTag.R2,
-			SAMTag.MC,
-			SAMTag.MQ);
+	public Set<String> TAGS = Sets.newHashSet(
+			SAMTag.NM.name(),
+			SAMTag.SA.name(),
+			SAMTag.Q2.name(),
+			SAMTag.R2.name(),
+			SAMTag.MC.name(),
+			SAMTag.MQ.name(),
+			SamTags.MULTIMAPPING_FRAGMENT);
 	@Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -97,11 +99,11 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		}
     	return 0;
 	}
-	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<SAMTag> tags, boolean softenHardClips, boolean fixMates, String threadprefix) throws IOException {
+	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<String> tags, boolean softenHardClips, boolean fixMates, String threadprefix) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
 		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, threadprefix + "raw")) {
 			Iterator<SAMRecord> it = aysncit;
-			if (tags.contains(SAMTag.NM) || tags.contains(SAMTag.SA)) {
+			if (tags.contains(SAMTag.NM.name()) || tags.contains(SAMTag.SA.name())) {
 				it = new AsyncBufferedIterator<SAMRecord>(it, threadprefix + "nm");
 				it = new NmTagIterator(it, reference);
 			}
@@ -117,8 +119,8 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		}
 	}
 	private boolean isReferenceRequired() {
-		return TAGS.contains(SAMTag.NM) ||
-				TAGS.contains(SAMTag.SA); // SA requires NM
+		return TAGS.contains(SAMTag.NM.name()) ||
+				TAGS.contains(SAMTag.SA.name()); // SA requires NM
 	}
 	private void validateParameters() {
 		if (isReferenceRequired()) {
@@ -126,25 +128,30 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		}
     	IOUtil.assertFileIsReadable(INPUT);
     	IOUtil.assertFileIsWritable(OUTPUT);
-    	for (SAMTag t : TAGS) {
-    		switch (t) {
-    		case CC:
-    		case CP:
-    		case FI:
-    		case HI:
-    		case IH:
-    		case NM:
-    		case Q2:
-    		case R2:
-    		case MC:
-    		case MQ:
-    		case SA:
-    		case TC:
-    			break;
-			default:
-				String msg = String.format("%s is not a predefined standard SAM tag able to be computed with no additional information.", t); 
-				log.error(msg);
-				throw new RuntimeException(msg);
+    	for (String t : TAGS) {
+    		try {
+    			SAMTag tag = SAMTag.valueOf(t);
+    			switch (tag) {
+        		case CC:
+        		case CP:
+        		case FI:
+        		case HI:
+        		case IH:
+        		case NM:
+        		case Q2:
+        		case R2:
+        		case MC:
+        		case MQ:
+        		case SA:
+        		case TC:
+        			break;
+    			default:
+    				String msg = String.format("%s is not a predefined standard SAM tag able to be computed with no additional information.", t); 
+    				log.error(msg);
+    				throw new RuntimeException(msg);
+        		}
+    		} catch (IllegalArgumentException e) {
+    			// ignore
     		}
     	}
 	}

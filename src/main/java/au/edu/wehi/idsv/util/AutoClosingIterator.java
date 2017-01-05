@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -25,7 +25,7 @@ public class AutoClosingIterator<T> implements Closeable, CloseableIterator<T> {
 	private boolean closed = false;
 	public AutoClosingIterator(Iterator<? extends T> it, Closeable... alsoClose) {
 		this.underlying = it;
-		this.alsoClose = alsoClose == null ? Collections.emptyList() : ImmutableList.copyOf(alsoClose);
+		this.alsoClose = alsoClose == null ? Collections.emptyList() : Lists.newArrayList(alsoClose);
 	}
 	@Override
 	public void close() {
