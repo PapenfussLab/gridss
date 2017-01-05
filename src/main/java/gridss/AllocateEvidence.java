@@ -78,7 +78,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), ALLOCATE_TO_BEST);
 		Iterator<VariantContextDirectedBreakpoint> it = Iterators.transform(annotator, bp -> annotate(bp));
 		it = Iterators.filter(it, v -> v != null);
-		return new AutoClosingIterator<>(it, calls, evidence);
+		return new AutoClosingIterator<>(it, calls, evidence, cache);
 	}
 	public void populateCache() {
 		IOUtil.assertFileIsReadable(INPUT_VCF);

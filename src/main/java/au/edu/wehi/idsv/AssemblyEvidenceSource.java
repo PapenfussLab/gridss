@@ -103,26 +103,27 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			deduplicatedChunks = assembledChunk.stream()
 					.map(f -> FileSystemContext.getWorkingFileFor(f, "deduplicated."))
 					.collect(Collectors.toList());
-			GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache(2 + getContext().getWorkerThreadCount());
-			tasks = new ArrayList<>();
-			for (int i = 0; i < chunks.size(); i++) {
-				QueryInterval chunk = chunks.get(i);
-				File in = assembledChunk.get(i);
-				tasks.add(threadpool.submit(() -> { loadAssemblyEvidenceAllocation(cache, in, chunk); return null; }));
-			}
-			runTasks(tasks);
-			
-			log.info("Allocating multi-mapping reads to assemblies");
-			tasks = new ArrayList<>();
-			for (int i = 0; i < chunks.size(); i++) {
-				QueryInterval chunk = chunks.get(i);
-				File in = assembledChunk.get(i);
-				File out = deduplicatedChunks.get(i);
-				if (!out.exists()) {
-					tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, cache); return null; }));
+			try (GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache()) {
+				tasks = new ArrayList<>();
+				for (int i = 0; i < chunks.size(); i++) {
+					QueryInterval chunk = chunks.get(i);
+					File in = assembledChunk.get(i);
+					tasks.add(threadpool.submit(() -> { loadAssemblyEvidenceAllocation(cache, in, chunk); return null; }));
 				}
+				runTasks(tasks);
+				
+				log.info("Allocating multi-mapping reads to assemblies");
+				tasks = new ArrayList<>();
+				for (int i = 0; i < chunks.size(); i++) {
+					QueryInterval chunk = chunks.get(i);
+					File in = assembledChunk.get(i);
+					File out = deduplicatedChunks.get(i);
+					if (!out.exists()) {
+						tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, cache); return null; }));
+					}
+				}
+				runTasks(tasks);
 			}
-			runTasks(tasks);
 		}
 		log.info("Merging assembly files");
 		// Merge chunk files
