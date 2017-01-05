@@ -12,20 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
@@ -35,7 +21,6 @@ import au.edu.wehi.idsv.sam.ChimericAlignment;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.TextCigarCodec;
-import htsjdk.samtools.util.Log;
 import net.openhft.chronicle.bytes.BytesIn;
 import net.openhft.chronicle.bytes.BytesMarshallable;
 import net.openhft.chronicle.bytes.BytesOut;
@@ -167,55 +152,6 @@ public abstract class GreedyAllocationCache implements Closeable {
 			map = null;
 		}
 	}
-	protected static class ApacheIgniteLookup<T extends Hash96bit> implements GreedyAllocationCacheLookup<T> {
-		private static final Log log = Log.getInstance(ApacheIgniteLookup.class);
-		static {
-			IgniteConfiguration cfg = new IgniteConfiguration();
-			cfg.setGridName("GreedyAllocationCache");
-			cfg.setGridLogger(new Logger());
-			ignite = Ignition.start(cfg);
-		}
-		private static Ignite ignite;
-		private String name;
-		private IgniteCache<Hash96bit, T> cache;
-		public ApacheIgniteLookup(String name) {
-			CacheConfiguration<Hash96bit, T> cacheCfg = new CacheConfiguration<>();
-			cacheCfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED); // store everything off-heap
-			cacheCfg.setOffHeapMaxMemory(0); // Set off-heap memory unlimited
-			//cacheCfg.setEvictionPolicy(new FifoEvictionPolicy<>(INITIAL_LOOKUP_SIZE, INITIAL_LOOKUP_SIZE / 10));
-			cacheCfg.setName(name);
-			this.name = name;
-			this.cache = ignite.getOrCreateCache(cacheCfg);
-		}
-		@Override
-		public T get(Hash96bit key) {
-			return cache.get(key);
-		}
-		@Override
-		public T put(Hash96bit key, T value) {
-			return cache.getAndPut(key, value);
-		}
-		@Override
-		public void close() throws IOException {
-			cache.destroy();
-			ignite.destroyCache(name);
-		}
-		private static class Logger implements IgniteLogger {
-			public IgniteLogger getLogger(Object ctgr) { return this; }
-			public void trace(String msg) { }
-			public void debug(String msg) { }
-			public void info(String msg) { log.info(msg); }
-			public void warning(String msg) { log.warn(msg); }
-			public void warning(String msg, Throwable e) { log.warn(e, msg); }
-			public void error(String msg) { log.error(msg); }
-			public void error(String msg, Throwable e) { log.error(e, msg); }
-			public boolean isTraceEnabled() { return false; }
-			public boolean isDebugEnabled() { return false; }
-			public boolean isInfoEnabled() { return true; }
-			public boolean isQuiet() { return true; }
-			public String fileName() { return null; }
-		}
-	}
 	protected static class OpenHFTLookup<T extends Hash96bit> implements GreedyAllocationCacheLookup<T> {
 		private ChronicleMap<Hash96bit, T> map;
 		private ChronicleMap<Hash96bit, T> create(String name, Class<T> clazz, long size) {
@@ -247,7 +183,7 @@ public abstract class GreedyAllocationCache implements Closeable {
 			return map.put(key, value);
 		}
 	}
-	protected static class Hash96bit implements Binarylizable, BytesMarshallable {
+	protected static class Hash96bit implements BytesMarshallable {
 		private static final HashFunction hf = Hashing.murmur3_128();
 		protected long key1;
 		protected int key2;
@@ -285,18 +221,6 @@ public abstract class GreedyAllocationCache implements Closeable {
 		public String toString() {
 			return Long.toHexString(key1) + Long.toHexString(key2); 
 		}
-		@Override
-		public void	readBinary(BinaryReader reader) {
-			BinaryRawReader brr = reader.rawReader();
-			key1 = brr.readLong();
-			key2 = brr.readInt();
-		}
-		@Override
-		public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-			BinaryRawWriter brw = writer.rawWriter();
-			brw.writeLong(key1);
-			brw.writeInt(key2);
-		}
 		@SuppressWarnings("rawtypes")
 		@Override
 		public void readMarshallable(BytesIn bytes) {
@@ -318,20 +242,6 @@ public abstract class GreedyAllocationCache implements Closeable {
 		}
 		protected float score; 
 		public float getScore() { return score; }
-		@Override
-		public void readBinary(BinaryReader reader) {
-			BinaryRawReader brr = reader.rawReader();
-			key1 = brr.readLong();
-			key2 = brr.readInt();
-			score = brr.readFloat();
-		}
-		@Override
-		public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-			BinaryRawWriter brw = writer.rawWriter();
-			brw.writeLong(key1);
-			brw.writeInt(key2);
-			brw.writeFloat(score);
-		}
 		@SuppressWarnings("rawtypes")
 		@Override
 		public void readMarshallable(BytesIn bytes) {
@@ -379,24 +289,6 @@ public abstract class GreedyAllocationCache implements Closeable {
 		public Hash96bit getEvent() { return new Hash96bit(eventKey1, eventKey2); }
 		public String toString() {
 			return String.format("(%s,%f,%s)", getEvent(), getScore(), getAlignment());
-		}
-		@Override
-		public void readBinary(BinaryReader reader) {
-			BinaryRawReader brr = reader.rawReader();
-			key1 = brr.readLong();
-			key2 = brr.readInt();
-			eventKey1 = brr.readLong();
-			eventKey2 = brr.readInt();
-			score = brr.readFloat();
-		}
-		@Override
-		public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-			BinaryRawWriter brw = writer.rawWriter();
-			brw.writeLong(key1);
-			brw.writeInt(key2);
-			brw.writeLong(eventKey1);
-			brw.writeInt(eventKey2);
-			brw.writeFloat(score);
 		}
 		@SuppressWarnings("rawtypes")
 		@Override
