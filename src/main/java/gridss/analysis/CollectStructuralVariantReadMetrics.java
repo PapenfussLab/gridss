@@ -72,7 +72,7 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 	public void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
 		boolean hasConsistentReadPair = ExtractSVReads.hasReadPairingConsistentWithReference(rpcc, records);
 		boolean[] hasConsistentReadAlignment = ExtractSVReads.hasReadAlignmentConsistentWithReference(records);
-		boolean hasOea = false;
+		boolean hasOeaAnchor = false;
 		boolean hasDp = false;
 		int maxSegmentIndex = 0;
 		boolean[] hasIndel = new boolean[hasConsistentReadAlignment.length];
@@ -85,9 +85,9 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 			if (r.getSupplementaryAlignmentFlag()) continue;
 			// Read pairing
 			if (!hasConsistentReadPair) {
-				if (SINGLE_MAPPED_PAIRED && !oeaFilter.filterOut(r)) {
+				if (SINGLE_MAPPED_PAIRED && !oeaFilter.filterOut(r) && !r.getReadUnmappedFlag()) {
 					metrics.UNMAPPED_MATE_READ_ALIGNMENTS++;
-					hasOea = true;
+					hasOeaAnchor = true;
 				}
 				if (DISCORDANT_READ_PAIRS && !dpFilter.filterOut(r)) {
 					metrics.DISCORDANT_READ_PAIR_ALIGNMENTS++;
@@ -127,13 +127,13 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 				}
 			}
 		}
-		if (hasOea) {
+		if (hasOeaAnchor) {
 			metrics.UNMAPPED_MATE_READS++;
 		}
 		if (hasDp) {
 			metrics.DISCORDANT_READ_PAIRS++;
 		}
-		if (hasOea || hasDp) {
+		if (hasOeaAnchor || hasDp) {
 			metrics.STRUCTURAL_VARIANT_READ_PAIRS++;
 		}
 		metrics.INDEL_READS += countTrues(hasIndel, maxSegmentIndex);

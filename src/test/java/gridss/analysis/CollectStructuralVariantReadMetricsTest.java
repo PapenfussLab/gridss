@@ -40,6 +40,30 @@ public class CollectStructuralVariantReadMetricsTest extends IntermediateFilesTe
 		assertEquals(1, metrics.DISCORDANT_READ_PAIRS);
 		assertEquals(4, metrics.DISCORDANT_READ_PAIR_ALIGNMENTS);
 		assertEquals(1, metrics.STRUCTURAL_VARIANT_READ_PAIRS);
+		assertEquals(0, metrics.UNMAPPED_MATE_READ_ALIGNMENTS);
+		assertEquals(0, metrics.UNMAPPED_MATE_READS);
+	}
+	@Test
+	public void should_consider_multiple_oeas() {
+		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
+		CollectStructuralVariantReadMetrics c = new CollectStructuralVariantReadMetrics();
+		c.OUTPUT = metricFiles;
+		c.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.FIXED;
+		c.FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 1000;
+		c.FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 1000;
+		c.setup(null, null);
+		c.acceptFragment(ImmutableList.of(
+				withReadName("read1", OEA(0, 1, "1M", true))[0],
+				withReadName("read1", OEA(0, 1, "1M", true))[1],
+				withReadName("read1", OEA(0, 2, "1M", true))[0],
+				withReadName("read1", OEA(0, 2, "1M", true))[1]), null);
+		c.finish();
+		StructuralVariantReadMetrics metrics = getMetrics(metricFiles, StructuralVariantReadMetrics.class);
+		assertEquals(0, metrics.DISCORDANT_READ_PAIRS);
+		assertEquals(0, metrics.DISCORDANT_READ_PAIR_ALIGNMENTS);
+		assertEquals(1, metrics.STRUCTURAL_VARIANT_READ_PAIRS);
+		assertEquals(2, metrics.UNMAPPED_MATE_READ_ALIGNMENTS);
+		assertEquals(1, metrics.UNMAPPED_MATE_READS);
 	}
 	@Test
 	public void should_count_indel_alignments_and_reads_separately() {
