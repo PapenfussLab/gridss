@@ -80,7 +80,7 @@ public class ParallelTransformIterator<T, U> implements Iterator<U> {
 				record = completed.take();
 			} catch (InterruptedException e) {
 				// what's the correct interrupt handling mechanism?
-				// if we swalloe then raise Thread.currentThread().interrupt();
+				// if we swallow then raise Thread.currentThread().interrupt();
 				// after getting our record, we might end up blocking
 				// since the worker thread doing the work might also have
 				// been interrupted

@@ -4,16 +4,23 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.IndelEvidence;
+import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
 import au.edu.wehi.idsv.SplitReadEvidence;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.MathUtil;
+import au.edu.wehi.idsv.util.ParallelTransformIterator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -22,6 +29,7 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
@@ -46,6 +54,20 @@ public class ReadsToBedpe extends CommandLineProgram {
     @Option(doc="Include a unique identifier for each breakpoint supported by each read. "
     		+ "Note that this identified can be quite long for long read sequencing technologies.", optional=true)
     public boolean UNIQUE_IDENTIFIER= true;
+    @Option(doc="Number of worker threads to spawn. Defaults to number of cores available."
+			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
+    		shortName="THREADS")
+    public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
+    @Override
+    protected String[] customCommandLineValidation() {
+    	String[] val = super.customCommandLineValidation();
+    	if (val == null || val.length == 0) {
+	    	if (WORKER_THREADS <= 0) {
+	    		return new String[] { "WORKER_THREADS must be at least 1." }; 
+	    	}
+    	}
+    	return val;
+    }
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -56,11 +78,20 @@ public class ReadsToBedpe extends CommandLineProgram {
     		try (SamReader reader = readerFactory.open(INPUT)) {
     			SAMFileHeader header = reader.getFileHeader();
     			SAMSequenceDictionary dict = header.getSequenceDictionary();
-    			try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(reader.iterator(), 2, 300)) {
-    				int i= 0;
+    			log.info(String.format("Using %d worker threads", WORKER_THREADS));
+        		ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
+    			try (CloseableIterator<SAMRecord> rawit = new AsyncBufferedIterator<SAMRecord>(reader.iterator(), 3, 64)) {
+    				ProgressLoggingSAMRecordIterator logit = new ProgressLoggingSAMRecordIterator(rawit, new ProgressLogger(log));
+    				ParallelTransformIterator<SAMRecord, List<String>> it = new ParallelTransformIterator<>(logit, r -> asBedPe(dict, r), 16 + 2 * WORKER_THREADS, threadpool);
+    				int i = 0;
     				try (BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT))) {
     					while (it.hasNext()) {
-    						process(writer, dict, it.next());
+    						for (String line : it.next()) {
+    							if (line != null) {
+		    						writer.write(line);
+		    						writer.write('\n');
+    							}
+    						}
     						i++;
     					}
     					if (i % 1000 == 0) {
@@ -75,60 +106,63 @@ public class ReadsToBedpe extends CommandLineProgram {
 		}
     	return 0;
 	}
-	private void process(Writer writer, SAMSequenceDictionary dict, SAMRecord record) throws IOException {
+	private List<String> asBedPe(SAMSequenceDictionary dict, SAMRecord record) {
+		List<String> result = new ArrayList<>();
 		// Split read
 		for (SplitReadEvidence sre : SplitReadEvidence.create(null, record)) {
 			if (sre.getBreakendSummary().isLowBreakend()) {
-				writeBedPe(writer, dict, sre);
+				result.add(asBedPe(dict, sre));
 			}
 		}
 		// indel
 		for (IndelEvidence ie : IndelEvidence.create(null, record)) {
 			if (ie.getBreakendSummary().direction == BreakendDirection.Forward) {
-				writeBedPe(writer, dict, ie);
+				result.add(asBedPe(dict, ie));
 			}
 		}
+		return result;
 	}
-	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, SplitReadEvidence e) throws IOException {
-		writeBedPe(writer, dict, e, (int)MathUtil.phredOr(e.getLocalMapq(), e.getRemoteMapq()), "splitread");
+	private String asBedPe(SAMSequenceDictionary dict, SplitReadEvidence e) {
+		return asBedPe(dict, e, (int)MathUtil.phredOr(e.getLocalMapq(), e.getRemoteMapq()), "splitread");
 	}
-	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, IndelEvidence e) throws IOException {
-		writeBedPe(writer, dict, e, e.getLocalMapq(), "indel");
+	private String asBedPe(SAMSequenceDictionary dict, IndelEvidence e) {
+		return asBedPe(dict, e, e.getLocalMapq(), "indel");
 	}
-	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, DirectedBreakpoint e, int mapq, String source) throws IOException {
+	private String asBedPe(SAMSequenceDictionary dict, DirectedBreakpoint e, int mapq, String source) {
+		StringBuilder sb = new StringBuilder();
 		Integer size = e.getBreakendSummary().getEventSize();
-		if (size == null || Math.abs(size) < MIN_SIZE) return;
-		if (e.getLocalMapq() < MIN_MAPQ || e.getRemoteMapq() < MIN_MAPQ) return;
+		if (size == null || Math.abs(size) < MIN_SIZE) return null;
+		if (e.getLocalMapq() < MIN_MAPQ || e.getRemoteMapq() < MIN_MAPQ) return null;
 		
 		BreakpointSummary bp = e.getBreakendSummary();
-		writer.write(dict.getSequence(bp.referenceIndex).getSequenceName());
-		writer.write('	');
-		writer.write(Integer.toString(bp.start));
-		writer.write('	');
-		writer.write(Integer.toString(bp.end));
-		writer.write('	');
-		writer.write(dict.getSequence(bp.referenceIndex2).getSequenceName());
-		writer.write('	');
-		writer.write(Integer.toString(bp.start2));
-		writer.write('	');
-		writer.write(Integer.toString(bp.end2));
-		writer.write('	');
+		sb.append(dict.getSequence(bp.referenceIndex).getSequenceName());
+		sb.append('	');
+		sb.append(Integer.toString(bp.start));
+		sb.append('	');
+		sb.append(Integer.toString(bp.end));
+		sb.append('	');
+		sb.append(dict.getSequence(bp.referenceIndex2).getSequenceName());
+		sb.append('	');
+		sb.append(Integer.toString(bp.start2));
+		sb.append('	');
+		sb.append(Integer.toString(bp.end2));
+		sb.append('	');
 		if (UNIQUE_IDENTIFIER) {
-			writer.write(e.getEvidenceID());
+			sb.append(e.getEvidenceID());
 		} else {
-			writer.write('.');
+			sb.append('.');
 		}
-		writer.write('	');
-		writer.write(Integer.toString(mapq));
-		writer.write('	');
-		writer.write(bp.direction == BreakendDirection.Forward ? '+' : '-');
-		writer.write('	');
-		writer.write(bp.direction2 == BreakendDirection.Forward ? '+' : '-');
-		writer.write('	');
-		writer.write(source);
-		writer.write('	');
-		writer.write(e.getUntemplatedSequence().length());
-		writer.write('\n');
+		sb.append('	');
+		sb.append(Integer.toString(mapq));
+		sb.append('	');
+		sb.append(bp.direction == BreakendDirection.Forward ? '+' : '-');
+		sb.append('	');
+		sb.append(bp.direction2 == BreakendDirection.Forward ? '+' : '-');
+		sb.append('	');
+		sb.append(source);
+		sb.append('	');
+		sb.append(e.getUntemplatedSequence().length());
+		return sb.toString();
 	}
 	private void validateParameters() {
     	IOUtil.assertFileIsReadable(INPUT);
