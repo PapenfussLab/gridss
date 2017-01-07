@@ -33,10 +33,11 @@ Example scripts can be found in the examples subdirectory of this repository. ex
 
 ## Memory usage
 
-It is recommended to run GRIDSS with max heap memory of 8GB + 2GB per worker thread.
-For example, with 4 worker threads, it is recommended to run GRIDSS with is -Xmx16g.
-Note that if a BED blacklist file excluding problematic centromeric and telomeric
-sequences is not used, additional memory is recommended.
+It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-threaded operation
+(WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for heavily multi-threaded
+server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS is strongly discouraged.
+
+When processing input files containing multiple (non-split) alignment locations for each read (multi-mapping alignment), GRIDSS must perform the additional steps of unqiely assigning reads to assembies, and reads to variant calls. As this cannot be done in a streaming manner, GRIDSS caches this information in a large off-heap lookup table. This lookup uses a large amount of memory in addition to the 32GB heap. For human 50x WGS with up to 100 alignment locations per read (thus resulting in a 5TB input BAM file), approximately 300GB of memory is required for this lookup. This additional memory only required if the aligner reports multiple alignment locations per read (eg mrFast alignment, or the bowtie2 -k and -a options).
 
 ## GRIDSS tools
 
