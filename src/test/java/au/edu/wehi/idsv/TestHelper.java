@@ -280,7 +280,7 @@ public class TestHelper {
 	}
 	
 	public static IndelEvidence IE(SAMEvidenceSource ses, SAMRecord r, int indelIndex) {
-		return IndelEvidence.create(ses, r).get(indelIndex);
+		return IndelEvidence.create(ses, 0, r).get(indelIndex);
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction, SAMEvidenceSource source, SAMRecord... record) {
@@ -1008,7 +1008,7 @@ public class TestHelper {
 	}
 	public VariantContextDirectedEvidence CallSV(SAMRecord... evidence) {
 		return CallSV(Stream.of(evidence)
-			.flatMap(r -> SingleReadEvidence.createEvidence(AES(), r).stream())
+			.flatMap(r -> SingleReadEvidence.createEvidence(AES(), 0, r).stream())
 			.map(r -> (DirectedEvidence)r)
 			.toArray( DirectedEvidence[]::new));
 	}
@@ -1221,11 +1221,11 @@ public class TestHelper {
 	}
 	public static List<SingleReadEvidence> asEvidence(SAMEvidenceSource aes, Iterable<SAMRecord> list) {
 		return StreamSupport.stream(list.spliterator(), false)
-				.flatMap(r -> SingleReadEvidence.createEvidence(aes, r).stream())
+				.flatMap(r -> SingleReadEvidence.createEvidence(aes, 0, r).stream())
 				.collect(Collectors.toList());
 	}
 	public static SingleReadEvidence asEvidence(SAMEvidenceSource aes, SAMRecord assembly) {
-		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, assembly);
+		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, 0, assembly);
 		assertEquals(1, list.size());
 		return list.get(0);
 	}
@@ -1239,7 +1239,7 @@ public class TestHelper {
 		SAMRecord out = assembly.deepCopy();
 		realignments.stream().forEach(r -> r.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(assembly, false).get(0).getReadHeader()));
 		SplitReadIdentificationHelper.convertToSplitRead(out, realignments);
-		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, out);
+		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, 0, out);
 		return list.get(0);
 	}
 	public static SingleReadEvidence incorporateRealignment(SAMEvidenceSource aes, SingleReadEvidence assembly, SAMRecord... realignments) {

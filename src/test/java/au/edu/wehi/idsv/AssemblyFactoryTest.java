@@ -434,7 +434,7 @@ public class AssemblyFactoryTest extends TestHelper {
 				null,
 				0, 1, 1, 0, 2, 1,
 				B("NAAAN"), B("AAAAA"));
-		IndelEvidence e = IndelEvidence.create(AES(), r).get(0);
+		IndelEvidence e = IndelEvidence.create(AES(), 0, r).get(0);
 		assertTrue(e.getBreakendSummary() instanceof BreakpointSummary);
 		BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
 		assertEquals(0, bp.referenceIndex);
@@ -452,7 +452,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		SAMRecord r = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), new SequentialIdGenerator("asm"), null,
 				0, 100, 1,
 				0, 1, 2, B("AAA"), B("AAA"));
-		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(AES(), r);
+		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(AES(), 0, r);
 		assertEquals(1, e.size());
 		assertTrue(e.get(0) instanceof SoftClipEvidence);
 	}

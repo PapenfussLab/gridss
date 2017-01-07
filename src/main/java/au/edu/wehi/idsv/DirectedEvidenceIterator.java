@@ -15,13 +15,15 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 	private final SAMEvidenceSource source;
 	private Iterator<SAMRecord> it;
 	private Queue<DirectedEvidence> buffer = new ArrayDeque<>();
+	private int minIndelSize;
 	/**
 	 * Creates a new iterator
 	 * @param it input records
 	 */
-	public DirectedEvidenceIterator(Iterator<SAMRecord> it, SAMEvidenceSource source) {
+	public DirectedEvidenceIterator(Iterator<SAMRecord> it, SAMEvidenceSource source, int minIndelSize) {
 		this.source = source;
 		this.it = it;
+		this.minIndelSize = minIndelSize;
 	}
 	private void ensureBuffer() {
 		if (it == null) return;
@@ -31,7 +33,7 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 		}
 	}
 	private void addToBuffer(SAMRecord record) {
-		buffer.addAll(SingleReadEvidence.createEvidence(source, record));
+		buffer.addAll(SingleReadEvidence.createEvidence(source, minIndelSize, record));
 		if (!record.getSupplementaryAlignmentFlag()) {
 			NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
 			if (nrrp != null) {

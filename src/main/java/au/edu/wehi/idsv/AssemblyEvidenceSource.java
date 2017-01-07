@@ -264,7 +264,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					while (it.hasNext()) {
 						BreakendAssemblyEvidenceSupport allocation = it.next();
 						float score = 0;
-						for (DirectedEvidence assemblyEvidence : SingleReadEvidence.createEvidence(this, allocation.assemblyRecord)) {
+						for (DirectedEvidence assemblyEvidence : SingleReadEvidence.createEvidence(this, 0, allocation.assemblyRecord)) {
 							score = Math.max(score, assemblyEvidence.getBreakendQual());
 						}
 						for (DirectedEvidence support : allocation.support) {
@@ -330,7 +330,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
 		AssemblyAttributes attr = new AssemblyAttributes(asm);
 		// reference assembly
-		List<SingleReadEvidence> breakends = SingleReadEvidence.createEvidence(this, asm);
+		List<SingleReadEvidence> breakends = SingleReadEvidence.createEvidence(this, 0, asm);
 		if (breakends.size() == 0) {
 			return true;
 		}

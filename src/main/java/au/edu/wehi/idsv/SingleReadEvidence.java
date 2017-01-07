@@ -28,7 +28,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
 	
-	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, SAMRecord record) {
+	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, int minIndelSize, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
 		List<SingleReadEvidence> list = new ArrayList<>(4);
 		List<SplitReadEvidence> srlist = SplitReadEvidence.create(source, record);
@@ -52,7 +52,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
 			list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
 		}
-		list.addAll(IndelEvidence.create(source, record));
+		list.addAll(IndelEvidence.create(source, minIndelSize, record));
 		return list;
 	}
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,

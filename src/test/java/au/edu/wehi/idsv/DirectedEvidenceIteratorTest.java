@@ -23,34 +23,34 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	@Test
 	public void should_not_return_both_soft_clip_and_split_read_for_same_read() {
 		SAMRecord r = sampleSplitRead();
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
 		assertEquals(1, list.size());
 	}
 	@Test
 	public void should_ignore_unmapped_reads() {
 		SAMRecord r = sampleSplitRead();
 		r.setReadUnmappedFlag(true);
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
 		assertEquals(0, list.size());
 	}
 	@Test
 	public void should_return_OEA() {
 		SAMRecord r = OEA(0,  1, "10M", true)[0];
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES()));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 0));
 		assertEquals(1, list.size());
 		assertEquals(UnmappedMateReadPair.class, list.get(0).getClass());
 	}
 	@Test
 	public void should_return_DP() {
 		SAMRecord r = DP(0, 1, "10M", true, 1, 10, "10M", false)[0];
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES()));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 0));
 		assertEquals(1, list.size());
 		assertEquals(DiscordantReadPair.class, list.get(0).getClass());
 	}
 	@Test
 	public void should_return_indel() {
 		SAMRecord r = Read(0, 1, "10M5I5D10M5I10M");
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
 		assertEquals(4, list.size());
 		assertEquals(IndelEvidence.class, list.get(0).getClass());
 	}
@@ -58,14 +58,24 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	public void should_ignore_unmapped_softclips() {
 		SAMRecord r = Read(0, 10, "10M5S");
 		r.setReadUnmappedFlag(true);
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
 		assertEquals(0, list.size());
 	}
 	@Test
 	public void should_not_call_discordant_pair_for_supplementary_alignments() {
 		SAMRecord r = DP(0, 1, "10M", true, 1, 10, "10M", false)[0];
 		r.setSupplementaryAlignmentFlag(true);
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), permissiveSES()));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), permissiveSES(), 0));
+		assertEquals(0, list.size());
+	}
+	@Test
+	public void should_filter_small_indels() {
+		SAMRecord r = Read(0, 10, "10M1D10M2D10M");
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 1));
+		assertEquals(4, list.size());
+		list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 2));
+		assertEquals(2, list.size());
+		list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 3));
 		assertEquals(0, list.size());
 	}
 }

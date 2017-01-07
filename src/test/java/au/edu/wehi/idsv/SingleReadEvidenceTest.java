@@ -36,7 +36,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 				Read(0, 1, "1X1N1X10S"),
 				Read(0, 1, "1X100N1X10S"),
 		}) {
-			List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(SES(), r);
+			List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(SES(), 0, r);
 			assertEquals(1, list.size());
 			assertTrue(list.get(0) instanceof SoftClipEvidence);
 		}
@@ -158,7 +158,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 	@Test(expected=IllegalStateException.class)
 	public void should_not_calculate_homology_if_reference_sequence_cannot_be_found() {
 		SplitReadEvidence sr = SR(Read(0, 1, "5M5S"), Read(1, 1, "5M"));
-		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(null, sr.getSAMRecord());
+		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(null, 0, sr.getSAMRecord());
 		assertEquals(0, e.get(0).getHomologySequence().length());
 	}
 	@Test
@@ -176,7 +176,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		SamReader sr = SamReaderFactory.make().open(sam);
 		List<SAMRecord> in = Lists.newArrayList(sr.iterator());
 		List<SingleReadEvidence> sreList = in.stream()
-				.flatMap(record -> SingleReadEvidence.createEvidence(ses, record).stream())
+				.flatMap(record -> SingleReadEvidence.createEvidence(ses, 0, record).stream())
 				.collect(Collectors.toList());
 		ImmutableListMultimap<String, SingleReadEvidence> mm = Multimaps.index(sreList, sre -> sre.getSAMRecord().getReadName());
 		for (Entry<String, Collection<SingleReadEvidence>> entry : mm.asMap().entrySet()) {
@@ -190,10 +190,10 @@ public class SingleReadEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void multiMappingShouldUse_mm_tag() {
-		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(SES(), Read(0, 1, "10M10S"));
+		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(SES(), 0, Read(0, 1, "10M10S"));
 		assertTrue(list.size() > 0);
 		assertTrue(list.stream().allMatch(e -> !e.isFromMultimappingFragment()));
-		list = SingleReadEvidence.createEvidence(SES(), withAttr("mm", 5, Read(0, 1, "10M10S"))[0]);
+		list = SingleReadEvidence.createEvidence(SES(), 0, withAttr("mm", 5, Read(0, 1, "10M10S"))[0]);
 		assertTrue(list.size() > 0);
 		assertTrue(list.stream().allMatch(e -> e.isFromMultimappingFragment()));
 	}

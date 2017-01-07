@@ -5,12 +5,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.collect.Iterators;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
@@ -20,7 +19,6 @@ import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
 import au.edu.wehi.idsv.SplitReadEvidence;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.MathUtil;
-import au.edu.wehi.idsv.util.ParallelTransformIterator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -38,7 +36,7 @@ import picard.cmdline.StandardOptionDefinitions;
 @CommandLineProgramProperties(
 		usage = "Converts split reads and indel-containing reads to BEDPE notation.", usageShort = "")
 public class ReadsToBedpe extends CommandLineProgram {
-	private static final Log log = Log.getInstance(ComputeSamTags.class);
+	private static final Log log = Log.getInstance(ReadsToBedpe.class);
     @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
     public File INPUT;
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output BEDPE", optional=false)
@@ -54,20 +52,6 @@ public class ReadsToBedpe extends CommandLineProgram {
     @Option(doc="Include a unique identifier for each breakpoint supported by each read. "
     		+ "Note that this identified can be quite long for long read sequencing technologies.", optional=true)
     public boolean UNIQUE_IDENTIFIER= true;
-    @Option(doc="Number of worker threads to spawn. Defaults to number of cores available."
-			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
-    		shortName="THREADS")
-    public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-    @Override
-    protected String[] customCommandLineValidation() {
-    	String[] val = super.customCommandLineValidation();
-    	if (val == null || val.length == 0) {
-	    	if (WORKER_THREADS <= 0) {
-	    		return new String[] { "WORKER_THREADS must be at least 1." }; 
-	    	}
-    	}
-    	return val;
-    }
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -78,11 +62,13 @@ public class ReadsToBedpe extends CommandLineProgram {
     		try (SamReader reader = readerFactory.open(INPUT)) {
     			SAMFileHeader header = reader.getFileHeader();
     			SAMSequenceDictionary dict = header.getSequenceDictionary();
-    			log.info(String.format("Using %d worker threads", WORKER_THREADS));
-        		ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
+    			//log.info(String.format("Using %d worker threads", WORKER_THREADS));
+        		//ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
     			try (CloseableIterator<SAMRecord> rawit = new AsyncBufferedIterator<SAMRecord>(reader.iterator(), 3, 64)) {
     				ProgressLoggingSAMRecordIterator logit = new ProgressLoggingSAMRecordIterator(rawit, new ProgressLogger(log));
-    				ParallelTransformIterator<SAMRecord, List<String>> it = new ParallelTransformIterator<>(logit, r -> asBedPe(dict, r), 16 + 2 * WORKER_THREADS, threadpool);
+    				//ParallelTransformIterator<SAMRecord, List<String>> it = new ParallelTransformIterator<>(logit, r -> asBedPe(dict, r), 16 + 2 * WORKER_THREADS, threadpool);
+    				Iterator<List<String>> it = Iterators.transform(logit, r -> asBedPe(dict, r));
+    				
     				int i = 0;
     				try (BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT))) {
     					while (it.hasNext()) {
@@ -115,7 +101,7 @@ public class ReadsToBedpe extends CommandLineProgram {
 			}
 		}
 		// indel
-		for (IndelEvidence ie : IndelEvidence.create(null, record)) {
+		for (IndelEvidence ie : IndelEvidence.create(null, MIN_SIZE, record)) {
 			if (ie.getBreakendSummary().direction == BreakendDirection.Forward) {
 				result.add(asBedPe(dict, ie));
 			}

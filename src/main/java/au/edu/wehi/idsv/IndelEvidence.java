@@ -69,7 +69,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		right.remote = left;
 		return left;
 	}
-	public static List<IndelEvidence> create(SAMEvidenceSource source, SAMRecord record) {
+	public static List<IndelEvidence> create(SAMEvidenceSource source, int minIndelSize, SAMRecord record) {
 		if (record.getReadUnmappedFlag() || record.getCigar() == null) return Collections.emptyList();
 		if (CigarUtil.widthOfImprecision(record.getCigar()) > 0) {
 			// not a real indel: this is a placeholder CIGAR for an unanchored breakend assembly
@@ -79,20 +79,23 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		List<CigarElement> cl = record.getCigar().getCigarElements();
 		// find all indels (excluding those at start/end)
 		int indelStartOffset = 1;
+		int indelSize = 0;
 		while (indelStartOffset < cl.size()) {
 			if (cl.get(indelStartOffset).getOperator().isIndelOrSkippedRegion() &&
 					!cl.get(indelStartOffset - 1).getOperator().isIndelOrSkippedRegion()) {
 				int indelEndOffset = indelStartOffset;
 				while (indelEndOffset < cl.size() && cl.get(indelEndOffset).getOperator().isIndelOrSkippedRegion()) {
+					indelSize += cl.get(indelEndOffset).getLength();
 					indelEndOffset++;
 				}
-				if (indelEndOffset < cl.size()) { 
+				if (indelSize >= minIndelSize && indelEndOffset < cl.size()) {
 					IndelEvidence left = create(source, record, indelStartOffset);
 					IndelEvidence right = left.asRemote();
 					list.add(left);
 					list.add(right);
 				}
 				indelStartOffset = indelEndOffset;
+				indelSize = 0;
 			} else {
 				indelStartOffset++;
 			}

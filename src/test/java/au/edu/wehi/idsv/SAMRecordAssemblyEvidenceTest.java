@@ -232,7 +232,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
 				0, 1, assembly.length(), B(assembly), B(40, assembly.length()));
 		
-		assertEquals(0, SingleReadEvidence.createEvidence(SES(), e).size());
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, e).size());
 	}
 	@Test
 	public void should_allow_realignment_to_reference_allele() {
@@ -240,7 +240,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
 				0, 1, 1, B(assembly), B(40, assembly.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
-		assertEquals(0, SingleReadEvidence.createEvidence(SES(), e).size());
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, e).size());
 	}
 	@Test
 	@Ignore("Enhancement")
@@ -481,7 +481,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				B("AAAAAAAA"),
 				B("AAAAAAAA"));
 		ass = SAMRecordUtil.realign(getContext().getReference(), ass, 50, true);
-		assertEquals(0, SingleReadEvidence.createEvidence(SES(), ass).size());
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, ass).size());
 	}
 }
 

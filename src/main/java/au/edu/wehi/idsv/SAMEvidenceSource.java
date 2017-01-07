@@ -222,7 +222,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved 
 		it = Iterators.transform(it, r -> transform(r));
 		it = Iterators.filter(it, r -> !shouldFilter(r));		
-		Iterator<DirectedEvidence> eit = new DirectedEvidenceIterator(it, this);
+		Iterator<DirectedEvidence> eit = new DirectedEvidenceIterator(it, this, minIndelSize());
 		eit = Iterators.filter(eit, e -> !shouldFilter(e));
 		eit = new DirectEvidenceWindowedSortingIterator<DirectedEvidence>(getContext(), getSortWindowSize(), eit);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
@@ -250,6 +250,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return false;
 	}
+	private int minIndelSize() {
+		return Math.min(getContext().getConfig().getSoftClip().minLength, getContext().getVariantCallingParameters().minSize);
+	}
 	public boolean shouldFilter(DirectedEvidence e) {
 		GridssConfiguration config = getContext().getConfig();
 		if (overlapsBlacklist(e)) {
@@ -268,6 +271,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 				if (SAMRecordUtil.getAlignedIdentity(sce.getSAMRecord()) < scc.minAnchorIdentity) return true;
 				if (SAMRecordUtil.alignedEntropy(sce.getSAMRecord()) < config.minAnchorShannonEntropy) return true;
 			}
+		}
+		if (e instanceof IndelEvidence) {
+			// Currently filtering small indels in it evidence iterator itself
 		}
 		if (e instanceof DirectedBreakpoint) {
 			//BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
