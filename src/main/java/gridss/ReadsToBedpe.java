@@ -123,13 +123,13 @@ public class ReadsToBedpe extends CommandLineProgram {
 		BreakpointSummary bp = e.getBreakendSummary();
 		sb.append(dict.getSequence(bp.referenceIndex).getSequenceName());
 		sb.append('	');
-		sb.append(Integer.toString(bp.start));
+		sb.append(Integer.toString(bp.start - 1));
 		sb.append('	');
 		sb.append(Integer.toString(bp.end));
 		sb.append('	');
 		sb.append(dict.getSequence(bp.referenceIndex2).getSequenceName());
 		sb.append('	');
-		sb.append(Integer.toString(bp.start2));
+		sb.append(Integer.toString(bp.start2 - 1));
 		sb.append('	');
 		sb.append(Integer.toString(bp.end2));
 		sb.append('	');

@@ -353,9 +353,15 @@ This is likely to be caused by a crash during alignment in libsswjni. See the ss
 
 Your CPU does not support the SSE2 instruction set. See the sswjni sections for details on how to disable libsswjni.
 
+### Java HotSpot(TM) 64-Bit Server VM warning: INFO: os::commit_memory(0x00007fc36e200000, 48234496, 0) failed; error='Cannot allocate memory' (errno=12)
+
+GRIDSS has run out of memory. Either not enough memory has been allocated to run GRIDSS or GRIDSS has attempted to memory map too many files. Due to a issues with the library used for GRIDSS IO, the latter can occur on a full run of GRIDSS when given a large number of multimapped input files, and a large number of worker threads even when enough memory is available. In both cases, restart GRIDSS (increasing the memory avaialable if required) and GRIDSS will continue from where it left off.
+
 ### Aborting since lock gridss.lock._OUTPUT_ already exists. GRIDSS does not support multiple simulatenous instances running on the same data.
 
 Multiple instances of GRIDSS were run on the same data. GRIDSS does not yet support MPI parallelisation across multiple machines. Use the WORKER_THREADS parameter to specify the desired level of multi-threading. If using a cluster/job queuing system, a single non-MPI job should be submitted and either WORKER_THREADS explicitly set to the number of cores associated with the job requests, or the job should request the entire node.
 
 If the lock directory exists and you know a GRIDSS process is not running (eg: the GRIDSS process was killed), then you can safely delete the lock directory.
+
+
 
