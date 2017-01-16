@@ -56,12 +56,19 @@ public class VariantCaller {
 			}
 		}
 		runTasks(tasks);
+		
 		log.info("Merging identified breakpoints");
-		VcfFileUtil.concat(processContext.getReference().getSequenceDictionary(), calledChunk, vcf);
+		File mergedOut = FileSystemContext.getWorkingFileFor(vcf, "gridss.merged.");
+		VcfFileUtil.concat(processContext.getReference().getSequenceDictionary(), calledChunk, mergedOut);
+		
+		log.info("Sorting identified breakpoints");
+		VcfFileUtil.sort(processContext, mergedOut, vcf);
+		// cleanup
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			for (File f : calledChunk) {
 				FileHelper.delete(f, true);
 			}
+			FileHelper.delete(mergedOut, true);
 		}
 	}
 	private void runTasks(List<Future<Void>> tasks) {
@@ -99,7 +106,11 @@ public class VariantCaller {
 				}
 			}
 		}
-		VcfFileUtil.sort(processContext, tmp, output);
+		try {
+			FileHelper.move(tmp, output, true);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 		log.info("Complete ", msg);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			try {

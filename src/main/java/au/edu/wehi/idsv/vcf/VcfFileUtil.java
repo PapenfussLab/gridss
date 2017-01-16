@@ -130,6 +130,7 @@ public class VcfFileUtil {
 		try (VariantContextWriter writer = new VariantContextWriterBuilder()
 				.setOutputFile(tmpout)
 				.setReferenceDictionary(dictionary)
+				.clearIndexCreator()
 				.build()) {
 			for (int i = 0; i < input.size(); i++) {
 				try (VCFFileReader reader = new VCFFileReader(input.get(i), false)) {
