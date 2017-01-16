@@ -253,7 +253,9 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			in.add(Read(1, 1, String.format("5M%dD5M5S", i)));
 		}
 		createInput(in.toArray(new SAMRecord[0]));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 0, 15);
+		ProcessingContext pc = getCommandlineContext();
+		pc.getSoftClipParameters().minLength = 1;
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0, 0, 15);
 		List<DirectedEvidence> results = Lists.newArrayList(source.iterator());
 		for (int i = 1; i < results.size(); i++) {
 			assertTrue(results.get(i-1).getBreakendSummary().start <= results.get(i).getBreakendSummary().start);

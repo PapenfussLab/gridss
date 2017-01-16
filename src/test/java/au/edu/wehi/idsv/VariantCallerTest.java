@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +19,7 @@ import htsjdk.samtools.SAMRecord;
 
 public class VariantCallerTest extends IntermediateFilesTest {
 	@Test
-	public void shouldCallMaxCliques() {
+	public void shouldCallMaxCliques() throws IOException {
 		final int fragSize = 4;
 		final int testSize = 64;
 		final List<SAMRecord> in = new ArrayList<SAMRecord>();
@@ -59,7 +60,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		//assertEquals(expectedEvidence, annotatedEvidence, 20); // floating point truncation on VCF is severe!
 	}
 	@Test
-	public void should_call_cliques() {
+	public void should_call_cliques() throws IOException {
 		final int fragSize = 4;
 		final List<SAMRecord> in = new ArrayList<SAMRecord>();
 		final ProcessingContext pc = getCommandlineContext();

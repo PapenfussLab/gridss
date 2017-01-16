@@ -39,10 +39,8 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 		}
 		ses.evidence.sort(DirectedEvidenceOrder.ByNatural);
 		AggregateEvidenceSource es = new AggregateEvidenceSource(pc, ImmutableList.of(ses), null);
-		ExecutorService threadpool = Executors.newFixedThreadPool(1);
-		EvidenceClusterProcessor processor = new EvidenceClusterProcessor(threadpool, es);
+		VariantCallIterator processor = new VariantCallIterator(es);
 		ArrayList<VariantContextDirectedEvidence> calls = Lists.newArrayList(processor);
-		threadpool.shutdown();
 		calls.sort(VariantContextDirectedEvidence.ByBreakendStartEnd);
 		
 		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(pc, calls.iterator(), ses.evidence.iterator(), 4, true);

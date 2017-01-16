@@ -3,18 +3,22 @@ package au.edu.wehi.idsv.vcf;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFRecordCodec;
@@ -114,5 +118,33 @@ public class VcfFileUtil {
 			}
 			return null;
 		}
+	}
+	/**
+	 * Concatenates the input files in order.
+	 * @param input input files.
+	 * @param output output file
+	 * @throws IOException
+	 */
+	public static void concat(SAMSequenceDictionary dictionary, List<File> input, File output) throws IOException {
+		File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.concat.");
+		try (VariantContextWriter writer = new VariantContextWriterBuilder()
+				.setOutputFile(tmpout)
+				.setReferenceDictionary(dictionary)
+				.build()) {
+			for (int i = 0; i < input.size(); i++) {
+				try (VCFFileReader reader = new VCFFileReader(input.get(i), false)) {
+					if (i == 0) {
+						writer.writeHeader(reader.getFileHeader());
+					}
+					try (AsyncBufferedIterator<VariantContext> it = new AsyncBufferedIterator<>(reader.iterator(), input.get(i).getName())) {
+						while (it.hasNext()) {
+							writer.add(it.next());
+						}
+					}
+				}
+			}
+			writer.close();
+		}
+		FileHelper.move(tmpout, output, true);
 	}
 }

@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import java.io.IOException;
 import java.util.Random;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.GreedyAllocationCache.EventAlignmentScoreNode;
@@ -19,6 +20,7 @@ public class GreedyAllocationCacheTest {
 		}
 	}
 	@Test
+	@Ignore("Too much memory for desktop testing")
 	public void should_use_off_heap_memory() throws IOException {
 		Random rnd = new Random();
 		try (TestCache cache = new TestCache()) {
