@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
 import htsjdk.samtools.QueryInterval;
@@ -81,17 +82,20 @@ public class VariantCaller {
 		}
 	}
 	private void callChunk(File output, AggregateEvidenceSource es, int chunkNumber, QueryInterval chunck) {
-		String msg = String.format("calling maximal cliques in interval %s:%d-%d", processContext.getDictionary().getSequence(chunck.referenceIndex).getSequenceName(), chunck.start, chunck.end);
-		VariantCallIterator it = new VariantCallIterator(es, chunck, chunkNumber);
+		String chunkMsg =  String.format("%s:%d-%d", processContext.getDictionary().getSequence(chunck.referenceIndex).getSequenceName(), chunck.start, chunck.end);
+		String msg = "calling maximal cliques in interval " + chunkMsg;
+		VariantCallIterator rawit = new VariantCallIterator(es, chunck, chunkNumber);
 		File tmp = FileSystemContext.getWorkingFileFor(output);
 		try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
 			log.info("Start ", msg);
-			while (it.hasNext()) {
-				VariantContextDirectedEvidence loc = it.next();
-				if (loc.getBreakendQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
-					// If we're under min score with all possible evidence allocated, we're definitely going to fail
-					// when we restrict evidence to single breakpoint support
-					vcfWriter.add(loc);
+			try (AsyncBufferedIterator<VariantContextDirectedEvidence> it = new AsyncBufferedIterator<>(rawit, "VariantCaller " + chunkMsg)) {
+				while (it.hasNext()) {
+					VariantContextDirectedEvidence loc = it.next();
+					if (loc.getBreakendQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
+						// If we're under min score with all possible evidence allocated, we're definitely going to fail
+						// when we restrict evidence to single breakpoint support
+						vcfWriter.add(loc);
+					}
 				}
 			}
 		}

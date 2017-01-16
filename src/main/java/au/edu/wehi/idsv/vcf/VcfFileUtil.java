@@ -78,7 +78,7 @@ public class VcfFileUtil {
 				log.info("Not sorting as output already exists: " + output);
 				return null;
 			}
-			log.info("Sorting " + input);
+			log.info("Sorting to " + output);
 			SortingCollection<VariantContext> collection = null;
 			File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.");
 			if (tmpout.exists()) {
