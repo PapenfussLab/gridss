@@ -48,7 +48,7 @@ public class GenomicProcessingContext implements Closeable {
 	 * Must be greater than VariantCallingParameters.breakendMargin
 	 * value this huge helps with debugging as the chromosome index and offset are immediately apparent  
 	 */
-	static final long LINEAR_COORDINATE_CHROMOSOME_BUFFER = 10000000000L;
+	public static final long LINEAR_COORDINATE_CHROMOSOME_BUFFER = 10000000000L;
 	private ReferenceLookup reference;
 	private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;

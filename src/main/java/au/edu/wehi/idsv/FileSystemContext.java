@@ -9,6 +9,7 @@ import gridss.analysis.CollectIdsvMetrics;
 import gridss.analysis.CollectMapqMetrics;
 import gridss.analysis.CollectStructuralVariantReadMetrics;
 import gridss.analysis.CollectTagMetrics;
+import gridss.analysis.ReportThresholdCoverage;
 
 public class FileSystemContext {
 	private final File tempDir;
@@ -63,7 +64,7 @@ public class FileSystemContext {
 	private static final String FORMAT_CIGAR_METRICS = FORMAT_METRICS_PREFIX + CollectCigarMetrics.METRICS_SUFFIX;
 	private static final String FORMAT_TAG_METRICS = FORMAT_METRICS_PREFIX + CollectTagMetrics.METRICS_SUFFIX;
 	private static final String FORMAT_SV_METRICS = FORMAT_METRICS_PREFIX + CollectStructuralVariantReadMetrics.METRICS_SUFFIX;
-	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%1$s/%2$s.coverage.blacklist.bed";
+	private static final String FORMAT_COVERAGE_BLACKLIST_BED = FORMAT_METRICS_PREFIX + ReportThresholdCoverage.SUFFIX;
 	private static final String FORMAT_REALIGN_FASTQ = "%1$s/%2$s.realign.%3$d.fq";
 	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s.realign.%3$d" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s.breakpoint" + VCF_SUFFIX;

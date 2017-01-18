@@ -18,6 +18,7 @@ public class CollectGridssMetricsTest extends IntermediateFilesTest {
 		collect.instanceMain(new String[] {
 			"INPUT=" + new File("src/test/resources/203541.bam").getAbsolutePath(),
 			"OUTPUT=" + prefix,
+			"THRESHOLD_COVERAGE=1000",
 		});
 		assertTrue(new File(prefix + ".cigar_metrics").exists());
 		assertTrue(new File(prefix + ".insert_size_metrics").exists());
@@ -33,6 +34,7 @@ public class CollectGridssMetricsTest extends IntermediateFilesTest {
 		collect.instanceMain(new String[] {
 			"INPUT=" + new File("src/test/resources/203541.bam").getAbsolutePath(),
 			"OUTPUT=" + prefix,
+			"THRESHOLD_COVERAGE=1000",
 		});
 		assertTrue(new File(prefix + ".mapq_histogram.pdf").exists());
 	}

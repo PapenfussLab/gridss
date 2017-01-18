@@ -129,6 +129,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		this.evidenceIt = Iterators.peekingIterator(evidence);
 		this.assignEvidenceToSingleBreakpoint = assignEvidenceToSingleBreakpoint;
 		if (assignEvidenceToSingleBreakpoint) {
+			// RemoteOverlapLookup only tracks the best local breakend so we can't use it if we want to assign to all matching breakpoints
 			this.lookup = new RemoteOverlapLookup(this.context.getDictionary().getSequences().size());
 		} else {
 			this.lookup = new LocalOverlapLookup(this.context.getDictionary().getSequences().size());

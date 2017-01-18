@@ -39,6 +39,14 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertNotNull(source.getMetrics().getMapqMetrics());
 	}
 	@Test
+	public void ensure_metrics_should_coverage_blacklist_bed() {
+		ProcessingContext pc = getCommandlineContext();
+		createInput(RP(0, 100, 200, 100), RP(0, 400, 600, 100));
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
+		source.ensureMetrics();
+		assertTrue(pc.getFileSystemContext().getCoverageBlacklistBed(source.getFile()).exists());
+	}
+	@Test
 	public void should_stop_metric_calculation_after_max_records() {
 		ProcessingContext pc = getCommandlineContext();
 		pc.setCalculateMetricsRecordCount(2);

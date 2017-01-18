@@ -109,6 +109,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				List<String> args = Lists.newArrayList(
 						"INPUT=" + getFile().getAbsolutePath(),
 						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath(),
+						"THRESHOLD_COVERAGE=" + getContext().getConfig().maxCoverage,
 						"FILE_EXTENSION=null");
 				if (getContext().getCalculateMetricsRecordCount() < Integer.MAX_VALUE) {
 					args.add("STOP_AFTER=" + getContext().getCalculateMetricsRecordCount());
@@ -376,6 +377,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				}
 				blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(blacklist, getContext().getBlacklistedRegions()));
 			} else {
+				log.warn("Missing coverage blacklist for " + getFile().getName());
 				blacklist = getContext().getBlacklistedRegions();
 			}
 		}

@@ -37,6 +37,10 @@ public class GridssConfiguration {
 	 */
 	public int maxCoverage;
 	/**
+	 * Maximum coverage after which reads falling within regions exceeding this coverage are excluded from assembly and variant calling
+	 */
+	//public int maxCoverage;
+	/**
 	 * Number of bases reads can overlap in the incorrect orientation and still be considered
 	 * concordantly overlapping. Homology between reference and adapter sequences causes alignments
 	 * of short fragments to appear to be in the incorrect orientation. 

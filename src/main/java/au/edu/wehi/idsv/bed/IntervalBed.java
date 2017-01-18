@@ -82,7 +82,7 @@ public class IntervalBed {
 	}
 	public void write(File bed, String name) throws IOException {
 		try (BufferedWriter writer = Files.newBufferedWriter(bed.toPath(), StandardCharsets.US_ASCII)) {
-			writer.write(String.format("track name=%s description=\"%s\" useScore=0\n", name, name));
+			writer.write(String.format("track name=\"%s\" description=\"%s\" useScore=0\n", name, name));
 			for (Range<Long> r : intervals.asRanges()) {
 				long lower = r.lowerEndpoint();
 				long upper = r.upperEndpoint();
