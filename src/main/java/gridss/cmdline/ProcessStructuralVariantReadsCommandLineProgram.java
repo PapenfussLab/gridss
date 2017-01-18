@@ -1,10 +1,19 @@
 package gridss.cmdline;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.LinearGenomicCoordinate;
+import au.edu.wehi.idsv.PaddedLinearGenomicCoordinate;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import gridss.analysis.InsertSizeDistribution;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Log;
 import picard.cmdline.Option;
 
@@ -43,6 +52,8 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     public File INSERT_SIZE_METRICS = null;
     @Option(doc="Include unmapped reads", optional=true)
     public boolean UNMAPPED_READS = true;
+    @Option(doc="Blacklist BED files for which reads/read pairs with any overlapping alignment or inferred breakpoint are excluded from extraction.", optional=true)
+    public List<File> BLACKLIST;
     @Override
 	protected String[] customCommandLineValidation() {
 		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {
@@ -50,6 +61,54 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
 		}
 		return super.customCommandLineValidation();
 	}
+    private IntervalBed blacklist = null;
+    public IntervalBed getBlacklist(SAMSequenceDictionary dictionary) {
+    	if (blacklist == null) {
+    		assert(dictionary != null);
+    		SAMSequenceDictionary dict = dictionary;
+    		LinearGenomicCoordinate lgc = new PaddedLinearGenomicCoordinate(dictionary, GenomicProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER);
+    		blacklist = new IntervalBed(dict, lgc);
+    		if (BLACKLIST != null) {
+    			blacklist = IntervalBed.merge(dict, lgc, BLACKLIST.stream()
+    					.map(file -> { try { return new IntervalBed(dict, lgc, file); } catch (IOException e) { throw new RuntimeException(e); } } )
+    					.collect(Collectors.toList()));
+    		}
+    	}
+    	return blacklist;
+    }
+    public void setBlacklist(IntervalBed bl) {
+    	blacklist = bl;
+    }
+    /**
+     * Determines whether any read alignment or potential breakend position overlaps any blacklisted region.
+     * @param records records from the same fragment
+     * @param lookup
+     * @return
+     */
+    public boolean involvesBlacklistedRegion(final List<SAMRecord> records) {
+    	if (records == null || records.size() == 0) return false;
+    	IntervalBed bl = getBlacklist(records.get(0).getHeader().getSequenceDictionary());
+    	for (SAMRecord r : records) {
+    		if (r.getReadUnmappedFlag()) continue;
+    		int start = Math.min(r.getUnclippedStart(), r.getUnclippedEnd() - r.getReadLength() + 1);
+    		int end = Math.max(r.getUnclippedEnd(), r.getUnclippedStart() + r.getReadLength() - 1);
+    		if (r.getReadPairedFlag()) {
+	    		if ((r.getFirstOfPairFlag() && !r.getReadNegativeStrandFlag()) || 
+	    				r.getSecondOfPairFlag() && r.getReadNegativeStrandFlag()) {
+	    			end += getReadPairConcordanceCalculator().maxConcordantFragmentSize() - r.getReadLength();
+	    		}
+	    		if ((r.getFirstOfPairFlag() && r.getReadNegativeStrandFlag()) || 
+	    				r.getSecondOfPairFlag() && !r.getReadNegativeStrandFlag()) {
+	    			start -= getReadPairConcordanceCalculator().maxConcordantFragmentSize() - r.getReadLength();
+	    		}
+    		}
+    		// Check for potential read overlap
+    		if (bl.overlaps(r.getReferenceIndex(), start, end)) {
+    			return true;
+    		}
+    	}
+    	return false;
+    }
     private ReadPairConcordanceCalculator rpcc = null;
     public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
     	if (rpcc == null) {

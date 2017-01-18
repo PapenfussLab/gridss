@@ -5,12 +5,10 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
-import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
@@ -33,9 +31,9 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import picard.cmdline.CommandLineProgram;
@@ -55,7 +53,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private final double rpcConcordantPercentage;
 	private IdsvSamFileMetrics metrics;
 	private StructuralVariantReadMetrics svMetrics;
-	private IntervalBed blacklist;
 	private ReadPairConcordanceCalculator rpcc;
 	public SAMEvidenceSource(ProcessingContext processContext, File file, File nameSorted, int sourceCategory) {
 		this(processContext, file, nameSorted, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, 0, 0, 0);
@@ -167,7 +164,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 									"FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize,
 									"FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE=" + rpcMaxFragmentSize,
 									"READ_PAIR_CONCORDANT_PERCENT=" + rpcConcordantPercentage,
-									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()));
+									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()),
+									"BLACKLIST=" + getContext().getFileSystemContext().getCoverageBlacklistBed(getFile()));
+							if (getProcessContext().getBlacklist() != null) {
+								args.add("BLACKLIST=" + getProcessContext().getBlacklist());
+							}
 							execute(new ExtractSVReads(), args);
 						}
 						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
@@ -256,9 +257,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public boolean shouldFilter(DirectedEvidence e) {
 		GridssConfiguration config = getContext().getConfig();
-		if (overlapsBlacklist(e)) {
-			return true;
-		}
 		if (e instanceof SingleReadEvidence) {
 			if (((SingleReadEvidence) e).isReference()) return true;
 		}
@@ -284,24 +282,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 			//}
 		}
 		return false;
-	}
-	public boolean overlapsBlacklist(DirectedEvidence e) {
-		IntervalBed filterOutRegions = getBlacklistedRegions();
-		int margin = getBlacklistFilterMargin();
-		BreakendSummary bs = e.getBreakendSummary();
-		if (filterOutRegions.overlaps(bs.referenceIndex, bs.start - margin, bs.end + margin)) {
-			return true;
-		}
-		if (bs instanceof BreakpointSummary) {
-			BreakpointSummary bp = (BreakpointSummary)bs;
-			if (filterOutRegions.overlaps(bp.referenceIndex2, bp.start2 - margin, bp.end2 + margin)) {
-				return true;
-			}
-		}
-		return false;
-	}
-	private int getBlacklistFilterMargin() {
-		return getMaxConcordantFragmentSize();
 	}
 	private int getSortWindowSize() {
 		// Soft clip:
@@ -362,26 +342,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public GenomicProcessingContext getProcessContext() {
 		return getContext();
-	}
-	public IntervalBed getBlacklistedRegions() {
-		if (blacklist == null) {
-			File file = getContext().getFileSystemContext().getCoverageBlacklistBed(getFile());
-			if (file.exists()) {
-				try {
-					blacklist = new IntervalBed(
-							getContext().getDictionary(),
-							getContext().getLinear(),
-							file);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-				blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(blacklist, getContext().getBlacklistedRegions()));
-			} else {
-				log.warn("Missing coverage blacklist for " + getFile().getName());
-				blacklist = getContext().getBlacklistedRegions();
-			}
-		}
-		return blacklist;
 	}
 	public static CloseableIterator<DirectedEvidence> mergedIterator(List<SAMEvidenceSource> source, boolean parallel) {
 		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();

@@ -19,7 +19,6 @@ import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
-import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
@@ -229,7 +228,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			processContext.setWorkerThreadCount(WORKER_THREADS);
 			if (BLACKLIST != null) {
 				try {
-					processContext.setBlacklistedRegions(new IntervalBed(processContext.getDictionary(), processContext.getLinear(), BLACKLIST));
+					processContext.setBlacklist(BLACKLIST);
 				} catch (IOException e) {
 					log.error(e, "Error loading BED blacklist. ", BLACKLIST);
 					throw new RuntimeException(e);

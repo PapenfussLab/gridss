@@ -55,10 +55,10 @@ public class GenomicProcessingContext implements Closeable {
 	private final LinearGenomicCoordinate linear;
 	private final FileSystemContext fsContext;
 	private final SAMFileHeader basicHeader;
+	private File blacklistFile;
 	private IntervalBed blacklist;
 	private boolean filterDuplicates = true;
 	private int workerThreads = 1;
-	
 	/**
 	 * Create a new genomic processing context
 	 * @param fileSystemContext file system context
@@ -305,10 +305,11 @@ public class GenomicProcessingContext implements Closeable {
 		return blacklist;
 	}
 
-	public void setBlacklistedRegions(IntervalBed blacklist) {
-		if (blacklist != null) {
-			this.blacklist = blacklist;
-		}
+	public File getBlacklist() {
+		return blacklistFile;
 	}
-
+	public void setBlacklist(File blacklistFile) throws IOException {
+		this.blacklistFile = blacklistFile;
+		this.blacklist = new IntervalBed(getDictionary(), getLinear(), blacklistFile);
+	}
 }

@@ -15,6 +15,9 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.FixedSizeReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.PaddedLinearGenomicCoordinate;
+import au.edu.wehi.idsv.ReadPairConcordanceMethod;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import htsjdk.samtools.SAMRecord;
 
 public class ExtractSVReadsTest extends IntermediateFilesTest {
@@ -68,5 +71,49 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.acceptFragment(ImmutableList.of(Read(0, 1, "50M50S")), null);
 		extract.finish();
 		assertTrue(extract.METRICS_OUTPUT.exists());
+	}
+	@Test
+	public void should_not_extract_unclipped_alignment_overlapping_blacklist() {
+		createInput();
+		IntervalBed blacklist = new IntervalBed(getSequenceDictionary(), new PaddedLinearGenomicCoordinate(getSequenceDictionary()));
+		blacklist.addInterval(0, 2, 2);
+				
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.INPUT = input;
+		extract.OUTPUT = output;
+		extract.setBlacklist(blacklist);
+		extract.setup(getHeader(), extract.INPUT);
+		extract.acceptFragment(ImmutableList.of(Read(0, 1, "1M1S")), null); // Soft clip breakpoint position overlaps
+		extract.acceptFragment(ImmutableList.of(Read(0, 2, "1M1S")), null); // overlaps
+		extract.acceptFragment(ImmutableList.of(Read(0, 3, "1M1S")), null);
+		extract.acceptFragment(ImmutableList.of(Read(0, 4, "1M1S")), null);
+		extract.acceptFragment(ImmutableList.of(Read(0, 3, "1S1M")), null); // overlaps
+		extract.finish();
+		List<SAMRecord> out = getRecords(output);
+		assertEquals(2, out.size());
+	}
+	@Test
+	public void should_not_extract_any_read_from_fragment_overlapping_read_pair_breakend() {
+		createInput();
+		IntervalBed blacklist = new IntervalBed(getSequenceDictionary(), new PaddedLinearGenomicCoordinate(getSequenceDictionary()));
+		blacklist.addInterval(0, 2, 2);
+				
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.INPUT = input;
+		extract.OUTPUT = output;
+		extract.FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 2;
+		extract.FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 2;
+		extract.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.FIXED;
+		extract.setBlacklist(blacklist);
+		extract.setup(getHeader(), extract.INPUT);
+		extract.acceptFragment(Lists.newArrayList(DP(0, 1, "1M", true, 1, 1, "1M", false)), null); // breakend overlaps
+		extract.acceptFragment(Lists.newArrayList(DP(0, 1, "1M", false, 1, 1, "1M", false)), null); // other direction = no overlap 
+		extract.acceptFragment(Lists.newArrayList(DP(0, 2, "1M", true, 1, 1, "1M", false)), null); // read overlaps
+		extract.acceptFragment(Lists.newArrayList(DP(0, 2, "1M", false, 1, 1, "1M", false)), null); // read overlaps 
+		extract.acceptFragment(Lists.newArrayList(DP(0, 3, "1M", true, 1, 1, "1M", false)), null); // other direction = no overlap 
+		extract.acceptFragment(Lists.newArrayList(DP(0, 3, "1M", false, 1, 1, "1M", false)), null); // breakend overlaps
+		extract.finish();
+		List<SAMRecord> out = getRecords(output);
+		assertEquals(2 * 2, out.size());
 	}
 }
