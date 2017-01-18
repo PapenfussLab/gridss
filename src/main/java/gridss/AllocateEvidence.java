@@ -64,8 +64,12 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	public CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool) {
 		boolean multimapping = Iterables.any(getSamEvidenceSources(), ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0);
 		if (multimapping) {
-			log.info("Multimapping mode invoked due to existence of at least one BAM file with a non-split secondary alignment.");
-			populateCache();
+			if (getContext().getConfig().multimappingUniqueVariantAllocation) {
+				log.info("Multimapping mode invoked due to existence of at least one BAM file with a non-split secondary alignment.");
+				populateCache();
+			} else {
+				log.info("Not performing unique variant allocation of multimapping reads the configuration setting multimappingUniqueVariantAllocation is set to false.");
+			}
 		}
 		log.info("Allocating evidence"); 
 		CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-allocation");

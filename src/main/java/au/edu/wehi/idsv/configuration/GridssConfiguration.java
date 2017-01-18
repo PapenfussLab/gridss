@@ -52,6 +52,14 @@ public class GridssConfiguration {
 	 * such as assembly.
 	 */
 	public int chunkSize;
+	/**
+	 * Remove the assembly contribution of a multimapping read from all location except the mapping location with the best assembly
+	 */
+	public boolean multimappingUniqueAssemblyAllocation;
+	/**
+	 * Remove the variant contribution of a multimapping read/read pair from all location except the mapping location supporting the best variant
+	 */
+	public boolean multimappingUniqueVariantAllocation;
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
@@ -91,6 +99,8 @@ public class GridssConfiguration {
 		dovetailMargin = config.getInt("dovetailMargin");
 		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
 		chunkSize = config.getInt("chunkSize");
+		multimappingUniqueAssemblyAllocation = config.getBoolean("multimappingUniqueAssemblyAllocation");
+		multimappingUniqueVariantAllocation = config.getBoolean("multimappingUniqueVariantAllocation");
 	}
 	public static Configuration LoadConfiguration(File configuration) throws ConfigurationException {
 		CompositeConfiguration config = new CompositeConfiguration();

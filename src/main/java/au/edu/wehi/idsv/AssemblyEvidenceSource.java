@@ -97,40 +97,44 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		log.info("Breakend assembly complete.");
 		List<File> deduplicatedChunks = assembledChunk;
 		if (Iterables.any(source, ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0)) {
-			log.info("Multimapping mode invoked due to existiance of at least one BAM file with a non-split secondary alignment.");
-			log.info("Uniquely assigning multi-mapping reads to alignment location supported by the best assembly.");
-			log.info("Loading assembly evidence allocations");
-			deduplicatedChunks = assembledChunk.stream()
-					.map(f -> FileSystemContext.getWorkingFileFor(f, "deduplicated."))
-					.collect(Collectors.toList());
-			// technically this is an overestimation as a single alignment can
-			// a DP or OEA and an Indel/SC/SR.
-			long svReadAlignmentCount = source.stream()
-				.map(ses -> ses.getSVMetrics())
-				.mapToLong(m -> m.DISCORDANT_READ_PAIR_ALIGNMENTS +
-						m.UNMAPPED_MATE_READ_ALIGNMENTS +
-						m.STRUCTURAL_VARIANT_READ_ALIGNMENTS)
-				.sum();
-			try (GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache(svReadAlignmentCount)) {
-				tasks = new ArrayList<>();
-				for (int i = 0; i < chunks.size(); i++) {
-					QueryInterval chunk = chunks.get(i);
-					File in = assembledChunk.get(i);
-					tasks.add(threadpool.submit(() -> { loadAssemblyEvidenceAllocation(cache, in, chunk); return null; }));
-				}
-				runTasks(tasks);
-				
-				log.info("Allocating multi-mapping reads to assemblies");
-				tasks = new ArrayList<>();
-				for (int i = 0; i < chunks.size(); i++) {
-					QueryInterval chunk = chunks.get(i);
-					File in = assembledChunk.get(i);
-					File out = deduplicatedChunks.get(i);
-					if (!out.exists()) {
-						tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, cache); return null; }));
+			if (getContext().getConfig().multimappingUniqueAssemblyAllocation) {
+				log.info("Multimapping mode invoked due to existiance of at least one BAM file with a non-split secondary alignment.");
+				log.info("Uniquely assigning multi-mapping reads to alignment location supported by the best assembly.");
+				log.info("Loading assembly evidence allocations");
+				deduplicatedChunks = assembledChunk.stream()
+						.map(f -> FileSystemContext.getWorkingFileFor(f, "deduplicated."))
+						.collect(Collectors.toList());
+				// technically this is an overestimation as a single alignment can
+				// a DP or OEA and an Indel/SC/SR.
+				long svReadAlignmentCount = source.stream()
+					.map(ses -> ses.getSVMetrics())
+					.mapToLong(m -> m.DISCORDANT_READ_PAIR_ALIGNMENTS +
+							m.UNMAPPED_MATE_READ_ALIGNMENTS +
+							m.STRUCTURAL_VARIANT_READ_ALIGNMENTS)
+					.sum();
+				try (GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache(svReadAlignmentCount)) {
+					tasks = new ArrayList<>();
+					for (int i = 0; i < chunks.size(); i++) {
+						QueryInterval chunk = chunks.get(i);
+						File in = assembledChunk.get(i);
+						tasks.add(threadpool.submit(() -> { loadAssemblyEvidenceAllocation(cache, in, chunk); return null; }));
 					}
+					runTasks(tasks);
+					
+					log.info("Allocating multi-mapping reads to assemblies");
+					tasks = new ArrayList<>();
+					for (int i = 0; i < chunks.size(); i++) {
+						QueryInterval chunk = chunks.get(i);
+						File in = assembledChunk.get(i);
+						File out = deduplicatedChunks.get(i);
+						if (!out.exists()) {
+							tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, cache); return null; }));
+						}
+					}
+					runTasks(tasks);
 				}
-				runTasks(tasks);
+			} else {
+				log.info("Not performing unique assembly allocation of multimapping reads the configuration setting multimappingUniqueAssemblyAllocation is set to false.");
 			}
 		}
 		log.info("Merging assembly files");
