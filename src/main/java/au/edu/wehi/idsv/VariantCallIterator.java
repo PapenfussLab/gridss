@@ -11,13 +11,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
 import htsjdk.samtools.QueryInterval;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 /**
  * Calls breakpoints from the given evidence
  * 
  * @author Daniel Cameron
  */
-public class VariantCallIterator implements Iterator<VariantContextDirectedEvidence> {
+public class VariantCallIterator implements CloseableIterator<VariantContextDirectedEvidence> {
 	private static final List<Pair<BreakendDirection, BreakendDirection>> DIRECTION_ORDER = ImmutableList.of(
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Forward),
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Backward),
@@ -86,6 +87,10 @@ public class VariantCallIterator implements Iterator<VariantContextDirectedEvide
 	public VariantContextDirectedEvidence next() {
 		if (!hasNext()) throw new NoSuchElementException();
 		return currentIterator.next();
+	}
+	@Override
+	public void close() {
+		CloserUtil.close(currentIterator);
 	}
 }
  

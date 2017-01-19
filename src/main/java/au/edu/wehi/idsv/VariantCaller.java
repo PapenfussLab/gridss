@@ -91,17 +91,18 @@ public class VariantCaller {
 	private void callChunk(File output, AggregateEvidenceSource es, int chunkNumber, QueryInterval chunck) {
 		String chunkMsg =  String.format("%s:%d-%d", processContext.getDictionary().getSequence(chunck.referenceIndex).getSequenceName(), chunck.start, chunck.end);
 		String msg = "calling maximal cliques in interval " + chunkMsg;
-		VariantCallIterator rawit = new VariantCallIterator(es, chunck, chunkNumber);
 		File tmp = FileSystemContext.getWorkingFileFor(output);
-		try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
-			log.info("Start ", msg);
-			try (AsyncBufferedIterator<VariantContextDirectedEvidence> it = new AsyncBufferedIterator<>(rawit, "VariantCaller " + chunkMsg)) {
-				while (it.hasNext()) {
-					VariantContextDirectedEvidence loc = it.next();
-					if (loc.getBreakendQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
-						// If we're under min score with all possible evidence allocated, we're definitely going to fail
-						// when we restrict evidence to single breakpoint support
-						vcfWriter.add(loc);
+		try (VariantCallIterator rawit = new VariantCallIterator(es, chunck, chunkNumber)) {
+			try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
+				log.info("Start ", msg);
+				try (AsyncBufferedIterator<VariantContextDirectedEvidence> it = new AsyncBufferedIterator<>(rawit, "VariantCaller " + chunkMsg)) {
+					while (it.hasNext()) {
+						VariantContextDirectedEvidence loc = it.next();
+						if (loc.getBreakendQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
+							// If we're under min score with all possible evidence allocated, we're definitely going to fail
+							// when we restrict evidence to single breakpoint support
+							vcfWriter.add(loc);
+						}
 					}
 				}
 			}
