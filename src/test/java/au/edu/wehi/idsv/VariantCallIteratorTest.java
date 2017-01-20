@@ -8,9 +8,12 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-public class VariantCallIteratorTest extends TestHelper {
+import htsjdk.samtools.QueryInterval;
+
+public class VariantCallIteratorTest extends IntermediateFilesTest {
 	@Test
 	public void margin_should_expand_and_contract_past_chromosome_end() throws InterruptedException {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
@@ -69,5 +72,18 @@ public class VariantCallIteratorTest extends TestHelper {
 		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(4 * 2, result.size());
+	}
+	@Test
+	public void interval_caller_should_filter_calls_in_which_neither_breakend_starts_in_interval()  throws InterruptedException {
+		createInput(
+				RP(0, 1, 2, 1),
+				DP(0, 1, "1M", true, 1, 100, "1M", false));
+		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
+		VariantCallIterator ecp = new VariantCallIterator(
+				new AggregateEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), null),
+				new QueryInterval(0, 1, 10),
+				0);
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
+		assertEquals(2, result.size());
 	}
 }

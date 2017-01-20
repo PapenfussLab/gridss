@@ -141,6 +141,6 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	}
 	@Override
 	public String getRemoteEvidenceID() {
-		throw new NotImplementedException("Not required by GRIDSS");
+		return getAttributeAsString(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, null);
 	}
 }

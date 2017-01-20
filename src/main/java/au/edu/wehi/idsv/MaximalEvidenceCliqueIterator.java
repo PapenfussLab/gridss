@@ -19,11 +19,11 @@ import htsjdk.samtools.util.Log;
  * @author Daniel Cameron
  *
  */
-public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedEvidence> {
+public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedBreakpoint> {
 	private static final Log log = Log.getInstance(MaximalEvidenceCliqueIterator.class);
 	public static final String BREAKEND_ID_SUFFIX_HIGH = "h";
 	public static final String BREAKEND_ID_SUFFIX_LOW = "o";
-	private VariantContextDirectedEvidence lastHigh = null;
+	private VariantContextDirectedBreakpoint lastHigh = null;
 	private final BreakendDirection targetLowDir;
 	private final BreakendDirection targetHighDir;
 	private final RectangleGraphMaximalCliqueIterator calc;
@@ -102,7 +102,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		if (lowDir != targetLowDir || highDir != targetHighDir) return null;
 		return node;
 	}
-	private VariantContextDirectedEvidence toVariant(String event, RectangleGraphNode node, BreakpointSummary breakpoint, boolean isHighBreakend) {
+	private VariantContextDirectedBreakpoint toVariant(String event, RectangleGraphNode node, BreakpointSummary breakpoint, boolean isHighBreakend) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event);
 		builder.attribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, event + (isHighBreakend ? BREAKEND_ID_SUFFIX_LOW : BREAKEND_ID_SUFFIX_HIGH));
@@ -115,7 +115,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		double weight = ScalingHelper.toUnscaledWeight(scaledWeight);
 		builder.phredScore(weight);
 		builder.attribute(VcfAttributes.CALLED_QUAL, weight);
-		VariantContextDirectedEvidence v = (VariantContextDirectedBreakpoint)builder.make();
+		VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)builder.make();
 		assert(v != null);
 		return v;
 	}
@@ -140,9 +140,9 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		return breakpoint;
 	}
 	@Override
-	protected VariantContextDirectedEvidence computeNext() {
+	protected VariantContextDirectedBreakpoint computeNext() {
 		if (lastHigh != null) {
-			VariantContextDirectedEvidence result = lastHigh;
+			VariantContextDirectedBreakpoint result = lastHigh;
 			lastHigh = null;
 			return result;
 		}
@@ -150,7 +150,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 			RectangleGraphNode node = calc.next();
 			BreakpointSummary breakpoint = toBreakpointSummary(node);
 			String id = idGenerator.generate(breakpoint);
-			VariantContextDirectedEvidence result = toVariant(id, node, breakpoint, false); 
+			VariantContextDirectedBreakpoint result = toVariant(id, node, breakpoint, false); 
 			lastHigh = toVariant(id, node, breakpoint, true);
 			return result;
 		}

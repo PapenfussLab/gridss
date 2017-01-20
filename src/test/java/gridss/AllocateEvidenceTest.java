@@ -8,9 +8,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -35,6 +37,11 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 
 public class AllocateEvidenceTest extends IntermediateFilesTest {
+	private void assertSymmetrical(List<VariantContextDirectedBreakpoint> breakpoints) {
+		Set<String> evidenceId = breakpoints.stream().map(bp -> bp.getEvidenceID()).collect(Collectors.toSet());
+		Set<String> remoteEvidenceId = breakpoints.stream().map(bp -> bp.getRemoteEvidenceID()).collect(Collectors.toSet());
+		assertEquals(evidenceId, remoteEvidenceId);
+	}
 	@Test
 	public void should_annotate_reads() throws IOException {
 		final ProcessingContext pc = getCommandlineContext();
@@ -60,7 +67,9 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
 		List<VariantContextDirectedBreakpoint> vcfs = Lists.newArrayList(Iterables.filter(getVcf(output, null), VariantContextDirectedBreakpoint.class));
 		assertEquals(2 * 1, vcfs.size()); // both breakends
+		assertSymmetrical(vcfs);
 		List<VariantContextDirectedBreakpoint> results = Lists.newArrayList(cmd.iterator(new AutoClosingIterator<>(vcfs.iterator()), MoreExecutors.newDirectExecutorService()));
+		assertSymmetrical(results);
 		assertEquals(vcfs.size(), results.size());
 		VariantContextDirectedBreakpoint e = results.get(0);
 		assertEquals(2, e.getBreakpointEvidenceCount());
@@ -90,7 +99,9 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
 		List<VariantContextDirectedBreakpoint> vcfs = Lists.newArrayList(Iterables.filter(getVcf(output, null), VariantContextDirectedBreakpoint.class));
 		assertEquals(2 * 1, vcfs.size()); // both breakends
+		assertSymmetrical(vcfs);
 		List<VariantContextDirectedBreakpoint> results = Lists.newArrayList(cmd.iterator(new AutoClosingIterator<>(vcfs.iterator()), MoreExecutors.newDirectExecutorService()));
+		assertSymmetrical(results);
 		// single read support
 		assertEquals(0, results.size());
 	}
@@ -133,7 +144,9 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		
 		//List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
 		List<IdsvVariantContext> rawcalls = getVcf(output, null);
-		List<IdsvVariantContext> calls = getVcf(cmd.OUTPUT_VCF, null);
+		List<IdsvVariantContext> calls = getVcf(cmd.OUTPUT_VCF, null);		
+		assertSymmetrical(rawcalls.stream().map(x -> (VariantContextDirectedBreakpoint)x).collect(Collectors.toList()));
+		assertSymmetrical(calls.stream().map(x -> (VariantContextDirectedBreakpoint)x).collect(Collectors.toList()));
 		// with no filtering, annotation should not change call set
 		double expectedEvidence = 0;
 		for (DirectedEvidence e : ses.evidence) {

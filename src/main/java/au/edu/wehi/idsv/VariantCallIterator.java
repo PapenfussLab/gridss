@@ -18,7 +18,7 @@ import htsjdk.samtools.util.CloserUtil;
  * 
  * @author Daniel Cameron
  */
-public class VariantCallIterator implements CloseableIterator<VariantContextDirectedEvidence> {
+public class VariantCallIterator implements CloseableIterator<VariantContextDirectedBreakpoint> {
 	private static final List<Pair<BreakendDirection, BreakendDirection>> DIRECTION_ORDER = ImmutableList.of(
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Forward),
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Backward),
@@ -28,7 +28,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private final VariantIdGenerator idGenerator;
 	private final Supplier<Iterator<DirectedEvidence>> iteratorGenerator;
 	private final QueryInterval filterInterval;
-	private Iterator<VariantContextDirectedEvidence> currentIterator;
+	private Iterator<VariantContextDirectedBreakpoint> currentIterator;
 	private int currentDirectionOrdinal;
 	public VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence) throws InterruptedException {
 		this.processContext = processContext;
@@ -68,8 +68,9 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 				idGenerator);
 		if (filterInterval != null) {
 			currentIterator = Iterators.filter(currentIterator, v -> {
-				BreakendSummary bs = v.getBreakendSummary();
-				return bs.start >= filterInterval.start && bs.start <= filterInterval.end; 
+				BreakpointSummary bs = v.getBreakendSummary();
+				return (bs.referenceIndex == filterInterval.referenceIndex && bs.start >= filterInterval.start && bs.start <= filterInterval.end) ||
+						(bs.referenceIndex2 == filterInterval.referenceIndex && bs.start2 >= filterInterval.start && bs.start2 <= filterInterval.end);
 			});
 		}
 	}
@@ -84,7 +85,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 		return true;
 	}
 	@Override
-	public VariantContextDirectedEvidence next() {
+	public VariantContextDirectedBreakpoint next() {
 		if (!hasNext()) throw new NoSuchElementException();
 		return currentIterator.next();
 	}
