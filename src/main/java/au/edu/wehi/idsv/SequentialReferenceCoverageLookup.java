@@ -18,7 +18,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
-import htsjdk.samtools.filter.FilteringIterator;
+import htsjdk.samtools.filter.FilteringSamIterator;
 
 /**
  * Counts the number of reads and read pairs providing support for the
@@ -28,6 +28,7 @@ import htsjdk.samtools.filter.FilteringIterator;
  *
  */
 public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCoverageLookup, TrackedBuffer {
+	private final int category;
 	private final List<Closeable> toClose = Lists.newArrayList();
 	private final PeekingIterator<SAMRecord> reads;
 	private final ReadPairConcordanceCalculator pairing;
@@ -54,12 +55,13 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 	 * @param maxFragmentSize maximum fragment
 	 * @param reads reads to process. <b>Must</b> be coordinate sorted
 	 */
-	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, IdsvMetrics metrics, ReadPairConcordanceCalculator pairing, int windowSize) {
+	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, IdsvMetrics metrics, ReadPairConcordanceCalculator pairing, int windowSize, int category) {
 		this.pairing = pairing;
 		if (it instanceof Closeable) toClose.add((Closeable)it);
-		this.reads = Iterators.peekingIterator(new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
+		this.reads = Iterators.peekingIterator(new FilteringSamIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
 		this.largestWindow = windowSize;
 		this.maxEvidenceWindow = Math.max(metrics.MAX_READ_LENGTH, Math.max(metrics.MAX_READ_MAPPED_LENGTH, pairing != null ? pairing.maxConcordantFragmentSize() : 0));
+		this.category = category;
 	}
 	public void close() {
 		for (Closeable c : toClose) {
@@ -201,5 +203,9 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 				new NamedTrackedBuffer(trackedBufferName_currentStartReferencePairs, currentStartReferencePairs.size()),
 				new NamedTrackedBuffer(trackedBufferName_currentEndReferencePairs, currentEndReferencePairs.size())
 				);
+	}
+	@Override
+	public int getCategory() {
+		return category;
 	}
 }

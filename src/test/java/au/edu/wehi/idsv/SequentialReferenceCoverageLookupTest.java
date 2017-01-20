@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,7 +15,12 @@ import htsjdk.samtools.SAMRecordCoordinateComparator;
 public class SequentialReferenceCoverageLookupTest extends TestHelper {
 	public ReferenceCoverageLookup init(List<SAMRecord> reads, int windowSize) {
 		Collections.sort(reads, new SAMRecordCoordinateComparator());
-		return new SequentialReferenceCoverageLookup(reads.iterator(), IDSV(reads), new SAMFlagReadPairConcordanceCalculator(IDSV(reads)), windowSize);
+		return new SequentialReferenceCoverageLookup(reads.iterator(), IDSV(reads), new SAMFlagReadPairConcordanceCalculator(IDSV(reads)), windowSize, 5);
+	}
+	@Test
+	public void should_report_correct_category() {
+		ReferenceCoverageLookup lookup = init(new ArrayList<SAMRecord>(), 1);
+		assertEquals(5, lookup.getCategory());
 	}
 	@Test
 	public void readsPairsSupportingNoBreakendAfter_should_return_first_read_in_pair() {

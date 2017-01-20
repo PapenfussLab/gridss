@@ -10,6 +10,6 @@ import htsjdk.samtools.util.CloseableIterator;
 public class AnnotateReferenceCoverage extends VcfTransformCommandLineProgram {
 	@Override
 	public CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool) {
-		return new SequentialCoverageAnnotator<VariantContextDirectedBreakpoint>(getContext(), getSamEvidenceSources(), calls);
+		return new SequentialCoverageAnnotator<VariantContextDirectedBreakpoint>(getContext(), getSamEvidenceSources(), calls, threadpool);
 	}
 }

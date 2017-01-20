@@ -367,7 +367,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	/**
 	 * Maximum distance between the SAM alignment location of evidence, and the extrema of the
 	 * breakend position supported by that evidence. 
-	 * @return maximum order-of-order distance between evidence ordered by SAM alignment position and the breakend start position 
+	 * @return maximum out-of-order distance between evidence ordered by SAM alignment position and the breakend start position 
 	 */
 	public static int maximumWindowSize(ProcessingContext context, List<SAMEvidenceSource> sources, AssemblyEvidenceSource assembly) {
 		int maxSize = 0;

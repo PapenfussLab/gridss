@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
@@ -18,12 +19,14 @@ import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 
 public class SequentialCoverageAnnotatorTest extends TestHelper {
+	@SuppressWarnings("resource")
 	public VariantContextDirectedEvidence go(List<SAMRecord> ref, VariantContextDirectedEvidence toAnnotate) {
 		Collections.sort(ref, new SAMRecordCoordinateComparator());
-		return new SequentialCoverageAnnotator(
+		return new SequentialCoverageAnnotator<VariantContextDirectedEvidence>(
 				getContext(),
 				ImmutableList.of(toAnnotate).iterator(),
-				Lists.<ReferenceCoverageLookup>newArrayList(new SequentialReferenceCoverageLookup(ref.iterator(), IDSV(ref), new SAMFlagReadPairConcordanceCalculator(IDSV(ref)), 1024)))
+				Lists.<ReferenceCoverageLookup>newArrayList(new SequentialReferenceCoverageLookup(ref.iterator(), IDSV(ref), new SAMFlagReadPairConcordanceCalculator(IDSV(ref)), 1024, 0)),
+				MoreExecutors.newDirectExecutorService())
 			.annotate(toAnnotate);
 	}
 	@Test
