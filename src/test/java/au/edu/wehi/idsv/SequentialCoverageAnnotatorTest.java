@@ -101,4 +101,17 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 				.make());
 		assertEquals(2, result.getReferenceReadCount());
 	}
+	@Test
+	public void category_count_should_match_ProcessContext_count() {
+		VariantContextDirectedEvidence result = go(new ArrayList<>(ImmutableList.of(
+				Read(0, 1, "11M"),
+				Read(0, 1, "5M"),
+				Read(0, 3, "10M"),
+				Read(0, 3, "11M"),
+				Read(0, 1, "2M")
+			)), (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(new BreakpointSummary(0, FWD, 1, 1, 10, 1, BWD, 100, 100, 100), "")
+				.make());
+		assertEquals(2, ((int[])result.getAttribute("REF")).length);
+	}
 }

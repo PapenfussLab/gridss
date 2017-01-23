@@ -101,10 +101,11 @@ public class SequentialCoverageAnnotator<T extends VariantContextDirectedEvidenc
 			tasks.add(threadpool.submit(() -> calculateCoverage(rcl, referenceIndex, start, end)));
 		}
 		try {
-			int[] reads = new int[reference.size()];
-			int[] spans = new int[reference.size()];
+			int[] reads = new int[context.getCategoryCount()];
+			int[] spans = new int[context.getCategoryCount()];
 			for (int i = 0; i < reference.size(); i++) {
 				ReferenceCoverageLookup rcl = reference.get(i);
+				assert(rcl.getCategory() < context.getCategoryCount());
 				reads[rcl.getCategory()] += tasks.get(i).get().readsSupportingNoBreakendAfter;
 				spans[rcl.getCategory()] += tasks.get(i).get().readPairsSupportingNoBreakendAfter;
 			}

@@ -17,6 +17,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -130,7 +131,7 @@ public class VcfFileUtil {
 		try (VariantContextWriter writer = new VariantContextWriterBuilder()
 				.setOutputFile(tmpout)
 				.setReferenceDictionary(dictionary)
-				.clearIndexCreator()
+				.unsetOption(Options.INDEX_ON_THE_FLY)
 				.build()) {
 			for (int i = 0; i < input.size(); i++) {
 				try (VCFFileReader reader = new VCFFileReader(input.get(i), false)) {
