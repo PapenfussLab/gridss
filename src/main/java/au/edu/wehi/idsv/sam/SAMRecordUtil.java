@@ -871,6 +871,7 @@ public class SAMRecordUtil {
 			r.setFirstOfPairFlag(false);
 			r.setSecondOfPairFlag(false);
 			r.setProperPairFlag(false);
+			r.setMateUnmappedFlag(false);
 			r.setMateNegativeStrandFlag(false);
 			r.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 			r.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
@@ -882,34 +883,30 @@ public class SAMRecordUtil {
 	}
 
 	private static SAMRecord bestMateFor(SAMRecord r, List<SAMRecord> mates) {
+		// see if we already point to one of the mates (ie: don't touch existing records)
+		Optional<SAMRecord> best = mates.stream().filter(m -> m.getReadUnmappedFlag() == r.getMateUnmappedFlag())
+				.filter(m -> m.getReferenceIndex() == r.getMateReferenceIndex())
+				.filter(m -> m.getAlignmentStart() == r.getMateAlignmentStart())
+				.filter(m -> m.getReadNegativeStrandFlag() == r.getMateNegativeStrandFlag()).findFirst();
 		// see if one of the mates already points to us
-		Optional<SAMRecord> best = mates.stream().filter(m -> r.getReadUnmappedFlag() == m.getMateUnmappedFlag())
+		if (best.isPresent()) return best.get();
+		best = mates.stream().filter(m -> r.getReadUnmappedFlag() == m.getMateUnmappedFlag())
 				.filter(m -> r.getReferenceIndex() == m.getMateReferenceIndex())
 				.filter(m -> r.getAlignmentStart() == m.getMateAlignmentStart())
 				.filter(m -> r.getReadNegativeStrandFlag() == m.getMateNegativeStrandFlag()).findFirst();
-		// see if we already point to one of the mates
-		if (!best.isPresent()) {
-			best = mates.stream().filter(m -> m.getReadUnmappedFlag() == r.getMateUnmappedFlag())
-					.filter(m -> m.getReferenceIndex() == r.getMateReferenceIndex())
-					.filter(m -> m.getAlignmentStart() == r.getMateAlignmentStart())
-					.filter(m -> m.getReadNegativeStrandFlag() == r.getMateNegativeStrandFlag()).findFirst();
-		}
+		if (best.isPresent()) return best.get();
 		// match primary with primary and secondary with secondary
-		if (!best.isPresent()) {
-			best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
-					.filter(m -> m.getNotPrimaryAlignmentFlag() == r.getNotPrimaryAlignmentFlag())
-					// prefer mapped reads
-					.sorted(Comparator.comparing(SAMRecord::getReadUnmappedFlag)).findFirst();
-		}
+		best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
+				.filter(m -> m.getNotPrimaryAlignmentFlag() == r.getNotPrimaryAlignmentFlag())
+				// prefer mapped reads
+				.sorted(Comparator.comparing(SAMRecord::getReadUnmappedFlag)).findFirst();
+		if (best.isPresent()) return best.get();
 		// just get anything that's not a supplementary alignment
-		if (!best.isPresent()) {
-			best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
-					.findFirst();
-		}
+		best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
+				.findFirst();
+		if (best.isPresent()) return best.get();
 		// we give up - anything will do at this point
-		if (!best.isPresent()) {
-			best = mates.stream().findFirst();
-		}
+		best = mates.stream().findFirst();
 		return best.orElse(null);
 	}
 
@@ -1229,9 +1226,11 @@ public class SAMRecordUtil {
 		if (record.getMappingQuality() < minMapq) {
 			record.setReadUnmappedFlag(true);
 		}
-		Integer mateMapq = record.getIntegerAttribute(SAMTag.MQ.name());
-		if (mateMapq != null && mateMapq < minMapq) {
-			record.setMateUnmappedFlag(true);
+		if (record.getReadPairedFlag()) {
+			Integer mateMapq = record.getIntegerAttribute(SAMTag.MQ.name());
+			if (mateMapq != null && mateMapq < minMapq) {
+				record.setMateUnmappedFlag(true);
+			}
 		}
 		return record;
 	}
