@@ -218,6 +218,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 				throw new RuntimeException(e);
 			}
 			processContext = new ProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, null, getDefaultHeaders(), config);
+			processContext.setFilterDuplicates(IGNORE_DUPLICATES);
 			INPUT_CATEGORY.stream().forEach(x -> processContext.registerCategory(x, ""));
 			processContext.setWorkerThreadCount(WORKER_THREADS);
 			if (BLACKLIST != null) {

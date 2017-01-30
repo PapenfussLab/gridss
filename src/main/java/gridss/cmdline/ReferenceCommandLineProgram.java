@@ -18,6 +18,8 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
     @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
     		+ " as the associated input or output file.", optional = true)
     public File WORKING_DIR = null;
+    @Option(doc = "Ignore reads marked as duplicates.", optional = true)
+    public boolean IGNORE_DUPLICATES = true;
     private FileSystemContext fsc;
 	private ReferenceLookup reference;
 	public ReferenceLookup getReference() {
@@ -66,9 +68,11 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	 */
 	public void copyInputs(CommandLineProgram cmd) {
 		CommandLineProgramHelper.copyInputs(this, cmd);
+		
 		if (cmd instanceof ReferenceCommandLineProgram) {
 			ReferenceCommandLineProgram prog = (ReferenceCommandLineProgram) cmd;
 			prog.WORKING_DIR = WORKING_DIR;
+			prog.IGNORE_DUPLICATES = IGNORE_DUPLICATES;
 			prog.fsc = fsc;
 			prog.reference = reference;
 		}

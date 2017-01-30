@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -19,6 +20,7 @@ import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FilteringSamIterator;
+import htsjdk.samtools.filter.SamRecordFilter;
 
 /**
  * Counts the number of reads and read pairs providing support for the
@@ -56,9 +58,17 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 	 * @param reads reads to process. <b>Must</b> be coordinate sorted
 	 */
 	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, IdsvMetrics metrics, ReadPairConcordanceCalculator pairing, int windowSize, int category) {
+		this(it, metrics, pairing, windowSize, category, true);
+	}
+	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, IdsvMetrics metrics, ReadPairConcordanceCalculator pairing, int windowSize, int category, boolean ignoreDuplicates) {
 		this.pairing = pairing;
 		if (it instanceof Closeable) toClose.add((Closeable)it);
-		this.reads = Iterators.peekingIterator(new FilteringSamIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
+		List<SamRecordFilter> filters = new ArrayList<>();
+		filters.add(new AlignedFilter(true));
+		if (ignoreDuplicates) {
+			filters.add(new DuplicateReadFilter());
+		}
+		this.reads = Iterators.peekingIterator(new FilteringSamIterator(it, new AggregateFilter(filters)));
 		this.largestWindow = windowSize;
 		this.maxEvidenceWindow = Math.max(metrics.MAX_READ_LENGTH, Math.max(metrics.MAX_READ_MAPPED_LENGTH, pairing != null ? pairing.maxConcordantFragmentSize() : 0));
 		this.category = category;

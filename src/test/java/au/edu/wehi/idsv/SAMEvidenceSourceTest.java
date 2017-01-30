@@ -389,4 +389,11 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertTrue(SES().shouldFilter(SR(Read(0, 10, "5M5S"), Read(1, 10, "5M"))));
 		assertTrue(SES().shouldFilter(SR(Read(1, 10, "5M5S"), Read(0, 10, "5M"))));
 	}
+	@Test
+	public void should_ignore_duplicates() {
+		SAMRecord r = Read(1, 1, "10M5S");
+		assertFalse(SES().shouldFilter(r)); // precondition
+		r.setDuplicateReadFlag(true);
+		assertTrue(SES().shouldFilter(r));
+	}
 }

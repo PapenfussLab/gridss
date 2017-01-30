@@ -56,7 +56,7 @@ public class SequentialCoverageAnnotator<T extends VariantContextDirectedEvidenc
 			toclose.add(rawIterator);
 			toclose.add(reader);
 			sit = new ProgressLoggingSAMRecordIterator(sit, new ProgressLogger(log));
-			SequentialReferenceCoverageLookup sourceLookup = new SequentialReferenceCoverageLookup(sit, ses.getMetrics().getIdsvMetrics(), ses.getReadPairConcordanceCalculator(), windowSize, ses.getSourceCategory());
+			SequentialReferenceCoverageLookup sourceLookup = new SequentialReferenceCoverageLookup(sit, ses.getMetrics().getIdsvMetrics(), ses.getReadPairConcordanceCalculator(), windowSize, ses.getSourceCategory(), context.isFilterDuplicates());
 			context.registerBuffer(ses.getFile().getName(), sourceLookup);
 			result.add(sourceLookup);
 		}

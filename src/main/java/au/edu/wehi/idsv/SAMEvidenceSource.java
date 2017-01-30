@@ -250,6 +250,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (SAMRecordUtil.isDovetailing(r, PairOrientation.FR, getContext().getConfig().dovetailMargin)) {
 			return true;
 		}
+		if (getContext().isFilterDuplicates() && r.getDuplicateReadFlag()) {
+			return true;
+		}
 		return false;
 	}
 	private int minIndelSize() {
