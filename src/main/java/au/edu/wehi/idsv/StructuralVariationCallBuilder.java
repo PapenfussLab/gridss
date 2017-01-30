@@ -138,7 +138,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 						//fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += attr.getAssemblyNonSupportingSoftClipCount(i);
 						// TODO quals, remotes, etc
 					}
-					if (sre.getSAMRecord().getSupplementaryAlignmentFlag()) {
+					if (sre.getSAMRecord().getSupplementaryAlignmentFlag() || attr.getAssemblyDirection() != sre.getBreakendSummary().direction) {
 						// remote breakpoint assembly
 						fBREAKPOINT_ASSEMBLY_COUNT_REMOTE++;
 						fBREAKPOINT_ASSEMBLY_QUAL_REMOTE += bp.getBreakpointQual();
@@ -292,11 +292,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, tof(fBREAKEND_SOFTCLIP_QUAL));
 		attribute(VcfAttributes.BREAKEND_ASSEMBLY_ID, BREAKEND_ASSEMBLY_ID.toArray(new String[0]));
 		
-		BreakendSummary bs = parent.getBreakendSummary();
 		String untemplated = parent.getBreakpointSequenceString();
 		String homo = "";
 		if (bestExactBreakpoint != null) {
-			bs = bestExactBreakpoint.getBreakendSummary();
 			untemplated = bestExactBreakpoint.getUntemplatedSequence();
 			breakpoint(bestExactBreakpoint.getBreakendSummary(), untemplated);
 			homo = bestExactBreakpoint.getHomologySequence();
