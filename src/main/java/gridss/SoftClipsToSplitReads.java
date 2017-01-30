@@ -8,7 +8,6 @@ import java.util.Locale;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.SplitReadRealigner;
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
@@ -60,7 +59,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	validateParameters();
     	
     	FastqAligner aligner = createAligner();
-    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE_SEQUENCE, getReference());
+    	GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
     	SplitReadRealigner realigner = new SplitReadRealigner(pc, aligner);
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);

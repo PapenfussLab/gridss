@@ -1,16 +1,24 @@
 package gridss.cmdline;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 
+import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import picard.cmdline.CommandLineProgram;
+import picard.cmdline.Option;
 
 public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ReferenceCommandLineProgram.class);
+	// --- intermediate file parameters ---
+    @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
+    		+ " as the associated input or output file.", optional = true)
+    public File WORKING_DIR = null;
+    private FileSystemContext fsc;
 	private ReferenceLookup reference;
 	public ReferenceLookup getReference() {
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
@@ -26,7 +34,16 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 		return reference;
 	}
 	public void setReference(ReferenceLookup ref) {
-		this.reference =  ref;
+		this.reference = ref;
+	}
+	public FileSystemContext getFileSystemContext() {
+		if (fsc == null) {
+			fsc = new FileSystemContext(TMP_DIR.get(0), WORKING_DIR, MAX_RECORDS_IN_RAM);
+		}
+		return fsc;
+	}
+	public void setFileSystemContext(FileSystemContext fsc) {
+		this.fsc = fsc;
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
@@ -49,5 +66,11 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	 */
 	public void copyInputs(CommandLineProgram cmd) {
 		CommandLineProgramHelper.copyInputs(this, cmd);
+		if (cmd instanceof ReferenceCommandLineProgram) {
+			ReferenceCommandLineProgram prog = (ReferenceCommandLineProgram) cmd;
+			prog.WORKING_DIR = WORKING_DIR;
+			prog.fsc = fsc;
+			prog.reference = reference;
+		}
 	}
 }

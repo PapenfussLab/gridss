@@ -2,17 +2,7 @@ package gridss.cmdline;
 
 import java.io.File;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DirectedEvidenceOrder;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-import htsjdk.samtools.util.CloseableIterator;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 

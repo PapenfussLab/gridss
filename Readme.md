@@ -181,6 +181,10 @@ a category should be specified for each input file when performing analysis on m
 
 For those familar with [CORTEX](http://cortexassembler.sourceforge.net/), a GRIDSS input category corresponds to a CORTEX graph colour.
 
+### ASSEMBLY (Required)
+
+File to write breakend assemblies to. It is strongly recommended that the assembly filename correspond to the OUTPUT filename. Using ASSEMBLY=assembly.bam is probematic as the assembly file is relative not to WORKING_DIR, but to the current directory of the calling process. This is likely to result in data corruption when the same assembly file is used on different data sets (for example, writing assembly.bam to your home directory when running on a cluster).
+
 ### BLACKLIST
 
 BED blacklist of regions to exclude from analysis. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)

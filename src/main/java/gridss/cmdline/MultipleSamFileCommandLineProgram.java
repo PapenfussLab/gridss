@@ -15,7 +15,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
@@ -57,10 +56,6 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     		+ "and if such regions are to be filtered in downstream analysis anyway, blacklisting those region will improve runtime "
     		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended.", optional=true)
     public File BLACKLIST = null;
-    // --- intermediate file parameters ---
-    @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
-    		+ " as the associated input or output file.", optional = true)
-    public File WORKING_DIR = null;
     // --- evidence filtering parameters ---
     @Option(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
     public File CONFIGURATION_FILE = null;
@@ -216,14 +211,13 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 	private ProcessingContext processContext = null;
 	public ProcessingContext getContext() {
 		if (processContext == null) {
-			FileSystemContext fsc = new FileSystemContext(TMP_DIR.get(0), WORKING_DIR, MAX_RECORDS_IN_RAM);
 			GridssConfiguration config;
 			try {
 				config = new GridssConfiguration(CONFIGURATION_FILE, WORKING_DIR);
 			} catch (ConfigurationException e) {
 				throw new RuntimeException(e);
 			}
-			processContext = new ProcessingContext(fsc, REFERENCE_SEQUENCE, null, getDefaultHeaders(), config);
+			processContext = new ProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, null, getDefaultHeaders(), config);
 			INPUT_CATEGORY.stream().forEach(x -> processContext.registerCategory(x, ""));
 			processContext.setWorkerThreadCount(WORKER_THREADS);
 			if (BLACKLIST != null) {
@@ -294,7 +288,6 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			prog.INPUT_MIN_FRAGMENT_SIZE = INPUT_MIN_FRAGMENT_SIZE;
 			prog.READ_PAIR_CONCORDANT_PERCENT = READ_PAIR_CONCORDANT_PERCENT;
 			prog.WORKER_THREADS = WORKER_THREADS;
-			prog.WORKING_DIR = WORKING_DIR;
 			prog.processContext = processContext;
 			prog.samEvidence = samEvidence;
 		}
