@@ -15,9 +15,6 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.FixedSizeReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.PaddedLinearGenomicCoordinate;
-import au.edu.wehi.idsv.ReadPairConcordanceMethod;
-import au.edu.wehi.idsv.bed.IntervalBed;
 import htsjdk.samtools.SAMRecord;
 
 public class ExtractSVReadsTest extends IntermediateFilesTest {
@@ -72,6 +69,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.finish();
 		assertTrue(extract.METRICS_OUTPUT.exists());
 	}
+	/*
 	@Test
 	public void should_not_extract_unclipped_alignment_overlapping_blacklist() {
 		createInput();
@@ -116,4 +114,9 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		List<SAMRecord> out = getRecords(output);
 		assertEquals(2 * 2, out.size());
 	}
+	@Test
+	public void should_not_extract_any_split_reads_overlapping_blacklist() {
+		fail();
+	}
+	*/
 }

@@ -16,6 +16,7 @@ import org.junit.Test;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.alignment.StubFastqAligner;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
 
@@ -395,5 +396,54 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertFalse(SES().shouldFilter(r)); // precondition
 		r.setDuplicateReadFlag(true);
 		assertTrue(SES().shouldFilter(r));
+	}
+	@Test
+	public void blacklisted_alignment_should_be_unmapped() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(pc);
+		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		blacklist.addInterval(0, 10, 12);
+		ses.setBlacklistedRegions(blacklist);
+		assertFalse(ses.transform(Read(1, 10, "1M")).getReadUnmappedFlag());
+		assertFalse(ses.transform(Read(0, 9, "1M")).getReadUnmappedFlag());
+		assertTrue(ses.transform(Read(0, 10, "1M")).getReadUnmappedFlag());
+		assertTrue(ses.transform(Read(0, 11, "1M")).getReadUnmappedFlag());
+		assertTrue(ses.transform(Read(0, 12, "1M")).getReadUnmappedFlag());
+		assertFalse(ses.transform(Read(0, 13, "1M")).getReadUnmappedFlag());
+	}
+	@Test
+	public void blacklist_mate_should_be_treated_as_unmapped() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(pc);
+		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		blacklist.addInterval(0, 10, 12);
+		ses.setBlacklistedRegions(blacklist);
+		assertFalse(ses.transform(DP(0, 1, "1M", true, 1, 10, "1M", false)[0]).getMateUnmappedFlag());
+		assertFalse(ses.transform(DP(0, 1, "1M", true, 0, 9, "1M", false)[0]).getMateUnmappedFlag());
+		assertTrue(ses.transform(DP(0, 1, "1M", true, 0, 10, "1M", false)[0]).getMateUnmappedFlag());
+		assertTrue(ses.transform(DP(0, 1, "1M", true, 0, 11, "1M", false)[0]).getMateUnmappedFlag());
+		assertTrue(ses.transform(DP(0, 1, "1M", true, 0, 12, "1M", false)[0]).getMateUnmappedFlag());
+		assertFalse(ses.transform(DP(0, 1, "1M", true, 0, 13, "1M", false)[0]).getMateUnmappedFlag());
+	}
+	@Test
+	public void blacklist_chimeric_alignment_should_be_treated_as_unmapped() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(pc);
+		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		blacklist.addInterval(0, 10, 12);
+		ses.setBlacklistedRegions(blacklist);
+		SAMRecord read = Read(0, 1, "1M1S");
+		read.setAttribute("SA", "polyA,10,+,1S1M,10,10");
+		assertEquals("", ses.transform(read).getAttribute("SA"));
+	}
+	@Test
+	public void should_filter_breakpoints_touching_blacklist() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(pc);
+		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		blacklist.addInterval(0, 10, 12);
+		ses.setBlacklistedRegions(blacklist);
+		assertTrue(ses.shouldFilter(NRRP(ses, DP(0, 1, "1M", true, 1, 100, "1M", false))));
+		assertTrue(ses.shouldFilter(NRRP(ses, DP(1, 100, "1M", false, 0, 1, "1M", true))));
 	}
 }

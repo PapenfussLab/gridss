@@ -144,9 +144,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
     }
 	@Override
 	protected void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
-		if (involvesBlacklistedRegion(records)) {
-			return;
-		}
 		boolean hasConsistentReadPair = hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = hasReadAlignmentConsistentWithReference(records);
 		if (metricsCollector != null) {

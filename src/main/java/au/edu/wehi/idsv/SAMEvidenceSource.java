@@ -4,14 +4,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -26,13 +30,17 @@ import gridss.SoftClipsToSplitReads;
 import gridss.analysis.CollectGridssMetrics;
 import gridss.analysis.StructuralVariantReadMetrics;
 import gridss.cmdline.ReferenceCommandLineProgram;
+import htsjdk.samtools.Cigar;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
@@ -164,11 +172,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 									"FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize,
 									"FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE=" + rpcMaxFragmentSize,
 									"READ_PAIR_CONCORDANT_PERCENT=" + rpcConcordantPercentage,
-									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()),
-									"BLACKLIST=" + getContext().getFileSystemContext().getCoverageBlacklistBed(getFile()));
-							if (getProcessContext().getBlacklist() != null) {
-								args.add("BLACKLIST=" + getProcessContext().getBlacklist());
-							}
+									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()));
 							execute(new ExtractSVReads(), args);
 						}
 						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
@@ -243,22 +247,81 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public SAMRecord transform(SAMRecord r) {
 		SAMRecordUtil.lowMapqToUnmapped(r, getContext().getConfig().minMapq);
-		// TODO: decide whether to keep maxMapq around or just move to an error message
+		// Converts overlaps of blacklisted regions to unmapped
+		if (!r.getReadUnmappedFlag()) {
+			if (getBlacklistedRegions().overlaps(r.getReferenceIndex(), r.getAlignmentStart(), r.getAlignmentEnd())) {
+				r.setReadUnmappedFlag(true);
+			}
+		}
+		if (r.getReadPairedFlag() && !r.getMateUnmappedFlag()) {
+			int mateRef = r.getMateReferenceIndex();
+			int mateStart = r.getMateAlignmentStart();
+			int mateEnd = mateStart;
+			String mc = r.getStringAttribute(SAMTag.MC.name());
+			if (mc != null) {
+				Cigar mateCigar = TextCigarCodec.decode(mc);
+				mateEnd += mateCigar.getReferenceLength() - 1;
+			}
+			if (getBlacklistedRegions().overlaps(mateRef, mateStart, mateEnd)) {
+				r.setMateUnmappedFlag(true);
+			}
+		}
+		if (r.getAttribute(SAMTag.SA.name()) != null) {
+			SAMSequenceDictionary dict = getContext().getDictionary();
+			r.setAttribute(SAMTag.SA.name(), ChimericAlignment.getChimericAlignments(r).stream()
+					.filter(ca -> !getBlacklistedRegions().overlaps(
+							dict.getSequence(ca.rname).getSequenceIndex(),
+							ca.pos,
+							ca.pos + ca.cigar.getReferenceLength() - 1))
+					.map(ca -> ca.toString())
+					.collect(Collectors.joining(";")));
+		}
 		return r;
 	}
 	public boolean shouldFilter(SAMRecord r) {
-		if (SAMRecordUtil.isDovetailing(r, PairOrientation.FR, getContext().getConfig().dovetailMargin)) {
+		if (r.getReadUnmappedFlag()) {
 			return true;
 		}
 		if (getContext().isFilterDuplicates() && r.getDuplicateReadFlag()) {
 			return true;
 		}
+		if (SAMRecordUtil.isDovetailing(r, PairOrientation.FR, getContext().getConfig().dovetailMargin)) {
+			return true;
+		}
 		return false;
+	}
+	private IntervalBed blacklist = null;
+	public IntervalBed getBlacklistedRegions() {
+		if (blacklist == null) {
+			File coverageBlacklist = getContext().getFileSystemContext().getCoverageBlacklistBed(getFile());
+			if (!coverageBlacklist.exists()) {
+				// Fall back to generic blacklist if we haven't calculated a coverage blacklist yet 
+				return getContext().getBlacklistedRegions();
+			}
+			try {
+				blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(
+						getContext().getBlacklistedRegions(),
+						new IntervalBed(getContext().getDictionary(), getContext().getLinear(), coverageBlacklist)
+						));
+			} catch (IOException e) {
+				log.error(e);
+				blacklist = getContext().getBlacklistedRegions();
+			}
+		}
+		return blacklist;
+	}
+	// Exposed mostly for testing purposes
+	protected void setBlacklistedRegions(IntervalBed blacklist) {
+		this.blacklist = blacklist;
 	}
 	private int minIndelSize() {
 		return Math.min(getContext().getConfig().getSoftClip().minLength, getContext().getVariantCallingParameters().minSize);
 	}
 	public boolean shouldFilter(DirectedEvidence e) {
+		BreakendSummary bs = e.getBreakendSummary();
+		if (getBlacklistedRegions().overlaps(bs.referenceIndex, bs.start - 1, bs.end + 1)) {
+			return true;
+		}
 		GridssConfiguration config = getContext().getConfig();
 		if (e instanceof SingleReadEvidence) {
 			if (((SingleReadEvidence) e).isReference()) return true;
@@ -270,15 +333,19 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (average(sce.getBreakendQuality()) < scc.minAverageQual) return true;
 			if (config.adapters.isAdapterSoftClip(sce)) return true;
 			if (!AssemblyAttributes.isAssembly(sce.getSAMRecord())) {
+				// TODO: symmetrical identity and entropy filters on both sides
 				if (SAMRecordUtil.getAlignedIdentity(sce.getSAMRecord()) < scc.minAnchorIdentity) return true;
 				if (SAMRecordUtil.alignedEntropy(sce.getSAMRecord()) < config.minAnchorShannonEntropy) return true;
 			}
 		}
 		if (e instanceof IndelEvidence) {
-			// Currently filtering small indels in it evidence iterator itself
+			// Currently filtering small indels in evidence iterator itself
 		}
 		if (e instanceof DirectedBreakpoint) {
-			//BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
+			BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
+			if (getBlacklistedRegions().overlaps(bp.referenceIndex2, bp.start2 - 1, bp.end2 + 1)) {
+				return true;
+			}
 			// Still do assembly - leave the filtering to the variant calling
 			//if (bp.getEventSize() != null && bp.getEventSize() < config.getVariantCalling().minSize) {
 			//	return true;

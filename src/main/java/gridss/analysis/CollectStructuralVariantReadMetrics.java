@@ -70,9 +70,6 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 	}
 	@Override
 	public void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
-		if (involvesBlacklistedRegion(records)) {
-			return;
-		}
 		boolean hasConsistentReadPair = ExtractSVReads.hasReadPairingConsistentWithReference(rpcc, records);
 		boolean[] hasConsistentReadAlignment = ExtractSVReads.hasReadAlignmentConsistentWithReference(records);
 		boolean hasOeaAnchor = false;
