@@ -1,43 +1,44 @@
 package au.edu.wehi.idsv;
 
-import java.util.PriorityQueue;
-
 import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.sam.SAMRecordEndCoordinateComparator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
+import it.unimi.dsi.fastutil.longs.LongHeapPriorityQueue;
 
 public class SequentialCoverageThreshold {
 	private final int threshold;
+	private final LinearGenomicCoordinate linear;
 	private IntervalBed bed;
-	private PriorityQueue<SAMRecord> active = new PriorityQueue<SAMRecord>(1024, new SAMRecordEndCoordinateComparator());
+	private LongHeapPriorityQueue active = new LongHeapPriorityQueue();
 	private int activeIntervalReferenceIndex = -1;
 	private int activeIntervalStart;
 	public SequentialCoverageThreshold(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, int thresholdCoverage) {
 		if (thresholdCoverage <= 0) throw new IllegalArgumentException("Coverage threshhold must be greater than zero.");
 		this.bed = new IntervalBed(dictionary, linear);
 		this.threshold = thresholdCoverage;
+		this.linear = linear;
 	}
 	public void acceptRecord(SAMRecord r) {
 		if (r.getReadUnmappedFlag()) return;
-		assert(active.isEmpty() || active.peek().getReferenceIndex() <= r.getReferenceIndex());
-		processBefore(r.getReferenceIndex(), r.getAlignmentStart());
-		active.add(r);
+		long readStartPos = linear.getStartLinearCoordinate(r);
+		long readEndPos = linear.getEndLinearCoordinate(r);
+		processBefore(readStartPos);
+		active.enqueue(readEndPos);
 		if (active.size() == threshold) {
 			activeIntervalReferenceIndex = r.getReferenceIndex();
 			activeIntervalStart = r.getAlignmentStart();
 		}
 	}
-	private void processBefore(int referenceIndex, int position) {
-		while (!active.isEmpty() && (active.peek().getReferenceIndex() < referenceIndex || active.peek().getAlignmentEnd() < position)) {
+	private void processBefore(long position) {
+		while (!active.isEmpty() && active.firstLong() < position) {
 			if (active.size() == threshold) {
-				bed.addInterval(activeIntervalReferenceIndex, activeIntervalStart, active.peek().getAlignmentEnd());
+				bed.addInterval(activeIntervalReferenceIndex, activeIntervalStart, linear.getReferencePosition(active.firstLong()));
 			}
-			active.poll();
+			active.dequeueLong();
 		}
 	}
 	public IntervalBed finish() {
-		processBefore(Integer.MAX_VALUE, Integer.MAX_VALUE);
+		processBefore(Long.MAX_VALUE);
 		return bed;
 	}
 }
