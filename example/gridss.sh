@@ -39,7 +39,7 @@ if [[ ! "$JAVA_VERSION" =~ "\"1.8" ]] ; then
 	exit 1
 fi
 
-java -ea -Xmx16g \
+java -ea -Xmx31g \
 	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
