@@ -208,7 +208,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 						//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
 				execute(new SoftClipsToSplitReads(), args);
 			}
-			SAMFileUtil.sort(getContext().getFileSystemContext(), taggedFile, svFile, SortOrder.coordinate);
+			SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
 		}
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(extractedFile, true);

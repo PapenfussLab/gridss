@@ -15,6 +15,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 import com.google.common.collect.PeekingIterator;
+import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
@@ -157,6 +158,7 @@ public class SAMFileUtil {
 				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpFile)) {
 					writer.setProgressLogger(new ProgressLogger(log, 10000000));
 					try (CloseableIterator<SAMRecord> wit = collection.iterator()) {
+						@SuppressWarnings("resource") // bad eclipse warning 
 						Iterator<SAMRecord> it = wit;
 				    	if (Defaults.SANITY_CHECK_ITERATORS) {
 							it = new OrderAssertingIterator<SAMRecord>(wit, sortComparator);
@@ -195,14 +197,27 @@ public class SAMFileUtil {
 	 */
 	public static void merge(Collection<File> input, File output, SamReaderFactory readerFactory, SAMFileWriterFactory writerFactory) throws IOException {
 		if (input == null || input.size() == 0) return;
+		if (input.size() == 1) {
+			Files.copy(input.iterator().next(), output);
+			return;
+		}
 		File tmpFile = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.merging.SAMFileUtil.");
 		Map<SamReader, AsyncBufferedIterator<SAMRecord>> map = new HashMap<>(input.size());
 		SAMFileHeader header = null;
 		try {
 			for (File in : input) {
 				SamReader r = readerFactory.open(in);
+				SAMFileHeader currentHeader = header = r.getFileHeader();
 				if (header == null) {
-					header = r.getFileHeader();
+					header = currentHeader;
+				}
+				if (header.getSortOrder() != null && currentHeader.getSortOrder() != null &&
+						header.getSortOrder() != currentHeader.getSortOrder()) {
+					throw new IllegalArgumentException(String.format("Sort order %s of %s does not match %s of %s",
+							currentHeader.getSortOrder(),
+							input,
+							header.getSortOrder(),
+							input.iterator().next()));
 				}
 				map.put(r, new AsyncBufferedIterator<>(r.iterator(), in.getName()));
 			}

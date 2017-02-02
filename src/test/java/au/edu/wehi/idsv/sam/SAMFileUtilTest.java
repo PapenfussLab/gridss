@@ -54,4 +54,16 @@ public class SAMFileUtilTest extends IntermediateFilesTest {
 		SAMFileUtil.sort(getFSContext(), input, output, SortOrder.coordinate);
 		assertTrue(Ordering.from(SortOrder.coordinate.getComparatorInstance()).isOrdered(getRecords(output)));
 	}
+	@Test(expected=IllegalArgumentException.class)
+	public void merge_should_require_same_sort_order() throws IOException {
+		createBAM(input, SortOrder.queryname,
+				withReadName("1", Read(5, 1, "1M"))[0],
+				withReadName("2", Read(3, 3, "1M"))[0],
+				withReadName("2", Read(1, 5, "1M"))[0]);
+		createBAM(output, SortOrder.coordinate,
+				withReadName("1", Read(5, 1, "1M"))[0],
+				withReadName("2", Read(3, 3, "1M"))[0],
+				withReadName("2", Read(1, 5, "1M"))[0]);
+		SAMFileUtil.merge(ImmutableList.of(input, output), output);
+	}
 }
