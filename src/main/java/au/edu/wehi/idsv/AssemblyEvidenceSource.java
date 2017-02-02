@@ -436,4 +436,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		return Iterators.concat(list.iterator());
 	}
+	/**
+	 * Assembly contigs are not paired
+	 */
+	@Override
+	public boolean knownSingleEnded() { return true; } 
 }

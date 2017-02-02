@@ -115,7 +115,23 @@ public class SAMEvidenceSource extends EvidenceSource {
 						"INPUT=" + getFile().getAbsolutePath(),
 						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath(),
 						"THRESHOLD_COVERAGE=" + getContext().getConfig().maxCoverage,
-						"FILE_EXTENSION=null");
+						"FILE_EXTENSION=null",
+						"GRIDSS_PROGRAM=null",
+						"GRIDSS_PROGRAM=CollectCigarMetrics",
+						"GRIDSS_PROGRAM=CollectMapqMetrics",
+						"GRIDSS_PROGRAM=CollectTagMetrics",
+						"GRIDSS_PROGRAM=CollectIdsvMetrics",
+						"GRIDSS_PROGRAM=ReportThresholdCoverage",
+						// The CollectMultipleMetrics super class complains if no PROGRAM set so
+						// we'll just collect some stuff that is useful, but we don't actually
+						// use yet
+						"PROGRAM=null",
+						"PROGRAM=CollectAlignmentSummaryMetrics",
+						"PROGRAM=QualityScoreDistribution");
+				if (!knownSingleEnded()) {
+					// Don't run CollectInsertSizeMetrics
+					args.add("PROGRAM=CollectInsertSizeMetrics");
+				}
 				if (getContext().getCalculateMetricsRecordCount() < Integer.MAX_VALUE) {
 					args.add("STOP_AFTER=" + getContext().getCalculateMetricsRecordCount());
 				}
@@ -450,5 +466,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return maxSize + 2 * (context.getVariantCallingParameters().breakendMargin + 1);
 	}
-
+	/**
+	 * Provides hint as to whether the input file is known to contain only single-ended reads.
+	 * @return
+	 */
+	public boolean knownSingleEnded() { return false; } 
 }
