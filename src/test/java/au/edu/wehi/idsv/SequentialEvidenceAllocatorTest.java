@@ -1,14 +1,14 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -58,5 +58,27 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 						.max().getAsDouble(), 0);
 			}
 		}
+	}
+	@Test
+	public void RemoteOverlap_localLookup_should_split_on_referenceIndex_and_direction() {
+		final ProcessingContext pc = getContext();
+		pc.getVariantCallingParameters().writeFiltered = true;
+		pc.getVariantCallingParameters().minScore = 0;
+		pc.getVariantCallingParameters().breakendMargin = 0;
+		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(pc, null, 0, 0, 100);
+		ses.evidence.add(SCE(FWD, Read(0, 1, "1S1M1S")));
+		ses.evidence.add(SCE(BWD, Read(0, 1, "1S1M1S")));
+		//ses.evidence.add(SCE(BWD, Read(1, 1, "1S1M1S")));
+		//ses.evidence.add(SCE(FWD, Read(1, 1, "1S1M1S")));
+		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(pc,
+				ImmutableList.of((VariantContextDirectedBreakpoint)TestHelper.minimalVariant()
+						.breakpoint(new BreakpointSummary(1, FWD, 1, 1, 1, 0, FWD, 1, 1, 1), "")
+						.phredScore(1)
+						.id("call")
+						.make()).iterator(),
+				ses.evidence.iterator(), Integer.MAX_VALUE, true);
+		// shouldn't crash
+		VariantEvidenceSupport ves = allocator.next();
+		Assert.assertTrue(ves.support.stream().allMatch(e -> ves.variant.getBreakendSummary().overlaps(e.getBreakendSummary())));
 	}
 }

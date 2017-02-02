@@ -90,7 +90,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) throw new NullPointerException();
 		if (!isSupportingEvidence(evidence)) {
-			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s does not provide support for call at %s", evidence.getBreakendSummary(), parent.getBreakendSummary()));
+			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s %s does not provide support for call at %s",
+					evidence.getEvidenceID(),
+					evidence.getBreakendSummary(),
+					parent.getBreakendSummary()));
 		}
 		String eid = evidence.getEvidenceID();
 		if (encounteredEvidenceIDs != null) {

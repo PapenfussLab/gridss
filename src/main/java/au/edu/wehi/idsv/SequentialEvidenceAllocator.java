@@ -292,7 +292,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			}
 		}
 		protected int getIndex(int referenceIndex, BreakendDirection dir) {
-			return referenceIndex + (dir == BreakendDirection.Forward ? 0 : 1);
+			return 2 * referenceIndex + (dir == BreakendDirection.Forward ? 0 : 1);
 		}
 		protected List<IntervalTree<List<VariantEvidenceSupport>>> createByReferenceIndexDirectionLookup(int referenceSequenceCount) {
 			return IntStream.range(0, referenceSequenceCount * 2)
