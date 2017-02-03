@@ -7,7 +7,7 @@ BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
 REFERENCE=~/reference_genomes/human/hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/target/gridss-1.0.0-jar-with-dependencies.jar
+GRIDSS_JAR=~/target/gridss-1.2.0-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
@@ -19,10 +19,12 @@ if ! which bwa >/dev/null 2>&1 ; then
 fi
 if [[ ! -f "$REFERENCE" ]] ; then
 	echo "Missing reference genome $REFERENCE. Update the REFERENCE variable in the shell script to your hg19 location"
+	echo "For the example file chr12.1527326.DEL1024.bam, ReorderSam can be used to match to your version of hg19. In the case of this example, only \"chr12\" is required to exist, and difference in alternate contigs can be ignored (using ALLOW_INCOMPLETE_DICT_CONCORDANCE=true)."
+	echo "For real data, please ensure that all BAM files are aligned to the same reference, and the reference supplied to GRIDSS matched that used for alignment."
 	exit 1
 fi
 if [[ ! -f "$REFERENCE.bwt" ]] ; then
-	echo "Missing bwa index for $REFERENCE. Could not find $REFERENCE.bwt. Create an index or symlink the index files to the expected file names."
+	echo "Missing bwa index for $REFERENCE. Could not find $REFERENCE.bwt. Create a bwa index (using \"bwa index $REFERENCE\") or symlink the index files to the expected file names."
 	exit 1
 fi
 if [[ ! -f $GRIDSS_JAR ]] ; then
