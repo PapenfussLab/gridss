@@ -60,21 +60,25 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	}
 	private void flushIfRequired() {
 		if (currentAssembler != null && !currentAssembler.hasNext()) {
-			if (currentAssembler.getExportTracker() != null) {
-				try {
-					currentAssembler.getExportTracker().close();
-				} catch (IOException e) {
-					log.debug(e);
-				}
-			}
-			currentAssembler = null;
+			closeCurrentAssembler();
 		}
+	}
+	private void closeCurrentAssembler() {
+		if (currentAssembler.getExportTracker() != null) {
+			try {
+				currentAssembler.getExportTracker().close();
+			} catch (IOException e) {
+				log.debug(e);
+			}
+		}
+		currentAssembler = null;
 	}
 	private void ensureAssembler(boolean attemptRecovery) {
 		try {
 			ensureAssembler();
 		} catch (AssertionError|Exception e) {
-			String msg = "Fatal error assembling " + currentContig + ". This should not happen. Please raise an issue at https://github.com/PapenfussLab/gridss/issues";
+			closeCurrentAssembler();
+			String msg = "Error assembling " + currentContig + ". This should not happen. Please raise an issue at https://github.com/PapenfussLab/gridss/issues";
 			if (!attemptRecovery) {
 				log.error(e, msg);
 				throw e;

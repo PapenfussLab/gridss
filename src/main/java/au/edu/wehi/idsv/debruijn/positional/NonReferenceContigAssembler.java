@@ -264,9 +264,12 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		int loadedBefore = nextPosition();
 		int positionalWidth = maxEvidenceSupportIntervalWidth - aes.getMaxReadLength();
 		int misassemblyLength = (int)(aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize() + positionalWidth);
+// TODO: fix here as this can overrun contig bounds
 		ArrayDeque<KmerPathSubnode> misassembly = bestContigCaller.frontierPath(loadedBefore, loadedBefore - misassemblyLength);
 		if (misassembly == null) return;
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(misassembly.stream()
+// TODO: fix here as we have to remove everything that we have untracked it
+				
 			// To be sure that all reads on the contig to remove have
 			// been fully loaded, we don't remove nodes that could contain
 			// a read that also contributed to an unprocessed node
