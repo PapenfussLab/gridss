@@ -56,7 +56,6 @@ import htsjdk.samtools.util.Log;
  */
 public class MemoizedContigCaller extends ContigCaller {
 	private static final Log log = Log.getInstance(MemoizedContigCaller.class);
-	static final boolean ASSERT_ALL_OPERATIONS = true;
 	/**
 	 * Path scores in order of descending score
 	 */
@@ -151,7 +150,7 @@ public class MemoizedContigCaller extends ContigCaller {
 				}
 			}
 		}
-		if (Defaults.SANITY_CHECK_MEMOIZATION && ASSERT_ALL_OPERATIONS) {
+		if (Defaults.SANITY_CHECK_MEMOIZATION && Defaults.SANITY_CHECK_MEMOIZATION_ALL_OPERATIONS) {
 			sanityCheck();
 		}
 	}
@@ -189,7 +188,7 @@ public class MemoizedContigCaller extends ContigCaller {
 			TraversalNode tn = frontier.pollFrontier();
 			visit(tn, unprocessedPosition);
 		}
-		if (Defaults.SANITY_CHECK_MEMOIZATION && ASSERT_ALL_OPERATIONS) {
+		if (Defaults.SANITY_CHECK_MEMOIZATION && Defaults.SANITY_CHECK_MEMOIZATION_ALL_OPERATIONS) {
 			sanityCheck();
 			sanityCheckFrontier(unprocessedPosition);
 		}

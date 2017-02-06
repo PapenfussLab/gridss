@@ -32,6 +32,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.SanityCheckFailureException;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -118,6 +119,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
 	public int getReferenceIndex() { return referenceIndex; }
+	private int retainWidth() { return Math.max(2, (int)(aes.getContext().getAssemblyParameters().positional.retainWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1; }
+	private int flushWidth() { return Math.max(1, (int)(aes.getContext().getAssemblyParameters().positional.flushWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1; }
+	private int maxExpectedBreakendLength() { return Math.max(2, ((int)(aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize()) - k + 1)); }
 	/**
 	 * Creates a new structural variant positional de Bruijn graph contig assembly for the given chromosome
 	 * @param it reads
@@ -142,7 +146,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			EvidenceTracker tracker,
 			String contigName) {
 		this.underlying = Iterators.peekingIterator(it);
-		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
+		this.maxEvidenceSupportIntervalWidth = Math.max(maxEvidenceSupportIntervalWidth, source.getMaxReadLength() - k + 1);
 		this.maxAnchorLength = maxAnchorLength;
 		this.k = k;
 		this.referenceIndex = referenceIndex;
@@ -167,16 +171,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	public SAMRecord next() {
 		ensureCalledContig();
 		return called.remove();
-	}
+	}	
 	private void ensureCalledContig() {
 		if (!called.isEmpty()) return;
 		while (called.isEmpty()) {
 			// Safety calling to ensure loaded graph size is bounded
 			if (!nonReferenceGraphByPosition.isEmpty()) {
 				AssemblyConfiguration ap = aes.getContext().getAssemblyParameters();
-				int fragmentSize = aes.getMaxConcordantFragmentSize();
-				int retainWidth = (int)(ap.positional.retainWidthMultiple * fragmentSize);
-				int flushWidth = Math.max(1, (int)(ap.positional.flushWidthMultiple * fragmentSize));
 				int frontierStart = bestContigCaller.frontierStart(nextPosition());
 				// Need to make sure our contig that we're forcing a call on is comprised of evidence that has
 				// been fully loaded into the graph 
@@ -187,11 +188,11 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				// |                  |                                         |<--- maxEvidenceSupportIntervalWidth--->|   
 				// |             flushPosition                                                                       frontierStart
 				// loadedStart                                                                                        nextPosition
-				int flushPosition = Math.min(frontierStart - retainWidth,
-						nextPosition() - maxEvidenceSupportIntervalWidth - (int)(ap.maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize()))
+				int flushPosition = Math.min(frontierStart - retainWidth(),
+						nextPosition() - maxEvidenceSupportIntervalWidth - maxExpectedBreakendLength())
 						- 1;
 				int loadedStart = nonReferenceGraphByPosition.first().firstStart();
-				if (loadedStart + flushWidth < flushPosition) {
+				if (loadedStart + flushWidth() < flushPosition) {
 					ArrayDeque<KmerPathSubnode> forcedContig = null;
 					do {
 						// keep calling until we have no more contigs left even if we could be calling a suboptimal contig
@@ -239,8 +240,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	}
 	private void flushReferenceNodes() {
 		int position = nonReferenceGraphByPosition.isEmpty() ? nextPosition() : nonReferenceGraphByPosition.first().firstStart();
-		int maxContigAnchorLength = Math.max((int)(aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize()),
-				aes.getContext().getAssemblyParameters().anchorLength);
+		int maxContigAnchorLength = Math.max(maxExpectedBreakendLength(), aes.getContext().getAssemblyParameters().anchorLength);
 		// first position at which we are guaranteed to not be involved in any contig anchor sequence
 		position -= maxEvidenceSupportIntervalWidth + maxContigAnchorLength;
 		if (!graphByPosition.isEmpty() && graphByPosition.first().firstStart() < position) {
@@ -261,20 +261,21 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * Removes partial contigs that are longer than the maximum theoretical breakend contig length
 	 */
 	private void removeMisassembledPartialContig() {
-		int loadedBefore = nextPosition();
-		int positionalWidth = maxEvidenceSupportIntervalWidth - aes.getMaxReadLength();
-		int misassemblyLength = (int)(aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize() + positionalWidth);
-// TODO: fix here as this can overrun contig bounds
-		ArrayDeque<KmerPathSubnode> misassembly = bestContigCaller.frontierPath(loadedBefore, loadedBefore - misassemblyLength);
+		// |<---      maxExpectedBreakendLength            --->|
+		//            |<--- maxEvidenceSupportIntervalWidth--->|   
+		//                                                  nextPosition
+		ArrayDeque<KmerPathSubnode> misassembly = bestContigCaller.frontierPath(nextPosition(), nextPosition() - maxExpectedBreakendLength());
 		if (misassembly == null) return;
-		Set<KmerEvidence> evidence = evidenceTracker.untrack(misassembly.stream()
-// TODO: fix here as we have to remove everything that we have untracked it
-				
-			// To be sure that all reads on the contig to remove have
-			// been fully loaded, we don't remove nodes that could contain
-			// a read that also contributed to an unprocessed node
-			.filter(sn -> sn.lastEnd() + maxEvidenceSupportIntervalWidth < loadedBefore)
-			.collect(Collectors.toList()));
+		// To be sure that all reads on the contig to remove have
+		// been fully loaded, we don't remove nodes that could contain
+		// a read that also contributed to an unprocessed node
+		List<KmerPathSubnode> misassemblyToRemove = misassembly.stream()
+			.filter(sn -> sn.lastEnd() + maxEvidenceSupportIntervalWidth < nextPosition() - 1)
+			.collect(Collectors.toList());
+		if (misassemblyToRemove.size() == 0) {
+			return;
+		}
+		Set<KmerEvidence> evidence = evidenceTracker.untrack(misassemblyToRemove);
 		removeFromGraph(evidence);
 	}
 	private int nextPosition() {
@@ -586,9 +587,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			KmerSupportNode support = e.node(i);
 			if (support != null) {
 				if (support.lastEnd() >= nextPosition()) {
-					log.error(String.format("Sanity check failure: %s extending to %d removed when input at %s:%d", e, support.lastEnd(), contigName, nextPosition()));
-					// try to recover by advancing
-					advanceUnderlying(support.lastEnd());
+					String msg = String.format("Sanity check failure: %s extending to %d removed when input at %s:%d", e, support.lastEnd(), contigName, nextPosition());
+					log.error(msg);
+					throw new SanityCheckFailureException(msg);
 				}
 				updateRemovalList(toRemove, support);
 			}
@@ -696,7 +697,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			assert(n.isValid());
 			assert(evidenceTracker.matchesExpected(new KmerPathSubnode(n)));
 		}
-		if (Defaults.SANITY_CHECK_MEMOIZATION && MemoizedContigCaller.ASSERT_ALL_OPERATIONS) {
+		if (Defaults.SANITY_CHECK_MEMOIZATION && Defaults.SANITY_CHECK_MEMOIZATION_ALL_OPERATIONS) {
 			if (bestContigCaller != null) assert(bestContigCaller.sanityCheck());
 		}
 		return true;
