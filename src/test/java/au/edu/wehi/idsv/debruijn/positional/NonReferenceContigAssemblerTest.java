@@ -368,7 +368,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 1;
 		List<DirectedEvidence> e = new ArrayList<>();
 		for (int i = 1; i < 100; i++) {
-			e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", 0, i), withSequence("TAAAAAAAAAAAAAAAAAAA", Read(0, i*10, "4M16S")))[0]));
+			e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", 0, i), withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAA", Read(0, i*20, "4M25S")))[0]));
 		}
 		List<SAMRecord> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
 		// the rest should have been removed

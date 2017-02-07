@@ -33,7 +33,6 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SanityCheckFailureException;
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
@@ -177,7 +176,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		while (called.isEmpty()) {
 			// Safety calling to ensure loaded graph size is bounded
 			if (!nonReferenceGraphByPosition.isEmpty()) {
-				AssemblyConfiguration ap = aes.getContext().getAssemblyParameters();
 				int frontierStart = bestContigCaller.frontierStart(nextPosition());
 				// Need to make sure our contig that we're forcing a call on is comprised of evidence that has
 				// been fully loaded into the graph 
@@ -532,8 +530,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (bestContigCaller != null) {
 			bestContigCaller.remove(toRemove.keySet());
 		}
-		Set<KmerPathNode> simplifyCandidates = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerPathNode.HashByFirstKmerStartPositionKmer<KmerPathNode>());
+		Set<KmerPathNode> simplifyCandidates = null;
+		if (SIMPLIFY_AFTER_REMOVAL) {
+			simplifyCandidates = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerPathNode.HashByFirstKmerStartPositionKmer<KmerPathNode>());
+		}
 		for (Entry<KmerPathNode, List<List<KmerNode>>> entry : toRemove.entrySet()) {
+			// removing down-weighted replacement nodes from memoization is unnecessary since we just
+			// removed the entire node earlier in this function
 			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates, false);
 		}
 		if (SIMPLIFY_AFTER_REMOVAL) {
@@ -628,9 +631,11 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		assert(node.length() >= toRemove.size());
 		// remove from graph
 		removeFromGraph(node, includeMemoizationRemoval);
-		simplifyCandidates.addAll(node.next());
-		simplifyCandidates.addAll(node.prev());
-		simplifyCandidates.remove(node);
+		if (SIMPLIFY_AFTER_REMOVAL) {
+			simplifyCandidates.addAll(node.next());
+			simplifyCandidates.addAll(node.prev());
+			simplifyCandidates.remove(node);
+		}
 		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
 		for (KmerPathNode split : replacementNodes) {
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
@@ -638,7 +643,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			}
 			addToGraph(split);
 		}
-		simplifyCandidates.addAll(replacementNodes);
+		if (SIMPLIFY_AFTER_REMOVAL) {
+			simplifyCandidates.addAll(replacementNodes);
+		}
 	}
 	private void addToGraph(KmerPathNode node) {
 		boolean added = graphByPosition.add(node);
