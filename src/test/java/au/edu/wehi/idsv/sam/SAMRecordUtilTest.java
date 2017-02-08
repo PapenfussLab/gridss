@@ -739,7 +739,7 @@ public class SAMRecordUtilTest extends TestHelper {
 	@Test
 	public void hardClipToN_should_not_change_original_record() {
 		SAMRecord r = withQual(new byte[] {1, 2}, withSequence("GT", Read(0, 1, "1H2M3H")))[0];
-		SAMRecord result = SAMRecordUtil.hardClipToN(r);
+		SAMRecordUtil.hardClipToN(r);
 		assertEquals("1H2M3H", r.getCigarString());
 		assertEquals("GT", S(r.getReadBases()));
 	}
@@ -748,5 +748,25 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecord r = withQual(new byte[] {1, 1, 2, 1, 1, 1}, withSequence("AGTAAA", Read(0, 1, "1S2M3S")))[0];
 		SAMRecord result = SAMRecordUtil.hardClipToN(r);
 		Assert.assertSame(result, r);
+	}
+	@Test
+	public void getEffectiveMapq_should_use_mapq() {
+		assertEquals(0, SAMRecordUtil.getEffectiveMapq(withMapq(0, Read(0, 1, "1M"))[0], 1), 0);
+		assertEquals(1, SAMRecordUtil.getEffectiveMapq(withMapq(1, Read(0, 1, "1M"))[0], 2), 0);
+	}
+	@Test
+	public void getEffectiveMapq_should_be_0_for_unmapped_reads() {
+		SAMRecord r = withMapq(1, Read(0, 1, "1M"))[0];
+		r.setReadUnmappedFlag(true);
+		assertEquals(0, SAMRecordUtil.getEffectiveMapq(r, 1), 0);
+	}
+	@Test
+	public void getEffectiveMapq_should_use_alternate_alignment_location_count() {
+		assertEquals(3.010299957, SAMRecordUtil.getEffectiveMapq(withAttr("IH", 2, withMapq(10, Read(0, 1, "1M")))[0], 1), 0.00001);
+		assertEquals(0.457574905, SAMRecordUtil.getEffectiveMapq(withAttr("NH", 10, withMapq(15, Read(0, 1, "1M")))[0], 1), 0.00001);
+	}
+	@Test
+	public void getEffectiveMapq_should_use_fallback() {
+		assertEquals(1.5, SAMRecordUtil.getEffectiveMapq(withMapq(SAMRecord.UNKNOWN_MAPPING_QUALITY, Read(0, 1, "1M"))[0], 1.5), 0);
 	}
 }

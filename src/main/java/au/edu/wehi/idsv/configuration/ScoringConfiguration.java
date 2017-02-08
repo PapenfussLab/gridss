@@ -16,7 +16,6 @@ public class ScoringConfiguration {
 	public static final String CONFIGURATION_PREFIX = "scoring";
 	public ScoringConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
-		variantFilterScore = config.getDouble("variantFilterScore");
 		switch (config.getString("model")) {
 			case "EmpiricalLlr":
 				model = new EmpiricalLlrModel();
@@ -44,11 +43,6 @@ public class ScoringConfiguration {
 				exclude.contains("SoftClip"),
 				exclude.contains("Indel"));
 	}
-	/**
-	 * Score at which evidence is consider to provide insufficient
-	 * support and is filtered 
-	 */
-	public double variantFilterScore;
 	private VariantScoringModel model;
 	public VariantScoringModel getModel() {
 		return model;

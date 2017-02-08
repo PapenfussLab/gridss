@@ -31,6 +31,7 @@ import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.MathUtil;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -1221,7 +1222,7 @@ public class SAMRecordUtil {
 	 * @param minMapq
 	 *            minimum MAPQ to avoid unmapping
 	 */
-	public static SAMRecord lowMapqToUnmapped(SAMRecord record, int minMapq) {
+	public static SAMRecord lowMapqToUnmapped(SAMRecord record, double minMapq) {
 		lowMapqToUnmapped_SA(record, minMapq);
 		if (record.getMappingQuality() < minMapq) {
 			record.setReadUnmappedFlag(true);
@@ -1235,7 +1236,7 @@ public class SAMRecordUtil {
 		return record;
 	}
 
-	private static void lowMapqToUnmapped_SA(SAMRecord record, int minMapq) {
+	private static void lowMapqToUnmapped_SA(SAMRecord record, double minMapq) {
 		if (record.getAttribute(SAMTag.SA.name()) == null)
 			return;
 		record.setAttribute(SAMTag.SA.name(), ChimericAlignment.getChimericAlignments(record).stream()
@@ -1319,5 +1320,36 @@ public class SAMRecordUtil {
 			CigarUtil.clean(list, false);
 		}
 		return new Cigar(list);
+	}
+	public static double getEffectiveMapq(SAMRecord r, double fallbackMapq) {
+		if (r.getReadUnmappedFlag()) return 0;
+		Integer hits = reportedAlignments(r);
+		if (hits != null) {
+			if (hits > 1) {
+				// consider all mappings equally likely since we don't have any more information than that
+				return MathUtil.prToPhred((hits - 1) / (double)hits);
+			} else {
+				// TODO: what do to here?
+				// bowtie2 doesn't conform to the specs in multi-mapping mode
+				// and reports a nonsense mapq
+				return fallbackMapq;
+			}
+		}
+		int mapq = r.getMappingQuality();
+		if (mapq == SAMRecord.UNKNOWN_MAPPING_QUALITY) {
+			return fallbackMapq;
+		}
+		return mapq;
+	}
+	private static Integer reportedAlignments(SAMRecord r) {
+		if (r.getIntegerAttribute(SAMTag.NH.name()) != null) {
+			// NH i Number of reported alignments that contains the query in the current record
+			return r.getIntegerAttribute(SAMTag.NH.name());
+		}
+		if (r.getIntegerAttribute(SAMTag.IH.name()) != null) {
+			// IH i Number of stored alignments in SAM that contains the query in the current record
+			return r.getIntegerAttribute(SAMTag.IH.name());
+		}
+		return null;
 	}
 }

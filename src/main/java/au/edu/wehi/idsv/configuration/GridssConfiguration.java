@@ -27,7 +27,11 @@ public class GridssConfiguration {
 	/**
 	 * Minimum MAPQ to considered uniquely mapped
 	 */
-	public int minMapq;
+	public double minMapq;
+	/**
+	 * Fall-back mapq when no aligner mapping quality is reported  
+	 */
+	public double fallbackMapq;
 	/**
 	 * Minimum entropy of anchored sequence (in bits) (Shannon entropy)
 	 */
@@ -97,7 +101,8 @@ public class GridssConfiguration {
 		variantCalling = new VariantCallingConfiguration(config);
 		scoring =  new ScoringConfiguration(config);
 		adapters = new AdapterHelper(config.getStringArray("adapter"));
-		minMapq = config.getInt("minMapq");
+		minMapq = config.getDouble("minMapq");
+		fallbackMapq = config.getDouble("fallbackMapq");
 		maxCoverage = config.getInt("maxCoverage");
 		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		dovetailMargin = config.getInt("dovetailMargin");
