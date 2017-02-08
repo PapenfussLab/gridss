@@ -18,6 +18,7 @@ public class VariantCallingConfiguration {
 	public static final String CONFIGURATION_PREFIX = "variantcalling";
 	public VariantCallingConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
+		minReads = config.getDouble("minReads");
 		minScore = config.getDouble("minScore");
 		minSize = config.getInt("minSize");
 		callOnlyAssemblies = config.getBoolean("callOnlyAssemblies");
@@ -37,6 +38,10 @@ public class VariantCallingConfiguration {
 //				throw new IllegalArgumentException(String.format("Unrecognised output format \"%s\"", config.getString("format")));
 //		}
 	}
+	/**
+	 * Minimum number of reads supporting variant either directly or indirectly through assembly
+	 */
+	public double minReads;
 	/**
 	 * Minimum score for variant to be called
 	 */
