@@ -32,10 +32,8 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	public DirectedEvidence next() {
 		DirectedEvidence evidence = super.next();
 		if (!isBelowUnconditionalAcceptanceThreshold() && tresholdStart == null) {
-			log.debug(String.format("Start assembly throttling at %s:%d", dictionary.getSequence(evidence.getBreakendSummary().referenceIndex).getSequenceName(), evidence.getBreakendSummary().start));
 			tresholdStart = evidence;
-		} else if (isBelowUnconditionalAcceptanceThreshold() && tresholdStart != null) {
-			log.debug(String.format("End assembly throttling at %s:%d", dictionary.getSequence(evidence.getBreakendSummary().referenceIndex).getSequenceName(), evidence.getBreakendSummary().start));
+		} else if (isBelowUnconditionalAcceptanceThreshold() && tresholdStart != null) {			
 			int startReferenceIndex = tresholdStart.getBreakendSummary().referenceIndex;
 			int startPos = tresholdStart.getBreakendSummary().start;
 			int endReferenceIndex = evidence.getBreakendSummary().referenceIndex;
@@ -46,6 +44,7 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 				throttled.addInterval(startReferenceIndex, startPos, dictionary.getSequence(startReferenceIndex).getSequenceLength());
 				throttled.addInterval(endReferenceIndex, 1, endPos);
 			}
+			log.debug(String.format("Throttled assembly evidence in interval %s:%d-%d", dictionary.getSequence(startReferenceIndex).getSequenceName(), startPos, endPos));
 			tresholdStart = null;
 		}
 		return evidence;

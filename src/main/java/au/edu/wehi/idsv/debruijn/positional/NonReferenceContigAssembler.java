@@ -211,7 +211,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					} while (forcedContig != null);
 					flushReferenceNodes();
 					if (!called.isEmpty()) {
-						log.debug(String.format("Forced %d contigs in interval %s:%d-%d", called.size(), contigName, frontierStart, flushPosition));
+						log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, flushPosition, frontierStart, nextPosition()));
 						return;
 					}
 				}
@@ -308,7 +308,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			toFlush.remove(range);
 			int flushOnOrAfter = range.lowerEndpoint();
 			int flushBefore = range.upperEndpoint();
-			int advanceTo = graphByPosition.last().lastStart() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded();
+			int advanceTo = toFlush.span().upperEndpoint() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded();
 			advanceUnderlying(advanceTo);
 			List<KmerPathSubnode> toRemove = new ArrayList<>();
 			Iterator<KmerPathNode> it = graphByPosition.descendingIterator(); 
