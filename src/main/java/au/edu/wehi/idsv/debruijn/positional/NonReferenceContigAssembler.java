@@ -103,7 +103,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
 	public int getReferenceIndex() { return referenceIndex; }
-	private int retainWidth() { return Math.max(2, (int)(aes.getContext().getAssemblyParameters().positional.retainWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1; }
+	private int retainWidth() {
+		return Math.max(
+				// safety check: retain at least a breakpoint worth
+				maxExpectedBreakendLength() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded(),
+				// calculate retain width from contig 
+				(int)(aes.getContext().getAssemblyParameters().positional.retainWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1;
+	}
 	private int flushWidth() { return Math.max(1, (int)(aes.getContext().getAssemblyParameters().positional.flushWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1; }
 	private int maxExpectedBreakendLength() { return Math.max(2, ((int)(aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize()) - k + 1)); }
 	/**
@@ -122,7 +128,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * Last position supported by this RP is here. 
 	 */
 	private int minDistanceFromNextPositionForEvidenceToBeFullyLoaded() {
-		return 1 + maxEvidenceSupportIntervalWidth + aes.getMaxReadLength() - k + 1;
+		// TODO: work out why maxEvidenceSupportIntervalWidth + aes.getMaxReadLength() - k + 1 isn't sufficient distance
+		return maxEvidenceSupportIntervalWidth + aes.getMaxReadLength() + aes.getMaxConcordantFragmentSize() + 1;
 	}
 	/**
 	 * Creates a new structural variant positional de Bruijn graph contig assembly for the given chromosome
@@ -185,18 +192,14 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				//                    ------------------------------------------- contig
 				//                    ^                                         ^                             
 				// |<---flushWidth--->|<---------------------------------retainWidth------------------------------------>|
-				// |                  |<---maxExpectedBreakendLengthMultiple--->|                                        |
-				// |                  |                                         |<--- maxEvidenceSupportIntervalWidth--->|   
 				// |             flushPosition                                                                     frontierStart
 				// loadedStart                                                                                      nextPosition
-				int flushPosition = Math.min(frontierStart - retainWidth(),
-						nextPosition() - maxEvidenceSupportIntervalWidth - maxExpectedBreakendLength())
-						- 1;
+				int flushPosition = frontierStart - retainWidth() - 1;
 				int loadedStart = nonReferenceGraphByPosition.first().firstStart();
-				if (loadedStart + flushWidth() < flushPosition) {
+				if (loadedStart + flushWidth() < flushPosition) { // don't start flushing until we're at least flushWidth distance from the retain position
 					ArrayDeque<KmerPathSubnode> forcedContig = null;
+					// keep calling until we have no more contigs left even if we could be calling a suboptimal contig
 					do {
-						// keep calling until we have no more contigs left even if we could be calling a suboptimal contig
 						flushExcessivelyDenseIntervals();
 						forcedContig = bestContigCaller.callBestContigStartingBefore(nextPosition(), flushPosition);
 						if (forcedContig != null && forcedContig.getLast().lastEnd() + maxEvidenceSupportIntervalWidth >= nextPosition()) {
@@ -209,7 +212,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 						}
 						callContig(forcedContig);
 					} while (forcedContig != null);
-					flushReferenceNodes();
+					flushReferenceNodes(); // now get rid of any orphaned reads that got error corrected to become fully reference-supporting
 					if (!called.isEmpty()) {
 						log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, flushPosition, frontierStart, nextPosition()));
 						return;
@@ -242,19 +245,26 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			verifyMemoization();
 		}
 	}
+	private int flushReferenceNodes_debug_message_count = 0;
 	private void flushReferenceNodes() {
 		int position = nonReferenceGraphByPosition.isEmpty() ? nextPosition() : nonReferenceGraphByPosition.first().firstStart();
 		int maxContigAnchorLength = Math.max(maxExpectedBreakendLength(), aes.getContext().getAssemblyParameters().anchorLength);
 		// first position at which we are guaranteed to not be involved in any contig anchor sequence
 		position -= minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxContigAnchorLength;
-		if (!graphByPosition.isEmpty() && graphByPosition.first().firstStart() < position) {
+		if (!graphByPosition.isEmpty() && graphByPosition.first().lastEnd() < position) {
 			Collection<KmerPathSubnode> nodes = new ArrayList<>();
 			for (KmerPathNode tn : graphByPosition) {
-				if (tn.firstStart() >= position) {
+				if (tn.lastEnd() >= position) {
 					break;
 				}
 				if (tn.isReference()) {
 					nodes.add(new KmerPathSubnode(tn));
+				} else {
+					if (flushReferenceNodes_debug_message_count == 0) {
+						log.debug(String.format("Sanity check failure when flushing reference nodes before %s:%d. Found non-reference node starting at %d", contigName, position, tn.firstStart()));
+						flushReferenceNodes_debug_message_count++;
+						break;
+					}
 				}
 			}
 			Set<KmerEvidence> toRemove = evidenceTracker.untrack(nodes);
@@ -308,7 +318,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			toFlush.remove(range);
 			int flushOnOrAfter = range.lowerEndpoint();
 			int flushBefore = range.upperEndpoint();
-			int advanceTo = toFlush.span().upperEndpoint() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded();
+			int advanceTo = flushBefore + minDistanceFromNextPositionForEvidenceToBeFullyLoaded();
 			advanceUnderlying(advanceTo);
 			List<KmerPathSubnode> toRemove = new ArrayList<>();
 			Iterator<KmerPathNode> it = graphByPosition.descendingIterator(); 

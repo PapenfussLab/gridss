@@ -56,12 +56,12 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 * as max frag size from the mapping position (which in this scenario is also the breakend
 	 * position).
 	 */
-	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize, EvidenceTracker tracker, boolean includePairAnchors, int disallowMismatch) {
+	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxSupportStartPositionOffset, EvidenceTracker tracker, boolean includePairAnchors, int disallowMismatch) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.k = k;
 		this.includePairAnchors = includePairAnchors;
 		this.disallowMismatch = disallowMismatch;
-		this.maxSupportStartPositionOffset = maxFragmentSize;
+		this.maxSupportStartPositionOffset = maxSupportStartPositionOffset;
 		this.emitOffset = maxSupportStartPositionOffset + 1;
 		if (underlying.hasNext()) {
 			firstReferenceIndex = underlying.peek().getBreakendSummary().referenceIndex;
@@ -132,7 +132,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 			for (int i = 0; i < e.length(); i++) {
 				KmerSupportNode support = e.node(i); 
 				if (support != null) {
-					// max sure that we are actually able to resort into kmer order
+					// make sure that we are actually able to resort into kmer order
 					assert(support.firstStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
 					assert(support.weight() > 0);
 					supportNodes.add(support);
