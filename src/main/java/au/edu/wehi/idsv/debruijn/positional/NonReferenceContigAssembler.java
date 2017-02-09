@@ -184,13 +184,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				// been fully loaded into the graph 
 				//                    ------------------------------------------- contig
 				//                    ^                                         ^                             
-				// |<---flushWidth--->|<---------------------------------retainWidth-------------------------------->|
-				// |                  |<---maxExpectedBreakendLengthMultiple--->|                                    |
-				// |                  |                                         |<--- minDistanceFromNextPosition--->|   
-				// |             flushPosition                                                                   frontierStart
-				// loadedStart                                                                                    nextPosition
+				// |<---flushWidth--->|<---------------------------------retainWidth------------------------------------>|
+				// |                  |<---maxExpectedBreakendLengthMultiple--->|                                        |
+				// |                  |                                         |<--- maxEvidenceSupportIntervalWidth--->|   
+				// |             flushPosition                                                                     frontierStart
+				// loadedStart                                                                                      nextPosition
 				int flushPosition = Math.min(frontierStart - retainWidth(),
-						nextPosition() - minDistanceFromNextPositionForEvidenceToBeFullyLoaded() - maxExpectedBreakendLength())
+						nextPosition() - maxEvidenceSupportIntervalWidth - maxExpectedBreakendLength())
 						- 1;
 				int loadedStart = nonReferenceGraphByPosition.first().firstStart();
 				if (loadedStart + flushWidth() < flushPosition) {
@@ -210,7 +210,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 						callContig(forcedContig);
 					} while (forcedContig != null);
 					flushReferenceNodes();
-					if (!called.isEmpty()) return;
+					if (!called.isEmpty()) {
+						log.debug(String.format("Forced %d contigs in interval %s:%d-%d", called.size(), contigName, frontierStart, flushPosition));
+						return;
+					}
 				}
 			}
 			// Call the next contig
