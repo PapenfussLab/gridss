@@ -194,8 +194,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	}
 	private void assembleChunk(File output, int chunkNumber, QueryInterval qi) throws IOException {
 		AssemblyIdGenerator assemblyNameGenerator = new SequentialIdGenerator(String.format("asm%d-", chunkNumber));
-		String chuckName = String.format("%s:%d-%d", getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end);
-		log.info(String.format("Starting assembly on interval %s", chuckName));
+		String chuckName = String.format("chunk %d (%s:%d-%d)", chunkNumber, getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end);
+		log.info(String.format("Starting assembly on %s", chuckName));
 		Stopwatch timer = Stopwatch.createStarted();
 		SAMFileHeader header = getContext().getBasicSamHeader();
 		// TODO: add assembly @PG header
@@ -221,7 +221,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			throw e;
 		} finally {
 			timer.stop();
-			log.info(String.format("Completed assembly on interval %s in %ds (%s)", chuckName, timer.elapsed(TimeUnit.SECONDS), timer.toString()));
+			log.info(String.format("Completed assembly on %s in %ds (%s)", chuckName, timer.elapsed(TimeUnit.SECONDS), timer.toString()));
 		}
 		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, output, SortOrder.coordinate);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {

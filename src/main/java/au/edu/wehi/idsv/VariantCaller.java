@@ -89,8 +89,8 @@ public class VariantCaller {
 		}
 	}
 	private void callChunk(File output, AggregateEvidenceSource es, int chunkNumber, QueryInterval chunck) {
-		String chunkMsg =  String.format("%s:%d-%d", processContext.getDictionary().getSequence(chunck.referenceIndex).getSequenceName(), chunck.start, chunck.end);
-		String msg = "calling maximal cliques in interval " + chunkMsg;
+		String chunkMsg =  String.format("chunk %d (%s:%d-%d)", chunkNumber, processContext.getDictionary().getSequence(chunck.referenceIndex).getSequenceName(), chunck.start, chunck.end);
+		String msg = "calling maximal cliques in " + chunkMsg;
 		File tmp = FileSystemContext.getWorkingFileFor(output);
 		try (VariantCallIterator rawit = new VariantCallIterator(es, chunck, chunkNumber)) {
 			try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
