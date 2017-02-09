@@ -374,4 +374,22 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		// the rest should have been removed
 		assertEquals(1, output.size());
 	}
+	@Test
+	public void should_not_remove_misassembled_partial_paths_when_could_be_collapsed_with_adjacent_read() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(10, 10);
+		pc.getAssemblyParameters().k = 2;
+		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 5;
+		pc.getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly = true;
+		pc.getAssemblyParameters().positional.flushWidthMultiple = 100000;
+		pc.getAssemblyParameters().positional.maxPathLengthMultiple = 4;
+		List<DirectedEvidence> e = new ArrayList<>();
+		for (int i = 1; i < 1000; i += 1) {
+			SAMRecord[] rp = OEA(0, i, "2M", true);
+			rp[0].setReadBases(B("GG"));
+			rp[1].setReadBases(B("AA")); // expect reverse comp of read sequence
+			e.add(NRRP(ses, rp));
+		}
+		go(pc, true, e.toArray(new DirectedEvidence[0]));
+	}
 }

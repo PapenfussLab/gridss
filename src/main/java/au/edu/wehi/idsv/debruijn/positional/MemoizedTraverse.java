@@ -43,8 +43,8 @@ public class MemoizedTraverse {
 	private final SortedSet<TraversalNode> frontier = new TreeSet<>(TraversalNode.ByLastEndKmer);
 	private final MemoizationStats stats = new MemoizationStats();
 	/**
-	 * Removes all nodes from the graph
-	 * @param node
+	 * Removes all given nodes from the graph
+	 * @param nodes nodes to remove
 	 */
 	public void remove(Set<KmerPathNode> nodes) {
 		// bulk remove nodes in removal set

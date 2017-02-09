@@ -523,11 +523,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 */
 	private void removeFromGraph(Set<KmerEvidence> evidence) {
 		assert(!evidence.isEmpty());
+		// Tracks what we need to remove from each kmer of each path node
 		Map<KmerPathNode, List<List<KmerNode>>> toRemove = new IdentityHashMap<KmerPathNode, List<List<KmerNode>>>();
 		for (KmerEvidence e : evidence) {
 			updateRemovalList(toRemove, e);
 		}
 		if (bestContigCaller != null) {
+			// removes all KmerPathNodes that need mutation from the memoization 
 			bestContigCaller.remove(toRemove.keySet());
 		}
 		Set<KmerPathNode> simplifyCandidates = null;

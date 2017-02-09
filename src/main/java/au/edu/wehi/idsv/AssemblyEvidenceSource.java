@@ -417,10 +417,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 * Maximum read length of reads contributing to assemblies
 	 * @return
 	 */
+	@Override
 	public int getMaxReadLength() {
 		return maxReadLength;
 	}
-	public int getMaxMappedReadLength() {
+	@Override
+	public int getMaxReadMappedLength() {
 		return maxMappedReadLength;
 	}
 	@SuppressWarnings("unused")
