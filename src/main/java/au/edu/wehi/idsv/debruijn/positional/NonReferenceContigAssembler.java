@@ -87,21 +87,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
 	private final AssemblyIdGenerator assemblyNameGenerator;
-	/**
-	 * Worst case scenario is a RP providing single kmer support for contig
-	 * read length - (k-1) + max-min fragment size
-	 *
-	 * ========== contig
-	 *          --------- read contributes single kmer to contig  
-	 *           \       \  in the earliest position
-	 *            \  RP   \
-	 *             \       \
-	 *              \       \
-	 *               ---------
-	 *                        ^
-	 *                        |
-	 * Last position supported by this RP is here. 
-	 */
 	private final int maxEvidenceSupportIntervalWidth;
 	private final int maxAnchorLength;
 	private final int k;
@@ -121,6 +106,24 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private int retainWidth() { return Math.max(2, (int)(aes.getContext().getAssemblyParameters().positional.retainWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1; }
 	private int flushWidth() { return Math.max(1, (int)(aes.getContext().getAssemblyParameters().positional.flushWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1; }
 	private int maxExpectedBreakendLength() { return Math.max(2, ((int)(aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize()) - k + 1)); }
+	/**
+	 * Worst case scenario is a RP providing single kmer support for contig
+	 * read length - (k-1) + max-min fragment size
+	 *
+	 * ========== contig
+	 *          --------- read contributes single kmer to contig  
+	 *           \       \  in the earliest position
+	 *            \  RP   \
+	 *             \       \
+	 *              \       \
+	 *               ---------
+	 *                       ^
+	 *                       |
+	 * Last position supported by this RP is here. 
+	 */
+	private int minDistanceFromNextPositionForEvidenceToBeFullyLoaded() {
+		return 1 + maxEvidenceSupportIntervalWidth + aes.getMaxReadLength() - k + 1;
+	}
 	/**
 	 * Creates a new structural variant positional de Bruijn graph contig assembly for the given chromosome
 	 * @param it reads
@@ -145,7 +148,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			EvidenceTracker tracker,
 			String contigName) {
 		this.underlying = Iterators.peekingIterator(it);
-		this.maxEvidenceSupportIntervalWidth = Math.max(maxEvidenceSupportIntervalWidth, source.getMaxReadLength() - k + 1);
+		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
 		this.maxAnchorLength = maxAnchorLength;
 		this.k = k;
 		this.referenceIndex = referenceIndex;
@@ -181,13 +184,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				// been fully loaded into the graph 
 				//                    ------------------------------------------- contig
 				//                    ^                                         ^                             
-				// |<---flushWidth--->|<---------------------------------retainWidth------------------------------------>|
-				// |                  |<---maxExpectedBreakendLengthMultiple--->|                                        |
-				// |                  |                                         |<--- maxEvidenceSupportIntervalWidth--->|   
-				// |             flushPosition                                                                       frontierStart
-				// loadedStart                                                                                        nextPosition
+				// |<---flushWidth--->|<---------------------------------retainWidth-------------------------------->|
+				// |                  |<---maxExpectedBreakendLengthMultiple--->|                                    |
+				// |                  |                                         |<--- minDistanceFromNextPosition--->|   
+				// |             flushPosition                                                                   frontierStart
+				// loadedStart                                                                                    nextPosition
 				int flushPosition = Math.min(frontierStart - retainWidth(),
-						nextPosition() - maxEvidenceSupportIntervalWidth - maxExpectedBreakendLength())
+						nextPosition() - minDistanceFromNextPositionForEvidenceToBeFullyLoaded() - maxExpectedBreakendLength())
 						- 1;
 				int loadedStart = nonReferenceGraphByPosition.first().firstStart();
 				if (loadedStart + flushWidth() < flushPosition) {
@@ -240,7 +243,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		int position = nonReferenceGraphByPosition.isEmpty() ? nextPosition() : nonReferenceGraphByPosition.first().firstStart();
 		int maxContigAnchorLength = Math.max(maxExpectedBreakendLength(), aes.getContext().getAssemblyParameters().anchorLength);
 		// first position at which we are guaranteed to not be involved in any contig anchor sequence
-		position -= maxEvidenceSupportIntervalWidth + maxContigAnchorLength;
+		position -= minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxContigAnchorLength;
 		if (!graphByPosition.isEmpty() && graphByPosition.first().firstStart() < position) {
 			Collection<KmerPathSubnode> nodes = new ArrayList<>();
 			for (KmerPathNode tn : graphByPosition) {
@@ -268,7 +271,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		// been fully loaded, we don't remove nodes that could contain
 		// a read that also contributed to an unprocessed node
 		List<KmerPathSubnode> misassemblyToRemove = misassembly.stream()
-			.filter(sn -> sn.lastEnd() + maxEvidenceSupportIntervalWidth < nextPosition() - 1)
+			.filter(sn -> sn.lastEnd() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded() < nextPosition())
 			.collect(Collectors.toList());
 		if (misassemblyToRemove.size() == 0) {
 			return;
@@ -288,7 +291,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private void advanceUnderlying() {
 		int loadUntil = nextPosition();
 		if (loadUntil < Integer.MAX_VALUE) {
-			loadUntil += maxEvidenceSupportIntervalWidth + 1;
+			loadUntil += minDistanceFromNextPositionForEvidenceToBeFullyLoaded();
 		}
 		advanceUnderlying(loadUntil);
 	}
@@ -302,7 +305,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			toFlush.remove(range);
 			int flushOnOrAfter = range.lowerEndpoint();
 			int flushBefore = range.upperEndpoint();
-			int advanceTo = graphByPosition.last().lastStart() + maxEvidenceSupportIntervalWidth;
+			int advanceTo = graphByPosition.last().lastStart() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded();
 			advanceUnderlying(advanceTo);
 			List<KmerPathSubnode> toRemove = new ArrayList<>();
 			Iterator<KmerPathNode> it = graphByPosition.descendingIterator(); 
@@ -380,7 +383,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		startingAnchor.removeLast();
 		// make sure we have enough of the graph loaded so that when
 		// we traverse forward, our anchor sequence will be fully defined
-		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceSupportIntervalWidth); 
+		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + minDistanceFromNextPositionForEvidenceToBeFullyLoaded()); 
 		
 		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getLast().length());
 		endAnchorPath.greedyTraverse(true, false);
