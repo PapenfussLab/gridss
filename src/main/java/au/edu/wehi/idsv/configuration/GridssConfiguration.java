@@ -68,6 +68,10 @@ public class GridssConfiguration {
 	 * Remove the variant contribution of a multimapping read/read pair from all location except the mapping location supporting the best variant
 	 */
 	public boolean multimappingUniqueVariantAllocation;
+	/**
+	 * Consider multi-mapping read alignments.
+	 */
+	public boolean multimapping;
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
@@ -110,6 +114,7 @@ public class GridssConfiguration {
 		chunkSize = config.getInt("chunkSize");
 		multimappingUniqueAssemblyAllocation = config.getBoolean("multimappingUniqueAssemblyAllocation");
 		multimappingUniqueVariantAllocation = config.getBoolean("multimappingUniqueVariantAllocation");
+		multimapping = config.getBoolean("multimapping");
 	}
 	public static Configuration LoadConfiguration(File configuration) throws ConfigurationException {
 		CompositeConfiguration config = new CompositeConfiguration();

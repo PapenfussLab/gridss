@@ -97,7 +97,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		log.info("Breakend assembly complete.");
 		List<File> deduplicatedChunks = assembledChunk;
 		if (Iterables.any(source, ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0)) {
-			if (getContext().getConfig().multimappingUniqueAssemblyAllocation) {
+			if (!getContext().getConfig().multimapping) {
+				log.info("Not performing unique assembly allocation of multimapping reads as the configuration setting multimapping is set to false.");
+			} else if (!getContext().getConfig().multimappingUniqueAssemblyAllocation) {
+				log.info("Not performing unique assembly allocation of multimapping reads as the configuration setting multimappingUniqueAssemblyAllocation is set to false.");
+			} else { 
 				log.info("Multimapping mode invoked due to existiance of at least one BAM file with a non-split secondary alignment.");
 				log.info("Uniquely assigning multi-mapping reads to alignment location supported by the best assembly.");
 				log.info("Loading assembly evidence allocations");
@@ -133,8 +137,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					}
 					runTasks(tasks);
 				}
-			} else {
-				log.info("Not performing unique assembly allocation of multimapping reads the configuration setting multimappingUniqueAssemblyAllocation is set to false.");
 			}
 		}
 		log.info("Merging assembly files");

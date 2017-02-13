@@ -323,10 +323,36 @@ Maven is used for build and dependency management which simplifies compile to th
 If GRIDSS was built successfully, a combined jar containing GRIDSS and all required library located at target/GRIDSS-_VERSION_-jar-with-dependencies.jar will have been created.
 
 
+# Multi-mapping read alignment
+
+GRIDSS supports input files that report multiple read alignments for each input read. GRIDSS supports multi-mapping read alignments in which each alignment is reported as an independ SAM record with the primary.secondary flags set as per the SAM specifications.
+
+As the default GRIDSS configuration parameters are suitable for input BAMs in which only the best read alignment is reported, some configuration settings overrides must be supplied. If the aligner does not report a meaningful MAPQ for multi-mapping alignments (true for all aligners we have tested), the scoring model should be updated to ignore mapping quality. The mapping quality filter should be removed and the maximum coverage increased. A typical configuration file for a multi-mapping input looks as follows:
+
+```
+multimapping=true
+maxCoverage=50000
+minMapq=0
+variantcalling.lowQuality=13
+variantcalling.minScore=2
+variantcalling.minSize=32
+scoring.model=ReadCount
+```
+
+When multi-mapping mode is enabled, both INPUT and INPUT_NAME_SORTED must be supplied for all input files.
+
+Due to 3rd party library dependencies, multi-mapping mode requires a full Java JDK installed and will not run with just a JRE.
+
 # Error Messages
 
 For some error messages, it is difficult to determine the root cause and what to do to fix it.
 Here is a list of key phrases of errors encountered by users and their solution
+
+### Aborting since lock gridss.lock._OUTPUT_ already exists. GRIDSS does not support multiple simulatenous instances running on the same data.
+
+Multiple instances of GRIDSS were run on the same data. GRIDSS does not yet support MPI parallelisation across multiple machines. Use the WORKER_THREADS parameter to specify the desired level of multi-threading. If using a cluster/job queuing system, a single non-MPI job should be submitted and either WORKER_THREADS explicitly set to the number of cores associated with the job requests, or the job should request the entire node.
+
+If the lock directory exists and you know a GRIDSS process is not running (eg: the GRIDSS process was killed), then you can safely delete the lock directory.
 
 ###  (Too many open files)
 
@@ -359,13 +385,11 @@ Your CPU does not support the SSE2 instruction set. See the sswjni sections for 
 
 ### Java HotSpot(TM) 64-Bit Server VM warning: INFO: os::commit_memory(0x00007fc36e200000, 48234496, 0) failed; error='Cannot allocate memory' (errno=12)
 
-GRIDSS has run out of memory. Either not enough memory has been allocated to run GRIDSS or GRIDSS has attempted to memory map too many files. Due to a issues with the library used for GRIDSS IO, the latter can occur on a full run of GRIDSS when given a large number of multimapped input files, and a large number of worker threads even when enough memory is available. In both cases, restart GRIDSS (increasing the memory avaialable if required) and GRIDSS will continue from where it left off.
+GRIDSS has run out of memory. Either not enough memory has been allocated to run GRIDSS or GRIDSS has attempted to memory map too many files. Due to memory mapping issues with the library used for GRIDSS I/O, the latter can occur on a full run of GRIDSS when given a large number of input files, and a large number of worker threads even when enough memory is available. In both cases, restart GRIDSS (increasing the memory available if required) and GRIDSS will continue from where it left off.
 
-### Aborting since lock gridss.lock._OUTPUT_ already exists. GRIDSS does not support multiple simulatenous instances running on the same data.
+### java.lang.AssertionError: java.lang.ClassNotFoundException: com.sun.tools.javac.api.JavacTool
 
-Multiple instances of GRIDSS were run on the same data. GRIDSS does not yet support MPI parallelisation across multiple machines. Use the WORKER_THREADS parameter to specify the desired level of multi-threading. If using a cluster/job queuing system, a single non-MPI job should be submitted and either WORKER_THREADS explicitly set to the number of cores associated with the job requests, or the job should request the entire node.
-
-If the lock directory exists and you know a GRIDSS process is not running (eg: the GRIDSS process was killed), then you can safely delete the lock directory.
+You are running GRIDSS in multi-mapping mode using only a JRE instead of a full JDK. Update your PATH and JAVA_HOME to a JAva 1.8+ JDK installation.
 
 
 

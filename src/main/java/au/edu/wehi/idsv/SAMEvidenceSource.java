@@ -177,6 +177,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 							log.info("Extracting SV reads from " + getFile().getAbsolutePath());
 							File in = getFile(SortOrder.queryname);
 							if (in == null || !in.exists()) {
+								if (getContext().getConfig().multimapping) {
+									throw new IllegalArgumentException(String.format("Missing INPUT_NAME_SORTED for %s."
+											+ " Both coordinate and name sorted input files must be supplied when multi-mapping mode is enabled.", getFile()));
+								}
 								in = getFile();
 							}
 							List<String> args = Lists.newArrayList(
