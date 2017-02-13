@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -303,9 +304,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals("10M2S", output.get(0).getCigarString());
 	}
 	@Test
-	public void should_truncate_contigs_longer_than_maxExpectedBreakendLengthMultiple() {
+	public void should_removeMisassembledPartialContigsDuringAssembly() {
 		ProcessingContext pc = getContext();
-		MockSAMEvidenceSource ses = SES(50, 100);
+		pc.getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly = false;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(getContext(), 50, 100);
 		pc.getAssemblyParameters().k = 4;
 		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 1.5f;
 		List<DirectedEvidence> e = new ArrayList<>();
@@ -314,8 +316,16 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		}
 		List<SAMRecord> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
 		assertEquals(1, output.size());
-		int sclen = SAMRecordUtil.getStartClipLength(output.get(0)) + SAMRecordUtil.getEndClipLength(output.get(0));
-		assertTrue(sclen <= (1.5 * 100) + 50 + 100);
+		SAMRecord r = output.get(0);
+		int sclenFull = SAMRecordUtil.getStartClipLength(r) + SAMRecordUtil.getEndClipLength(r);
+		
+		pc.getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly = true;
+		
+		output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		assertEquals(1, output.size());
+		r = output.get(0);
+		int sclenTruncated = SAMRecordUtil.getStartClipLength(r) + SAMRecordUtil.getEndClipLength(r);
+		Assert.assertNotEquals(sclenFull, sclenTruncated);
 	}
 	@Test
 	public void should_call_suboptimal_contigs_if_graph_size_limit_exceeded() {

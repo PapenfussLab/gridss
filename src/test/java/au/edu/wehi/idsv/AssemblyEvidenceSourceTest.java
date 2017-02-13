@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -301,7 +302,10 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getConfig().getAssembly().minReads = 1;
 		pc.getConfig().getSoftClip().minLength = 1;
-		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		pc.getConfig().multimapping = true;
+		File nameSortedInput = new File(input.getAbsolutePath() + ".queryname.bam");
+		SAMFileUtil.sort(getFSContext(), input, nameSortedInput, SortOrder.queryname);
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, nameSortedInput, 0);
 		ses.ensureExtracted();
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);

@@ -348,7 +348,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					asm.getReferenceName(), asm.getAlignmentStart(),
 					breakendLength));
 			return true;
-		}		
+		}
 		// too few reads
 		if (attr.getAssemblySupportCount() < ap.minReads) {
 			return true;

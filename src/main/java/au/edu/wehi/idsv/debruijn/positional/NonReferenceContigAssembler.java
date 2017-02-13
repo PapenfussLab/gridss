@@ -105,8 +105,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	public int getReferenceIndex() { return referenceIndex; }
 	private int retainWidth() {
 		return Math.max(
-				// safety check: retain at least a breakpoint worth
-				maxExpectedBreakendLength() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded(),
+				// safety check to ensure that flushed contigs don't call advanceUnderlying()
+				maxExpectedBreakendLength() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxAnchorLength + 1,
 				// calculate retain width from contig 
 				(int)(aes.getContext().getAssemblyParameters().positional.retainWidthMultiple * aes.getMaxConcordantFragmentSize())) - k + 1;
 	}
@@ -180,57 +180,63 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	public SAMRecord next() {
 		ensureCalledContig();
 		return called.remove();
-	}	
-	private void ensureCalledContig() {
-		if (!called.isEmpty()) return;
-		while (called.isEmpty()) {
-			// Safety calling to ensure loaded graph size is bounded
-			if (!nonReferenceGraphByPosition.isEmpty()) {
-				int frontierStart = bestContigCaller.frontierStart(nextPosition());
-				// Need to make sure our contig that we're forcing a call on is comprised of evidence that has
-				// been fully loaded into the graph 
-				//                    ------------------------------------------- contig
-				//                    ^                                         ^                             
-				// |<---flushWidth--->|<---------------------------------retainWidth------------------------------------>|
-				// |             flushPosition                                                                     frontierStart
-				// loadedStart                                                                                      nextPosition
-				int flushPosition = frontierStart - retainWidth() - 1;
-				int loadedStart = nonReferenceGraphByPosition.first().firstStart();
-				if (loadedStart + flushWidth() < flushPosition) { // don't start flushing until we're at least flushWidth distance from the retain position
-					ArrayDeque<KmerPathSubnode> forcedContig = null;
-					// keep calling until we have no more contigs left even if we could be calling a suboptimal contig
-					do {
-						flushExcessivelyDenseIntervals();
-						forcedContig = bestContigCaller.callBestContigStartingBefore(nextPosition(), flushPosition);
-						if (forcedContig != null && forcedContig.getLast().lastEnd() + maxEvidenceSupportIntervalWidth >= nextPosition()) {
-							// Could happen if ap.removeMisassembledPartialContigsDuringAssembly is false as
-							// contig length would then be unbounded
-							log.warn(String.format("Sanity check failure. Attempting to flush contig %s:%d-%d (+%d) when graph only loaded to %s:%d. Ignoring flush request.",
-									contigName, forcedContig.getFirst().firstStart(), forcedContig.getLast().lastEnd(), maxEvidenceSupportIntervalWidth,
-									contigName, nextPosition()));
-							forcedContig = null;
-						}
-						callContig(forcedContig);
-					} while (forcedContig != null);
-					flushReferenceNodes(); // now get rid of any orphaned reads that got error corrected to become fully reference-supporting
-					if (!called.isEmpty()) {
-						log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, flushPosition, frontierStart, nextPosition()));
-						return;
+	}
+	/**
+	 * Flush calls outside retain window.
+	 * This data
+	 */
+	private void flushCallsOutsideRetainWindow() {
+		// Need to make sure our contig that we're forcing a call on is comprised of evidence that has
+		// been fully loaded into the graph 
+		//                    ------------------------------------------- contig
+		//                    ^                                         ^                             
+		// |<---flushWidth--->|<---------------------------------retainWidth------------------------------------>|
+		// |             flushPosition                                                                     frontierStart
+		// loadedStart                                                                                      nextPosition
+		if (!nonReferenceGraphByPosition.isEmpty()) {
+			int frontierStart = bestContigCaller.frontierStart(nextPosition());
+			int flushPosition = frontierStart - retainWidth() - 1;
+			int loadedStart = nonReferenceGraphByPosition.first().firstStart();
+			if (loadedStart + flushWidth() < flushPosition) { // don't start flushing until we're at least flushWidth distance from the retain position
+				ArrayDeque<KmerPathSubnode> forcedContig = null;
+				// keep calling until we have no more contigs left even if we could be calling a suboptimal contig
+				do {
+					forcedContig = bestContigCaller.callBestContigStartingBefore(nextPosition(), flushPosition);
+					if (forcedContig != null && forcedContig.getLast().lastEnd() + maxEvidenceSupportIntervalWidth >= nextPosition()) {
+						// Could happen if ap.removeMisassembledPartialContigsDuringAssembly is false as
+						// contig length would then be unbounded
+						log.warn(String.format("Sanity check failure. Attempting to flush contig %s:%d-%d (+%d) when graph only loaded to %s:%d. Ignoring flush request.",
+								contigName, forcedContig.getFirst().firstStart(), forcedContig.getLast().lastEnd(), maxEvidenceSupportIntervalWidth,
+								contigName, nextPosition()));
+						forcedContig = null;
 					}
+					callContig(forcedContig);
+				} while (forcedContig != null);
+				if (!called.isEmpty()) {
+					log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, flushPosition, frontierStart, nextPosition()));
+					return;
 				}
 			}
-			// Call the next contig
+		}
+	}
+	private void ensureCalledContig() {
+		while (called.isEmpty()) {
 			flushExcessivelyDenseIntervals();
+			// remove misassembled partial contigs
+			if (aes.getContext().getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly) {
+				removeMisassembledPartialContig();
+			}
+			flushCallsOutsideRetainWindow(); // Safety calling to ensure loaded graph size is bounded
+			flushReferenceNodes(); // Need to get rid of any orphaned reads that got error corrected to become fully reference-supporting
+			if (!called.isEmpty()) {
+				return;
+			}
+			// Call the next contig
 			ArrayDeque<KmerPathSubnode> bestContig = bestContigCaller.bestContig(nextPosition());
 			callContig(bestContig);
 			if (called.isEmpty() && bestContig == null) {
 				if (underlying.hasNext()) {
 					advanceUnderlying();
-					flushExcessivelyDenseIntervals();
-					if (aes.getContext().getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly) {
-						removeMisassembledPartialContig();
-					}
-					flushReferenceNodes();
 				} else {
 					flushReferenceNodes();
 					if (!graphByPosition.isEmpty()) {
@@ -379,6 +385,14 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		assert(preGraphSize == postGraphSize);
 		return true;
 	}
+	/**
+	 * Calls the contig.
+	 * Note: to call the contig, additional graph nodes may be required to be loaded. No loading checks
+	 * (such as flushing excessively dense intervals) are performed on these additional loaded nodes.
+	 * @param contig to call 
+	 * @return SAMRecord containing breakend assembly, null if a valid break-end assembly contig
+	 * could not be created from this contig 
+	 */
 	private SAMRecord callContig(ArrayDeque<KmerPathSubnode> rawcontig) {
 		if (rawcontig == null) return null;
 		ArrayDeque<KmerPathSubnode> contig = rawcontig;
@@ -510,7 +524,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				removeFromGraph(n.node(), true);
 			}
 		}
-		flushExcessivelyDenseIntervals();
 		contigsCalled++;
 		if (assembledContig != null) {
 			called.add(assembledContig);
