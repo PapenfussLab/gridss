@@ -373,7 +373,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return false;
 	}
-	private int getSortWindowSize() {
+	protected int getSortWindowSize() {
 		// Soft clip:
 		// worst case: forward with small clip followed by large homologous clip 
 		// MMMMMMMMMM>
@@ -410,7 +410,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
-		int fs  = getMaxReadLength();
+		int fs = 1; // TODO: MIN_READ_LENGTH
 		if (getReadPairConcordanceCalculator() != null) {
 			fs = Math.max(getReadPairConcordanceCalculator().minConcordantFragmentSize(), fs);
 		}

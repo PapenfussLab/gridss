@@ -407,6 +407,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		maxExpected *= 2; // anchor + breakend length
 		return (int)maxExpected;
 	}
+	@Override 
+	protected int getSortWindowSize() {
+		// Worse case for assembly is worse than for the input BAMs as
+		// assembly allows for unanchored split reads using the XNX notation
+		int windowSize = super.getSortWindowSize() + getMaxConcordantFragmentSize();
+		return windowSize;
+	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
 		return maxSourceFragSize;
