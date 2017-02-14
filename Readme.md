@@ -354,16 +354,27 @@ Multiple instances of GRIDSS were run on the same data. GRIDSS does not yet supp
 
 If the lock directory exists and you know a GRIDSS process is not running (eg: the GRIDSS process was killed), then you can safely delete the lock directory.
 
+### Exception in thread "main" java.lang.UnsupportedClassVersionError: au/edu/wehi/idsv/Idsv : Unsupported major.minor version 52.0
+
+You are attempting to run GRIDSS with an old Java version. GRIDSS requires Java 8 or later.
+
+### ExternalProcessFastqAligner	Subprocess terminated with with exit status 1. Alignment failed for _INPUT_.realign.0.fq
+
+The external aligner (bwa) could not be run. The most common causes of this are:
+- bwa is not on `PATH`
+ - Does running "bwa" print out the bwa usage message? If you are using a cluster, you may have to add bwa to your `PATH` (eg `module add bwa`).
+- bwa index does not exist
+- bwa index has incorrect suffix
+ - if the reference is ref.fa the index must be ref.fa.bwt _not_ ref.bwt
+
+Can you run the bwa command exactly as it appears in the error message?
+
 ###  (Too many open files)
 
 GRIDSS has attempted to open too many files at once and the OS file handle limit has been reached.
 On linux 'ulimit -n' displays your current limit. This error likely to be encountered if you have specified a large number of input files or threads. Solutions are:
 * Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
 * Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
-
-### Exception in thread "main" java.lang.UnsupportedClassVersionError: au/edu/wehi/idsv/Idsv : Unsupported major.minor version 52.0
-
-You are attempting to run GRIDSS with an old Java version. GRIDSS requires Java 8 or later.
 
 ### Reference genome used by _input.bam_ does not match reference genome _reference.fa_. The reference supplied must match the reference used for every input.
 
