@@ -63,7 +63,7 @@ public class VariantCaller {
 		
 		log.info("Sorting identified breakpoints");
 		VcfFileUtil.sort(processContext, mergedOut, vcf);
-		// cleanup
+		// clean up chunked
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			for (File f : calledChunk) {
 				FileHelper.delete(f, true);

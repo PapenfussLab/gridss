@@ -228,6 +228,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, output, SortOrder.coordinate);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			tmpout.delete();
+			filteredout.delete();
 		}
 	}
 	private QueryInterval getExpanded(QueryInterval qi) {
