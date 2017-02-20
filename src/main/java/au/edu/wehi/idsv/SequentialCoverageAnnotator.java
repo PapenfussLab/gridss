@@ -35,14 +35,13 @@ public class SequentialCoverageAnnotator<T extends VariantContextDirectedEvidenc
 	private final Iterator<T> it;
 	private final List<Closeable> toclose = new ArrayList<>();
 	private final ExecutorService threadpool;
-	public SequentialCoverageAnnotator(ProcessingContext context, List<SAMEvidenceSource> sources, Iterator<T> it, ExecutorService threadpool) {
+	public SequentialCoverageAnnotator(ProcessingContext context, List<SAMEvidenceSource> sources, Iterator<T> it, int windowSize, ExecutorService threadpool) {
 		this.context = context;
-		this.reference = createLookup(context, sources);
+		this.reference = createLookup(context, sources, windowSize);
 		this.it = it;
 		this.threadpool = threadpool;
 	}
-	private List<ReferenceCoverageLookup> createLookup(ProcessingContext context, List<SAMEvidenceSource> sources) {
-		int windowSize = SAMEvidenceSource.maximumWindowSize(context, sources, null);
+	private List<ReferenceCoverageLookup> createLookup(ProcessingContext context, List<SAMEvidenceSource> sources, int windowSize) {
 		List<ReferenceCoverageLookup> result = new ArrayList<>();
 		for (SAMEvidenceSource ses : sources) {
 			assert(ses.getSourceCategory() >= 0);
