@@ -12,9 +12,11 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
 public abstract class SingleReadEvidence implements DirectedEvidence {
+	private static final Log log = Log.getInstance(SingleReadEvidence.class);
 	protected static final boolean INCLUDE_CLIPPED_ANCHORING_BASES = false;
 	protected final SAMEvidenceSource source;
 	private final SAMRecord record;
@@ -283,12 +285,27 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		int remotelen = homlen - locallen;
 		String strAnchor = new String(anchorBases, StandardCharsets.US_ASCII);
 		String strBreakend = new String(breakendBases, StandardCharsets.US_ASCII);
-		if (location.direction == BreakendDirection.Forward) {
-			// end of anchor + start of breakend
-			return strAnchor.substring(strAnchor.length() - locallen) + strBreakend.substring(0, remotelen);
-		} else {
-			// end of breakend + start of anchor
-			return strBreakend.substring(strBreakend.length() - remotelen) + strAnchor.substring(0, locallen);
+		try {
+			if (location.direction == BreakendDirection.Forward) {
+				// end of anchor + start of breakend
+				return strAnchor.substring(strAnchor.length() - locallen) + strBreakend.substring(0, remotelen);
+			} else {
+				// end of breakend + start of anchor
+				return strBreakend.substring(strBreakend.length() - remotelen) + strAnchor.substring(0, locallen);
+			}
+		} catch (StringIndexOutOfBoundsException e) {
+			String msg = String.format("Sanity check failure: getHomologySequence() failed for %s at %s:%d (%s). Local/remote homology lengths of %d/%d"
+					+ " not compatible anchor and breakend lengths of %d/%d",
+					record.getContig(),
+					record.getAlignmentStart(),
+					record.getReadName(),
+					getBreakendSummary().toString(source.getContext()),
+					locallen,
+					remotelen,
+					strAnchor.length(),
+					strBreakend.length());
+			log.error(msg);
+			return "";
 		}
 	}
 
