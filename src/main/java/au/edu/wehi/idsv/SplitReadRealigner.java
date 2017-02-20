@@ -192,7 +192,7 @@ public class SplitReadRealigner {
 			}
 		}
 	}
-	private int createSupplementaryAlignmentFastq(File input, File fq, boolean isRecursive) throws IOException {
+	protected int createSupplementaryAlignmentFastq(File input, File fq, boolean isRecursive) throws IOException {
 		int recordsWritten = 0;
 		try (SamReader reader = readerFactory.open(input)) {
 			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {

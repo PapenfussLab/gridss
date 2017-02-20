@@ -97,8 +97,8 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Test
 	public void fastq_keys_should_be_unique() throws IOException {
 		createBAM(input, SortOrder.coordinate, Read(0, 1, "1S1M1S"));
-		new SplitReadRealigner(getContext(), aligner).createSupplementaryAlignments(input, output);
 		File fq1 = getContext().getFileSystemContext().getRealignmentFastq(input, 0);
+		new SplitReadRealigner(getContext(), aligner).createSupplementaryAlignmentFastq(input, fq1, false);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		assertEquals(2, fq.size());
 		assertNotEquals(fq.get(0).getReadHeader(), fq.get(1).getReadHeader());
