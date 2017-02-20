@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -283,21 +283,21 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		vc = new IdsvVariantContextBuilder(getContext())
 			.breakpoint(new BreakpointSummary(0, FWD, 101, 100, 102, 2, BWD, 301, 300, 302), "").make();
 		assertEquals(Lists.newArrayList(-1,1), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(-1,1), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		assertEquals(Lists.newArrayList(-1,1), AttributeConverter.asIntList(vc.getAttribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 		
 		vc = new IdsvVariantContextBuilder(getContext())
 			.breakpoint(new BreakpointSummary(0, FWD, 150, 100, 200, 2, FWD, 350, 300, 400), "").make();
 		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 		
 		vc = new IdsvVariantContextBuilder(getContext())
 			.breakpoint(new BreakpointSummary(2, BWD, 350, 300, 400, 0, FWD, 150, 100, 200), "").make();
 		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 		
 		vc = new IdsvVariantContextBuilder(getContext())
 				.breakpoint(new BreakpointSummary(0, FWD, 101, 100, 105, 2, BWD, 300, 300, 305), "").make();
 			assertEquals(Lists.newArrayList(-1,4), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-			assertEquals(Lists.newArrayList(0,5), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+			assertEquals(Lists.newArrayList(0,5), AttributeConverter.asIntList(vc.getAttribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 	}
 }

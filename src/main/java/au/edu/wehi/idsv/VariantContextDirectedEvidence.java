@@ -9,7 +9,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMFileHeader;
@@ -113,8 +113,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		BreakendSummary be = getBreakendSummary();
 		SAMRecord r = new SAMRecord(header);
 		Cigar cigar = new Cigar(be.getCigarRepresentation());
-		if (hasAttribute(VcfAttributes.SUPPORT_CIGAR.attribute())) {
-			cigar = TextCigarCodec.decode(getAttributeAsString(VcfAttributes.SUPPORT_CIGAR.attribute(), null));
+		if (hasAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute())) {
+			cigar = TextCigarCodec.decode(getAttributeAsString(VcfInfoAttributes.SUPPORT_CIGAR.attribute(), null));
 		}
 		r.setCigar(cigar);
 		r.setReadName(getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, getID()));
@@ -143,15 +143,15 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		}
 		return r;
 	}
-	public int getBreakendEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()), 0); }
-	public int getBreakendEvidenceCountReadPair() { return getAttributeIntSum(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT); }
-	public int getBreakendEvidenceCountReadPair(int category) { return getAttributeIntOffset(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT, category); } 
-	public int getBreakendEvidenceCountSoftClip() { return getAttributeIntSum(VcfAttributes.BREAKEND_SOFTCLIP_COUNT); }
-	public int getBreakendEvidenceCountSoftClip(int category) { return getAttributeIntOffset(VcfAttributes.BREAKEND_SOFTCLIP_COUNT, category); }
-	public int getReferenceReadCount() { return getAttributeIntSum(VcfAttributes.REFERENCE_READ_COUNT); }
-	public int getReferenceReadCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READ_COUNT, category); }	
-	public int getReferenceReadPairCount() { return getAttributeIntSum(VcfAttributes.REFERENCE_READPAIR_COUNT); }
-	public int getReferenceReadPairCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READPAIR_COUNT, category); }
+	public int getBreakendEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()), 0); }
+	public int getBreakendEvidenceCountReadPair() { return getAttributeIntSum(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT); }
+	public int getBreakendEvidenceCountReadPair(int category) { return getAttributeIntOffset(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, category); } 
+	public int getBreakendEvidenceCountSoftClip() { return getAttributeIntSum(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT); }
+	public int getBreakendEvidenceCountSoftClip(int category) { return getAttributeIntOffset(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, category); }
+	public int getReferenceReadCount() { return getAttributeIntSum(VcfInfoAttributes.REFERENCE_READ_COUNT); }
+	public int getReferenceReadCount(int category) { return getAttributeIntOffset(VcfInfoAttributes.REFERENCE_READ_COUNT, category); }	
+	public int getReferenceReadPairCount() { return getAttributeIntSum(VcfInfoAttributes.REFERENCE_READPAIR_COUNT); }
+	public int getReferenceReadPairCount(int category) { return getAttributeIntOffset(VcfInfoAttributes.REFERENCE_READPAIR_COUNT, category); }
 	/**
 	 * Assembled breakend sequence. 
 	 * @return Breakend assembly sequence, null if no assembly was found

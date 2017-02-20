@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.SAMSequenceDictionary;
 
@@ -44,18 +44,18 @@ public class BedpeWriter implements Closeable {
 				"strand1" + "\t" +
 				"strand2" + "\t" +
 				VcfSvConstants.HOMOLOGY_SEQUENCE_KEY + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute() + "\t" +
+				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute() + "\t" +
+				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute() + "\t" +
+				VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute() + "\t" +
 				//VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute() + "\t" +
+				VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT.attribute() + "\t" +
+				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute() + "\t" +
+				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute() + "\t" +
+				VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute() + "\t" +
 				//VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute() + "\t" +
-				VcfAttributes.REFERENCE_READ_COUNT.attribute() + "\t" +
-				VcfAttributes.REFERENCE_READPAIR_COUNT.attribute() +
+				VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL.attribute() + "\t" +
+				VcfInfoAttributes.REFERENCE_READ_COUNT.attribute() + "\t" +
+				VcfInfoAttributes.REFERENCE_READPAIR_COUNT.attribute() +
 				"\n").getBytes(StandardCharsets.UTF_8));
 	}
 	public void write(VariantContextDirectedBreakpoint variant) throws IOException {

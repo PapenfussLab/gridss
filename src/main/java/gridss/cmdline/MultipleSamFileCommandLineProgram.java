@@ -41,9 +41,10 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     public List<File> INPUT;
 	@Option(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
     public List<File> INPUT_NAME_SORTED;
-	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported from category 1 (default) to the maximum category specified. "
-			+ "Specify categories when you require a breakdown of support (eg tumour/normal or multi-sample variant calling). ", optional=true)
-    public List<Integer> INPUT_CATEGORY;
+	@Option(shortName="IC", doc="Input label. Variant calling evidence breakdowns are reported for each label."
+			+ " Default labels correspond to INPUT filenames. "
+			+ "When specifying labels, labels must be provided for all input files.", optional=true)
+    public List<String> INPUT_LABEL;
     @Option(doc = "Per input maximum concordant fragment size.", optional=true)
     public List<Integer> INPUT_MAX_FRAGMENT_SIZE;
     @Option(doc = "Per input minimum concordant fragment size.", optional=true)
@@ -65,7 +66,8 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
 	
 	private List<SAMEvidenceSource> samEvidence = null;
-    private SAMEvidenceSource constructSamEvidenceSource(File file, File nameSortedFile, int category, int minFragSize, int maxFragSize) {
+    private SAMEvidenceSource constructSamEvidenceSource(File file, File nameSortedFile, String label, int minFragSize, int maxFragSize) {
+    	int category = getContext().registerCategory(label);
     	if (maxFragSize > 0) {
     		return new SAMEvidenceSource(getContext(), file, nameSortedFile, category, minFragSize, maxFragSize);
     	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
@@ -82,18 +84,15 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     }
     public List<SAMEvidenceSource> getSamEvidenceSources() {
     	if (samEvidence == null) {
-	    	// GRIDSS uses zero based categories internally - transform arg
-	    	if (INPUT_CATEGORY == null || INPUT_CATEGORY.size() == 0) {
-	    		INPUT_CATEGORY = INPUT.stream().map(x -> 0).collect(Collectors.toList());
-			} else {
-				INPUT_CATEGORY = INPUT_CATEGORY.stream().map(x -> x != null ? x - 1 : 0).collect(Collectors.toList());
+	    	if (INPUT_LABEL == null || INPUT_LABEL.size() == 0) {
+	    		INPUT_LABEL = INPUT.stream().map(x -> x.getName()).collect(Collectors.toList());
 			}
 	    	samEvidence = Lists.newArrayList();
 	    	for (int i = 0; i < INPUT.size(); i++) {
 	    		samEvidence.add(constructSamEvidenceSource(
 	    				getOffset(INPUT, i, null),
 	    				getOffset(INPUT_NAME_SORTED, i, null),
-	    				getOffset(INPUT_CATEGORY, i, 0),
+	    				getOffset(INPUT_LABEL, i, ""),
 	    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
 	    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
 	    	}
@@ -188,9 +187,6 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 		// with an IllegalInstruction when using libsswjni on an old computer? 
 		//aligner.align_smith_waterman("ACGT".getBytes(), "ACGT".getBytes());
 		
-		if (INPUT_CATEGORY.stream().mapToInt(x -> x).distinct().count() < INPUT_CATEGORY.stream().mapToInt(x -> x).max().orElse(0) - 8) {
-    		log.warn("Missing a large number of INPUT_CATEGORY indicies. Performance is likely to be degraded since unused categories are still computed and stored.");
-    	}
     	ensureArgs();
     	ExecutorService threadpool = null;
     	try {
@@ -219,7 +215,6 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			}
 			processContext = new ProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, null, getDefaultHeaders(), config);
 			processContext.setFilterDuplicates(IGNORE_DUPLICATES);
-			INPUT_CATEGORY.stream().forEach(x -> processContext.registerCategory(x, ""));
 			processContext.setWorkerThreadCount(WORKER_THREADS);
 			if (BLACKLIST != null) {
 				try {
@@ -265,14 +260,11 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 		if (INPUT_NAME_SORTED != null && INPUT_NAME_SORTED.size() > 0 && INPUT_NAME_SORTED.size() != INPUT.size()) {
     		return new String[] { "INPUT_NAME_SORTED must omitted or specified for every INPUT." };
     	}
-    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.size() > 0 && INPUT_CATEGORY.size() != INPUT.size()) {
+    	if (INPUT_LABEL != null && INPUT_LABEL.size() > 0 && INPUT_LABEL.size() != INPUT.size()) {
     		return new String[] { "INPUT_CATEGORY must omitted or specified for every INPUT." };
     	}
-    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().anyMatch(x -> x == null)) {
+    	if (INPUT_LABEL != null && INPUT_LABEL.stream().anyMatch(x -> x == null || x.equals(""))) {
     		return new String[] { "INPUT_CATEGORY must omitted or specified for every INPUT." };
-    	}
-    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().anyMatch(x -> x <= 0)) {
-    		return new String[] { "INPUT_CATEGORY must be positive integers: negative or zero categories are not valid." };
     	}
     	return null;
 	}
@@ -284,7 +276,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			prog.BLACKLIST = BLACKLIST;
 			prog.CONFIGURATION_FILE = CONFIGURATION_FILE;
 			prog.INPUT = INPUT;
-			prog.INPUT_CATEGORY = INPUT_CATEGORY;
+			prog.INPUT_LABEL = INPUT_LABEL;
 			prog.INPUT_MAX_FRAGMENT_SIZE = INPUT_MAX_FRAGMENT_SIZE;
 			prog.INPUT_MIN_FRAGMENT_SIZE = INPUT_MIN_FRAGMENT_SIZE;
 			prog.READ_PAIR_CONCORDANT_PERCENT = READ_PAIR_CONCORDANT_PERCENT;

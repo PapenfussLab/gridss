@@ -7,7 +7,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.vcf.SvType;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.SequenceUtil;
@@ -45,11 +45,11 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		return VcfConstants.VCF42BREAKEND; // processContext.getConfig().getVariantCalling().placeholderBreakend ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
 	public IdsvVariantContextBuilder referenceReads(int[] count) {
-		attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), count);
+		attribute(VcfInfoAttributes.REFERENCE_READ_COUNT.attribute(), count);
 		return this;
 	}
 	public IdsvVariantContextBuilder referenceSpanningPairs(int[] count) {
-		attribute(VcfAttributes.REFERENCE_READPAIR_COUNT.attribute(), count);
+		attribute(VcfInfoAttributes.REFERENCE_READPAIR_COUNT.attribute(), count);
 		return this;
 	}
 	/**
@@ -139,12 +139,12 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;
 			if (bp.end2 != bp.start2) {
-				attribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), new int[] { bp.start2 - remoteCallPos, bp.end2 - remoteCallPos});
+				attribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), new int[] { bp.start2 - remoteCallPos, bp.end2 - remoteCallPos});
 			} else {
-				rmAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
+				rmAttribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 			}
 		} else {
-			rmAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
+			rmAttribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 		}
 		return this;
 	}
@@ -161,13 +161,13 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		}
 		return this;
 	}
-	public IdsvVariantContextBuilder attribute(final VcfAttributes key, final Object value) {
+	public IdsvVariantContextBuilder attribute(final VcfInfoAttributes key, final Object value) {
 		return attribute(key.attribute(), value);
 	}
 	 
 	public IdsvVariantContextBuilder attribute(final String key, final Object value) {
 		// don't write Idsv properties unnecessarily
-		if (VcfAttributes.getAttributefromKey(key) != null && isNullEmpty(value)) {
+		if (VcfInfoAttributes.getAttributefromKey(key) != null && isNullEmpty(value)) {
 			rmAttribute(key);
 		} else {
 			super.attribute(key, value);

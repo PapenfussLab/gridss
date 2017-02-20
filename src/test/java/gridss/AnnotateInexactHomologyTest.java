@@ -17,7 +17,7 @@ import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 
 public class AnnotateInexactHomologyTest extends TestHelper {
 	@Test
@@ -33,8 +33,8 @@ public class AnnotateInexactHomologyTest extends TestHelper {
 		aih.setContext(pc);
 		ExecutorService threadpool = Executors.newSingleThreadExecutor();
 		e = aih.iterator(new AutoClosingIterator<>(ImmutableList.of(e).iterator()), threadpool).next();
-		assertEquals(-78, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[0]);
-		assertEquals(300, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[1]);
+		assertEquals(-78, ((int[])e.getAttribute(VcfInfoAttributes.INEXACT_HOMPOS.attribute()))[0]);
+		assertEquals(300, ((int[])e.getAttribute(VcfInfoAttributes.INEXACT_HOMPOS.attribute()))[1]);
 		threadpool.shutdown();
 	}
 }

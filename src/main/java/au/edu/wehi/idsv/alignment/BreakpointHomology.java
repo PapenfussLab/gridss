@@ -10,7 +10,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.SequenceUtil;
@@ -130,7 +130,7 @@ public class BreakpointHomology {
 		} else {
 			bounds = new int[] { -bh.getRemoteHomologyLength(), bh.getLocalHomologyLength() };
 		}
-		builder.attribute(VcfAttributes.INEXACT_HOMPOS, bounds);
+		builder.attribute(VcfInfoAttributes.INEXACT_HOMPOS, bounds);
 		return (VariantContextDirectedBreakpoint)builder.make();
 	}
 }

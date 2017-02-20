@@ -16,7 +16,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -208,7 +208,7 @@ public class BreakendToSimpleCallImpl {
 		remove(bp);
 	}
 	private IdsvVariantContextBuilder setAttributes(VariantContextDirectedBreakpoint bp, IdsvVariantContextBuilder builder) {
-		Object cirpos = bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
+		Object cirpos = bp.getAttribute(VcfInfoAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 		if (cirpos != null) {
 			builder.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, cirpos);
 		}

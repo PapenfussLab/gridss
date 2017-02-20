@@ -26,7 +26,7 @@ public class ProcessingContext extends GenomicProcessingContext {
 	private final GridssConfiguration config;
 	private final List<Header> metricsHeaders;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
-	private final List<String> categories = Lists.newArrayList((String)null);
+	private final List<String> categories = Lists.newArrayList();
 	private BufferTracker bufferTracker = null;
 	
 	public ProcessingContext(
@@ -74,15 +74,13 @@ public class ProcessingContext extends GenomicProcessingContext {
 			bufferTracker.register(context, obj);
 		}
 	}
-	public void registerCategories(int categoryCount) {
-		for (int i = 0; i < categoryCount; i++) {
-			registerCategory(categoryCount, "");
+	public int registerCategory(String label) {
+		int offset = categories.indexOf(label);
+		if (offset < 0) {
+			categories.add(label);
+			offset = categories.size() - 1;
 		}
-	}
-	public void registerCategory(int category, String description) {
-		if (category < 0) throw new IllegalArgumentException("Category cannot be negative");
-		while (categories.size() <= category) categories.add(null);
-		categories.set(category, description);
+		return offset;
 	}
 	/**
 	 * Number of categories registered  
@@ -90,5 +88,8 @@ public class ProcessingContext extends GenomicProcessingContext {
 	 */
 	public int getCategoryCount() {
 		return categories.size();
+	}
+	public String getCategoryLabel(int category) {
+		return categories.get(category);
 	}
 }

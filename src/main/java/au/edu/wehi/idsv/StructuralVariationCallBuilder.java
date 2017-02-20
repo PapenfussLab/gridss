@@ -1,9 +1,12 @@
 package au.edu.wehi.idsv;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
@@ -13,14 +16,18 @@ import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
@@ -54,6 +61,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private double[] fBREAKEND_UNMAPPEDMATE_QUAL;
 	private double[] fBREAKEND_SOFTCLIP_QUAL;
 	private List<String> BREAKEND_ASSEMBLY_ID = Lists.newArrayList();
+	private List<GenotypeBuilder> genotypeList;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		this(processContext, parent, true);
 	}
@@ -85,6 +93,15 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		fBREAKEND_ASSEMBLY_QUAL = 0;
 		fBREAKEND_UNMAPPEDMATE_QUAL = new double[categories];
 		fBREAKEND_SOFTCLIP_QUAL = new double[categories];
+		genotypeList = IntStream.range(0, categories)
+				.mapToObj(i -> new GenotypeBuilder(processContext.getCategoryLabel(i))
+						.alleles(Arrays.asList(Allele.NO_CALL))
+						.phased(false)
+						.noAD()
+						.noDP()
+						.noGQ()
+						.noPL())
+				.collect(Collectors.toList());
 	}
 	private static int deduplicationMessageCount = 0;
 	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
@@ -257,10 +274,28 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		return f;
 	}
+	private int sum(int[] v) {
+		int total = 0;
+		for (int x : v) {
+			total += x;
+		}
+		return total;
+	}
 	public VariantContextDirectedEvidence make() {
-		//extractAssemblySupport(); // don't extract - as extraction inflates evidence beyond original call
-		attribute(VcfAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
-		attribute(VcfAttributes.BREAKEND_QUAL.attribute(),
+		List<GenotypeBuilder> genotypeList = new ArrayList<>();
+		for (int i = 0; i < processContext.getCategoryCount(); i++) {
+			GenotypeBuilder gb = new GenotypeBuilder(processContext.getCategoryLabel(i))
+					.alleles(Arrays.asList(Allele.NO_CALL))
+					.phased(false)
+					.noAD()
+					.noDP()
+					.noGQ()
+					.noPL();
+			//TODO:: add category attributes
+			genotypeList.add(gb);
+		}
+		attribute(VcfInfoAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
+		attribute(VcfInfoAttributes.BREAKEND_QUAL.attribute(),
 				fBREAKEND_ASSEMBLY_QUAL
 				+ sum(fBREAKEND_SOFTCLIP_QUAL)
 				+ sum(fBREAKEND_UNMAPPEDMATE_QUAL));
@@ -271,29 +306,31 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				+ sum(fBREAKPOINT_SPLITREAD_QUAL)
 				+ sum(fBREAKPOINT_INDEL_QUAL));
 				//+ sum(fBREAKPOINT_SPLITREAD_QUAL_REMOTE));
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT, fBREAKPOINT_ASSEMBLY_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT, fBREAKPOINT_READPAIR_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT, fBREAKPOINT_SPLITREAD_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_INDEL_COUNT, fBREAKPOINT_INDEL_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, fBREAKPOINT_ASSEMBLY_COUNT_REMOTE);
-		//attribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE, fBREAKPOINT_SPLITREAD_COUNT_REMOTE);
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_READPAIR_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT, fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT);
-		//attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT);
-		//attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL, (float)fBREAKPOINT_ASSEMBLY_QUAL);
-		attribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL, tof(fBREAKPOINT_READPAIR_QUAL));
-		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL, tof(fBREAKPOINT_SPLITREAD_QUAL));
-		attribute(VcfAttributes.BREAKPOINT_INDEL_QUAL, tof(fBREAKPOINT_INDEL_QUAL));
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, (float)fBREAKPOINT_ASSEMBLY_QUAL_REMOTE);
-		//attribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE, tof(fBREAKPOINT_SPLITREAD_QUAL_REMOTE));
-		attribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT, fBREAKEND_ASSEMBLY_COUNT);
-		attribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT, fBREAKEND_UNMAPPEDMATE_COUNT);
-		attribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT, fBREAKEND_SOFTCLIP_COUNT);
-		attribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL, (float)fBREAKEND_ASSEMBLY_QUAL);
-		attribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL, tof(fBREAKEND_UNMAPPEDMATE_QUAL));
-		attribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, tof(fBREAKEND_SOFTCLIP_QUAL));
-		attribute(VcfAttributes.BREAKEND_ASSEMBLY_ID, BREAKEND_ASSEMBLY_ID.toArray(new String[0]));
+		
+		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, fBREAKPOINT_ASSEMBLY_COUNT);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT, VcfFormatAttributes.BREAKPOINT_READPAIR_COUNT, fBREAKPOINT_READPAIR_COUNT);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT, VcfFormatAttributes.BREAKPOINT_SPLITREAD_COUNT, fBREAKPOINT_SPLITREAD_COUNT);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_INDEL_COUNT, VcfFormatAttributes.BREAKPOINT_INDEL_COUNT, fBREAKPOINT_INDEL_COUNT);
+		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, fBREAKPOINT_ASSEMBLY_COUNT_REMOTE);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_READPAIR_COUNT);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT, fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT);
+		//sumAttr(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT);
+		//sumAttr(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT);
+		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, (float)fBREAKPOINT_ASSEMBLY_QUAL);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_READPAIR_QUAL, fBREAKPOINT_READPAIR_QUAL);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_SPLITREAD_QUAL, fBREAKPOINT_SPLITREAD_QUAL);
+		sumAttr(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL, VcfFormatAttributes.BREAKPOINT_INDEL_QUAL, fBREAKPOINT_INDEL_QUAL);
+		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, (float)fBREAKPOINT_ASSEMBLY_QUAL_REMOTE);
+		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT, fBREAKEND_ASSEMBLY_COUNT);
+		sumAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_COUNT, fBREAKEND_UNMAPPEDMATE_COUNT);
+		sumAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, VcfFormatAttributes.BREAKEND_SOFTCLIP_COUNT, fBREAKEND_SOFTCLIP_COUNT);
+		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, (float)fBREAKEND_ASSEMBLY_QUAL);
+		sumAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_QUAL, fBREAKEND_UNMAPPEDMATE_QUAL);
+		sumAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_QUAL, VcfFormatAttributes.BREAKEND_SOFTCLIP_QUAL, fBREAKEND_SOFTCLIP_QUAL);
+		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, BREAKEND_ASSEMBLY_ID.toArray(new String[0]));
+		
+		genotypes(genotypeList.stream().map(gb -> gb.make()).collect(Collectors.toList()));
+			
 		
 		String untemplated = parent.getBreakpointSequenceString();
 		String homo = "";
@@ -312,13 +349,25 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			rmAttribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY);
 			rmAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY);
 		}
-		attribute(VcfAttributes.SUPPORT_CIGAR, makeCigar(anchoredBases, bestExactBreakpoint != null ? bestExactBreakpoint.getBreakendSummary() : parent.getBreakendSummary()).toString());
+		attribute(VcfInfoAttributes.SUPPORT_CIGAR, makeCigar(anchoredBases, bestExactBreakpoint != null ? bestExactBreakpoint.getBreakendSummary() : parent.getBreakendSummary()).toString());
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = applyFilters(variant);
 		//variant = Models.calculateSomatic(variant);
 		//assert(sanitycheck(variant));
 		return variant;
+	}
+	private void sumAttr(VcfInfoAttributes infoAttr, VcfFormatAttributes formatAttr, int[] values) {
+		attribute(infoAttr, sum(values));
+		for (int i = 0; i < values.length; i++) {
+			genotypeList.get(i).attribute(formatAttr.name(), values[i]);
+		}
+	}
+	private void sumAttr(VcfInfoAttributes infoAttr, VcfFormatAttributes formatAttr, double[] values) {
+		attribute(infoAttr, (float)sum(values));
+		for (int i = 0; i < values.length; i++) {
+			genotypeList.get(i).attribute(formatAttr.name(), (float)values[i]);
+		}
 	}
 	public VariantContextDirectedEvidence applyFilters(VariantContextDirectedEvidence variant) {
 		List<VcfFilter> filters = processContext.getVariantCallingParameters().calculateBreakendFilters(variant);

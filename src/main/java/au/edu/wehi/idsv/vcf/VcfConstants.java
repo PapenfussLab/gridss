@@ -15,7 +15,7 @@ public class VcfConstants {
 	//public static final String REALIGNMENT_EXCLUDED_BASES = "remainingSoftClip";
 	public static void addHeaders(VCFHeader header) {
 		// Attribute headers
-		for (VcfAttributes attr : VcfAttributes.values()) {
+		for (VcfInfoAttributes attr : VcfInfoAttributes.values()) {
 			if (attr.infoHeader() != null) {
 				header.addMetaDataLine(attr.infoHeader());
 			}

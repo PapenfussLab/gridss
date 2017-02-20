@@ -11,7 +11,7 @@ import au.edu.wehi.idsv.graph.RectangleGraphNodeMergingIterator;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.util.WindowedSortingIterator;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.Log;
 /**
@@ -114,7 +114,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		long scaledWeight = node.weight;
 		double weight = ScalingHelper.toUnscaledWeight(scaledWeight);
 		builder.phredScore(weight);
-		builder.attribute(VcfAttributes.CALLED_QUAL, weight);
+		builder.attribute(VcfInfoAttributes.CALLED_QUAL, weight);
 		VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)builder.make();
 		assert(v != null);
 		return v;

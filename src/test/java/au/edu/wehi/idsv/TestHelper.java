@@ -369,8 +369,8 @@ public class TestHelper {
 	public static ProcessingContext getContext(ReferenceLookup ref) {
 		ProcessingContext pc = new ProcessingContext(getFSContext(), SMALL_FA_FILE, ref, new ArrayList<Header>(),
 				getConfig());
-		pc.registerCategory(0, "Normal");
-		pc.registerCategory(1, "Tumour");
+		pc.registerCategory("Normal");
+		pc.registerCategory("Tumour");
 		return pc;
 	}
 	public static ProcessingContext getContext() {

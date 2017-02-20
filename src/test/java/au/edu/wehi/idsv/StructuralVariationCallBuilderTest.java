@@ -16,7 +16,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
@@ -118,11 +118,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_called_qual() {
-		assertTrue(big().hasAttribute(VcfAttributes.CALLED_QUAL.attribute()));
+		assertTrue(big().hasAttribute(VcfInfoAttributes.CALLED_QUAL.attribute()));
 	}
 	@Test
 	public void should_set_breakend_qual() {
-		assertTrue(big().hasAttribute(VcfAttributes.BREAKEND_QUAL.attribute()));
+		assertTrue(big().hasAttribute(VcfInfoAttributes.BREAKEND_QUAL.attribute()));
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READ() {
@@ -197,38 +197,38 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_BREAKEND_SOFTCLIP() {
-		Assert.assertArrayEquals(new int[] { 2,  1, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 2*16 + 2+3,  1*16 + 1, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 2,  1, }, (int[])complex_bp().getAttribute(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 2*16 + 2+3,  1*16 + 1, }, (float[])complex_bp().getAttribute(VcfInfoAttributes.BREAKEND_SOFTCLIP_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_SPLITREAD() {
-		Assert.assertArrayEquals(new int[] { 4,  5, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 3*112 + 3+4+5 + 212+4,  2*112 + 1+2 + 3*212+1+2+3, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 4,  5, }, (int[])complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 3*112 + 3+4+5 + 212+4,  2*112 + 1+2 + 3*212+1+2+3, }, (float[])complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKEND_READPAIR() {
-		Assert.assertArrayEquals(new int[] { 4,  1, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 4*6 + 1+2+3+4,  1*6 + 5, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 4,  1, }, (int[])complex_bp().getAttribute(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 4*6 + 1+2+3+4,  1*6 + 5, }, (float[])complex_bp().getAttribute(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_READPAIR() {
-		Assert.assertArrayEquals(new int[] { 0,  2, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 0,  2*12 + 1+2, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 0,  2, }, (int[])complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 0,  2*12 + 1+2, }, (float[])complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKEND_ASSEMBLY() {
-		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()));
-		Assert.assertEquals(7, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL.attribute()), 0);
+		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()));
+		Assert.assertEquals(7, (float)(Float)complex_bp().getAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_ASSEMBLY() {
-		Assert.assertEquals(2, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()));
-		Assert.assertEquals(7, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute()), 0);
+		Assert.assertEquals(2, (int)(Integer)complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()));
+		Assert.assertEquals(7, (float)(Float)complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_ASSEMBLY_REMOTE() {
-		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()));
-		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
+		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()));
+		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_INDEL() {
@@ -236,8 +236,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), BP("variant", new BreakpointSummary(0, FWD, 10, 0, BWD, 21)));
 		cb.addEvidence(ie);
 		VariantContextDirectedEvidence vc = cb.make();
-		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])vc.getAttribute(VcfAttributes.BREAKPOINT_INDEL_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 0,  ie.getBreakpointQual(), }, (float[])vc.getAttribute(VcfAttributes.BREAKPOINT_INDEL_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])vc.getAttribute(VcfInfoAttributes.BREAKPOINT_INDEL_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 0,  ie.getBreakpointQual(), }, (float[])vc.getAttribute(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_READPAIR_COUNT() {
@@ -267,7 +267,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
 		
-		Assert.assertArrayEquals(new int[] { 1, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 1, 4, }, (int[])bp.getAttribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute()));
 		//Assert.assertArrayEquals(new int[] { 1, 3, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT.attribute()));
 	}
 	@Test
@@ -298,7 +298,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
 		
-		Assert.assertArrayEquals(new int[] { 3, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 3, 1, }, (int[])bp.getAttribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute()));
 	}
 	@Test
 	@Ignore("Enchancement")
@@ -317,8 +317,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
 		cb.addEvidence(asEvidence(ass));
 		VariantContextDirectedBreakpoint call = (VariantContextDirectedBreakpoint)cb.make();
-		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute())));
-		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute())));
+		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute())));
+		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT.attribute())));
 	}
 	private int[] asIntTN(Object attrValue) {
 		if (attrValue == null) return new int[] { 0, 0, };
@@ -339,11 +339,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new um(1, true));
 		cb.addEvidence(new um(1, true));
 		VariantContextDirectedEvidence v = cb.make();
-		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 0,  2, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 0,  2, }, (int[])v.getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
 		//Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute()));
-		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
 	}
 	public StructuralVariationCallBuilder cb(DirectedEvidence... evidence) {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
@@ -575,7 +575,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			builder.addEvidence(e);
 		}
 		VariantContextDirectedEvidence call = builder.make();
-		assertEquals(31, AttributeConverter.asDouble(call.getAttribute(VcfAttributes.CALLED_QUAL.attribute()), 0), 0);
+		assertEquals(31, AttributeConverter.asDouble(call.getAttribute(VcfInfoAttributes.CALLED_QUAL.attribute()), 0), 0);
 	}
 	@Test
 	public void should_set_exact_soft_clip_bounds() {
@@ -621,7 +621,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
+		assertEquals("1X", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_use_2X_for_single_bp_imprecision() {
@@ -630,7 +630,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("2X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
+		assertEquals("2X", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_use_xnx_for_large_imprecision() {
@@ -639,7 +639,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("1X4N1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
+		assertEquals("1X4N1X", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_fwd() {
@@ -656,7 +656,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		//            |>>>
 		//  mmdmmmmmmmX
 		//assertEquals(new BreakpointSummary(0, FWD, 10, 10, 15, 1, FWD, 100, 100, 100), vc.getBreakendSummary());
-		assertEquals("2M1D7M1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
+		assertEquals("2M1D7M1X", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_bwd() {
@@ -677,7 +677,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		//                  MM      M
 		//                   MM      
 		// =        XNNNNXDMMMMDDDDMMDM
-		assertEquals("1X4N1X1D4M4D2M1D1M", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
+		assertEquals("1X4N1X1D4M4D2M1D1M", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_use_local_coordinates() {
@@ -687,7 +687,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}}.make());
 		builder.addEvidence(SR(withSequence("AAAAAAAAANNAAAAAAAAA", Read(0, 91, "10M10S"))[0], Read(0, 10, "10M")));
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("9M1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
+		assertEquals("9M1X", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	@Ignore("The assembler doesn't know which orientation it was assembling.")
@@ -765,9 +765,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		// 1234567890        0123456789
 		//      MMM  >      <MMMMM
 		//
-		assertEquals(-4, e.getAttributeIntOffset(VcfAttributes.SUPPORT_INTERVAL, 0));
-		assertEquals(-2, e.getAttributeIntOffset(VcfAttributes.SUPPORT_INTERVAL, 1));
-		assertEquals(0, e.getAttributeIntOffset(VcfAttributes.REMOTE_SUPPORT_INTERVAL, 0));
-		assertEquals(4, e.getAttributeIntOffset(VcfAttributes.REMOTE_SUPPORT_INTERVAL, 1));
+		assertEquals(-4, e.getAttributeIntOffset(VcfInfoAttributes.SUPPORT_INTERVAL, 0));
+		assertEquals(-2, e.getAttributeIntOffset(VcfInfoAttributes.SUPPORT_INTERVAL, 1));
+		assertEquals(0, e.getAttributeIntOffset(VcfInfoAttributes.REMOTE_SUPPORT_INTERVAL, 0));
+		assertEquals(4, e.getAttributeIntOffset(VcfInfoAttributes.REMOTE_SUPPORT_INTERVAL, 1));
 	}
 }

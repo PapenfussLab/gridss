@@ -4,7 +4,7 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.VariantContext;
 
@@ -25,10 +25,10 @@ public class IdsvVariantContext extends VariantContext {
 		this.processContext = processContext;
 		this.source = source;
 	}
-	protected int getAttributeIntSum(VcfAttributes attr) { return AttributeConverter.asIntList(getAttribute(attr.attribute())).stream().mapToInt(x -> x).sum(); }
-	protected int getAttributeIntOffset(VcfAttributes attr, int offset) { return AttributeConverter.asIntListOffset(getAttribute(attr.attribute()), offset, 0); }
-	protected double getAttributeDoubleSum(VcfAttributes attr) { return AttributeConverter.asDoubleList(getAttribute(attr.attribute())).stream().mapToDouble(x -> x).sum(); }
-	protected double getAttributeDoubleOffset(VcfAttributes attr, int offset) { return AttributeConverter.asDoubleListOffset(getAttribute(attr.attribute()), offset, 0); }
+	protected int getAttributeIntSum(VcfInfoAttributes attr) { return AttributeConverter.asIntList(getAttribute(attr.attribute())).stream().mapToInt(x -> x).sum(); }
+	protected int getAttributeIntOffset(VcfInfoAttributes attr, int offset) { return AttributeConverter.asIntListOffset(getAttribute(attr.attribute()), offset, 0); }
+	protected double getAttributeDoubleSum(VcfInfoAttributes attr) { return AttributeConverter.asDoubleList(getAttribute(attr.attribute())).stream().mapToDouble(x -> x).sum(); }
+	protected double getAttributeDoubleOffset(VcfInfoAttributes attr, int offset) { return AttributeConverter.asDoubleListOffset(getAttribute(attr.attribute()), offset, 0); }
 	/**
      * @return reference index for the given sequence name, or -1 if the variant is not on a reference contig
      */

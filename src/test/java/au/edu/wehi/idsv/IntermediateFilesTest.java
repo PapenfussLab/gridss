@@ -72,8 +72,8 @@ public class IntermediateFilesTest extends TestHelper {
 					new FileSystemContext(testFolder.getRoot(), 500000), reference, null, headers, 
 					getConfig(testFolder.getRoot()));
 		}
-		pc.registerCategory(0, "Normal");
-		pc.registerCategory(1, "Tumour");
+		pc.registerCategory("Normal");
+		pc.registerCategory("Tumour");
 		return pc;
 	}
 	@After
