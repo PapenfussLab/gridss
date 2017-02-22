@@ -1219,18 +1219,18 @@ public class TestHelper {
 			//return SCE(fwd ? FWD : BWD, r);
 		}
 	}
-	public static List<SingleReadEvidence> asEvidence(SAMEvidenceSource aes, Iterable<SAMRecord> list) {
+	public static List<SingleReadEvidence> asAssemblyEvidence(SAMEvidenceSource aes, Iterable<SAMRecord> list) {
 		return StreamSupport.stream(list.spliterator(), false)
 				.flatMap(r -> SingleReadEvidence.createEvidence(aes, 0, r).stream())
 				.collect(Collectors.toList());
 	}
-	public static SingleReadEvidence asEvidence(SAMEvidenceSource aes, SAMRecord assembly) {
+	public static SingleReadEvidence asAssemblyEvidence(SAMEvidenceSource aes, SAMRecord assembly) {
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, 0, assembly);
 		assertEquals(1, list.size());
 		return list.get(0);
 	}
-	public static SingleReadEvidence asEvidence(SAMRecord assembly) {
-		return asEvidence(AES(), assembly);
+	public static SingleReadEvidence asAssemblyEvidence(SAMRecord assembly) {
+		return asAssemblyEvidence(AES(), assembly);
 	}
 	public static SingleReadEvidence incorporateRealignment(SAMEvidenceSource aes, SingleReadEvidence assembly, List<SAMRecord> realignments) {
 		return incorporateRealignment(aes, assembly.getSAMRecord(), realignments);

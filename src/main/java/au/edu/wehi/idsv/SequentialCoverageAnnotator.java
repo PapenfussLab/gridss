@@ -72,12 +72,12 @@ public class SequentialCoverageAnnotator<T extends VariantContextDirectedEvidenc
 		this.threadpool = threadpool;
 	}
 	private static class CoverageResult {
-		public CoverageResult(int reads, int spans) {
+		public CoverageResult(int[] reads, int[] spans) {
 			this.readsSupportingNoBreakendAfter = reads;
 			this.readPairsSupportingNoBreakendAfter = spans;
 		}
-		public final int readsSupportingNoBreakendAfter;
-		public final int readPairsSupportingNoBreakendAfter;
+		public final int[] readsSupportingNoBreakendAfter;
+		public final int[] readPairsSupportingNoBreakendAfter;
 	}
 	private static CoverageResult calculateCoverage(ReferenceCoverageLookup lookup, int referenceIndex, int start, int end) {
 		int reads = IntStream.range(start, end)

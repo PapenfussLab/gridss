@@ -7,17 +7,17 @@ import htsjdk.variant.vcf.VCFStandardHeaderLines;
 
 public class VcfConstants {
 	public static final String VCF42BREAKEND = ".";
-	//public static final String VCF41BREAKEND_REPLACEMENT = "[<UNKNOWN>[";
-	//public static final String GENE_ID = "gene_id";
-	//public static final String TRANSCRIPT_ID = "transcript_id";
-	//public static final String REALIGNMENT_SCORE = "REALNNW";
-	//public static final String REALIGNMENT_LENGTH = "REALNLEN";
-	//public static final String REALIGNMENT_EXCLUDED_BASES = "remainingSoftClip";
 	public static void addHeaders(VCFHeader header) {
-		// Attribute headers
+		// INFO headers
 		for (VcfInfoAttributes attr : VcfInfoAttributes.values()) {
 			if (attr.infoHeader() != null) {
 				header.addMetaDataLine(attr.infoHeader());
+			}
+		}
+		// FORMAT headers
+		for (VcfFormatAttributes attr : VcfFormatAttributes.values()) {
+			if (attr.formatHeader() != null) {
+				header.addMetaDataLine(attr.formatHeader());
 			}
 		}
 		// Filter headers
@@ -37,7 +37,7 @@ public class VcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_SEQUENCE);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
 		
-		// simple SV headers
+		// Simple SV headers
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_LENGTH);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.END_KEY));
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_END_POSITION);
