@@ -13,7 +13,7 @@ If you have any trouble running GRIDSS, please raise an issue using the Issues t
 
 [Click here to download GRIDSS](https://github.com/PapenfussLab/gridss/releases)
 
-For citing GRIDSS and to find detailson the GRIDSS implemetentation, see http://biorxiv.org/content/early/2017/02/21/110387.
+For citing GRIDSS and for future detail on the GRIDSS implementation, see http://biorxiv.org/content/early/2017/02/21/110387.
 
 # Pre-requisities
 
