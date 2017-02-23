@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
@@ -60,7 +59,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD,
 				null, 0, 10, 1, B("AA"), B("AA")));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals("polyA", dba.getChr());
+		assertEquals("polyA", dba.getContig());
 		assertEquals(10, dba.getStart());
 		assertEquals(10, dba.getEnd());
 	}
@@ -69,7 +68,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD,
 				null, 0, 10, 1, B("AA"), B("AA")));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals("polyA", dba.getChr());
+		assertEquals("polyA", dba.getContig());
 		assertEquals(10, dba.getStart());
 		assertEquals(10, dba.getEnd());
 	}
@@ -239,19 +238,19 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertTrue( minimalVariant().attribute("UNUSED_FIELD", 0).make().hasAttribute("UNUSED_FIELD"));
 	}
 	@Test
-	public void should_not_write_empty_properties() {
-		assertFalse( minimalVariant().attribute("TEST", null).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", "").make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", 0).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", 0L).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", 0f).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", 0d).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new int[0]).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new float[0]).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new double[0]).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new String[0]).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", Lists.newArrayList()).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", Sets.newHashSet()).make().hasAttribute("TEST"));
+	public void should_write_empty_properties() {
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", null).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", "").make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", 0).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", 0L).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", 0f).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", 0d).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new int[0]).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new float[0]).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new double[0]).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new String[0]).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", Lists.newArrayList()).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", Sets.newHashSet()).make().hasAttribute("TEST"));
 		
 		assertTrue( minimalVariant().attribute("TEST", "A").make().hasAttribute("TEST"));
 		assertTrue( minimalVariant().attribute("TEST", new int[] { 1 }).make().hasAttribute("TEST"));
@@ -262,14 +261,14 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertTrue( minimalVariant().attribute("TEST", Sets.newHashSet("s")).make().hasAttribute("TEST"));
 	}
 	@Test
-	public void should_not_write_empty_array_properties() {
-		assertFalse( minimalVariant().attribute("TEST", new int[] { 0,0 }).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new float[] { 0,0 }).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new double[] { 0,0 }).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new String[] { "", null }).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", new Object[] { 0, 0f, 0d, "", null }).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", Lists.newArrayList("")).make().hasAttribute("TEST"));
-		assertFalse( minimalVariant().attribute("TEST", Lists.<Object>newArrayList(0, 0L, 0f, 0d, "", null)).make().hasAttribute("TEST"));
+	public void should_write_empty_array_properties() {
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new int[] { 0,0 }).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new float[] { 0,0 }).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new double[] { 0,0 }).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new String[] { "", null }).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", new Object[] { 0, 0f, 0d, "", null }).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", Lists.newArrayList("")).make().hasAttribute("TEST"));
+		assertEquals(gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS, minimalVariant().attribute("TEST", Lists.<Object>newArrayList(0, 0L, 0f, 0d, "", null)).make().hasAttribute("TEST"));
 	}
 	@SuppressWarnings("unchecked")
 	@Test

@@ -8,26 +8,22 @@ public enum VcfFormatAttributes {
 	REFERENCE_READ_COUNT ("REF", 1, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend"),
 	REFERENCE_READPAIR_COUNT ("REFPAIR", 1, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele"),
 	BREAKEND_QUAL ("BQ", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
+	BREAKPOINT_QUAL ("QUAL", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
 	
 	BREAKPOINT_READPAIR_COUNT("RP", 1, VCFHeaderLineType.Integer, "Count of read pairs supporting breakpoint per category"),
 	BREAKPOINT_SPLITREAD_COUNT("SR", 1, VCFHeaderLineType.Integer, "Count of split reads supporting breakpoint per category"),
 	BREAKPOINT_INDEL_COUNT("IC", 1, VCFHeaderLineType.Integer, "Count of read indels supporting breakpoint per category"),
-	//BREAKPOINT_SPLITREAD_COUNT_REMOTE("RSR", 1, VCFHeaderLineType.Integer, "Count of split reads supporting breakpoint from remote breakend per category"),
-	
 	BREAKPOINT_ASSEMBLY_READPAIR_COUNT("ASRP", 1, VCFHeaderLineType.Integer, "Count of read pairs incorporated into any breakpoint assembly"),
 	BREAKPOINT_ASSEMBLY_READ_COUNT("ASSR", 1, VCFHeaderLineType.Integer, "Count of split, soft clipped or indel-containing reads incorporated into any breakpoint assemblies"),
-	//BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT("ASCRP", 1, VCFHeaderLineType.Integer, "Count of read pairs not directly supporting breakpoint incorporated into any breakpoint assembly"),
-	//BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT("ASCSR", 1, VCFHeaderLineType.Integer, "Count of split, soft clipped or indel-containing reads not directly supporting breakpoint incorporated into any breakpoint assemblies"),
-	
-	QUAL("Q", 1, VCFHeaderLineType.Float, "Quality score of supporting evidence"),
-	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint"),
+	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Prorata quality score contribution of assemblies supporting breakpoint"),
 	BREAKPOINT_READPAIR_QUAL("RPQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint per category"),
 	BREAKPOINT_SPLITREAD_QUAL("SRQ", 1, VCFHeaderLineType.Float, "Quality score of split reads supporting breakpoint per category"),
 	BREAKPOINT_INDEL_QUAL("IQ", 1, VCFHeaderLineType.Float, "Quality score of read indels supporting breakpoint per category"),
-	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint from remote breakend"),
+	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Float, "Prorata quality score contribution of assemblies supporting breakpoint from remote breakend"),
 
 	BREAKEND_UNMAPPEDMATE_COUNT("BUM", 1, VCFHeaderLineType.Integer, "Count of read pairs (with one read unmapped) supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_COUNT("BSC", 1, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend per category"),
+	BREAKEND_ASSEMBLY_QUAL("BAQ", 1, VCFHeaderLineType.Float, "Prorata quality score contribution of assemblies supporting just local breakend"),
 	BREAKEND_UNMAPPEDMATE_QUAL("BUMQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs (with one read unmapped) supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_QUAL("BSCQ", 1, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend per category");
 

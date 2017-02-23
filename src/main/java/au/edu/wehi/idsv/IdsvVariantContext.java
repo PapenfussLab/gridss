@@ -4,6 +4,7 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 
+import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -29,6 +30,18 @@ public class IdsvVariantContext extends VariantContext {
 	protected int getAttributeIntOffset(VcfInfoAttributes attr, int offset) { return AttributeConverter.asIntListOffset(getAttribute(attr.attribute()), offset, 0); }
 	protected double getAttributeDoubleSum(VcfInfoAttributes attr) { return AttributeConverter.asDoubleList(getAttribute(attr.attribute())).stream().mapToDouble(x -> x).sum(); }
 	protected double getAttributeDoubleOffset(VcfInfoAttributes attr, int offset) { return AttributeConverter.asDoubleListOffset(getAttribute(attr.attribute()), offset, 0); }
+	protected int getInt(VcfInfoAttributes attr, int defaultValue) {
+		return AttributeConverter.asInt(getAttribute(attr.attribute()), defaultValue);
+	}
+	protected int getInt(int category, VcfFormatAttributes attr, int defaultValue) {
+		return AttributeConverter.asInt(getGenotype(category).getExtendedAttribute(attr.attribute()), defaultValue);
+	}
+	protected double getDouble(VcfInfoAttributes attr, double defaultValue) {
+		return AttributeConverter.asDouble(getAttribute(attr.attribute()), defaultValue);
+	}
+	protected double getDouble(int category, VcfFormatAttributes attr, double defaultValue) {
+		return AttributeConverter.asDouble(getGenotype(category).getExtendedAttribute(attr.attribute()), defaultValue);
+	}
 	/**
      * @return reference index for the given sequence name, or -1 if the variant is not on a reference contig
      */

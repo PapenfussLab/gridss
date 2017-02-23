@@ -1,16 +1,23 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.vcf.SvType;
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
+import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
@@ -24,10 +31,15 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	protected final GenomicProcessingContext processContext;
 	private final Set<EvidenceSource> sourceSet = Sets.newHashSet();
 	private final String sourceID;
+	protected final List<GenotypeBuilder> genotypeBuilder;
 	public IdsvVariantContextBuilder(GenomicProcessingContext processContext) {
 		super();
 		this.processContext = processContext;
 		this.sourceID = null;
+		this.genotypeBuilder = new ArrayList<>();
+		if (processContext instanceof ProcessingContext) {
+			ensureGenotypeBuilders((ProcessingContext) processContext);
+		}
 	}
 	public IdsvVariantContextBuilder(GenomicProcessingContext processContext, VariantContext parent) {
 		super(parent);
@@ -35,6 +47,13 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		this.sourceID = parent.getID();
 		if (parent instanceof IdsvVariantContext) {
 			sourceSet.add(((VariantContextDirectedEvidence)parent).getEvidenceSource());
+		}
+		this.genotypeBuilder = new ArrayList<>(parent.getGenotypes().size());
+		for (int i = 0; i < parent.getGenotypes().size(); i++) {
+			genotypeBuilder.add(new GenotypeBuilder(parent.getGenotype(i)));
+		}
+		if (processContext instanceof ProcessingContext) {
+			ensureGenotypeBuilders((ProcessingContext) processContext);
 		}
 	}
 	public IdsvVariantContextBuilder source(EvidenceSource source) {
@@ -44,12 +63,32 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	private String getBreakendString() {
 		return VcfConstants.VCF42BREAKEND; // processContext.getConfig().getVariantCalling().placeholderBreakend ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
+	protected void ensureGenotypeBuilders(ProcessingContext context) {
+		for (int i = 0; i < context.getCategoryCount(); i++) {
+			if (genotypeBuilder.size() <= i) {
+				genotypeBuilder.add(new GenotypeBuilder(context.getCategoryLabel(i))
+						.alleles(Arrays.asList(Allele.NO_CALL))
+						.phased(false)
+						.noAD()
+						.noDP()
+						.noGQ()
+						.noPL());
+			}
+		}
+		assert(genotypeBuilder.size() >= context.getCategoryCount());
+	}
 	public IdsvVariantContextBuilder referenceReads(int[] count) {
-		attribute(VcfInfoAttributes.REFERENCE_READ_COUNT.attribute(), count);
+		attribute(VcfInfoAttributes.REFERENCE_READ_COUNT.attribute(), Arrays.stream(count).sum());
+		for (int i = 0; i < count.length; i++) {
+			genotypeBuilder.get(i).attribute(VcfFormatAttributes.REFERENCE_READ_COUNT.attribute(), count[i]);
+		}
 		return this;
 	}
 	public IdsvVariantContextBuilder referenceSpanningPairs(int[] count) {
-		attribute(VcfInfoAttributes.REFERENCE_READPAIR_COUNT.attribute(), count);
+		attribute(VcfInfoAttributes.REFERENCE_READPAIR_COUNT.attribute(), Arrays.stream(count).sum());
+		for (int i = 0; i < count.length; i++) {
+			genotypeBuilder.get(i).attribute(VcfFormatAttributes.REFERENCE_READPAIR_COUNT.attribute(), count[i]);
+		}
 		return this;
 	}
 	/**
@@ -166,8 +205,8 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	}
 	 
 	public IdsvVariantContextBuilder attribute(final String key, final Object value) {
-		// don't write Idsv properties unnecessarily
-		if (VcfInfoAttributes.getAttributefromKey(key) != null && isNullEmpty(value)) {
+		if (!gridss.Defaults.WRITE_ZERO_OR_EMTPY_VCF_FIELDS && VcfInfoAttributes.getAttributefromKey(key) != null && isNullEmpty(value)) {
+			// we can omit zero/empty GRIDSS properties to reduce output file size if configured to do so
 			rmAttribute(key);
 		} else {
 			super.attribute(key, value);
@@ -233,6 +272,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	}
 	@Override
 	public IdsvVariantContext make() {
+		genotypes(genotypeBuilder.stream().map(gb -> gb.make()).collect(Collectors.toList()));
         VariantContext underlying = super.make();
         if (underlying.getEnd() < underlying.getStart() && underlying.getEnd() == -1) {
         	throw new IllegalStateException(String.format("Sanity check failure: stop not set for %s", underlying)); 

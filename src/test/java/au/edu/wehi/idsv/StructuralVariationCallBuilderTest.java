@@ -331,12 +331,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
 		cb.addEvidence(asAssemblyEvidence(ass));
 		VariantContextDirectedBreakpoint call = (VariantContextDirectedBreakpoint)cb.make();
-		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute())));
-		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT.attribute())));
-	}
-	private int[] asIntTN(Object attrValue) {
-		if (attrValue == null) return new int[] { 0, 0, };
-		return (int[])attrValue;
+		Assert.assertEquals(0, call.getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
+		Assert.assertEquals(0, call.getAttribute(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
 	}
 	@Test
 	public void should_count_evidence_once() {
@@ -354,7 +350,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new um(1, true));
 		VariantContextDirectedEvidence v = cb.make();
 		Assert.assertEquals(1, (int)v.getAttribute(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
-		Assert.assertEquals(3, (int)v.getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
+		Assert.assertEquals(2, (int)v.getAttribute(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
 		Assert.assertEquals(1, (int)v.getAttribute(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()));
 		Assert.assertEquals(1, (int)v.getAttribute(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
 	}
@@ -784,15 +780,36 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(4, e.getAttributeIntOffset(VcfInfoAttributes.REMOTE_SUPPORT_INTERVAL, 1));
 	}
 	@Test
-	public void should_write_all_genotypes() {
-		Assert.fail(); // TODO: check we have all zeros
-	}
-	@Test
-	public void should_write_qual_per_sample() {
-		Assert.fail(); // TODO: check we have all zeros
+	public void should_write_genotypes_by_name() {
+		Assert.assertEquals(2, complex_bp().getGenotypes().size());
+		Assert.assertEquals("Normal", complex_bp().getGenotype(0).getSampleName());
+		Assert.assertEquals("Tumour", complex_bp().getGenotype(1).getSampleName());
 	}
 	@Test
 	public void should_prorata_assembly_qual() {
-		Assert.fail(); // TODO: check we have all zeros
+		VariantContextDirectedBreakpoint var = complex_bp();
+		Assert.assertEquals(var.getAttributeAsDouble("RASQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("RASQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("ASQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("ASQ", -1000)).sum(), 0.00001);
+	}
+	@Test
+	public void format_fields_should_give_per_sample_qual_breakdowns() {
+		VariantContextDirectedBreakpoint var = complex_bp();
+		Assert.assertEquals(var.getAttributeAsDouble("RASQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("RASQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("ASQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("ASQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("SRQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("SRQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("RPQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("RPQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("IQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("IQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("BUMQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("BUMQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("BSCQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("BSCQ", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getPhredScaledQual(), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("QUAL", -1000)).sum(), 0.00001);
+		Assert.assertEquals(var.getAttributeAsDouble("BQ", -1234), var.getGenotypes().stream().mapToDouble(g -> (double)g.getExtendedAttribute("BQ", -1000)).sum(), 0.00001);
+	}
+	@Test
+	public void format_fields_should_give_per_sample_read_count_breakdowns() {
+		VariantContextDirectedBreakpoint var = complex_bp();
+		Assert.assertEquals(var.getAttributeAsInt("SR", -1234), var.getGenotypes().stream().mapToInt(g -> (int)g.getExtendedAttribute("SR", -1000)).sum());
+		Assert.assertEquals(var.getAttributeAsInt("RP", -1234), var.getGenotypes().stream().mapToInt(g -> (int)g.getExtendedAttribute("RP", -1000)).sum());
+		Assert.assertEquals(var.getAttributeAsInt("BSC", -1234), var.getGenotypes().stream().mapToInt(g -> (int)g.getExtendedAttribute("BSC", -1000)).sum());
+		Assert.assertEquals(var.getAttributeAsInt("BUM", -1234), var.getGenotypes().stream().mapToInt(g -> (int)g.getExtendedAttribute("BUM", -1000)).sum());
 	}
 }

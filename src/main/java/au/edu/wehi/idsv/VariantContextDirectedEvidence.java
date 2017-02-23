@@ -144,12 +144,6 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		}
 		return r;
 	}
-	private int getInt(VcfInfoAttributes attr, int defaultValue) {
-		return AttributeConverter.asInt(getAttribute(attr.attribute()), defaultValue);
-	}
-	private int getInt(int category, VcfFormatAttributes attr, int defaultValue) {
-		return AttributeConverter.asInt(getGenotype(category).getExtendedAttribute(attr.attribute()), defaultValue);
-	}
 	public int getBreakendEvidenceCountAssembly() { return getInt(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT, 0); }
 	public int getBreakendEvidenceCountReadPair() { return getInt(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, 0); }
 	public int getBreakendEvidenceCountReadPair(int category) { return getInt(category, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_COUNT, 0); } 

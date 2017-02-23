@@ -172,9 +172,6 @@ public class AssemblyAttributes {
 	public int getAssemblySupportCountSoftClip(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT), category, 0);
 	}
-	//public int getAssemblySupportCountSoftClipRemote(int category) {
-	//	return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_REMOTE_COUNT), category, 0);
-	//}
 	public int getAssemblyNonSupportingReadPairCount(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT), category, 0);
 	}
@@ -220,9 +217,6 @@ public class AssemblyAttributes {
 	public int getAssemblySupportCountSoftClip() {
 		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT)).stream().mapToInt(x -> x).sum();
 	}
-	//public int getAssemblySupportCountSoftClipRemote() {
-	//	return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_REMOTE_COUNT)).stream().mapToInt(x -> x).sum();
-	//}
 	public int getAssemblySoftClipLengthTotal() {
 		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL)).stream().mapToInt(x -> x).sum();
 	}

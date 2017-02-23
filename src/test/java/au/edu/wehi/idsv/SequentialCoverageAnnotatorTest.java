@@ -112,6 +112,6 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 			)), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(new BreakpointSummary(0, FWD, 1, 1, 10, 1, BWD, 100, 100, 100), "")
 				.make());
-		assertEquals(2, ((int[])result.getAttribute("REF")).length);
+		assertEquals(2, result.getAttribute("REF"));
 	}
 }
