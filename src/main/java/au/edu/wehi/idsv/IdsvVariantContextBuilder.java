@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.vcf.SvType;
-import au.edu.wehi.idsv.vcf.VcfConstants;
+import au.edu.wehi.idsv.vcf.GridssVcfConstants;
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
@@ -61,7 +61,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		return this;
 	}
 	private String getBreakendString() {
-		return VcfConstants.VCF42BREAKEND; // processContext.getConfig().getVariantCalling().placeholderBreakend ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
+		return GridssVcfConstants.VCF42BREAKEND; // processContext.getConfig().getVariantCalling().placeholderBreakend ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
 	protected void ensureGenotypeBuilders(ProcessingContext context) {
 		for (int i = 0; i < context.getCategoryCount(); i++) {

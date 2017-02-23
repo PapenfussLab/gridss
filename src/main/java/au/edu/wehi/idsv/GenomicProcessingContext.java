@@ -13,7 +13,6 @@ import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.vcf.VcfConstants;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -37,9 +36,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.writer.Options;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFHeader;
 
 public class GenomicProcessingContext implements Closeable {
 	private static final Log log = Log.getInstance(GenomicProcessingContext.class);
@@ -236,23 +233,6 @@ public class GenomicProcessingContext implements Closeable {
 			builder.clearIndexCreator();
 		}
 		return builder;
-	}
-
-	/**
-	 * Gets a VCF file ready to write variants to
-	 * A header based on this processing context will have already been written to the returned writer
-	 * It is the responsibility of the caller to close the returned @link {@link VariantContextWriter}
-	 * @param output file
-	 * @return opened output VCF stream
-	 */
-	public VariantContextWriter getVariantContextWriter(File file, boolean createIndex) {
-		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file, createIndex);
-		VariantContextWriter vcfWriter = builder.build();
-		final VCFHeader vcfHeader = new VCFHeader();
-		VcfConstants.addHeaders(vcfHeader);
-		vcfHeader.setSequenceDictionary(getReference().getSequenceDictionary());
-		vcfWriter.writeHeader(vcfHeader);
-		return vcfWriter;
 	}
 
 	/**

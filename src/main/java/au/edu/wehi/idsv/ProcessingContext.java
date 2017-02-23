@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -10,11 +11,15 @@ import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.vcf.GridssVcfConstants;
 import au.edu.wehi.idsv.visualisation.BufferTracker;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFHeader;
 
 /**
  * Processing context for the given record
@@ -91,5 +96,21 @@ public class ProcessingContext extends GenomicProcessingContext {
 	}
 	public String getCategoryLabel(int category) {
 		return categories.get(category);
+	}
+	/**
+	 * Gets a VCF file ready to write variants to
+	 * A header based on this processing context will have already been written to the returned writer
+	 * It is the responsibility of the caller to close the returned @link {@link VariantContextWriter}
+	 * @param output file
+	 * @return opened output VCF stream
+	 */
+	public VariantContextWriter getVariantContextWriter(File file, boolean createIndex) {
+		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file, createIndex);
+		VariantContextWriter vcfWriter = builder.build();
+		final VCFHeader vcfHeader = new VCFHeader(Collections.emptySet(), categories);
+		GridssVcfConstants.addHeaders(vcfHeader);
+		vcfHeader.setSequenceDictionary(getReference().getSequenceDictionary());
+		vcfWriter.writeHeader(vcfHeader);
+		return vcfWriter;
 	}
 }
