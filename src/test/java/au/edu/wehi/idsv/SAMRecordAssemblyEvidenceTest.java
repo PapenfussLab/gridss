@@ -208,6 +208,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		File ref = new File("src/test/resources/chr1_170849600_170849850.fa");
 		ProcessingContext context = new ProcessingContext(getFSContext(), ref, null, new ArrayList<Header>(),
 				new GridssConfiguration());
+		context.registerCategory("input.bam");
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(context, AES(context), new SequentialIdGenerator("asm"), BWD, null,
 				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length()));
 		e = SAMRecordUtil.realign(context.getReference(), e, 50, true);

@@ -22,7 +22,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 
 public class VcfBreakendToReadPairTest extends IntermediateFilesTest {
-	private void create(GenomicProcessingContext pc, Collection<? extends IdsvVariantContext> col) {
+	private void create(ProcessingContext pc, Collection<? extends IdsvVariantContext> col) {
 		VariantContextWriter vcw = pc.getVariantContextWriter(output, false);
 		for (IdsvVariantContext c : col) {
 			vcw.add(c);
@@ -39,7 +39,7 @@ public class VcfBreakendToReadPairTest extends IntermediateFilesTest {
 		cmd.REFERENCE = getCommandlineContext().getReferenceFile();
 		return cmd;
 	}
-	public List<List<SAMRecord>> go(GenomicProcessingContext pc, Collection<? extends IdsvVariantContext> col) {
+	public List<List<SAMRecord>> go(ProcessingContext pc, Collection<? extends IdsvVariantContext> col) {
 		create(pc, col);
 		getCmd().doWork();
 		return ImmutableList.of(getRecords(bam()), getRecords(bamFiltered()));

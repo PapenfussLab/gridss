@@ -104,6 +104,7 @@ public class ProcessingContext extends GenomicProcessingContext {
 	 * @param output file
 	 * @return opened output VCF stream
 	 */
+	@Override
 	public VariantContextWriter getVariantContextWriter(File file, boolean createIndex) {
 		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file, createIndex);
 		VariantContextWriter vcfWriter = builder.build();
