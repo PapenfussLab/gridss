@@ -281,4 +281,34 @@ public class SplitReadEvidenceTest extends TestHelper {
 		SplitReadEvidence es = SplitReadEvidence.create(ses, supp).get(0);
 		assertEquals(ep.getBreakpointQual(), es.getBreakpointQual(), 0);
 	}
+	@Test
+	public void involvesPrimaryReadAlignment_should_allow_primary_local() {
+		List<SingleReadEvidence> list;
+		SAMRecord r = Read(0, 1, "10M10S");
+		r.setAttribute("SA", new ChimericAlignment(Read(0, 10, "10S10M")).toString());
+		
+		list = SingleReadEvidence.createEvidence(SES(), 0, r);
+		assertTrue(list.stream().allMatch(e -> e.involvesPrimaryReadAlignment()));
+	}
+	@Test
+	public void involvesPrimaryReadAlignment_should_allow_primary_remote() {
+		List<SingleReadEvidence> list;
+		SAMRecord r = Read(0, 1, "10M10S");
+		r.setSupplementaryAlignmentFlag(true);
+		r.setAttribute("SA", new ChimericAlignment(Read(0, 10, "10S10M")).toString());
+		
+		list = SingleReadEvidence.createEvidence(SES(), 0, r);
+		assertTrue(list.stream().allMatch(e -> e.involvesPrimaryReadAlignment()));
+	}
+	@Test
+	public void involvesPrimaryReadAlignment_should_require_either_primary() {
+		List<SingleReadEvidence> list;
+		SAMRecord r = Read(0, 1, "10M10S");
+		r.setSupplementaryAlignmentFlag(true);
+		r.setAttribute("SA", "polyA,20,+,15S5M,39,1;polyA,10,+,10S5M5S,39,1");
+		// primary alignment is 15S5M at polyA:20 which does not involve this read
+		
+		list = SingleReadEvidence.createEvidence(SES(), 0, r);
+		assertTrue(list.stream().allMatch(e -> !e.involvesPrimaryReadAlignment()));
+	}
 }

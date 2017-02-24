@@ -843,4 +843,28 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(0, var.getAttribute("AS"));
 		Assert.assertEquals(1, var.getAttribute("RAS"));
 	}
+	@Test
+	public void compound_assembly_not_originating_from_either_breakend_should_be_annotated_as_CAS() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(new BreakpointSummary(0, FWD, 10, 0, BWD, 20), "GT").make());
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(new rsc(5, false)); 
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), FWD, support, 1, 1, 1, B("NNN"), B("AAA"));
+		ass.setMappingQuality(44);
+		SAMRecord r1 = withMapq(44, Read(0, 10, "1M1S"))[0];
+		SAMRecord r2 = withMapq(44, Read(0, 20, "1S1M"))[0];
+		incorporateRealignment(AES(), ass, ImmutableList.of(r1, r2));
+		List<SplitReadEvidence> aelist = SplitReadEvidence.create(aes, r1);
+		SplitReadEvidence ae = aelist.get(1);
+		cb.addEvidence(ae);
+		VariantContextDirectedEvidence var = cb.make();
+		Assert.assertEquals(0, var.getAttribute("AS"));
+		Assert.assertEquals(0, var.getAttribute("RAS"));
+		Assert.assertEquals(1, var.getAttribute("CAS"));
+		Assert.assertEquals(0.0, var.getAttribute("ASQ"));
+		Assert.assertEquals(0.0, var.getAttribute("RASQ"));
+		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getAttribute("CASQ"), 0);
+		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getPhredScaledQual(), 0);
+	}
 }

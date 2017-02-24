@@ -40,6 +40,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<List<DiscordantReadPair>> supportingDP = new ArrayList<>();
 	private final List<SingleReadEvidence> supportingAS = new ArrayList<>();
 	private final List<SingleReadEvidence> supportingRAS = new ArrayList<>();
+	private final List<SingleReadEvidence> supportingCAS = new ArrayList<>();
 	// breakend support
 	private final List<List<SoftClipEvidence>> supportingSC = new ArrayList<>();
 	private final List<List<UnmappedMateReadPair>> supportingOEA = new ArrayList<>();
@@ -99,6 +100,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				AssemblyAttributes attr = new AssemblyAttributes(sre);
 				if (evidence instanceof SoftClipEvidence) {
 					supportingBAS.add((SoftClipEvidence)sre);
+				} else if (!sre.involvesPrimaryReadAlignment()) {
+					supportingCAS.add((SingleReadEvidence)sre);
 				} else if (sre.getSAMRecord().getSupplementaryAlignmentFlag() || attr.getAssemblyDirection() != sre.getBreakendSummary().direction) {
 					supportingRAS.add((SingleReadEvidence)sre);
 				} else {
@@ -196,12 +199,14 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		phredScore(
 				supportingAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
 				+ supportingRAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
+				+ supportingCAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
 				+ supportingSR.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
 				+ supportingIndel.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
 				+ supportingDP.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum());
 		// Count
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, supportingAS.size());
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, supportingRAS.size());
+		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_COMPOUND, supportingCAS.size());
 		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT, supportingBAS.size());
 		sumIntAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT, VcfFormatAttributes.BREAKPOINT_SPLITREAD_COUNT, supportingSR, e -> 1);
 		sumIntAttr(VcfInfoAttributes.BREAKPOINT_INDEL_COUNT, VcfFormatAttributes.BREAKPOINT_INDEL_COUNT, supportingIndel, e -> 1);
@@ -211,6 +216,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		// Qual
 		double[] asq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL, supportingAS);
 		double[] rasq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, supportingRAS);
+		double[] casq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, supportingCAS);
 		double[] basq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKEND_ASSEMBLY_QUAL, supportingBAS);
 		double[] srq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_SPLITREAD_QUAL, supportingSR, e -> e.getBreakpointQual());
 		double[] iq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL, VcfFormatAttributes.BREAKPOINT_INDEL_QUAL, supportingIndel, e -> e.getBreakpointQual());
@@ -225,22 +231,22 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		int[] asrp = new int[processContext.getCategoryCount()];
 		for (int i = 0; i < processContext.getCategoryCount(); i++) {
 			int category = i;
-			asr[category] = Stream.concat(supportingAS.stream(), supportingRAS.stream())
+			asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
 					.mapToInt(aa -> aa.getAssemblySupportCountSoftClip(category))
 					.sum();
-			asrp[category] = Stream.concat(supportingAS.stream(), supportingRAS.stream())
+			asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
 					.mapToInt(aa -> aa.getAssemblySupportCountReadPair(category))
 					.sum();
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), asrp[category]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_QUAL.attribute(), srq[i] + iq[i] + rpq[i] + asq[i] + rasq[i]);
+			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_QUAL.attribute(), srq[i] + iq[i] + rpq[i] + asq[i] + rasq[i] + casq[i]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_QUAL.attribute(), scq[i] + umq[i] + basq[i]);
 		}
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(asr).sum());
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(asrp).sum());
-		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, Stream.concat(supportingAS.stream(), supportingRAS.stream())
+		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 				.map(e -> e.getSAMRecord().getReadName())
 				.distinct()
 				.sorted() // ensure deterministic output
@@ -275,6 +281,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		supportingDP.stream().flatMap(l -> l.stream()).forEach(e -> processAnchor(allAnchoredBases, e.getLocalledMappedRead()));
 		supportingAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingRAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
+		supportingCAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		attribute(VcfInfoAttributes.SUPPORT_CIGAR, makeCigar(allAnchoredBases, nominalPosition).toString());
 		
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  

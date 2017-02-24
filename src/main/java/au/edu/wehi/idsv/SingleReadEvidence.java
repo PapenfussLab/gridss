@@ -349,4 +349,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public boolean isFromMultimappingFragment() {
 		return record.getAttribute(SamTags.MULTIMAPPING_FRAGMENT) != null;
 	}
+	/**
+	 * Determines whether this evidence involves the primary read alignment
+	 * @return true if the primary read alignment supports this evidence,
+	 * false if supported by only secondary or supplementary alignments
+	 */
+	public boolean involvesPrimaryReadAlignment() {
+		return !getSAMRecord().getSupplementaryAlignmentFlag() && !getSAMRecord().getNotPrimaryAlignmentFlag();
+	}
 }

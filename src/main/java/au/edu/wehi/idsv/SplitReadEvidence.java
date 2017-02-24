@@ -185,4 +185,11 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		SplitReadEvidence remoteEvidence = SplitReadEvidence.create(source, remote).get(0);
 		return EvidenceIDHelper.getEvidenceID(remoteEvidence);
 	}
+	@Override
+	public boolean involvesPrimaryReadAlignment() {
+		return super.involvesPrimaryReadAlignment()
+			// the first record in the SA tag should be the primary read alignment 
+			|| ChimericAlignment.getChimericAlignments(getSAMRecord()).get(0).equals(remoteAlignment);
+	}
+	
 }
