@@ -54,7 +54,7 @@ public class SequentialCoverageAnnotator<T extends VariantContextDirectedEvidenc
 			toclose.add(sit); // close the async iterator first to prevent aysnc reading from a closed stream 
 			toclose.add(rawIterator);
 			toclose.add(reader);
-			sit = new ProgressLoggingSAMRecordIterator(sit, new ProgressLogger(log));
+			sit = new ProgressLoggingSAMRecordIterator(sit, new ProgressLogger(log, 10000000));
 			SequentialReferenceCoverageLookup sourceLookup = new SequentialReferenceCoverageLookup(sit, ses.getMetrics().getIdsvMetrics(), ses.getReadPairConcordanceCalculator(), windowSize, ses.getSourceCategory(), context.isFilterDuplicates());
 			context.registerBuffer(ses.getFile().getName(), sourceLookup);
 			result.add(sourceLookup);

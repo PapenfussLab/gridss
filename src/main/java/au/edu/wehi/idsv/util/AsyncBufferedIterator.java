@@ -132,8 +132,20 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIt
         	} catch (InterruptedException ie) {
         		// log.debug("Thread interrupt received - closing on background thread.");
         	} catch (Throwable t) {
-        		ex.set(t);
-        		throw new RuntimeException(t);
+        		// when using async I/O, htsjdk BlockCompressedInputStream
+        		// RuntimeException-wrapped InterruptedExceptionon the calling thread
+        		// (i.e., this one).
+        		boolean causedByInterruptedException = false;
+        		for (Throwable cause = t.getCause(); cause != null; cause = cause.getCause()) {
+        			if (cause instanceof InterruptedException) {
+        				causedByInterruptedException = true;
+        				break;
+        			}
+        		}
+        		if (!causedByInterruptedException) {
+        			ex.set(t);
+        			throw new RuntimeException(t);
+        		}
         	} finally {
         		syncClose();
         		Thread.interrupted(); // clear thread interrupt flag so we can write the eos indicator if needed
