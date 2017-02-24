@@ -16,6 +16,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
@@ -56,7 +57,12 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	@Override
 	public SAMRecord next() {
 		ensureAssembler(Defaults.ATTEMPT_ASSEMBLY_RECOVERY);
-		return currentAssembler.next();
+		SAMRecord r = currentAssembler.next();
+		if (direction != null) {
+			// force assembly direction to match the direction supplied
+			r.setAttribute(SamTags.ASSEMBLY_DIRECTION, direction.toChar());
+		}
+		return r;
 	}
 	private void flushIfRequired() {
 		if (currentAssembler != null && !currentAssembler.hasNext()) {

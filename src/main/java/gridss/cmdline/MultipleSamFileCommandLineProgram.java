@@ -41,7 +41,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     public List<File> INPUT;
 	@Option(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
     public List<File> INPUT_NAME_SORTED;
-	@Option(shortName="IC", doc="Input label. Variant calling evidence breakdowns are reported for each label."
+	@Option(doc="Input label. Variant calling evidence breakdowns are reported for each label."
 			+ " Default labels correspond to INPUT filenames. "
 			+ "When specifying labels, labels must be provided for all input files.", optional=true)
     public List<String> INPUT_LABEL;

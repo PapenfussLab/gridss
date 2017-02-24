@@ -38,8 +38,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<List<SplitReadEvidence>> supportingSR = new ArrayList<>();
 	private final List<List<IndelEvidence>> supportingIndel = new ArrayList<>();
 	private final List<List<DiscordantReadPair>> supportingDP = new ArrayList<>();
-	private final List<SplitReadEvidence> supportingAS = new ArrayList<>();
-	private final List<SplitReadEvidence> supportingRAS = new ArrayList<>();
+	private final List<SingleReadEvidence> supportingAS = new ArrayList<>();
+	private final List<SingleReadEvidence> supportingRAS = new ArrayList<>();
 	// breakend support
 	private final List<List<SoftClipEvidence>> supportingSC = new ArrayList<>();
 	private final List<List<UnmappedMateReadPair>> supportingOEA = new ArrayList<>();
@@ -93,26 +93,25 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			supportingDP.get(category).add((DiscordantReadPair)evidence);
 		} else if (evidence instanceof UnmappedMateReadPair) {
 			supportingOEA.get(category).add((UnmappedMateReadPair)evidence);
-		} else if (evidence instanceof SplitReadEvidence) {
-			SplitReadEvidence sre = (SplitReadEvidence)evidence;
-			if (!AssemblyAttributes.isAssembly(sre)) {
-				supportingSR.get(category).add(sre);
-			} else {
+		} else if (evidence instanceof SingleReadEvidence) {
+			SingleReadEvidence sre = (SingleReadEvidence) evidence; 
+			if (AssemblyAttributes.isAssembly(sre)) {
 				AssemblyAttributes attr = new AssemblyAttributes(sre);
-				if (sre.getSAMRecord().getSupplementaryAlignmentFlag() || attr.getAssemblyDirection() != sre.getBreakendSummary().direction) {
-					supportingRAS.add(sre);
+				if (evidence instanceof SoftClipEvidence) {
+					supportingBAS.add((SoftClipEvidence)sre);
+				} else if (sre.getSAMRecord().getSupplementaryAlignmentFlag() || attr.getAssemblyDirection() != sre.getBreakendSummary().direction) {
+					supportingRAS.add((SingleReadEvidence)sre);
 				} else {
-					supportingAS.add(sre);
+					supportingAS.add((SingleReadEvidence)sre);
 				}
-			}
-		} else if (evidence instanceof IndelEvidence) {
-			supportingIndel.get(category).add((IndelEvidence) evidence);
-		} else if (evidence instanceof SoftClipEvidence) {
-			SoftClipEvidence sce = (SoftClipEvidence) evidence;
-			if (!AssemblyAttributes.isAssembly(sce)) {
-				supportingSC.get(category).add(sce);
+			} else if (sre instanceof SoftClipEvidence) {
+				supportingSC.get(category).add((SoftClipEvidence)sre);
+			} else if (sre instanceof SplitReadEvidence) {
+				supportingSR.get(category).add((SplitReadEvidence)sre);
+			} else if (sre instanceof IndelEvidence) {
+				supportingIndel.get(category).add((IndelEvidence) evidence);
 			} else {
-				supportingBAS.add(sce);
+				throw new IllegalArgumentException("Unknown evidence type " + evidence.getClass().getName());
 			}
 		} else {
 			throw new IllegalArgumentException("Unknown evidence type " + evidence.getClass().getName());
@@ -195,8 +194,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				+ supportingSC.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum()
 				+ supportingOEA.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum());
 		phredScore(
-				supportingAS.stream().mapToDouble(e -> e.getBreakpointQual()).sum()
-				+ supportingRAS.stream().mapToDouble(e -> e.getBreakpointQual()).sum()
+				supportingAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
+				+ supportingRAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
 				+ supportingSR.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
 				+ supportingIndel.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
 				+ supportingDP.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum());

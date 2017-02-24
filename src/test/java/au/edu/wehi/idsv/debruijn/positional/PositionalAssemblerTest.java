@@ -9,7 +9,9 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
+import au.edu.wehi.idsv.AssemblyAttributes;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DirectedEvidenceOrder;
@@ -122,5 +124,23 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
 		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator()));
 		assertEquals(2, ((int[])r.get(0).getAttribute("sc"))[0]);
+	}
+	@Test
+	public void should_set_assembly_direction() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 10;
+		List<DirectedEvidence> e = new ArrayList<>();
+		// ACGTACGTACGTACGTACGT
+		// 12345678901234567890
+		// MMMM----MMMM
+		//         MMMM>>>>
+		e.add(SCE(FWD, withSequence("ACGTCCGGACGG", Read(1, 1, "4M8S"))[0]));
+		e.add(SCE(FWD, withSequence("ACGGTTGT", Read(1, 9, "4M4S"))[0]));
+		e.sort(DirectedEvidenceOrder.ByStartEnd);
+		ArrayList<SAMRecord> output = Lists.newArrayList(new PositionalAssembler(pc, AES(pc), new SequentialIdGenerator("asm"), e.iterator(), BreakendDirection.Forward));
+		for (SAMRecord r : output) {
+			assertEquals(BreakendDirection.Forward, new AssemblyAttributes(r).getAssemblyDirection());
+		}
 	}
 }

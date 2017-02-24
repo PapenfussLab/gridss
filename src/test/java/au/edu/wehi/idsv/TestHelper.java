@@ -1186,7 +1186,7 @@ public class TestHelper {
 			if (e instanceof NonReferenceReadPair) {
 				return ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength();
 			} else {
-				return ((SoftClipEvidence)e).getSAMRecord().getReadLength();
+				return ((SingleReadEvidence)e).getSAMRecord().getReadLength();
 			}
 		}).max().orElse(0);
 	}

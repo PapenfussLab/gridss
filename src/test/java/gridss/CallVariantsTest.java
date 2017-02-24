@@ -53,7 +53,6 @@ public class CallVariantsTest extends IntermediateFilesTest {
 		File assembly = new File(testFolder.getRoot(), "assembly.bam");
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
-				"INPUT_CATEGORY=5",
 				"ASSEMBLY=" + assembly.toString(),
 				"REFERENCE_SEQUENCE=" + reference.toString(),
 				"OUTPUT=" + output.toString(),

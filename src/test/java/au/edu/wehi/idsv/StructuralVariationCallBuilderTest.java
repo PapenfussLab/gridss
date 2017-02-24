@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
@@ -811,5 +812,35 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(var.getAttributeAsInt("RP", -1234), var.getGenotypes().stream().mapToInt(g -> (int)g.getExtendedAttribute("RP", -1000)).sum());
 		Assert.assertEquals(var.getAttributeAsInt("BSC", -1234), var.getGenotypes().stream().mapToInt(g -> (int)g.getExtendedAttribute("BSC", -1000)).sum());
 		Assert.assertEquals(var.getAttributeAsInt("BUM", -1234), var.getGenotypes().stream().mapToInt(g -> (int)g.getExtendedAttribute("BUM", -1000)).sum());
+	}
+	@Test
+	public void should_count_indel_assembly_based_on_originating_direction_local() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(new BreakpointSummary(0, FWD, 10, 0, BWD, 20), "GT").make());
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakpoint(pc, aes, new SequentialIdGenerator("asm"), Lists.<DirectedEvidence>newArrayList(new rsc(5, false)),
+				0, 10, 5, 0, 20, 5, B("NNNNNNNNNN"), B("NNNNNNNNNN"));
+		ass.setAttribute(SamTags.ASSEMBLY_DIRECTION, FWD.toChar());
+		SingleReadEvidence ae = SingleReadEvidence.createEvidence(aes, 1, ass).get(0);
+		cb.addEvidence(ae);
+		VariantContextDirectedEvidence var = cb.make();
+		Assert.assertEquals(1, var.getAttribute("AS"));
+		Assert.assertEquals(0, var.getAttribute("RAS"));
+	}
+	@Test
+	public void should_count_indel_assembly_based_on_originating_direction_remote() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(new BreakpointSummary(0, FWD, 10, 0, BWD, 20), "GT").make());
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakpoint(pc, aes, new SequentialIdGenerator("asm"), Lists.<DirectedEvidence>newArrayList(new rsc(5, false)),
+				0, 10, 5, 0, 20, 5, B("NNNNNNNNNN"), B("NNNNNNNNNN"));
+		ass.setAttribute(SamTags.ASSEMBLY_DIRECTION, BWD.toChar());
+		SingleReadEvidence ae = SingleReadEvidence.createEvidence(aes, 1, ass).get(0);
+		cb.addEvidence(ae);
+		VariantContextDirectedEvidence var = cb.make();
+		Assert.assertEquals(0, var.getAttribute("AS"));
+		Assert.assertEquals(1, var.getAttribute("RAS"));
 	}
 }
