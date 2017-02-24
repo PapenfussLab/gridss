@@ -25,12 +25,12 @@ public class GridssVcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_TYPE);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_START_POSITION);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.IMPRECISE);
-		header.addMetaDataLine(VcfStructuralVariantHeaderLines.MATE_BREAKEND_ID);
+		//header.addMetaDataLine(VcfStructuralVariantHeaderLines.MATE_BREAKEND_ID);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.PARTNER_BREAKEND_ID);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.BREAKEND_EVENT_ID);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_LENGTH);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_SEQUENCE);
-		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
+		//header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
 		// Simple SV headers
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_LENGTH);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.END_KEY));

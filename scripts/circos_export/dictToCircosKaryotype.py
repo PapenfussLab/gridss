@@ -18,5 +18,4 @@ for line in sys.stdin:
 	color = contig.lstrip("chr").split("_")[0]
 	color = "chr" + color
 	
-	
 	print "chr - {0} {1} {2} {3} {4}".format(contig, contig.lstrip("chr"), 0, length, color)
