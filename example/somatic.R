@@ -10,12 +10,10 @@ library(StructuralVariantAnnotation)
 vcf <- readVcf("somatic.sv.vcf", "hg19")
 # filter out low quality calls
 vcf <- vcf[rowRanges(vcf)$FILTER %in% c(".", "PASS"),]
-# conert to user friendly data frame
-vcfdf <- unpack(info(vcf))
 # somatic calls have no support in the normal
-somatic_vcf <- vcf[vcfdf$SR.1 + vcfdf$RP.1 + vcfdf$ASSR.1 + vcfdf$ASRP.1 == 0,]
+somatic_vcf <- vcf[geno(vcf)$QUAL[,"normal.bam"] == 0,]
 # somatic loss of heterozygosity has no support in the tumour
-loh_vcf <- vcf[vcfdf$SR.2 + vcfdf$RP.2 + vcfdf$ASSR.2 + vcfdf$ASRP.2 == 0,]
+loh_vcf <- vcf[geno(vcf)$QUAL[,"tumour.bam"] == 0,]
 
 # Output BEDPE for use by circos
 gr <- breakpointRanges(somatic_vcf)

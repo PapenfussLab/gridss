@@ -8,7 +8,7 @@ BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
 REFERENCE=~/reference_genomes/human/hg19.fa
 OUTPUT=somatic.sv.vcf
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.2.0-jar-with-dependencies.jar
+GRIDSS_JAR=~/bin/gridss-1.3.0-jar-with-dependencies.jar
 
 if [[ ! -f "$NORMAL" ]] ; then
 	echo "Missing $NORMAL input file."
@@ -54,8 +54,8 @@ java -ea -Xmx31g \
 	TMP_DIR=. \
 	WORKING_DIR=. \
 	REFERENCE_SEQUENCE="$REFERENCE" \
-	INPUT="$NORMAL" IC=1 \
-	INPUT="$TUMOUR" IC=2 \
+	INPUT="$NORMAL" \
+	INPUT="$TUMOUR" \
 	OUTPUT="$OUTPUT" \
 	ASSEMBLY="$ASSEMBLY" \
 	BLACKLIST="$BLACKLIST" \
