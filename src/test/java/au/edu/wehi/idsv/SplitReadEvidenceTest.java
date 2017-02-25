@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
@@ -310,5 +311,31 @@ public class SplitReadEvidenceTest extends TestHelper {
 		
 		list = SingleReadEvidence.createEvidence(SES(), 0, r);
 		assertTrue(list.stream().allMatch(e -> !e.involvesPrimaryReadAlignment()));
+	}
+	@Test
+	public void isReference_should_be_true_if_either_alignment_could_be_moved_to_the_other_breakend() {
+		SAMRecord r1 = withSequence("TTTAACAA", Read(0, 10, "3M5S"))[0];
+		SAMRecord r2 = withSequence("TTTAACAA", Read(0, 20, "3S2M3S"))[0];
+		r1.setAttribute("SA", new ChimericAlignment(r2).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r1).toString());
+		
+		SplitReadEvidence e1 = SplitReadEvidence.create(SES(), r1).get(0);
+		SplitReadEvidence e2 = SplitReadEvidence.create(SES(), r2).get(0);
+		
+		Assert.assertTrue(e2.isReference());
+		Assert.assertTrue(e1.isReference());
+	}
+	@Test
+	public void isReference_should_require_entire_aligned_region_to_match() {
+		SAMRecord r1 = withSequence("TAAATAAA", Read(0, 10, "3M5S"))[0];
+		SAMRecord r2 = withSequence("TAAATAAA", Read(0, 20, "3S2M3S"))[0];
+		r1.setAttribute("SA", new ChimericAlignment(r2).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r1).toString());
+		
+		SplitReadEvidence e1 = SplitReadEvidence.create(SES(), r1).get(0);
+		SplitReadEvidence e2 = SplitReadEvidence.create(SES(), r2).get(0);
+		
+		Assert.assertFalse(e2.isReference());
+		Assert.assertFalse(e1.isReference());
 	}
 }

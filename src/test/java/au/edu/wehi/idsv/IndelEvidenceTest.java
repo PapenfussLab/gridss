@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -204,8 +205,12 @@ public class IndelEvidenceTest extends TestHelper {
 		assertTrue(ie.getBreakendSummary().isValid(getSequenceDictionary()));
 	}
 	@Test
-	@Ignore("Enhancement")
+	@Ignore("#63")
 	public void isReference_should_check_if_indel_is_actually_required() {
+		assertFalse(IE(SES(1), withSequence("AA", Read(0, 10, "1M1D1M"))[0]).isReference());
+		assertFalse(IE(SES(1), withSequence("ATA", Read(0, 10, "1M1I1M"))[0]).isReference());
+		assertFalse(IE(SES(1), withSequence("ATA", Read(0, 10, "1M1I1D1M"))[0]).isReference());
+		
 		assertTrue(IE(SES(1), withSequence("AA", Read(0, 10, "1M1D1M"))[0]).isReference());
 		assertTrue(IE(SES(1), withSequence("AAA", Read(0, 10, "1M1I1M"))[0]).isReference());
 		assertTrue(IE(SES(1), withSequence("AAA", Read(0, 10, "1M1I1D1M"))[0]).isReference());

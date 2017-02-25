@@ -325,21 +325,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	 * Evidence provides support for no structural variant call
 	 * @return true if this evidence is consistent with the reference allele
 	 */
-	public boolean isReference() {
-		if (!isBreakendExact()) return false;
-		if (untemplated.length() > 0) return false;
-		// if the homology extends the entire length of the read
-		// then we could have just placed the read at that position
-		// without any variant call
-		int anchorHomLen = location.nominal - location.start;
-		int remoteHomLen = location.end - location.nominal;
-		if (location.direction == BreakendDirection.Backward) {
-			int tmp = anchorHomLen;
-			anchorHomLen = remoteHomLen;
-			remoteHomLen = tmp;
-		}
-		return anchorHomLen == anchorBases.length || remoteHomLen == breakendBases.length; 
-	}
+	public abstract boolean isReference();
 	
 	@Override
 	public String toString() {

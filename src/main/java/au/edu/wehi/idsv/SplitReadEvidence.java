@@ -191,5 +191,26 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 			// the first record in the SA tag should be the primary read alignment 
 			|| ChimericAlignment.getChimericAlignments(getSAMRecord()).get(0).equals(remoteAlignment);
 	}
-	
+	/**
+	 * Evidence provides support for no structural variant call
+	 * This can be due to sequence homology allowing the alignment
+	 * at either breakend to be placed on the opposite breakend
+	 */
+	@Override
+	public boolean isReference() {
+		if (!isBreakendExact()) return false;
+		if (getUntemplatedSequence().length() > 0) return false;
+		BreakendSummary location = getBreakendSummary();
+		int anchorHomLen = location.nominal - location.start;
+		int remoteHomLen = location.end - location.nominal;
+		if (location.direction == BreakendDirection.Backward) {
+			int tmp = anchorHomLen;
+			anchorHomLen = remoteHomLen;
+			remoteHomLen = tmp;
+		}
+		ChimericAlignment localAlignment = new ChimericAlignment(getSAMRecord()); 
+		int localBases = localAlignment.getLastAlignedBaseReadOffset() - localAlignment.getFirstAlignedBaseReadOffset() + 1;
+		int remoteBases = remoteAlignment.getLastAlignedBaseReadOffset() - remoteAlignment.getFirstAlignedBaseReadOffset() + 1;
+		return anchorHomLen >= localBases || remoteHomLen >= remoteBases;
+	}
 }

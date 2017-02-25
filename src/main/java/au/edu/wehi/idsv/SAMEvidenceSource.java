@@ -344,7 +344,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		GridssConfiguration config = getContext().getConfig();
 		if (e instanceof SingleReadEvidence) {
-			if (((SingleReadEvidence) e).isReference()) return true;
+			if (((SingleReadEvidence) e).isReference()) {
+				return true;
+			}
 		}
 		if (e instanceof SoftClipEvidence) {
 			SoftClipEvidence sce = (SoftClipEvidence) e;

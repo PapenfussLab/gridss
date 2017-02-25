@@ -170,5 +170,9 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	public int getIndelCigarOffset() {
 		return indelCigarElementOffset;
 	}
-
+	@Override
+	public boolean isReference() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

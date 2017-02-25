@@ -9,6 +9,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.stream.Stream;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -305,5 +307,11 @@ public class SoftClipEvidenceTest extends TestHelper {
 		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("ACGTTAACCA", Read(0, 10, "4H5M5S3H"))[0]);
 		assertEquals("ACGTT", S(e.getAnchorSequence()));
 		assertEquals("AACCA", S(e.getBreakendSequence()));
+	}
+	@Test
+	@Ignore("#63")
+	public void isReference_should_match_breakend_to_reference() {
+		Assert.assertTrue(SingleReadEvidence.createEvidence(SES(), 0, withSequence("AAAAAAAAAA",Read(0, 1, "5M5S"))[0]).get(0).isReference());
+		Assert.assertFalse(SingleReadEvidence.createEvidence(SES(), 0, withSequence("AAAAAAAAAT",Read(0, 1, "5M5S"))[0]).get(0).isReference());
 	}
 }

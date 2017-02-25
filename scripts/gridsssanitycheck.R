@@ -30,14 +30,19 @@ if (length(missingPARID) > 0 ) {
 
 pvcf <- vcf[info(vcf)$PARID,]
 
-mismatchedField = rowRanges(vcf)$FILTER !=
+mismatchedField = rowRanges(vcf)$QUAL != rowRanges(pvcf)$QUAL
 if (any(mismatchedField)) {
 	errorCount <- errorCount + 1
-	write(paste0(breakpointFieldName[i], ": INFO does not match partner for: ", paste(row.names(vcf)[mismatchedField], collapse=", ")), stdout())
+	write(paste0("QUAL does not match partner for: ", paste(row.names(vcf)[mismatchedField], collapse=", ")), stdout())
+}
+mismatchedField = rowRanges(vcf)$FILTER != rowRanges(pvcf)$FILTER
+if (any(mismatchedField)) {
+	errorCount <- errorCount + 1
+	write(paste0("FILTER does not match partner for: ", paste(row.names(vcf)[mismatchedField], collapse=", ")), stdout())
 }
 
-breakpointFieldName <- c("SAS", "AS", "RAS", "SR", "RP", "IC", "ASRP", "ASSR", "ASQ", "RASQ", "SRQ", "RPQ", "IQ", "CQ")
-breakpointFieldPartner <- c("SAS", "RAS", "AS", "SR", "RP", "IC", "ASRP", "ASSR", "RASQ", "ASQ", "SRQ", "RPQ", "IQ", "CQ")
+breakpointFieldName <- c("CAS", "AS", "RAS", "SR", "RP", "IC", "ASRP", "ASSR", "ASQ", "RASQ", "SRQ", "RPQ", "IQ", "CQ")
+breakpointFieldPartner <- c("CAS", "RAS", "AS", "SR", "RP", "IC", "ASRP", "ASSR", "RASQ", "ASQ", "SRQ", "RPQ", "IQ", "CQ")
 # INFO matches partner
 for (i in seq_along(breakpointFieldName)) {
 	mismatchedField = abs(info(vcf)[[breakpointFieldName[i]]] - info(pvcf)[[breakpointFieldPartner[i]]]) > margin
@@ -48,7 +53,7 @@ for (i in seq_along(breakpointFieldName)) {
 }
 # FORMAT matches partner
 for (i in seq_along(breakpointFieldName)) {
-	if (breakpointFieldName[i] %in% c("AS", "RAS")) {
+	if (breakpointFieldName[i] %in% c("AS", "RAS", "CAS", "CQ")) {
 		# Ignore AS and RAS as they're not output
 		next()
 	}
@@ -67,13 +72,13 @@ for (fieldName in c("SR", "RP", "ASRP", "ASSR", "RASQ", "ASQ", "SRQ", "RPQ", "RE
 	}
 }
 # QUAL INFO breakdown
-mismatchedField = abs(rowRanges(vcf)$QUAL - (info(vcf)$ASQ + info(vcf)$RASQ + info(vcf)$SRQ + info(vcf)$IQ + info(vcf)$RPQ)) > margin
+mismatchedField = abs(rowRanges(vcf)$QUAL - (info(vcf)$ASQ + info(vcf)$RASQ + info(vcf)$CASQ + info(vcf)$SRQ + info(vcf)$IQ + info(vcf)$RPQ)) > margin
 if (any(mismatchedField)) {
 	errorCount <- errorCount + 1
 	write(paste0("INFO quality score breakdown does not match total for: ", paste(row.names(vcf)[mismatchedField], collapse=", ")), stdout())
 }
 # QUAL FORMAT breakdown
-mismatchedField = rowSums(abs(geno(vcf)$ASQ + geno(vcf)$RASQ + geno(vcf)$SRQ + geno(vcf)$IQ + geno(vcf)$RPQ - geno(vcf)$QUAL)) > margin
+mismatchedField = rowSums(abs(geno(vcf)$ASQ + geno(vcf)$RASQ + geno(vcf)$CASQ + geno(vcf)$SRQ + geno(vcf)$IQ + geno(vcf)$RPQ - geno(vcf)$QUAL)) > margin
 if (any(mismatchedField)) {
 	errorCount <- errorCount + 1
 	write(paste0("FORMAT quality score breakdown does not match FORMAT QUAL total for: ", paste(row.names(vcf)[mismatchedField], collapse=", ")), stdout())

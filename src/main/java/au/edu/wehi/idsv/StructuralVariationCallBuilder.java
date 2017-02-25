@@ -246,11 +246,16 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(asr).sum());
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(asrp).sum());
-		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
+		List<String> breakendIds = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 				.map(e -> e.getSAMRecord().getReadName())
 				.distinct()
 				.sorted() // ensure deterministic output
-				.collect(Collectors.toList()));
+				.collect(Collectors.toList());
+		if (breakendIds.size() > 0) {
+			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, breakendIds);
+		} else {
+			rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID.attribute());
+		}
 		
 		String untemplated = parent.getBreakpointSequenceString();
 		String homo = "";
