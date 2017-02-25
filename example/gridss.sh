@@ -7,7 +7,7 @@ BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
 REFERENCE=~/reference_genomes/human/hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.2.0-jar-with-dependencies.jar
+GRIDSS_JAR=~/bin/gridss-1.3.0-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
@@ -51,7 +51,7 @@ java -ea -Xmx31g \
 	TMP_DIR=. \
 	WORKING_DIR=. \
 	REFERENCE_SEQUENCE="$REFERENCE" \
-	INPUT="$INPUT" IC=1 \
+	INPUT="$INPUT" \
 	OUTPUT="$OUTPUT" \
 	ASSEMBLY="$ASSEMBLY" \
 	BLACKLIST="$BLACKLIST" \
