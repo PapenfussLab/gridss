@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/PapenfussLab/gridss/badge.svg?branch=master)](https://coveralls.io/github/PapenfussLab/gridss?branch=master)
 [![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
 
-# GRIDSS - a Genomic Rearrangement IDentification Software Suite
+# GRIDSS - the Genomic Rearrangement IDentification Software Suite
 
 GRIDSS is a modular breakend assembler and structural variation caller for Illumina sequencing data.
 GRIDSS calls variants based on alignment-guided positional de Bruijn graph break-end assembly, split read, and read pair evidence.
