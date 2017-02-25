@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/PapenfussLab/gridss/badge.svg?branch=master)](https://coveralls.io/github/PapenfussLab/gridss?branch=master)
 [![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
 
-# GRIDSS - a Genomic Rearrangement IDentification Software Suite
+# GRIDSS - the Genomic Rearrangement IDentification Software Suite
 
 GRIDSS is a modular breakend assembler and structural variation caller for Illumina sequencing data.
 GRIDSS calls variants based on alignment-guided positional de Bruijn graph break-end assembly, split read, and read pair evidence.
@@ -175,16 +175,14 @@ a name sorted input file for mutli-mapping reads will result in an increased fal
 Note that this sort order matches the Picard tools SortSam queryname sort order (which unfortuntely is not the same
 as the samtools name sort ordeR).
 
-### INPUT_CATEGORY
+### INPUT_LABEL
 
-Numeric category (starting at one) to allocate the corresponding input file to. Per-category variant support is output so
-a category should be specified for each input file when performing analysis on multiple samples at once. (eg `INPUT=normal75bp.bam INPUT_CATEGORY=1 INPUT=normal100bp.bam INPUT_CATEGORY=1 INPUT=tumour100bp.bam INPUT_CATEGORY=2` ).
-
-For those familar with [CORTEX](http://cortexassembler.sourceforge.net/), a GRIDSS input category corresponds to a CORTEX graph colour.
+Labels to allocate inputs. The default label for each input file corresponds to the file name but can be overridden by
+specifying an INPUT_LABEL for each INPUT. The output any for INPUT files with the same INPUT_LABEL will be merged.
 
 ### ASSEMBLY (Required)
 
-File to write breakend assemblies to. It is strongly recommended that the assembly filename correspond to the OUTPUT filename. Using ASSEMBLY=assembly.bam is probematic as the assembly file is relative not to WORKING_DIR, but to the current directory of the calling process. This is likely to result in data corruption when the same assembly file is used on different data sets (for example, writing assembly.bam to your home directory when running on a cluster).
+File to write breakend assemblies to. It is strongly recommended that the assembly filename correspond to the OUTPUT filename. Using ASSEMBLY=assembly.bam is probematic as (like the INPUT files) the assembly file is relative not to WORKING_DIR, but to the current directory of the calling process. This is likely to result in data corruption when the same assembly file name is used on different data sets (for example, writing assembly.bam to your home directory when running on a cluster).
 
 ### BLACKLIST
 
@@ -201,7 +199,7 @@ Note that some aligners set this flag in a manner inappropriate for SV calling a
 
 ### INPUT_MIN_FRAGMENT_SIZE, INPUT_MAX_FRAGMENT_SIZE
 
-Per input overrides for explicitly specifying fragment size interval to be considered concordant. As with INPUT_CATEGORY, these must be specified
+Per input overrides for explicitly specifying fragment size interval to be considered concordant. As with INPUT_LABEL, these must be specified
 for all input files. Use null to indicate an override is not required for a particular input (eg
 `INPUT=autocalc.bam INPUT_MIN_FRAGMENT_SIZE=null INPUT_MAX_FRAGMENT_SIZE=null INPUT=manual.bam INPUT_MIN_FRAGMENT_SIZE=100 INPUT_MAX_FRAGMENT_SIZE=300` )
 
@@ -222,7 +220,7 @@ This field is a standard Picard tools argument and carries the usual meaning. Te
 
 ### samjdk defines
 
-GRIDSS uses [htsjdk](https://github.com/samtools/htsjdk) as a SAM/BAM/CRAM/VCF parsing library. The following htsjdk command-line options are strongly recommended for improved performance:
+GRIDSS uses [htsjdk](https://github.com/samtools/htsjdk) as a SAM/BAM/CRAM/VCF parsing library. The following htsjdk java command-line options are strongly recommended for improved performance:
 
 * -Dsamjdk.use_async_io_read_samtools=true
 * -Dsamjdk.use_async_io_write_samtools=true
