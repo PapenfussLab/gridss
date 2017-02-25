@@ -78,7 +78,7 @@ public class ChimericAlignment {
 		return list;
 	}
 	public static List<ChimericAlignment> getChimericAlignments(SAMRecord r) {
-		return getChimericAlignments(r.getStringAttribute("SA"));
+		return getChimericAlignments(r.getStringAttribute(SAMTag.SA.name()));
 	}
 	private BreakendSummary startBreakend(SAMSequenceDictionary dict) {
 		return new BreakendSummary(dict.getSequenceIndex(rname), BreakendDirection.Backward, pos);

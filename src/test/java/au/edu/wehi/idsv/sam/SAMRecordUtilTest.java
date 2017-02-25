@@ -645,6 +645,21 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void lowMapqToUnmapped_should_adjust_chimeric_fragments() {
 		assertEquals("polyA,2,+,5M,2,0", SAMRecordUtil.lowMapqToUnmapped(withAttr("SA", "polyA,1,+,5M,1,0;polyA,2,+,5M,2,0", Read(0, 3, "4S5M"))[0], 2).getStringAttribute("SA"));
 	}
+	/**
+	 * Since the scoring is based on the length of the primary read soft clip,
+	 * Unmapping the primary without also unmapping all supplementary alignments
+	 * will cause asymmetry in the scoring.
+	 */
+	@Test
+	public void lowMapqToUnmapped_should_consider_all_fragments_unmapped_if_primary_unmapped() {
+		SAMRecord r = withAttr("SA", "polyA,1,+,5M,1,0;polyA,2,+,5M,2,0", Read(0, 3, "4S5M"))[0];
+		r.setSupplementaryAlignmentFlag(false);
+		assertFalse(SAMRecordUtil.lowMapqToUnmapped(r, 2).getReadUnmappedFlag());
+		
+		r = withAttr("SA", "polyA,1,+,5M,1,0;polyA,2,+,5M,2,0", Read(0, 3, "4S5M"))[0];
+		r.setSupplementaryAlignmentFlag(true);
+		assertTrue(SAMRecordUtil.lowMapqToUnmapped(r, 2).getReadUnmappedFlag());
+	}
 	@Test
 	public void lowMapqToUnmapped_should_adjust_mate() {
 		assertTrue(SAMRecordUtil.lowMapqToUnmapped(withAttr("MQ", 0, RP(0, 1, 1))[0], 2).getMateUnmappedFlag());

@@ -1223,8 +1223,8 @@ public class SAMRecordUtil {
 	 *            minimum MAPQ to avoid unmapping
 	 */
 	public static SAMRecord lowMapqToUnmapped(SAMRecord record, double minMapq) {
-		lowMapqToUnmapped_SA(record, minMapq);
-		if (record.getMappingQuality() < minMapq) {
+		boolean primaryUnmapped = lowMapqToUnmapped_SA(record, minMapq);
+		if (record.getMappingQuality() < minMapq || primaryUnmapped) {
 			record.setReadUnmappedFlag(true);
 		}
 		if (record.getReadPairedFlag()) {
@@ -1236,11 +1236,20 @@ public class SAMRecordUtil {
 		return record;
 	}
 
-	private static void lowMapqToUnmapped_SA(SAMRecord record, double minMapq) {
-		if (record.getAttribute(SAMTag.SA.name()) == null)
-			return;
-		record.setAttribute(SAMTag.SA.name(), ChimericAlignment.getChimericAlignments(record).stream()
-				.filter(ca -> ca.mapq >= minMapq).map(ca -> ca.toString()).collect(Collectors.joining(";")));
+	private static boolean lowMapqToUnmapped_SA(SAMRecord record, double minMapq) {
+		if (record.getAttribute(SAMTag.SA.name()) == null) {
+			return false;
+		}
+		
+		List<ChimericAlignment> alignments = ChimericAlignment.getChimericAlignments(record);
+		// By convention, primary is the first SA record
+		boolean primaryUnmapped = record.isSecondaryOrSupplementary() &&
+				(alignments.size() == 0 || alignments.get(0).mapq < minMapq);
+		record.setAttribute(SAMTag.SA.name(), alignments.stream()
+				.filter(ca -> ca.mapq >= minMapq)
+				.map(ca -> ca.toString())
+				.collect(Collectors.joining(";")));
+		return primaryUnmapped;
 	}
 
 	/**

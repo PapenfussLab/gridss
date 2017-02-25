@@ -16,6 +16,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
@@ -337,5 +340,20 @@ public class SplitReadEvidenceTest extends TestHelper {
 		
 		Assert.assertFalse(e2.isReference());
 		Assert.assertFalse(e1.isReference());
+	}
+	@Test
+	public void getBreakpointQual_should_be_symmetrical() {
+		SAMRecord r = withMapq(4, Read(0, 100, "1S2M3S"))[0];
+		SAMRecord left = withMapq(5, Read(0, 100, "1M5S"))[0];
+		SAMRecord right = withMapq(6, Read(0, 100, "3S3M"))[0];
+		left.setSupplementaryAlignmentFlag(true);
+		right.setSupplementaryAlignmentFlag(true);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r, left, right), ImmutableSet.of("SA"), false, false);
+		
+		List<SingleReadEvidence> re = SingleReadEvidence.createEvidence(SES(), 0, r);
+		List<SingleReadEvidence> lefte = SingleReadEvidence.createEvidence(SES(), 0, left);
+		List<SingleReadEvidence> righte = SingleReadEvidence.createEvidence(SES(), 0, right);
+		Assert.assertEquals(re.get(0).getBreakendQual(), lefte.get(0).getBreakendQual(), 0);
+		Assert.assertEquals(re.get(1).getBreakendQual(), righte.get(0).getBreakendQual(), 0);
 	}
 }
