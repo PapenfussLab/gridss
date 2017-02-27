@@ -51,10 +51,6 @@ import picard.sam.GatherBamFiles;
 public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
-	private final int maxSourceFragSize;
-	private final int minSourceFragSize;
-	private final int maxReadLength;
-	private final int maxMappedReadLength;
 	private final IntervalBed throttled;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -64,11 +60,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
 		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
-		this.maxSourceFragSize = evidence.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
-		this.minSourceFragSize = evidence.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
-		this.maxReadLength = evidence.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
-		this.maxMappedReadLength = evidence.stream().mapToInt(s -> Math.max(s.getMaxReadLength(), s.getMaxReadMappedLength())).max().orElse(0);
-		assert(maxSourceFragSize >= minSourceFragSize);
 		this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
 	}
 	/**
@@ -417,10 +408,18 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
+		int maxSourceFragSize = source.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
+		if (getFile().exists()) {
+			maxSourceFragSize = Math.max(super.getMaxConcordantFragmentSize(), maxSourceFragSize);
+		}
 		return maxSourceFragSize;
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
+		int minSourceFragSize = source.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).max().orElse(0);
+		if (getFile().exists()) {
+			minSourceFragSize = Math.max(super.getMaxConcordantFragmentSize(), minSourceFragSize);
+		}
 		return minSourceFragSize;
 	}
 	/**
@@ -429,10 +428,18 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 */
 	@Override
 	public int getMaxReadLength() {
+		int maxReadLength = source.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
+		if (getFile().exists()) {
+			maxReadLength = Math.max(super.getMaxReadLength(), maxReadLength);
+		}
 		return maxReadLength;
 	}
 	@Override
 	public int getMaxReadMappedLength() {
+		int maxMappedReadLength = source.stream().mapToInt(s -> s.getMaxReadMappedLength()).max().orElse(0);
+		if (getFile().exists()) {
+			maxMappedReadLength = Math.max(super.getMaxReadMappedLength(), maxMappedReadLength);
+		}
 		return maxMappedReadLength;
 	}
 	@SuppressWarnings("unused")

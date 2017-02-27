@@ -329,7 +329,20 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
-		List<SAMRecord> list = getRecords(assemblyFile);
+		getRecords(assemblyFile);
 		// TODO: check that the assemblies were correctly allocated to the correct chunk
+	}
+	@Test
+	public void window_size_should_consider_aligned_read_length() throws IOException {
+		List<SAMRecord> in = new ArrayList<>();
+		MockSAMEvidenceSource ses = SES(10, 10);
+		for (int i = 1; i < 1000; i++) {
+			in.add(withSequence("NNNNNNNNNN", Read(0, i, "5S5M"))[0]);
+			in.add(withSequence("NNNNNNNNNN", Read(0, i, "5M5S"))[0]);
+			in.add(withSequence("NNNNNNNNNN", Read(0, i, "5M100D5M"))[0]);
+		}
+		createInput(in);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), input);
+		Lists.newArrayList(aes.iterator());
 	}
 }
