@@ -41,9 +41,13 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     public float MIN_CLIP_QUAL = 5;
     @Option(doc="Indicates whether to perform split read identification on secondary read alignments.", optional=true)
     public boolean PROCESS_SECONDARY_ALIGNMENTS = false;
+    @Option(doc="Number of threads to use for realignment. Defaults to number of cores available."
+			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
+    		shortName="THREADS")
+    public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     @Option(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
-    		+ "%2$s the reference genome, and %3$d the number of alignment threads to use.", optional=true)
+    		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
     public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
     private FastqAligner createAligner() {
     	SamReaderFactory readerFactory = SamReaderFactory.make();
@@ -65,6 +69,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
     	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
+    	realigner.setWorkerThreads(WORKER_THREADS);
     	try {
     		realigner.createSupplementaryAlignments(INPUT, OUTPUT);
 		} catch (IOException e) {

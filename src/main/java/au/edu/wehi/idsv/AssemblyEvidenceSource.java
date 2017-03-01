@@ -318,6 +318,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (!svFile.exists()) {
 			log.info("Identifying split reads for " + getFile().getAbsolutePath());
 			List<String> args = Lists.newArrayList(
+					"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
 					"INPUT=" + getFile().getAbsolutePath(),
 					"OUTPUT=" + svFile.getAbsolutePath());
 			execute(new SoftClipsToSplitReads(), args);

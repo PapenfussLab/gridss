@@ -205,6 +205,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				}
 				log.info("Identifying split reads for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
+						"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
 						"INPUT=" + taggedFile.getAbsolutePath(),
 						"OUTPUT=" + withsplitreadsFile.getAbsolutePath());
 						// realignment.* not soft-clip

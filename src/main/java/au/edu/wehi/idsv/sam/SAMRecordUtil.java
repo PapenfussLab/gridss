@@ -1058,6 +1058,7 @@ public class SAMRecordUtil {
 				r.setCigar(new Cigar(list));
 			}
 			if (r.getCigarString().contains("H")) {
+				// TODO: move this check to caller so we're less spammy
 				log.warn(String.format("Unable to soften hard clip for %s", r.getReadName()));
 			}
 		}
