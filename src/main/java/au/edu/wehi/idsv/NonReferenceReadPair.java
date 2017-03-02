@@ -250,7 +250,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return remote.getReferenceIndex();
 	}
 	public String getRemoteEvidenceID() {
-		return EvidenceIDHelper.getAlignmentUniqueName(remote);
+		return NonReferenceReadPair.create(remote, local, source).getEvidenceID();
 	}
 	@Override
 	public String getEvidenceID() {

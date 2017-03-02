@@ -811,4 +811,16 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void getEffectiveMapq_should_use_fallback() {
 		assertEquals(1.5, SAMRecordUtil.getEffectiveMapq(withMapq(SAMRecord.UNKNOWN_MAPPING_QUALITY, Read(0, 1, "1M"))[0], 1.5), 0);
 	}
+	@Test
+	public void restoreHardClips_should_not_adjust_alignment() {
+		SAMRecord r1 = Read(0, 100, "48M52S");
+		SAMRecord r2 = Read(0, 100, "32H48M20H");
+		SAMRecord r3 = Read(0, 100, "64H36M");
+		r1.setAttribute("SA", new ChimericAlignment(r2).toString() + ";" + new ChimericAlignment(r3).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r1).toString() + ";" + new ChimericAlignment(r3).toString());
+		r3.setAttribute("SA", new ChimericAlignment(r1).toString() + ";" + new ChimericAlignment(r2).toString());
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2, r3), ImmutableSet.of(), true, false, false);
+		Assert.assertEquals("32S48M20S", r2.getCigarString());
+		Assert.assertEquals("64S36M", r3.getCigarString());
+	}
 }

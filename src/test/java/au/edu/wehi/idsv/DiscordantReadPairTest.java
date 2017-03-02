@@ -24,4 +24,12 @@ public class DiscordantReadPairTest extends TestHelper {
 		DiscordantReadPair rp = newPair(pair, 300);
 		assertEquals(new BreakpointSummary(0, BWD, 1, 0, FWD, 10000), rp.getBreakendSummary());
 	}
+	@Test
+	public void remoteEvidenceID_should_evidenceID_of_other_side() {
+		SAMRecord[] pair = DP(0, 1, "1M", false, 0, 10000, "1M", true);
+		DiscordantReadPair rpf = (DiscordantReadPair)NonReferenceReadPair.create(pair[0], pair[1], SES(100));
+		DiscordantReadPair rpb = (DiscordantReadPair)NonReferenceReadPair.create(pair[1], pair[0], SES(100));
+		assertEquals(rpb.getEvidenceID(), rpf.getRemoteEvidenceID());
+		assertEquals(rpf.getEvidenceID(), rpb.getRemoteEvidenceID());
+	}
 }

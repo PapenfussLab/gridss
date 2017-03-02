@@ -766,7 +766,7 @@ public class SAMRecordUtil {
 		}
 		if (secondaryToSupp) {
 			for (int i = 0; i < segments.size(); i++) {
-				List<SAMRecord> splits = Lists.newArrayList(Iterables.filter(segments.get(i), r -> r.getAttribute("SA") != null));
+				List<SAMRecord> splits = Lists.newArrayList(Iterables.filter(segments.get(i), r -> r.getAttribute(SAMTag.SA.name()) != null));
 				if (splits.size() > 1) {
 					long suppCount = splits.stream().filter(r -> r.getSupplementaryAlignmentFlag()).count();
 					if (suppCount < splits.size() - 1) {

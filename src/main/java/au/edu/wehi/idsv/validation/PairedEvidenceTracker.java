@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv.validation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.collect.AbstractIterator;
 
@@ -92,7 +94,9 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	}
 
 	private boolean allMatched() {
-		for (DirectedBreakpoint e : unpaired.values()) {
+		List<DirectedBreakpoint> list = new ArrayList<>(unpaired.values());
+		list.sort(DirectedBreakpoint.ByStartEnd);
+		for (DirectedBreakpoint e : list) {
 			ProcessingContext context = e.getEvidenceSource().getContext();
 			log.error(String.format("%s (%s, %f) unpaired",
 					e.getEvidenceID(),

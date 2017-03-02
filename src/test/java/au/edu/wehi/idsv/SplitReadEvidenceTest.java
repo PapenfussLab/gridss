@@ -379,4 +379,27 @@ public class SplitReadEvidenceTest extends TestHelper {
 		Assert.assertEquals(e1.getBreakendSummary(), e2.getBreakendSummary().remoteBreakpoint());
 		Assert.assertEquals(e2.getBreakendSummary(), e1.getBreakendSummary().remoteBreakpoint());
 	}
+	@Test
+	public void should_handle_multiple_overlapping_fragments() {
+		SAMRecord r1 = Read(0, 100, "48M52S");
+		SAMRecord r2 = Read(0, 100, "32S48M20S");
+		SAMRecord r3 = Read(0, 100, "64S36M");
+		r1.setReadName("R");
+		r2.setReadName("R");
+		r3.setReadName("R");
+		r1.setAttribute("SA", new ChimericAlignment(r2).toString() + ";" + new ChimericAlignment(r3).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r1).toString() + ";" + new ChimericAlignment(r3).toString());
+		r3.setAttribute("SA", new ChimericAlignment(r1).toString() + ";" + new ChimericAlignment(r2).toString());
+		
+		List<SplitReadEvidence> e1 = SplitReadEvidence.create(SES(), r1);
+		List<SplitReadEvidence> e2 = SplitReadEvidence.create(SES(), r2);
+		List<SplitReadEvidence> e3 = SplitReadEvidence.create(SES(), r3);
+		Assert.assertEquals(1, e1.size());
+		Assert.assertEquals(2, e2.size());
+		Assert.assertEquals(1, e3.size());
+		Assert.assertEquals(e1.get(0).getEvidenceID(), e2.get(0).getRemoteEvidenceID());
+		Assert.assertEquals(e2.get(0).getEvidenceID(), e1.get(0).getRemoteEvidenceID());
+		Assert.assertEquals(e2.get(1).getEvidenceID(), e3.get(0).getRemoteEvidenceID());
+		Assert.assertEquals(e3.get(0).getEvidenceID(), e2.get(1).getRemoteEvidenceID());
+	}
 }
