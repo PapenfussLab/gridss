@@ -82,7 +82,9 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 		boolean[] hasSV = new boolean[hasConsistentReadAlignment.length];
 		for (SAMRecord r : records) {
 			// only count split reads once
-			if (r.getSupplementaryAlignmentFlag()) continue;
+			if (r.getSupplementaryAlignmentFlag()) { 
+				continue;
+			}
 			// Read pairing
 			if (!hasConsistentReadPair) {
 				if (SINGLE_MAPPED_PAIRED && !oeaFilter.filterOut(r) && !r.getReadUnmappedFlag()) {

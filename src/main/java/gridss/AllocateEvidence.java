@@ -55,10 +55,8 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		}
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(
-					new PairedEvidenceTracker<>(
-							"Evidence",
-							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural),
-							getContext()),
+					new PairedEvidenceTracker<>("Evidence",
+							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)),
 					evidenceIt);
 		}
 		return evidenceIt;

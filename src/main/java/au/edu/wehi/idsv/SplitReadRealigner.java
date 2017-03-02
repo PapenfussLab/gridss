@@ -175,7 +175,7 @@ public class SplitReadRealigner {
 				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
 					SAMRecord supp = sit.next();
 					if (supp.getSupplementaryAlignmentFlag() || supp.getNotPrimaryAlignmentFlag()) {
-						// only consider the single best mapping location reported by the aligner
+						// only consider the best mapping location reported by the aligner
 					} else {
 						salist.add(supp);
 					}

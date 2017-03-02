@@ -39,7 +39,7 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 			SAMRecord r = it.next();
 			if (r.getReadUnmappedFlag()) continue;
 			// Logic for extending an existing SA alignment not yet complete. Need to:
-			// - only realign bases on in any existing SA alignment
+			// - only realign bases not in any existing SA alignment
 			// - update all SA record (requires queryname sorted input file)
 			if (r.getAttribute(SAMTag.SA.name()) != null) continue;
 			if (r.getSupplementaryAlignmentFlag()) continue;

@@ -714,9 +714,10 @@ public class SAMRecordUtil {
 	 *            convert hard clips into soft clips if the sequence is
 	 *            available from a chimeric alignment of the same segmentt
 	 * @param fixMates
+	 * @param secondaryToSupp 
 	 */
-	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags, boolean restoreHardClips,
-			boolean fixMates) {
+	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
+			boolean restoreHardClips, boolean fixMates, boolean secondaryToSupp) {
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
 		if (tags.contains(SAMTag.FI.name())) {
@@ -763,6 +764,37 @@ public class SAMRecordUtil {
 				calculateSATags(segments.get(i));
 			}
 		}
+		if (secondaryToSupp) {
+			for (int i = 0; i < segments.size(); i++) {
+				List<SAMRecord> splits = Lists.newArrayList(Iterables.filter(segments.get(i), r -> r.getAttribute("SA") != null));
+				if (splits.size() > 1) {
+					long suppCount = splits.stream().filter(r -> r.getSupplementaryAlignmentFlag()).count();
+					if (suppCount < splits.size() - 1) {
+						// TODO: allow both a split read primary alignment, and any number of split secondary alignments
+						// Currently this is just a fix for re-adding supplementary flags for bwa -M 
+						// TODO: use the record considered by supp/sec SA tags if multiple primary records exist
+						// TODO: use the longest mapping/best mapq as the forced primary
+						SAMRecord primary = splits.stream()
+								.filter(r -> !r.getSupplementaryAlignmentFlag() && !r.getNotPrimaryAlignmentFlag())
+								.findFirst().orElse(null);
+						if (primary == null) {
+							primary = splits.stream()
+							.filter(r -> !r.getSupplementaryAlignmentFlag())
+							.findFirst().orElse(null);
+						}
+						if (primary == null) {
+							// just grab the first
+							primary = splits.get(0);
+						}
+						for (SAMRecord r : splits) {
+							if (r != primary) {
+								r.setSupplementaryAlignmentFlag(true);
+							}
+						}
+					}
+				}
+			}
+		}
 		if (Sets.intersection(tags,
 				ImmutableSet.of(SAMTag.CC.name(), SAMTag.CP.name(), SAMTag.HI.name(), SAMTag.IH.name())).size() > 0) {
 			for (int i = 0; i < segments.size(); i++) {
@@ -799,21 +831,29 @@ public class SAMRecordUtil {
 		List<ChimericAlignment> splits = ChimericAlignment.getChimericAlignments(rec);
 		// supposed to be the first split alignment
 		final ChimericAlignment primary = splits.size() == 0 ? null : splits.get(0);
-		Optional<SAMRecord> best = options.stream().filter(r -> !r.getSupplementaryAlignmentFlag())
-				.filter(r -> new ChimericAlignment(rec).equals(primary)).findFirst();
+		Optional<SAMRecord> best = options.stream()
+				.filter(r -> !r.getSupplementaryAlignmentFlag())
+				.filter(r -> new ChimericAlignment(rec).equals(primary))
+				.findFirst();
 		// try any split alignment
 		if (!best.isPresent()) {
-			best = options.stream().filter(r -> !r.getSupplementaryAlignmentFlag())
-					.filter(r -> splits.contains(new ChimericAlignment(rec))).findFirst();
+			best = options.stream()
+					.filter(r -> !r.getSupplementaryAlignmentFlag())
+					.filter(r -> splits.contains(new ChimericAlignment(rec)))
+					.findFirst();
 		}
 		// just grab the primary
 		if (!best.isPresent()) {
-			best = options.stream().filter(r -> !r.getSupplementaryAlignmentFlag())
-					.filter(r -> r.getNotPrimaryAlignmentFlag() == rec.getNotPrimaryAlignmentFlag()).findFirst();
+			best = options.stream()
+					.filter(r -> !r.getSupplementaryAlignmentFlag())
+					.filter(r -> r.getNotPrimaryAlignmentFlag() == rec.getNotPrimaryAlignmentFlag())
+					.findFirst();
 		}
 		// grab anything that's not a supplementary
 		if (!best.isPresent()) {
-			best = options.stream().filter(r -> !r.getSupplementaryAlignmentFlag()).findFirst();
+			best = options.stream()
+					.filter(r -> !r.getSupplementaryAlignmentFlag())
+					.findFirst();
 		}
 		// Just use ourself if there's nothing else out there but other
 		// supplementary alignments

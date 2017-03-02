@@ -32,7 +32,7 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 		if (!source.getFile().exists()) {
 			log.info("Ignoring " + source.getFile());
 		}
-		try (CloseableIterator<DirectedEvidence> it = new PairedEvidenceTracker<DirectedEvidence>("sanitycheck", source.iterator(), getContext())) {
+		try (CloseableIterator<DirectedEvidence> it = new PairedEvidenceTracker<DirectedEvidence>("sanitycheck", source.iterator())) {
 			while (it.hasNext()) {
 				it.next();
 			}

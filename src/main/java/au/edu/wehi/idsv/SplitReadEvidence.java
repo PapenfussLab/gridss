@@ -82,7 +82,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 			}
 		}
 		if (post != null) {
-			int overlap = endOffset - post.getFirstAlignedBaseReadOffset() - 1;
+			int overlap = endOffset - post.getFirstAlignedBaseReadOffset();
 			BreakpointSummary bs = new BreakpointSummary(withOverlap(chim.successorBreakend(dict), overlap), withOverlap(post.predecessorBreakend(dict), overlap));
 			int postStartOffset = post.getFirstAlignedBaseReadOffset();
 			int postEndOffset = rl;

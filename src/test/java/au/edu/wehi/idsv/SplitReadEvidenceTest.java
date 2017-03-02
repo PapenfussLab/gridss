@@ -108,15 +108,21 @@ public class SplitReadEvidenceTest extends TestHelper {
 	@Test
 	public void should_consider_overlapping_alignments_as_microhomology() {
 		SAMRecord r = Read(2, 1, "7M3S");
+		// 1234567890
+		//  |>   |>
 		// MMMMMMMSSS
 		// SSMMMMMMMM
 		//   ^---^ homology
+		//  10
+		//   01234567
+		//  <|   <|
+		//
 		r.setReadBases(    B("ACCTAGAGGG"));
 		r.setBaseQualities(B("1234567890"));
 		r.setMappingQuality(40);
 		r.setAttribute("SA", "polyA,100,+,2S8M,0,0");
 		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
-		assertEquals(new BreakpointSummary(2, FWD, 7, 3, 7, 0, BWD, 104, 100, 104), list.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 7, 2, 7, 0, BWD, 105, 100, 105), list.get(0).getBreakendSummary());
 		assertEquals("ACCTAGA", S(list.get(0).getAnchorSequence()));
 		assertEquals("GGG", S(list.get(0).getBreakendSequence()));
 		assertEquals("", list.get(0).getUntemplatedSequence());
@@ -348,12 +354,29 @@ public class SplitReadEvidenceTest extends TestHelper {
 		SAMRecord right = withMapq(6, Read(0, 100, "3S3M"))[0];
 		left.setSupplementaryAlignmentFlag(true);
 		right.setSupplementaryAlignmentFlag(true);
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r, left, right), ImmutableSet.of("SA"), false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r, left, right), ImmutableSet.of("SA"), false, false, false);
 		
 		List<SingleReadEvidence> re = SingleReadEvidence.createEvidence(SES(), 0, r);
 		List<SingleReadEvidence> lefte = SingleReadEvidence.createEvidence(SES(), 0, left);
 		List<SingleReadEvidence> righte = SingleReadEvidence.createEvidence(SES(), 0, right);
 		Assert.assertEquals(re.get(0).getBreakendQual(), lefte.get(0).getBreakendQual(), 0);
 		Assert.assertEquals(re.get(1).getBreakendQual(), righte.get(0).getBreakendQual(), 0);
+	}
+	@Test
+	public void overaligned_breakpoints_should_be_symmetrical() {
+		// 12345
+		// MMMM
+		//   MMM
+		// overlap = 2
+		SAMRecord r1 = withSequence("NNNNN", Read(0, 100, "4M1S"))[0];
+		SAMRecord r2 = withSequence("NNNNN", Read(0, 200, "2S3M"))[0];
+		r1.setAttribute("SA", new ChimericAlignment(r2).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r1).toString());
+		SplitReadEvidence e1 = (SplitReadEvidence)SingleReadEvidence.createEvidence(SES(), 0, r1).get(0);
+		SplitReadEvidence e2 = (SplitReadEvidence)SingleReadEvidence.createEvidence(SES(), 0, r2).get(0);
+		Assert.assertEquals(2, e2.getBreakendSummary().end - e2.getBreakendSummary().start);
+		Assert.assertEquals(2, e1.getBreakendSummary().end - e1.getBreakendSummary().start);
+		Assert.assertEquals(e1.getBreakendSummary(), e2.getBreakendSummary().remoteBreakpoint());
+		Assert.assertEquals(e2.getBreakendSummary(), e1.getBreakendSummary().remoteBreakpoint());
 	}
 }

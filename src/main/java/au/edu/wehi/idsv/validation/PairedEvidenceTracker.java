@@ -2,16 +2,12 @@ package au.edu.wehi.idsv.validation;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map.Entry;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.AbstractIterator;
 
-import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.ProcessingContext;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
@@ -27,14 +23,12 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	private static final Log log = Log.getInstance(PairedEvidenceTracker.class);
 	private final String name;
 	private final Iterator<T> it;
-	private final GenomicProcessingContext context;
-	private final HashMap<String, Pair<BreakpointSummary, Float>> unpaired = new HashMap<>();
+	private final HashMap<String, DirectedBreakpoint> unpaired = new HashMap<>();
 	private boolean closed = false;
 
-	public PairedEvidenceTracker(String iteratorName, Iterator<T> it, GenomicProcessingContext context) {
+	public PairedEvidenceTracker(String iteratorName, Iterator<T> it) {
 		this.it = it;
 		this.name = iteratorName;
-		this.context = context;
 	}
 
 	@Override
@@ -60,6 +54,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	private boolean isValidNext(T evidence) {
 		if (evidence instanceof DirectedBreakpoint) {
 			DirectedBreakpoint e = (DirectedBreakpoint)evidence;
+			ProcessingContext context = e.getEvidenceSource().getContext();
 			String evidenceId = evidence.getEvidenceID();
 			String partnerId = e.getRemoteEvidenceID();
 			if (unpaired.containsKey(evidenceId)) {
@@ -68,33 +63,41 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 				return false;
 			}
 			if (unpaired.containsKey(partnerId)) {
-				Pair<BreakpointSummary, Float> value = unpaired.remove(partnerId); 
-				BreakpointSummary remoteBp = value.getLeft();
+				DirectedBreakpoint partner = unpaired.remove(partnerId); 
 				// Breakpoints must be the same
-				if (!remoteBp.remoteBreakpoint().equals(e.getBreakendSummary())) {
-					String msg = String.format("%s: breakpoints %s and %s differ for evidence pair %s %s", name, e.getBreakendSummary().toString(context), remoteBp.toString(context), e.getEvidenceID(), partnerId); 
+				if (!partner.getBreakendSummary().remoteBreakpoint().equals(e.getBreakendSummary())) {
+					String msg = String.format("%s: breakpoints %s and %s differ for evidence pair %s %s", name,
+							e.getBreakendSummary().toString(context),
+							partner.getBreakendSummary().toString(context),
+							e.getEvidenceID(),
+							partner.getEvidenceID()); 
 					log.error(msg);
 					return false;
 				}
 				// Scores must be the same
-				if (value.getRight() != e.getBreakpointQual()) {
-					String msg = String.format("%s: scores %f and %f differ for evidence pair %s %s", name, e.getBreakpointQual(), value.getRight(), e.getEvidenceID(), partnerId); 
+				if (partner.getBreakpointQual() != e.getBreakpointQual()) {
+					String msg = String.format("%s: scores %f and %f differ for evidence pair %s %s", name,
+							e.getBreakpointQual(),
+							partner.getBreakpointQual(),
+							e.getEvidenceID(),
+							partner.getEvidenceID());
 					log.error(msg);
 					return false;
 				}
 			} else {
-				unpaired.put(evidenceId, Pair.of(e.getBreakendSummary(), e.getBreakpointQual()));
+				unpaired.put(evidenceId, e);
 			}
 		}
 		return true;
 	}
 
 	private boolean allMatched() {
-		for (Entry<String, Pair<BreakpointSummary, Float>> entry : unpaired.entrySet()) {
+		for (DirectedBreakpoint e : unpaired.values()) {
+			ProcessingContext context = e.getEvidenceSource().getContext();
 			log.error(String.format("%s (%s, %f) unpaired",
-					entry.getKey(),
-					entry.getValue().getLeft().toString(context),
-					entry.getValue().getRight()));
+					e.getEvidenceID(),
+					e.getBreakendSummary().toString(context),
+					e.getBreakpointQual()));
 		}
 		return unpaired.isEmpty();
 	}

@@ -10,8 +10,8 @@ public class SamTags {
 	 * for at least one read in his fragments.  This fields contains the number
 	 * of additional mappings for any read in the fragment.
 	 * 
-	 * For example, if the reads in a read pair have 2 and 3 mapping locations
-	 * respectively, mm will be set to 3.
+	 * For example, if the reads in a read pair have 5 and 10 mapping locations
+	 * respectively, mm will be set to 4+9=13.
 	 */
 	public static final String MULTIMAPPING_FRAGMENT = "mm";
 	/**

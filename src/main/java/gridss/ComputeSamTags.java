@@ -57,6 +57,8 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 	@Option(doc="Fixes missing mate information. Unlike Picard tools FixMateInformation, reads for which no mate can be found"
 			+ " are converted to unpaired reads.", optional=true)
 	public boolean FIX_MATE_INFORMATION = true;
+	@Option(doc="Convert secondary alignments with a SA tag set to supplementary alignments if the supplementary flag is not set on all split alignments except one.", optional=true)
+	public boolean CONVERT_SECONDARY_TO_SUPPLEMENTARY = true;
 	@Option(shortName="T", doc="Tags to calculate")
 	public Set<String> TAGS = Sets.newHashSet(
 			SAMTag.NM.name(),
@@ -88,7 +90,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     			try (SAMRecordIterator it = reader.iterator()) {
     				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.");
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, INPUT.getName() + "-");
+    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, CONVERT_SECONDARY_TO_SUPPLEMENTARY, INPUT.getName() + "-");
     				}
     				FileHelper.move(tmpoutput, OUTPUT, true);
     			}
@@ -99,7 +101,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		}
     	return 0;
 	}
-	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<String> tags, boolean softenHardClips, boolean fixMates, String threadprefix) throws IOException {
+	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<String> tags, boolean softenHardClips, boolean fixMates, boolean secondaryToSupp, String threadprefix) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
 		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, threadprefix + "raw")) {
 			Iterator<SAMRecord> it = aysncit;
@@ -108,7 +110,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 				it = new NmTagIterator(it, reference);
 			}
 			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty() || softenHardClips) {
-				it = new TemplateTagsIterator(it, softenHardClips, fixMates, tags);
+				it = new TemplateTagsIterator(it, softenHardClips, fixMates, secondaryToSupp, tags);
 				it = new AsyncBufferedIterator<SAMRecord>(it, threadprefix + "tags");
 			}
 			while (it.hasNext()) {
