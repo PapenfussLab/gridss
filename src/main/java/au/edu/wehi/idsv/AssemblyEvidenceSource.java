@@ -417,9 +417,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
-		int minSourceFragSize = source.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).max().orElse(0);
+		int minSourceFragSize = source.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
 		if (getFile().exists()) {
-			minSourceFragSize = Math.max(super.getMaxConcordantFragmentSize(), minSourceFragSize);
+			minSourceFragSize = Math.min(super.getMinConcordantFragmentSize(), minSourceFragSize);
 		}
 		return minSourceFragSize;
 	}

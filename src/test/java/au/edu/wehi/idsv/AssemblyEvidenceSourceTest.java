@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -344,5 +345,13 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(in);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), input);
 		Lists.newArrayList(aes.iterator());
+	}
+	@Test
+	public void fragmentSize_should_be_source_min() {
+		SAMEvidenceSource ses1 = SES(100, 200);
+		SAMEvidenceSource ses2 = SES(300, 400);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses1, ses2), input);
+		Assert.assertEquals(100, aes.getMinConcordantFragmentSize());
+		Assert.assertEquals(400, aes.getMaxConcordantFragmentSize());
 	}
 }
