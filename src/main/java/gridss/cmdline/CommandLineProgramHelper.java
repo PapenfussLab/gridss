@@ -26,14 +26,14 @@ public class CommandLineProgramHelper {
 	public static List<String> getCommonArgs(CommandLineProgram program) {
 		List<String> args = new ArrayList<>();
 		args.add("COMPRESSION_LEVEL=" + Integer.toString(program.COMPRESSION_LEVEL));
-		args.add("CREATE_INDEX=" + program.CREATE_INDEX == null ? "null" : program.CREATE_INDEX.toString());
+		args.add("CREATE_INDEX=" + (program.CREATE_INDEX == null ? "null" : program.CREATE_INDEX.toString()));
 		args.add("CREATE_MD5_FILE=" + Boolean.toString(program.CREATE_MD5_FILE));
-		args.add("GA4GH_CLIENT_SECRETS=" + program.GA4GH_CLIENT_SECRETS == null ? "null" : program.GA4GH_CLIENT_SECRETS);
-		args.add("MAX_RECORDS_IN_RAM=" + program.MAX_RECORDS_IN_RAM == null ? "null" : program.MAX_RECORDS_IN_RAM.toString());
-		args.add("QUIET=" + program.QUIET == null ? "null" : Boolean.toString(program.QUIET));
-		args.add("REFERENCE_SEQUENCE=" + program.REFERENCE_SEQUENCE == null ? "null" : program.REFERENCE_SEQUENCE.getAbsolutePath());
-		args.add("VALIDATION_STRINGENCY=" + program.MAX_RECORDS_IN_RAM == null ? "null" : program.MAX_RECORDS_IN_RAM.toString());
-		args.add("VERBOSITY=" + program.VERBOSITY == null ? "null" : program.VERBOSITY.toString());
+		args.add("GA4GH_CLIENT_SECRETS=" + (program.GA4GH_CLIENT_SECRETS == null ? "null" : program.GA4GH_CLIENT_SECRETS));
+		args.add("MAX_RECORDS_IN_RAM=" + (program.MAX_RECORDS_IN_RAM == null ? "null" : program.MAX_RECORDS_IN_RAM.toString()));
+		args.add("QUIET=" + (program.QUIET == null ? "null" : Boolean.toString(program.QUIET)));
+		args.add("REFERENCE_SEQUENCE=" + (program.REFERENCE_SEQUENCE == null ? "null" : program.REFERENCE_SEQUENCE.getAbsolutePath()));
+		args.add("VALIDATION_STRINGENCY=" + (program.VALIDATION_STRINGENCY == null ? "null" : program.VALIDATION_STRINGENCY.toString()));
+		args.add("VERBOSITY=" + (program.VERBOSITY == null ? "null" : program.VERBOSITY.toString()));
 		if (program.TMP_DIR == null || program.TMP_DIR.size() == 0) {
 			args.add("TMP_DIR=null");
 		} else {
