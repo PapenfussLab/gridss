@@ -48,6 +48,7 @@ public class VcfBreakendToReadPair extends picard.cmdline.CommandLineProgram {
 		}
 		try {
 			GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), REFERENCE, null);
+			pc.setCommandLineProgram(this);
 			writeVisualisationBam(pc, INPUT, OUTPUT, OUTPUT_FILTERED);
 		} catch (IOException e) {
 			log.error(e);

@@ -25,6 +25,7 @@ import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
 import gridss.SoftClipsToSplitReads;
+import gridss.cmdline.CommandLineProgramHelper;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -139,6 +140,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			args.add("INPUT=" + f.getAbsolutePath());
 		}
 		args.add("OUTPUT=" + tmpout.getAbsolutePath());
+		if (getContext().getCommandLineProgram() != null) {
+			args.addAll(CommandLineProgramHelper.getCommonArgs(getContext().getCommandLineProgram()));
+		}
 		int returnCode = gather.instanceMain(args.toArray(new String[] {}));
 		if (returnCode != 0) {
 			String msg = String.format("Error executing GatherBamFiles. GatherBamFiles returned status code %d", returnCode);

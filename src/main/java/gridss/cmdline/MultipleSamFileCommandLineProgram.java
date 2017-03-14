@@ -214,6 +214,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 				throw new RuntimeException(e);
 			}
 			processContext = new ProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, null, getDefaultHeaders(), config);
+			processContext.setCommandLineProgram(this);
 			processContext.setFilterDuplicates(IGNORE_DUPLICATES);
 			processContext.setWorkerThreadCount(WORKER_THREADS);
 			if (BLACKLIST != null) {

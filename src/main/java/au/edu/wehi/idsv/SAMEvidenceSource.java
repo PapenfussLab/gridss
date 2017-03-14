@@ -29,6 +29,7 @@ import gridss.ExtractSVReads;
 import gridss.SoftClipsToSplitReads;
 import gridss.analysis.CollectGridssMetrics;
 import gridss.analysis.StructuralVariantReadMetrics;
+import gridss.cmdline.CommandLineProgramHelper;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.QueryInterval;
@@ -145,9 +146,13 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (cmd instanceof ReferenceCommandLineProgram) {
 			((ReferenceCommandLineProgram) cmd).setReference(getContext().getReference());
 		}
-		args.add("REFERENCE_SEQUENCE=" + getContext().getReferenceFile());
-		args.add("TMP_DIR=" + getContext().getFileSystemContext().getTemporaryDirectory());
-		args.add("MAX_RECORDS_IN_RAM=" + getContext().getFileSystemContext().getMaxBufferedRecordsPerFile());
+		if (getContext().getCommandLineProgram() == null) {
+			args.add("REFERENCE_SEQUENCE=" + getContext().getReferenceFile());
+			args.add("TMP_DIR=" + getContext().getFileSystemContext().getTemporaryDirectory());
+			args.add("MAX_RECORDS_IN_RAM=" + getContext().getFileSystemContext().getMaxBufferedRecordsPerFile());
+		} else {
+			args.addAll(CommandLineProgramHelper.getCommonArgs(getContext().getCommandLineProgram()));
+		}
 		int result = cmd.instanceMain(args.toArray(new String[] {}));
 		if (result != 0) {
 			String msg = "Unable to execute " + cmd.getClass().getName() + " for " + getFile();

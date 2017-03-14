@@ -48,6 +48,7 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 		}
 		try {
 			GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), REFERENCE, null);
+			pc.setCommandLineProgram(this);
 			writeBreakpointBedpe(pc, INPUT, OUTPUT, OUTPUT_FILTERED, INCLUDE_HEADER, INCLUDE_LOW_BREAKEND, INCLUDE_HIGH_BREAKEND);
 		} catch (IOException e) {
 			log.error(e);

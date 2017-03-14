@@ -45,6 +45,7 @@ public class BreakendToSimpleCall extends CommandLineProgram {
 			throw new RuntimeException(e);
 		}
 		ProcessingContext processContext = new ProcessingContext(fsc, REFERENCE, null, getDefaultHeaders(), config);
+		processContext.setCommandLineProgram(this);
 		BreakendToSimpleCallImpl impl = new BreakendToSimpleCallImpl(processContext);
 		impl.convert(INPUT, OUTPUT);
 		return 0;

@@ -25,6 +25,7 @@ public abstract class SimulationGenerator extends CommandLineProgram {
     public boolean INCLUDE_REFERENCE = false;
     protected GenomicProcessingContext getProcessingContext() {
     	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, null);
+    	pc.setCommandLineProgram(this);
     	return pc;
     }
 }

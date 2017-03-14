@@ -14,6 +14,7 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.GridssVcfConstants;
+import gridss.cmdline.CommandLineProgramHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -40,6 +41,7 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
+import picard.cmdline.CommandLineProgram;
 
 public class GenomicProcessingContext implements Closeable {
 	private static final Log log = Log.getInstance(GenomicProcessingContext.class);
@@ -50,6 +52,7 @@ public class GenomicProcessingContext implements Closeable {
 	 */
 	public static final long LINEAR_COORDINATE_CHROMOSOME_BUFFER = 10000000000L;
 	private ReferenceLookup reference;
+	private CommandLineProgram program;
 	private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
 	private final LinearGenomicCoordinate linear;
@@ -89,7 +92,7 @@ public class GenomicProcessingContext implements Closeable {
 	 * Ensures that a sequence dictionary exists for the given reference
 	 * @param referenceFile reference genome fasta
 	 */
-	protected static void ensureSeqeunceDictionary(File referenceFile) {
+	protected void ensureSeqeunceDictionary(File referenceFile) {
 		try {
 			ReferenceSequenceFile rsf = new FastaSequenceFile(referenceFile, false);
 			Path path = referenceFile.toPath().toAbsolutePath();
@@ -97,6 +100,9 @@ public class GenomicProcessingContext implements Closeable {
 				log.info("Attempting to create sequence dictionary for " + referenceFile);
 				Path dictPath = path.resolveSibling(path.getFileName().toString() + htsjdk.samtools.util.IOUtil.DICT_FILE_EXTENSION);
 				picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
+				if (program != null) {
+					CommandLineProgramHelper.copyInputs(program, csd);
+				}
 				csd.OUTPUT = dictPath.toFile();
 				csd.REFERENCE = referenceFile;
 				csd.instanceMain(new String[0]);
@@ -112,7 +118,7 @@ public class GenomicProcessingContext implements Closeable {
 	 * @return reference genome 
 	 */
 	@SuppressWarnings("resource")
-	protected static ReferenceLookup LoadSynchronizedReference(File referenceFile) {
+	protected ReferenceLookup LoadSynchronizedReference(File referenceFile) {
 		ensureSeqeunceDictionary(referenceFile);
 		try {
 			ReferenceSequenceFile underlying = new IndexedFastaSequenceFile(referenceFile);
@@ -306,8 +312,17 @@ public class GenomicProcessingContext implements Closeable {
 	public File getBlacklist() {
 		return blacklistFile;
 	}
+	
 	public void setBlacklist(File blacklistFile) throws IOException {
 		this.blacklistFile = blacklistFile;
 		this.blacklist = new IntervalBed(getDictionary(), getLinear(), blacklistFile);
+	}
+	
+	public CommandLineProgram getCommandLineProgram() {
+		return program;
+	}
+	
+	public void setCommandLineProgram(CommandLineProgram program) {
+		this.program = program;
 	}
 }
