@@ -201,12 +201,18 @@ public class SAMEvidenceSource extends EvidenceSource {
 							execute(new ExtractSVReads(), args);
 						}
 						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
+						if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+							FileHelper.delete(extractedFile, true);
+						}
 					}
 					log.info("Computing SAM tags for " + svFile);
 					List<String> args = Lists.newArrayList(
 							"INPUT=" + querysortedFile.getAbsolutePath(),
 							"OUTPUT=" + taggedFile.getAbsolutePath());
 					execute(new ComputeSamTags(), args);
+					if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+						FileHelper.delete(querysortedFile, true);
+					}
 				}
 				log.info("Identifying split reads for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
@@ -217,8 +223,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 						//"MIN_CLIP_LENGTH=" + getContext().getConfig().
 						//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
 				execute(new SoftClipsToSplitReads(), args);
+				if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+					FileHelper.delete(taggedFile, true);
+				}
 			}
 			SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
+			if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+				FileHelper.delete(withsplitreadsFile, true);
+			}
 		}
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(extractedFile, true);

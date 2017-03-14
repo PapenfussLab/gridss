@@ -165,7 +165,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
 		try {
 			if (throttled.size() > 0) {
-				throttled.write(throttledFilename, "Regions of high coverage where only a portion of supporting reads considered for assembly");
+				throttled.write(throttledFilename, "Regions of high coverage where only a subset of supporting reads were considered for assembly");
 			}
 		} catch (IOException e) {
 			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
