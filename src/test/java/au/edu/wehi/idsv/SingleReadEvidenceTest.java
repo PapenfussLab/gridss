@@ -198,7 +198,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		assertTrue(list.stream().allMatch(e -> e.isFromMultimappingFragment()));
 	}
 	@Test
-	public void involvesPrimaryReadAlignment_should_require_not_supplementary_or_secondary() {
+	public void involvesPrimaryReadAlignment_should_require_not_supplementary() {
 		List<SingleReadEvidence> list;
 		SAMRecord r = Read(0, 1, "10M4D10M10S");
 		list = SingleReadEvidence.createEvidence(SES(), 0, r);
@@ -208,10 +208,9 @@ public class SingleReadEvidenceTest extends TestHelper {
 		list = SingleReadEvidence.createEvidence(SES(), 0, r);
 		assertTrue(list.stream().allMatch(e -> !e.involvesPrimaryReadAlignment()));
 		
-		r.setSupplementaryAlignmentFlag(false);
-		r.setNotPrimaryAlignmentFlag(true);
-		
-		list = SingleReadEvidence.createEvidence(SES(), 0, r);
-		assertTrue(list.stream().allMatch(e -> !e.involvesPrimaryReadAlignment()));
+		//r.setSupplementaryAlignmentFlag(false);
+		//r.setNotPrimaryAlignmentFlag(true);
+		//list = SingleReadEvidence.createEvidence(SES(), 0, r);
+		//assertTrue(list.stream().allMatch(e -> !e.involvesPrimaryReadAlignment()));
 	}
 }
