@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -714,10 +716,10 @@ public class SAMRecordUtil {
 	 *            convert hard clips into soft clips if the sequence is
 	 *            available from a chimeric alignment of the same segmentt
 	 * @param fixMates
-	 * @param secondaryToSupp 
+	 * @param recalculateSupplementary 
 	 */
 	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
-			boolean restoreHardClips, boolean fixMates, boolean secondaryToSupp) {
+			boolean restoreHardClips, boolean fixMates, boolean recalculateSupplementary) {
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
 		if (tags.contains(SAMTag.FI.name())) {
@@ -764,35 +766,9 @@ public class SAMRecordUtil {
 				calculateSATags(segments.get(i));
 			}
 		}
-		if (secondaryToSupp) {
+		if (recalculateSupplementary) {
 			for (int i = 0; i < segments.size(); i++) {
-				List<SAMRecord> splits = Lists.newArrayList(Iterables.filter(segments.get(i), r -> r.getAttribute(SAMTag.SA.name()) != null));
-				if (splits.size() > 1) {
-					long suppCount = splits.stream().filter(r -> r.getSupplementaryAlignmentFlag()).count();
-					if (suppCount < splits.size() - 1) {
-						// TODO: allow both a split read primary alignment, and any number of split secondary alignments
-						// Currently this is just a fix for re-adding supplementary flags for bwa -M 
-						// TODO: use the record considered by supp/sec SA tags if multiple primary records exist
-						// TODO: use the longest mapping/best mapq as the forced primary
-						SAMRecord primary = splits.stream()
-								.filter(r -> !r.getSupplementaryAlignmentFlag() && !r.getNotPrimaryAlignmentFlag())
-								.findFirst().orElse(null);
-						if (primary == null) {
-							primary = splits.stream()
-							.filter(r -> !r.getSupplementaryAlignmentFlag())
-							.findFirst().orElse(null);
-						}
-						if (primary == null) {
-							// just grab the first
-							primary = splits.get(0);
-						}
-						for (SAMRecord r : splits) {
-							if (r != primary) {
-								r.setSupplementaryAlignmentFlag(true);
-							}
-						}
-					}
-				}
+				recalculateSupplementaryFromSA(segments.get(i));
 			}
 		}
 		if (Sets.intersection(tags,
@@ -823,6 +799,48 @@ public class SAMRecordUtil {
 			}
 			for (SAMRecord r : records) {
 				r.setAttribute(SamTags.MULTIMAPPING_FRAGMENT, mappingLocations <= segments.size() ? null : mappingLocations - segments.size());
+			}
+		}
+	}
+	/**
+	 * Orders the records such that the primary record for a split read alignment is first
+	 */
+	private static Ordering<SAMRecord> ByBestPrimarySplitCandidate = new Ordering<SAMRecord>() {
+		public int compare(SAMRecord arg1, SAMRecord arg2) {
+			return ComparisonChain.start()
+				// already flagged as supp is bad  
+				.compareFalseFirst(arg1.getSupplementaryAlignmentFlag(), arg2.getSupplementaryAlignmentFlag())
+				// flagged as secondary is bad due to legacy treatment of secondary alignments as supplementary (eg bwa mem -M) 
+				.compareFalseFirst(arg1.getNotPrimaryAlignmentFlag(), arg2.getNotPrimaryAlignmentFlag()) 
+				// the record with the shorter soft clip is a better candidate
+				.compare(SAMRecordUtil.getStartClipLength(arg1) + SAMRecordUtil.getEndClipLength(arg1), SAMRecordUtil.getStartClipLength(arg2) + SAMRecordUtil.getEndClipLength(arg2))
+				// Other options are:
+				// - record is flagged as the mate of a read pair (strong support for that record to be the primary)
+				// - best MAPQ
+				.result();
+		}
+	};
+	private static void recalculateSupplementaryFromSA(List<SAMRecord> segments) {
+		HashMap<List<ChimericAlignment>, List<SAMRecord>> saLookup = new HashMap<>();
+		for (SAMRecord r : segments) {
+			List<ChimericAlignment> splitca = ChimericAlignment.getChimericAlignments(r);
+			if (splitca.isEmpty() || r.getReadUnmappedFlag()) {
+				r.setSupplementaryAlignmentFlag(false);
+			} else {
+				splitca.add(new ChimericAlignment(r));
+				splitca.sort(ChimericAlignment.ByReadOffset);
+				List<SAMRecord> saGroup = saLookup.get(splitca);
+				if (saGroup == null) {
+					saGroup = new ArrayList<>();
+					saLookup.put(splitca, saGroup);
+				}
+				saGroup.add(r);
+			}
+		}
+		for (List<SAMRecord> split : saLookup.values()) {
+			split.sort(ByBestPrimarySplitCandidate);
+			for (int i = 0; i < split.size(); i++) {
+				split.get(i).setSupplementaryAlignmentFlag(i != 0);
 			}
 		}
 	}

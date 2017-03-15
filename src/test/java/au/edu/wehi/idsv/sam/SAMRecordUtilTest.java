@@ -700,7 +700,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertFalse(r.getReadPairedFlag());
 	}
 	@Test
-	public void secondaryToSupplementary_should_convert_to_secondary_SA_to_supplementary() {
+	public void recalculateSupplementary_should_convert_to_secondary_SA_to_supplementary() {
 		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 		
@@ -714,7 +714,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		Assert.assertFalse(read1.getSupplementaryAlignmentFlag());
 	}
 	@Test
-	public void secondaryToSupplementary_should_force_primary_to_supp() {
+	public void recalculateSupplementary_should_force_primary_to_supp() {
 		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 		
@@ -725,6 +725,70 @@ public class SAMRecordUtilTest extends TestHelper {
 		
 		Assert.assertFalse(read0.getSupplementaryAlignmentFlag());
 		Assert.assertTrue(read1.getSupplementaryAlignmentFlag());
+	}
+	@Test
+	public void recalculateSupplementary_should_not_convert_unmapped_read_to_supplementary() {
+		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
+		
+		read0.setAttribute("SA", "polyA,2,+,1H1M4H,11,0");
+		read1.setAttribute("SA", "polyA,1,+,1M5H,10,0");
+		
+		read0.setReadUnmappedFlag(true);
+		read1.setReadUnmappedFlag(true);
+		
+		read1.setNotPrimaryAlignmentFlag(true);
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(), false, false, true);
+		
+		Assert.assertFalse(read0.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(read1.getSupplementaryAlignmentFlag());
+	}
+	@Test
+	public void recalculateSupplementary_should_recalculate_supplementary_based_on_SA_tag() {
+		// primary split alignment
+		SAMRecord read1a = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read1b = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
+		
+		// secondary
+		SAMRecord read2 = withMapq(11, withSequence("CTG", Read(0, 2, "3M")))[0];
+		
+		// secondary split alignment
+		SAMRecord read3a = withMapq(10, withSequence("AA", Read(1, 1, "2M6H")))[0];
+		SAMRecord read3b = withMapq(11, withSequence("CGTCGT", Read(1, 2, "2H3M3S")))[0];
+		//SAMRecord read3c = withMapq(11, withSequence("C", Read(1, 2, "2H1M4H")))[0];
+		
+		read1a.setAttribute("SA", "polyA,2,+,1H1M4H,11,0");
+		read1b.setAttribute("SA", "polyA,1,+,1M5H,10,0");
+		
+		read3a.setAttribute("SA", "polyACGT,2,+,2H3M3S,11,0");
+		read3b.setAttribute("SA", "polyACGT,1,+,2M6H,10,0");
+		
+		read1a.setSupplementaryAlignmentFlag(false);
+		read1b.setSupplementaryAlignmentFlag(true);
+		read2.setSupplementaryAlignmentFlag(false);
+		read3a.setSupplementaryAlignmentFlag(false);
+		read3b.setSupplementaryAlignmentFlag(false);
+		
+		read1a.setNotPrimaryAlignmentFlag(false);
+		read1b.setNotPrimaryAlignmentFlag(false);
+		read2.setNotPrimaryAlignmentFlag(true);
+		read3a.setNotPrimaryAlignmentFlag(true);
+		read3b.setNotPrimaryAlignmentFlag(true);
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read1a, read1b, read2, read3a, read3b), ImmutableSet.of(), false, false, true);
+		
+		Assert.assertFalse(read1a.getSupplementaryAlignmentFlag());
+		Assert.assertTrue(read1b.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(read2.getSupplementaryAlignmentFlag());
+		Assert.assertTrue(read3a.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(read3b.getSupplementaryAlignmentFlag());
+		
+		Assert.assertFalse(read1a.getNotPrimaryAlignmentFlag());
+		Assert.assertFalse(read1b.getNotPrimaryAlignmentFlag());
+		Assert.assertTrue(read2.getNotPrimaryAlignmentFlag());
+		Assert.assertTrue(read3a.getNotPrimaryAlignmentFlag());
+		Assert.assertTrue(read3b.getNotPrimaryAlignmentFlag());
 	}
 	@Test
 	public void unclipExactReferenceMatches_should_adjust_matches() {
