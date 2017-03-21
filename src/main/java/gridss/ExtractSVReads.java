@@ -10,6 +10,7 @@ import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
 import gridss.analysis.CollectStructuralVariantReadMetrics;
@@ -43,7 +44,7 @@ import picard.cmdline.Option;
 )
 public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProgram {
 	private static final Log log = Log.getInstance(ExtractSVReads.class);
-    @Option(shortName="MO", doc="Output file containing SV metrics", optional=false)
+    @Option(shortName="MO", doc="Output file containing SV metrics", optional=true)
     public File METRICS_OUTPUT;
     private CollectStructuralVariantReadMetrics metricsCollector;
     private File tmpoutput;
@@ -99,14 +100,28 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 			if (isFullyMapped(r)) {
 				consistent[segmentIndex] = true;
 			}
+			if (hasFullyMappedSplit(r)) {
+				consistent[segmentIndex] = true;
+			}
 		}
 		return consistent;
+	}
+	private static boolean hasFullyMappedSplit(SAMRecord r) {
+		for (ChimericAlignment ca : ChimericAlignment.getChimericAlignments(r)) {
+			if (isFullyMapped(ca.cigar.getCigarElements())) {
+				return true;
+			}
+		}
+		return false;
 	}
 	private static boolean isFullyMapped(SAMRecord r) {
 		if (r.getReadUnmappedFlag()) return false;
 		Cigar cigar = r.getCigar();
 		if (cigar == null) return false;
-		for (CigarElement ce : cigar.getCigarElements()) {
+		return isFullyMapped(cigar.getCigarElements());
+	}
+	private static boolean isFullyMapped(List<CigarElement> cigar) {
+		for (CigarElement ce : cigar) {
 			switch (ce.getOperator()) {
 				case M:
 				case EQ:
@@ -122,6 +137,9 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 	public static boolean hasReadPairingConsistentWithReference(ReadPairConcordanceCalculator rpcc, List<SAMRecord> records) {
 		if (rpcc == null) return false;
 		for (SAMRecord r1 : records) {
+			if (mateIsConsistentWithReference(rpcc, r1)) {
+				return true;
+			}
 			if (r1.getReadUnmappedFlag() || !r1.getReadPairedFlag() || !r1.getFirstOfPairFlag()) continue;
 			for (SAMRecord r2 : records) {
 				if (r2.getReadUnmappedFlag() || !r2.getReadPairedFlag() || !r2.getSecondOfPairFlag()) continue;
@@ -131,6 +149,26 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 			}
 		}
 		return false;
+	}
+	public static boolean mateIsConsistentWithReference(ReadPairConcordanceCalculator rpcc, SAMRecord record) {
+		if (rpcc == null) return false;
+		if (record.getReadUnmappedFlag()) return false;
+		if (!record.getReadPairedFlag()) return false;
+		if (record.getMateUnmappedFlag()) return false;
+		if (record.getSupplementaryAlignmentFlag()) {
+			// Use the primary alignment for supp alignment
+			record = SAMRecordUtil.clone(record);
+			List<ChimericAlignment> calist = ChimericAlignment.getChimericAlignments(record);
+			if (calist.size() > 0) {
+				ChimericAlignment ca = calist.get(0);
+				record.setReferenceName(ca.rname);
+				record.setAlignmentStart(ca.pos);
+				record.setReadNegativeStrandFlag(ca.isNegativeStrand);
+				record.setCigar(ca.cigar);
+				record.setMappingQuality(ca.mapq);
+			}
+		}
+		return rpcc.isConcordant(record, null);
 	}
 	@Override
 	protected String[] customCommandLineValidation() {

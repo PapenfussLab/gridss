@@ -62,9 +62,8 @@ public abstract class ReadPairConcordanceCalculator {
 					log.error(msg);
 					throw new IllegalArgumentException(msg);
 				}
-				return new SAMFlagReadPairConcordanceCalculator(idsv);
 			}
-			break;
+			return new SAMFlagReadPairConcordanceCalculator(idsv);
 		}
 		return null;
 	}

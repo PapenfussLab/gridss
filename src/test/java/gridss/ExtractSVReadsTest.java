@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -17,6 +18,7 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.FixedSizeReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import gridss.analysis.StructuralVariantReadMetrics;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -125,4 +127,32 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		fail();
 	}
 	*/
+	@Test
+	public void hasReadAlignmentConsistentWithReference_should_consider_SA_alignments() {
+		SAMRecord r = Read(0, 1, "5M5S");
+		r.setAttribute("SA", new ChimericAlignment(Read(0, 1, "10M")).toString());
+		Assert.assertTrue(ExtractSVReads.hasReadAlignmentConsistentWithReference(ImmutableList.of(r))[0]);
+	}
+	@Test
+	public void hasReadPairingConsistentWithReference_should_use_primary_alignment_for_split_alignments() {
+		SAMRecord r = Read(0, 1, "5M5S");
+		r.setAttribute("SA", new ChimericAlignment(Read(1, 50, "10M")).toString());
+		r.setMateAlignmentStart(100);
+		r.setMateNegativeStrandFlag(true);
+		r.setMateReferenceIndex(1);
+		r.setReadPairedFlag(true);
+		r.setMateUnmappedFlag(false);
+		r.setSupplementaryAlignmentFlag(true);
+		Assert.assertTrue(ExtractSVReads.hasReadPairingConsistentWithReference(new FixedSizeReadPairConcordanceCalculator(0, 100), ImmutableList.of(r)));
+	}
+	@Test
+	public void should_extract_fully_mapped_split_read() {
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.instanceMain(new String[] {
+				"INPUT=src/test/resources/fullymappedsplitread.sam",
+				"OUTPUT=" + output.getAbsolutePath()
+		});
+		List<SAMRecord> records = getRecords(output);
+		assertEquals(0, records.size());
+	}
 }
