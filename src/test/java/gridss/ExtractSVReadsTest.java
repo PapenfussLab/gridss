@@ -11,11 +11,15 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.FixedSizeReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import gridss.analysis.StructuralVariantReadMetrics;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.MetricsFile;
 
 public class ExtractSVReadsTest extends IntermediateFilesTest {
 	@Test
@@ -68,6 +72,8 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.acceptFragment(ImmutableList.of(Read(0, 1, "50M50S")), null);
 		extract.finish();
 		assertTrue(extract.METRICS_OUTPUT.exists());
+		StructuralVariantReadMetrics metric = Iterators.getOnlyElement(Iterables.filter(MetricsFile.readBeans(extract.METRICS_OUTPUT), StructuralVariantReadMetrics.class).iterator(), null);
+		assertEquals(1, metric.SOFT_CLIPPED_READS);
 	}
 	/*
 	@Test

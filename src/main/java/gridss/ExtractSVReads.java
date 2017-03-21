@@ -158,9 +158,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 				// ignore remaining reads
 			}
 		}
-		if (METRICS_OUTPUT != null) {
-			metricsCollector.acceptFragment(records, lookup);
-		}
 	}
 	@Override
 	protected void finish() {
