@@ -120,5 +120,10 @@ public class VariantCaller {
 				log.warn(e, "Error removing intermediate file ", tmp.getAbsolutePath());
 			}
 		}
+		if (gridss.Defaults.DEFENSIVE_GC) {
+			log.debug("Requesting defensive GC to ensure OS file handles are closed");
+			System.gc();
+			System.runFinalization();
+		}
 	}
 }

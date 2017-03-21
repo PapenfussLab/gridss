@@ -225,6 +225,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			tmpout.delete();
 			filteredout.delete();
 		}
+		if (gridss.Defaults.DEFENSIVE_GC) {
+			log.debug("Requesting defensive GC to ensure OS file handles are closed");
+			System.gc();
+			System.runFinalization();
+		}
 	}
 	private QueryInterval getExpanded(QueryInterval qi) {
 		int expansion = (int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1;
