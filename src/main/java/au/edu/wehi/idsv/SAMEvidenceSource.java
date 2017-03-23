@@ -191,6 +191,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 							List<String> args = Lists.newArrayList(
 									"INPUT=" + in.getAbsolutePath(),
 									"OUTPUT=" + extractedFile.getAbsolutePath(),
+									"UNMAPPED_READS=false", // saves intermediate file space
 									"METRICS_OUTPUT=" + getContext().getFileSystemContext().getSVMetrics(getFile()),
 									"MIN_CLIP_LENGTH=" + getContext().getConfig().getSoftClip().minLength,
 									"READ_PAIR_CONCORDANCE_METHOD=" + rpcMethod.name(),
