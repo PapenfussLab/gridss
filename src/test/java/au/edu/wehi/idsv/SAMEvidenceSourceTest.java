@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,13 +13,17 @@ import java.util.List;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.alignment.StubFastqAligner;
 import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
@@ -445,5 +450,14 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ses.setBlacklistedRegions(blacklist);
 		assertTrue(ses.shouldFilter(NRRP(ses, DP(0, 1, "1M", true, 1, 100, "1M", false))));
 		assertTrue(ses.shouldFilter(NRRP(ses, DP(1, 100, "1M", false, 0, 1, "1M", true))));
+	}
+	@Test
+	@Category(Hg38Tests.class)
+	public void regression_indel_should_not_throw_exception() throws IOException {
+		File ref = Hg38Tests.findHg38Reference();
+		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
+		Files.copy(new File("src/test/resources/indelerror.bam"), input);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
+		List<DirectedEvidence> reads = Lists.newArrayList(source.iterator());
 	}
 }

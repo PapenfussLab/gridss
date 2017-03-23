@@ -29,9 +29,9 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.IntervalTree;
+import htsjdk.samtools.util.IntervalTree.Node;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.IntervalTree.Node;
 
 /**
  * Adds evidence supporting to each variant call. Both the variant calls and

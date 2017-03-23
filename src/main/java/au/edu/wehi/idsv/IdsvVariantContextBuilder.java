@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 
-import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.GridssVcfConstants;
+import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
