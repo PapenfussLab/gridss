@@ -148,6 +148,33 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(0, SAMRecordUtil.estimateFragmentSize(dp[1], PairOrientation.FR));
 	}
 	@Test
+	public void estimateFragmentSize_should_consider_hard_clips() {
+		SAMRecord[] dp = DP(0, 10, "1H2M", true, 0, 13, "3M", false);
+		// 1
+		// 012345678901234567890
+		// MM MM
+		assertEquals(7, SAMRecordUtil.estimateFragmentSize(dp[0], PairOrientation.FR));
+	}
+	@Test
+	public void estimateFragmentSize_should_use_mate_cigar_if_present() {
+		SAMRecord[] dp = DP(0, 10, "2M", true, 0, 13, "3M", false);
+		// 1
+		// 012345678901234567890
+		// MM MMM
+		assertEquals(6, SAMRecordUtil.estimateFragmentSize(dp[0], PairOrientation.FR));
+		assertEquals(6, SAMRecordUtil.estimateFragmentSize(dp[1], PairOrientation.FR));
+	}
+	@Test
+	public void estimateFragmentSize_should_use_cigar_based_estimation() {
+		SAMRecord[] dp = DP(0, 10, "2M", true, 0, 13, "2M", false);
+		dp[0].setReadBases(SAMRecord.NULL_SEQUENCE);
+		dp[1].setReadBases(SAMRecord.NULL_SEQUENCE);
+		dp[0].setAttribute("MC", null);
+		dp[1].setAttribute("MC", null);
+		assertEquals(5, SAMRecordUtil.estimateFragmentSize(dp[0], PairOrientation.FR));
+		assertEquals(5, SAMRecordUtil.estimateFragmentSize(dp[1], PairOrientation.FR));
+	}
+	@Test
 	public void calculateFragmentSize_should_assume_FR_orientation() {
 		SAMRecord[] dp = DP(0, 1, "1M", true, 0, 5, "1M", true);
 		assertEquals(0, SAMRecordUtil.calculateFragmentSize(dp[0], dp[1], PairOrientation.FR));

@@ -6,22 +6,33 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.FixedSizeReadPairConcordanceCalculator;
+import au.edu.wehi.idsv.Hg38Tests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.ReadPairConcordanceMethod;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import gridss.analysis.StructuralVariantReadMetrics;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 public class ExtractSVReadsTest extends IntermediateFilesTest {
 	@Test
@@ -154,5 +165,39 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		});
 		List<SAMRecord> records = getRecords(output);
 		assertEquals(0, records.size());
+	}
+	@Test
+	@Category(Hg38Tests.class)
+	public void regression_should_extract_split_read_alignments_as_group() throws IOException {
+		File ref = Hg38Tests.findHg38Reference();
+		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref));
+		Files.copy(new File("src/test/resources/sa.split/test1.sam"), input);
+		
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.setReference(lookup); //new ProcessingContext(getFSContext(), ref, lookup, null, getConfig());
+		extract.MIN_CLIP_LENGTH = 4;
+		extract.INSERT_SIZE_METRICS = new File("src/test/resources/sa.split/test1.insert_size_metrics");
+		extract.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.PERCENTAGE;
+		extract.OUTPUT = output;
+		extract.INPUT = input;
+		try (SamReader reader = SamReaderFactory.make().open(input)) {
+			extract.setup(reader.getFileHeader(), input);
+		}
+		List<SAMRecord> records = getRecords(input);
+		List<Boolean> result = records.stream().map(r -> extract.shouldExtract(ImmutableList.of(r), lookup)[0]).collect(Collectors.toList());
+		/*
+		for (int i = 0; i < records.size(); i++) {
+			SAMRecord r = records.get(i);
+			System.out.print(r.getSupplementaryAlignmentFlag() ? "S" : " ");
+			System.out.print(r.getFirstOfPairFlag() ? "1" : "2");
+			System.out.print(" Extracted=" + (result.get(i) ? "y" : "n"));
+			System.out.print(" HasConcPair=" + (ExtractSVReads.hasReadPairingConsistentWithReference(extract.getReadPairConcordanceCalculator(), ImmutableList.of(r)) ? "y" : "n"));
+			boolean[] ra = ExtractSVReads.hasReadAlignmentConsistentWithReference(ImmutableList.of(r));
+			System.out.print(" HasConcRead=" + (ra[0] ? "y" : "n") + (ra[1] ? "y" : "n"));
+			System.out.println(" " + new ChimericAlignment(r).toString());
+		}
+		*/
+		Assert.assertEquals(records.stream().map(r -> r.getSecondOfPairFlag()).collect(Collectors.toList()), result);
+		lookup.close();
 	}
 }

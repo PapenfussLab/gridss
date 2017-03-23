@@ -318,35 +318,6 @@ public class SAMRecordUtil {
 	}
 
 	/**
-	 * Estimates the size of sequenced fragment
-	 * 
-	 * @param record
-	 * @param expectedOrientation
-	 * @return
-	 */
-	public static int estimateFragmentSize(SAMRecord record, PairOrientation expectedOrientation) {
-		if (expectedOrientation != PairOrientation.FR)
-			throw new RuntimeException("NYI");
-		if (record.getReadUnmappedFlag() || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()
-				|| record.getReferenceIndex() != record.getMateReferenceIndex() ||
-				// FR assumption
-				record.getReadNegativeStrandFlag() == record.getMateNegativeStrandFlag()) {
-			return 0;
-		}
-		// Assuming FR orientation, adapter sequences have been removed, and no
-		// SCs
-		if (record.getReadNegativeStrandFlag()) {
-			// <--record
-			return record.getUnclippedEnd() - record.getMateAlignmentStart() + 1;
-		} else {
-			// record-->
-			// this assumes the mate is fully mapped to the reference (best
-			// guess we can make without mate cigar)
-			return record.getMateAlignmentStart() + record.getReadLength() - record.getUnclippedStart();
-		}
-	}
-
-	/**
 	 * Conservative estimate as to whether the reads overlap due to small
 	 * fragment size
 	 * 
@@ -409,12 +380,52 @@ public class SAMRecordUtil {
 		// Assuming FR orientation and adapter sequences have been removed
 		if (record1.getReadNegativeStrandFlag()) {
 			// <--record
-			return record1.getUnclippedEnd() - record2.getUnclippedStart() + 1;
+			int r1end = record1.getUnclippedEnd();
+			int r2start = record2.getUnclippedStart();
+			return r1end - r2start + 1;
 		} else {
-			return record2.getUnclippedEnd() - record1.getUnclippedStart() + 1;
+			int r1start = record1.getUnclippedStart();
+			int r2end = record2.getUnclippedEnd();
+			return r2end - r1start + 1;
 		}
 	}
-
+	
+	/**
+	 * Estimates the size of sequenced fragment
+	 * 
+	 * @param record
+	 * @param expectedOrientation
+	 * @return
+	 */
+	public static int estimateFragmentSize(SAMRecord record, PairOrientation expectedOrientation) {
+		if (expectedOrientation != PairOrientation.FR)
+			throw new RuntimeException("NYI");
+		if (record.getReadUnmappedFlag() || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()
+				|| record.getReferenceIndex() != record.getMateReferenceIndex() ||
+				// FR assumption
+				record.getReadNegativeStrandFlag() == record.getMateNegativeStrandFlag()) {
+			return 0;
+		}
+		// Assuming FR orientation, adapter sequences have been removed
+		Cigar mc = SAMUtils.getMateCigar(record);
+		if (record.getReadNegativeStrandFlag()) {
+			// <--record
+			int r1end = record.getUnclippedEnd();
+			int r2start = mc == null ?
+					// if we don't have a mate cigar we'll just assume that there are is no clipping in the alignment
+					record.getMateAlignmentStart() :
+					SAMUtils.getMateUnclippedStart(record);
+			return r1end - r2start + 1;
+		} else {
+			int r1start = record.getUnclippedStart();
+			int r2end = mc == null ?
+					// no MC tag: we have to assume no clipping and the reads are the same length
+					record.getMateAlignmentStart() + CigarUtil.readLength(record.getCigar().getCigarElements()) + CigarUtil.countBases(record.getCigar(), CigarOperator.HARD_CLIP) - 1:
+					SAMUtils.getMateUnclippedEnd(record);
+			return r2end - r1start + 1;
+		}
+	}
+	
 	/**
 	 * Updates the two reads to indicate the form a read pair
 	 * 

@@ -166,6 +166,8 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 				record.setReadNegativeStrandFlag(ca.isNegativeStrand);
 				record.setCigar(ca.cigar);
 				record.setMappingQuality(ca.mapq);
+				record.setReadBases(SAMRecord.NULL_SEQUENCE);
+				record.setBaseQualities(SAMRecord.NULL_QUALS);
 			}
 		}
 		return rpcc.isConcordant(record, null);
@@ -180,16 +182,26 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 	public static void main(String[] argv) {
         System.exit(new ExtractSVReads().instanceMain(argv));
     }
-	@Override
-	protected void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
+	public boolean[] shouldExtract(List<SAMRecord> records, ReferenceLookup lookup) {
 		boolean hasConsistentReadPair = hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = hasReadAlignmentConsistentWithReference(records);
 		if (metricsCollector != null) {
 			metricsCollector.acceptFragment(records, lookup);
 		}
-		for (SAMRecord r : records) {
-			if ((!readfilter.filterOut(r) && !hasConsistentReadAlignment[SAMRecordUtil.getSegmentIndex(r)])
-					|| (!pairfilter.filterOut(r) && !hasConsistentReadPair)) {
+		boolean[] extract = new boolean[records.size()];
+		for (int i = 0; i < records.size(); i++) {
+			SAMRecord r = records.get(i);
+			extract[i] = (!readfilter.filterOut(r) && !hasConsistentReadAlignment[SAMRecordUtil.getSegmentIndex(r)])
+					|| (!pairfilter.filterOut(r) && !hasConsistentReadPair);
+		}
+		return extract;
+	}
+	@Override
+	protected void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
+		boolean[] extract = shouldExtract(records, lookup);
+		for (int i = 0; i < records.size(); i++) {
+			SAMRecord r = records.get(i);
+			if (extract[i]) {
 				writer.addAlignment(r);
 				count++;
 			} else {

@@ -479,5 +479,15 @@ public class CigarUtil {
 			}
 		}
 		return width;
+	}
+	public static int countBases(final Cigar cigar, final CigarOperator operator) {
+		if (cigar == null) return 0;
+		int n = 0;
+		for (CigarElement ce : cigar.getCigarElements()) {
+			if (ce.getOperator() == operator) {
+				n += ce.getLength();
+			}
+		}
+		return n;
 	} 
 }
