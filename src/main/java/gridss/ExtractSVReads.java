@@ -155,10 +155,12 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 		if (record.getReadUnmappedFlag()) return false;
 		if (!record.getReadPairedFlag()) return false;
 		if (record.getMateUnmappedFlag()) return false;
-		if (record.getSupplementaryAlignmentFlag()) {
-			// Use the primary alignment for supp alignment
-			record = SAMRecordUtil.clone(record);
-			List<ChimericAlignment> calist = ChimericAlignment.getChimericAlignments(record);
+		return rpcc.isConcordant(primaryAlignmentForSupplementary(record), null);
+	}
+	private static SAMRecord primaryAlignmentForSupplementary(SAMRecord r) {
+		if (r.getSupplementaryAlignmentFlag()) {
+			SAMRecord record = SAMRecordUtil.clone(r);
+			List<ChimericAlignment> calist = ChimericAlignment.getChimericAlignments(r);
 			if (calist.size() > 0) {
 				ChimericAlignment ca = calist.get(0);
 				record.setReferenceName(ca.rname);
@@ -168,9 +170,10 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 				record.setMappingQuality(ca.mapq);
 				record.setReadBases(SAMRecord.NULL_SEQUENCE);
 				record.setBaseQualities(SAMRecord.NULL_QUALS);
+				return record;
 			}
 		}
-		return rpcc.isConcordant(record, null);
+		return r;
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
@@ -191,8 +194,9 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 		boolean[] extract = new boolean[records.size()];
 		for (int i = 0; i < records.size(); i++) {
 			SAMRecord r = records.get(i);
-			extract[i] = (!readfilter.filterOut(r) && !hasConsistentReadAlignment[SAMRecordUtil.getSegmentIndex(r)])
-					|| (!pairfilter.filterOut(r) && !hasConsistentReadPair);
+			extract[i] = !hasConsistentReadAlignment[SAMRecordUtil.getSegmentIndex(r)] && !readfilter.filterOut(r);
+			// supp records should use the primary alignment when considering concordance
+			extract[i] |= !hasConsistentReadPair && !pairfilter.filterOut(primaryAlignmentForSupplementary(r));
 		}
 		return extract;
 	}
