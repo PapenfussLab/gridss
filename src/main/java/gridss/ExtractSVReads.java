@@ -72,7 +72,7 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 		SplitReadFilter splitReadFilter = new SplitReadFilter();
 		AlignedFilter unmappedFilter = new AlignedFilter(false);
 		OneEndAnchoredReadFilter oeaFilter = new OneEndAnchoredReadFilter();
-		ReadPairConcordanceFilter dpFilter = new ReadPairConcordanceFilter(getReadPairConcordanceCalculator(), false, true);
+		ReadPairConcordanceFilter dpFilter = getReadPairConcordanceCalculator() != null ? new ReadPairConcordanceFilter(getReadPairConcordanceCalculator(), false, true) : null;
 		List<SamRecordFilter> readfilters = new ArrayList<>();
 		readfilters.add(indelFilter);
 		readfilters.add(softClipFilter);
@@ -82,7 +82,7 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 		
 		List<SamRecordFilter> pairfilters = new ArrayList<>();
 		if (SINGLE_MAPPED_PAIRED) pairfilters.add(oeaFilter);
-		if (DISCORDANT_READ_PAIRS) pairfilters.add(dpFilter);
+		if (dpFilter != null && DISCORDANT_READ_PAIRS) pairfilters.add(dpFilter);
 		pairfilter = new UnionAggregateFilter(pairfilters);
 		if (!SINGLE_MAPPED_PAIRED && !DISCORDANT_READ_PAIRS) {
 			pairfilter = new FixedFilter(true);

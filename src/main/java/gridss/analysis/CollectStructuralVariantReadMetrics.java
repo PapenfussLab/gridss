@@ -3,7 +3,6 @@ package gridss.analysis;
 import java.io.File;
 import java.util.List;
 
-import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import gridss.ExtractSVReads;
@@ -33,7 +32,6 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
         System.exit(new CollectStructuralVariantReadMetrics().instanceMain(argv));
     }
 	private InsertSizeDistribution isd;
-	private ReadPairConcordanceCalculator rpcc;
 	private IndelReadFilter indelFilter;
 	private ClippedReadFilter softClipFilter;
 	private SplitReadFilter splitReadFilter;
@@ -43,34 +41,17 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 	private StructuralVariantReadMetrics metrics;
 	@Override
 	public void setup(SAMFileHeader header, File samFile) {
-		// Read metrics file
-    	if (INSERT_SIZE_METRICS != null) {
-    		if (!INSERT_SIZE_METRICS.exists()) {
-    			log.warn("Missing " + INSERT_SIZE_METRICS);
-    		} else {
-    			isd = InsertSizeDistribution.create(INSERT_SIZE_METRICS);
-    		}
-    	} else {
-    		isd = null;
-    	}
-		rpcc = ReadPairConcordanceCalculator.create(
-    			READ_PAIR_CONCORDANCE_METHOD,
-    			FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE,
-    			FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE,
-    			READ_PAIR_CONCORDANT_PERCENT,
-    			isd,
-    			null);
 		indelFilter = new IndelReadFilter(MIN_INDEL_SIZE);
 		softClipFilter = new ClippedReadFilter(MIN_CLIP_LENGTH); 
 		splitReadFilter = new SplitReadFilter();
 		unmappedFilter = new AlignedFilter(false);
 		oeaFilter = new OneEndAnchoredReadFilter();
-		dpFilter = new ReadPairConcordanceFilter(rpcc, false, true);
+		dpFilter = getReadPairConcordanceCalculator() != null ? new ReadPairConcordanceFilter(getReadPairConcordanceCalculator(), false, true) : null;
 		metrics = new StructuralVariantReadMetrics();
 	}
 	@Override
 	public void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
-		boolean hasConsistentReadPair = ExtractSVReads.hasReadPairingConsistentWithReference(rpcc, records);
+		boolean hasConsistentReadPair = ExtractSVReads.hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = ExtractSVReads.hasReadAlignmentConsistentWithReference(records);
 		boolean hasOeaAnchor = false;
 		boolean hasDp = false;
@@ -91,7 +72,7 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 					metrics.UNMAPPED_MATE_READ_ALIGNMENTS++;
 					hasOeaAnchor = true;
 				}
-				if (DISCORDANT_READ_PAIRS && !dpFilter.filterOut(r)) {
+				if (dpFilter != null && DISCORDANT_READ_PAIRS && !dpFilter.filterOut(r)) {
 					metrics.DISCORDANT_READ_PAIR_ALIGNMENTS++;
 					hasDp = true;
 				}
