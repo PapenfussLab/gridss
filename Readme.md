@@ -363,15 +363,18 @@ The external aligner (bwa) could not be run. The most common causes of this are:
  - Does running "bwa" print out the bwa usage message? If you are using a cluster, you may have to add bwa to your `PATH` (eg `module add bwa`).
 - bwa index does not exist
 - bwa index has incorrect suffix
- - if the reference is ref.fa the index must be ref.fa.bwt _not_ ref.bwt
+ - e.g. if the reference is ref.fa the index must be ref.fa.bwt _not_ ref.bwt
 
 Can you run the bwa command exactly as it appears in the error message?
 
 ###  (Too many open files)
 
 GRIDSS has attempted to open too many files at once and the OS file handle limit has been reached.
-On linux 'ulimit -n' displays your current limit. This error likely to be encountered if you have specified a large number of input files or threads. Solutions are:
+On linux 'ulimit -n' displays your current limit. This error likely to be encountered if you have specified a large number of input files or threads but can also be encountered when processing many small contigs. The following solution is recommended:
 * Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
+* Added `-Dgridss.defensiveGC=true` to the java command-line used for GRIDSS. Memory mapped file handles are not released to the OS until the buffer is garbage collected . This option add a request forr garbage collection whenever a file handle is no longer used.
+
+Other options that have solve this problem include:
 * Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
 
 ### Reference genome used by _input.bam_ does not match reference genome _reference.fa_. The reference supplied must match the reference used for every input.
@@ -394,11 +397,11 @@ Your CPU does not support the SSE2 instruction set. See the sswjni sections for 
 
 ### Java HotSpot(TM) 64-Bit Server VM warning: INFO: os::commit_memory(0x00007fc36e200000, 48234496, 0) failed; error='Cannot allocate memory' (errno=12)
 
-GRIDSS has run out of memory. Either not enough memory has been allocated to run GRIDSS or GRIDSS has attempted to memory map too many files. Due to memory mapping issues with the library used for GRIDSS I/O, the latter can occur on a full run of GRIDSS when given a large number of input files, and a large number of worker threads even when enough memory is available. In both cases, restart GRIDSS (increasing the memory available if required) and GRIDSS will continue from where it left off.
+GRIDSS has run out of memory. Either not enough memory has been allocated to run GRIDSS or GRIDSS has attempted to memory map too many files (See "(Too many open files)"). In both cases, restart GRIDSS (increasing the memory available if required) and GRIDSS will continue from where it left off.
 
 ### java.lang.AssertionError: java.lang.ClassNotFoundException: com.sun.tools.javac.api.JavacTool
 
-You are running GRIDSS in multi-mapping mode using only a JRE instead of a full JDK. Update your PATH and JAVA_HOME to a JAva 1.8+ JDK installation.
+You are running GRIDSS in multi-mapping mode using only a JRE instead of a full JDK. Update your PATH and JAVA_HOME to a Java 1.8+ JDK installation.
 
 
 

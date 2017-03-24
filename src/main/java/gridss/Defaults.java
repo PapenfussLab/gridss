@@ -19,6 +19,6 @@ public class Defaults {
 		DELETE_TEMPORARY_FILES = !Boolean.valueOf(System.getProperty("gridss.keepTempFiles", "false"));
 		SUPPRESS_DATA_ERROR_MESSAGES_AFTER = Integer.parseInt(System.getProperty("gridss.logSpamLimit", "100"));
 		WRITE_ZERO_OR_EMTPY_VCF_FIELDS = Boolean.valueOf(System.getProperty("gridss.writeZeroOrEmptyVcfFields", "true"));
-		DEFENSIVE_GC = Boolean.valueOf(System.getProperty("gridss.defensiveGC", "true"));
+		DEFENSIVE_GC = Boolean.valueOf(System.getProperty("gridss.defensiveGC", "false"));
 	}
 }
