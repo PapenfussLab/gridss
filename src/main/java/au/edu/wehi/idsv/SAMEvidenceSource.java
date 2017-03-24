@@ -16,6 +16,7 @@ import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -326,6 +327,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		if (SAMRecordUtil.isDovetailing(r, PairOrientation.FR, getContext().getConfig().dovetailMargin)) {
 			return true;
+		}
+		if (CigarUtil.widthOfImprecision(r.getCigar()) == 0) {
+			if (r.getAlignmentStart() < 1) {
+				return true;
+			}
+			if (r.getAlignmentEnd() > getProcessContext().getReference().getSequenceDictionary().getSequence(r.getReferenceIndex()).getSequenceLength()) {
+				return true;
+			}
 		}
 		return false;
 	}

@@ -357,7 +357,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 1;
 		pc.getAssemblyParameters().positional.maximumNodeDensity = 0.1f;
 		List<DirectedEvidence> e = new ArrayList<>();
-		for (int i = 0; i < 100; i++) {
+		for (int i = 1; i < 101; i++) {
 			e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", i, 0), withSequence("AAAATTGG", Read(0, i, "4M4S")))[0]));
 			e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", i, 1), withSequence("AAAACCGG", Read(0, i, "4M4S")))[0]));
 		}

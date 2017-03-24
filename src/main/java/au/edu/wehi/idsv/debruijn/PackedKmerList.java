@@ -43,4 +43,7 @@ public class PackedKmerList extends PackedSequence {
 	public int length() {
 		return weights.length;
 	}
+	public int kmerSize() {
+		return k;
+	}
 }

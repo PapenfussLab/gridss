@@ -5,11 +5,14 @@ import java.util.BitSet;
 import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.NotImplementedException;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.EvidenceSource;
 import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
@@ -21,7 +24,7 @@ import htsjdk.samtools.SAMRecord;
 
 /**
  * Minimal evidence for incorporating soft clip and
- * read pair evidence into a de Bruijn graph
+ * read pair evidence into a positional de Bruijn graph
  * 
  * @author Daniel Cameron
  *
@@ -32,6 +35,7 @@ public class KmerEvidence extends PackedKmerList {
 	// - read pair can store anchor position & direction instead of breakend & anchor
 	// - read pair anchor can point to rp
 	private final DirectedEvidence evidence;
+	private final int refContigLength;
 	private final int firstAnchorKmer;
 	private final int lastAnchorKmer;
 	private final BitSet ambiguous;
@@ -61,7 +65,8 @@ public class KmerEvidence extends PackedKmerList {
 		return end;
 	}
 	public boolean isAnchored(int offset) {
-		return offset >= firstAnchorKmer && offset < lastAnchorKmer;
+		return offset >= firstAnchorKmer && offset < lastAnchorKmer &&
+			start + offset > 0 && end + offset + kmerSize() - 1 <= refContigLength;
 	}
 	public boolean isAnchored() {
 		return firstAnchorKmer < lastAnchorKmer;
@@ -79,7 +84,7 @@ public class KmerEvidence extends PackedKmerList {
 		}
 		return ambiguous;
 	}
-	public KmerEvidence(
+	private KmerEvidence(
 			DirectedEvidence evidence,
 			int start,
 			int end,
@@ -89,6 +94,7 @@ public class KmerEvidence extends PackedKmerList {
 		assert(evidence != null);
 		assert(qual.length == bases.length);
 		this.evidence = evidence;
+		this.refContigLength = getReferenceContigLength(evidence);
 		this.start = start;
 		this.end = end;
 		this.ambiguous = ambiguousKmers(k, bases);
@@ -125,6 +131,22 @@ public class KmerEvidence extends PackedKmerList {
 			endPosition = local.getUnclippedEnd() - minFragSize + 1;
 		}
 		return new KmerEvidence(pair, startPosition, endPosition, k, -1, -1, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendQual());
+	}
+	/**
+	 * Finds the length of the reference sequence on which this kmer is placed
+	 * @param e
+	 * @return
+	 */
+	private static int getReferenceContigLength(DirectedEvidence e) {
+		int refIndex = e.getBreakendSummary().referenceIndex;
+		EvidenceSource source = e.getEvidenceSource();
+		if (source != null) {
+			ProcessingContext context = source.getContext();
+			if (context != null) {
+				return context.getReference().getSequenceDictionary().getSequence(refIndex).getSequenceLength();
+			}
+		}
+		return Integer.MAX_VALUE;
 	}
 	/**
 	 * Creates anchoring evidence for the given read pair
@@ -192,6 +214,9 @@ public class KmerEvidence extends PackedKmerList {
 		return reference.getBase(referenceIndex, position);
 	}
 	public static KmerEvidence create(int k, SingleReadEvidence sre) {
+		if (!sre.isBreakendExact()) {
+			throw new NotImplementedException("reassembly of XNX placeholder contigs");
+		}
 		byte[] aseq = sre.getAnchorSequence();
 		byte[] beseq = sre.getBreakendSequence();
 		byte[] aqual = sre.getAnchorQuality();

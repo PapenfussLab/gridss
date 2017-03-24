@@ -494,7 +494,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void unanchored_assembly_should_set_imprecise_header() {
-		SAMRecord ass = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1, 1, 2), null, B("A"), B("A"), new int[] {0, 0});
+		SAMRecord ass = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1, 1, 2), null, B("A"), B("A"));
 		VariantContextDirectedEvidence dba = CallSV(ass);
 		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 	}

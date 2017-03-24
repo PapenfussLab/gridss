@@ -123,7 +123,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1, "4M", true)));
 		SAMRecord e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 5, 5, 300), support,
-				B("AAA"), B("AAA"), new int[] { 2, 0 });
+				B("AAA"), B("AAA"));
 		assertTrue(AES().shouldFilterAssembly(e));
 	}
 	@Test
@@ -143,7 +143,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				NRRP(OEA(0, 1, "4M", false)));
 		SAMRecord e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 5, 5, 300), support,
-				B("AAAAAA"), B("AAAAAA"), new int[] { 2, 0 });
+				B("AAAAAA"), B("AAAAAA"));
 		assertFalse(AES().shouldFilterAssembly(e));
 	}
 	@Test
@@ -165,7 +165,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(SES(100, 100), DP(0, 1, "1M", true, 0, 5, "1M", false)));
 		SAMRecord e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1, 1, 300), support,
-				B("AA"), B("AA"), new int[] { 2, 0});
+				B("AA"), B("AA"));
 		
 		assertFalse(aes.shouldFilterAssembly(e));
 	}

@@ -451,7 +451,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertTrue(ses.shouldFilter(NRRP(ses, DP(0, 1, "1M", true, 1, 100, "1M", false))));
 		assertTrue(ses.shouldFilter(NRRP(ses, DP(1, 100, "1M", false, 0, 1, "1M", true))));
 	}
-	@Test
+	//@Test
 	@Category(Hg38Tests.class)
 	public void regression_indel_should_not_throw_exception() throws IOException {
 		File ref = Hg38Tests.findHg38Reference();
@@ -459,5 +459,18 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		Files.copy(new File("src/test/resources/indelerror.bam"), input);
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		List<DirectedEvidence> reads = Lists.newArrayList(source.iterator());
+	}
+	@Test
+	public void should_filter_reads_aligning_outside_contig_bounds() {
+		SAMEvidenceSource ses = permissiveSES();
+		assertFalse(ses.shouldFilter(Read(0, 1, "10M")));
+		assertFalse(ses.shouldFilter(Read(0, 9999, "2M")));
+		assertTrue(ses.shouldFilter(Read(0, 0, "10M")));
+		assertTrue(ses.shouldFilter(Read(0, 10000, "2M")));
+	}
+	@Test
+	public void should_not_filter_XNX_placholder_outside_of_bounds() {
+		SAMEvidenceSource ses = permissiveSES();
+		assertFalse(ses.shouldFilter(Read(0, -10, "10S1X1N1X")));
 	}
 }

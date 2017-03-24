@@ -449,7 +449,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes, assemblyNameGenerator,
 						be,
 						evidenceIds,
-						bases, quals, new int[] { 0, 0 });
+						bases, quals);
 				if (evidence.stream().anyMatch(e -> e.isAnchored())) {
 					log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getReadName(), contigName, contig.getFirst().firstStart()));
 				}

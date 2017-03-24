@@ -8,6 +8,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang3.NotImplementedException;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -21,7 +23,7 @@ public class KmerEvidenceTest extends TestHelper {
 	public void fwd_softclip() {
 		SoftClipEvidence sce = SCE(FWD, withQual(new byte[] { 0,1,2,3,4,5,6,7,8,9,10}, withSequence("ACGTTATACCG", Read(0, 2, "1S4M6S"))));
 		KmerEvidence e = KmerEvidence.create(4, sce);
-		int startsclength = 1;
+		//int startsclength = 1;
 		assertEquals(2, e.startPosition());
 		assertEquals(2, e.endPosition());
 		assertEquals(11-1-(4-1), e.length());
@@ -271,5 +273,40 @@ public class KmerEvidenceTest extends TestHelper {
 		assertEquals(2, nodesNotNull(KmerEvidence.createAnchor(placholderEvidence, 1, Read(0, -10, "10M"), FWD, 4, SMALL_FA)));
 		// end overrun
 		assertEquals(1, nodesNotNull(KmerEvidence.createAnchor(placholderEvidence, 1, Read(0, 10000, "10M"), FWD, 10, SMALL_FA)));
+	}
+	@Test
+	public void isAnchor_should_be_false_if_any_kmer_base_falls_outside_reference_contigs_bounds() {
+		KmerEvidence kestart = KmerEvidence.create(2, SCE(FWD, Read(0, -1, "100M5S"))); 
+		Assert.assertFalse(kestart.isAnchored(0));
+		Assert.assertFalse(kestart.isAnchored(1));
+		Assert.assertTrue(kestart.isAnchored(2));
+		Assert.assertTrue(kestart.isAnchored(3));
+		//    end
+		//     |
+		// 67890
+		//  SMMMMMM
+		KmerEvidence keend = KmerEvidence.create(2, SCE(BWD, Read(0, 9998, "1S6M")));
+		Assert.assertFalse(keend.isAnchored(0));
+		Assert.assertTrue(keend.isAnchored(1));
+		Assert.assertTrue(keend.isAnchored(2));
+		Assert.assertFalse(keend.isAnchored(3));
+		Assert.assertFalse(keend.isAnchored(4));
+	}
+	@Test
+	public void readpair_breakpoint_contig_bounds_truncation_should_not_affect_kmer_placement() {
+		//      |<-- start of contig
+		//543210
+		//      1234567890
+		//      MMMM
+		//  ********
+		//**********
+		MockSAMEvidenceSource ses = SES(8, 10);
+		KmerEvidence e = KmerEvidence.create(2, NRRP(ses, withSequence("ACGT", DP(0, 1, "4M", false, 1, 1, "4M", true))));
+		assertEquals(-5, e.startPosition());
+		assertEquals(-3, e.endPosition());
+	}
+	@Test(expected=NotImplementedException.class)
+	public void does_not_handling_XNX_unanchored_clips() {
+		KmerEvidence.create(2, SCE(BWD, Read(0, 1, "10S1X10N1X")));
 	}
 }

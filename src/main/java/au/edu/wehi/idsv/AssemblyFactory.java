@@ -42,6 +42,7 @@ public final class AssemblyFactory {
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition);
+		assert(breakend.direction != null);
 		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
@@ -63,29 +64,29 @@ public final class AssemblyFactory {
 				startAnchorBaseCount,
 				endAnchorBaseCount,
 				baseCalls, baseQuals);
+		//System.out.println(String.format("createAnchoredBreakpoint,%d,%d,%d,%d,%d,%d,%d,%d,%s",
+		//		startAnchorReferenceIndex, startAnchorPosition, startAnchorBaseCount,
+		//		endAnchorReferenceIndex, endAnchorPosition, endAnchorBaseCount,
+		//		baseCalls.length, baseQuals.length, r == null ? null : r.getCigarString()));
 		return r;
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
 	 * @param processContext context
 	 * @param source assembly source
-	 * @param direction direction of breakend
 	 * @param evidence evidence supporting the assembly breakend
 	 * @param baseCalls assembly base sequence as per a positive strand read into a putative anchor
 	 * @param baseQuals assembly base qualities
-	 * @param normalBaseCount number of assembly bases contributed by normal evidence sources
-	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
+	 * @param direction direction of breakend
 	 * @return assembly evidence for the given assembly
 	 */
 	public static SAMRecord createUnanchoredBreakend(
 			ProcessingContext processContext, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyIdGenerator,
 			BreakendSummary breakend,
 			Collection<DirectedEvidence> evidence,
-			byte[] baseCalls, byte[] baseQuals,
-			int[] baseCounts) {
+			byte[] baseCalls, byte[] baseQuals) {
 		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, breakend,
-				0, 0,
-				baseCalls, baseQuals);
+				0, 0, baseCalls, baseQuals);
 		return r;
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
@@ -196,15 +197,19 @@ public final class AssemblyFactory {
 			int basesToTruncate = 1 - r.getAlignmentStart();
 			ArrayList<CigarElement> cigar = new ArrayList<>(r.getCigar().getCigarElements());
 			cigar.set(0, new CigarElement(cigar.get(0).getLength() - basesToTruncate, cigar.get(0).getOperator()));
-			r.setAlignmentStart(1);
-			r.setCigar(new Cigar(cigar));
-			byte[] b = r.getReadBases();
-			if (b != null && b != SAMRecord.NULL_SEQUENCE) {
-				r.setReadBases(Arrays.copyOfRange(b, basesToTruncate, b.length));
-			}
-			byte[] q = r.getBaseQualities();
-			if (q != null && q != SAMRecord.NULL_QUALS) {
-				r.setBaseQualities(Arrays.copyOfRange(q, basesToTruncate, q.length));
+			if (cigar.get(0).getLength() < 0) {
+				log.warn(String.format("Attempted to truncate %d bases from start of %s with CIGAR %s", basesToTruncate, r.getReadName(), r.getCigarString()));
+			} else {
+				r.setAlignmentStart(1);
+				r.setCigar(new Cigar(cigar));
+				byte[] b = r.getReadBases();
+				if (b != null && b != SAMRecord.NULL_SEQUENCE) {
+					r.setReadBases(Arrays.copyOfRange(b, basesToTruncate, b.length));
+				}
+				byte[] q = r.getBaseQualities();
+				if (q != null && q != SAMRecord.NULL_QUALS) {
+					r.setBaseQualities(Arrays.copyOfRange(q, basesToTruncate, q.length));
+				}
 			}
 		}
 		if (r.getAlignmentEnd() > end) {
@@ -212,15 +217,19 @@ public final class AssemblyFactory {
 			ArrayList<CigarElement> cigar = new ArrayList<>(r.getCigar().getCigarElements());
 			CigarElement ce = cigar.get(cigar.size() - 1);
 			ce = new CigarElement(ce.getLength() - basesToTruncate, ce.getOperator());
-			cigar.set(cigar.size() - 1, ce);
-			r.setCigar(new Cigar(cigar));
-			byte[] b = r.getReadBases();
-			if (b != null && b != SAMRecord.NULL_SEQUENCE) {
-				r.setReadBases(Arrays.copyOf(b, b.length - basesToTruncate));
-			}
-			byte[] q = r.getBaseQualities();
-			if (q != null && q != SAMRecord.NULL_QUALS) {
-				r.setBaseQualities(Arrays.copyOf(q, q.length - basesToTruncate));
+			if (ce.getLength() < 1) {
+				log.warn(String.format("Attempted to truncate %d bases from end of %s with CIGAR %s", basesToTruncate, r.getReadName(), r.getCigarString()));
+			} else {
+				cigar.set(cigar.size() - 1, ce);
+				r.setCigar(new Cigar(cigar));
+				byte[] b = r.getReadBases();
+				if (b != null && b != SAMRecord.NULL_SEQUENCE) {
+					r.setReadBases(Arrays.copyOf(b, b.length - basesToTruncate));
+				}
+				byte[] q = r.getBaseQualities();
+				if (q != null && q != SAMRecord.NULL_QUALS) {
+					r.setBaseQualities(Arrays.copyOf(q, q.length - basesToTruncate));
+				}
 			}
 		}
 	}

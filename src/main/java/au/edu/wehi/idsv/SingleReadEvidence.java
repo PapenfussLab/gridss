@@ -33,28 +33,35 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, int minIndelSize, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
 		List<SingleReadEvidence> list = new ArrayList<>(4);
-		List<SplitReadEvidence> srlist = SplitReadEvidence.create(source, record);
-		list.addAll(srlist);
-		// only add soft clip if there isn't a split read
-		boolean hasForwardSR = false;
-		boolean hasBackwardSR = false;
-		for (SplitReadEvidence sre : srlist) {
-			switch (sre.getBreakendSummary().direction) {
-			case Forward:
-				hasForwardSR = true;
-				break;
-			case Backward:
-				hasBackwardSR = true;
-				break;
+		try {
+			List<SplitReadEvidence> srlist = SplitReadEvidence.create(source, record);
+			list.addAll(srlist);
+			// only add soft clip if there isn't a split read
+			boolean hasForwardSR = false;
+			boolean hasBackwardSR = false;
+			for (SplitReadEvidence sre : srlist) {
+				switch (sre.getBreakendSummary().direction) {
+				case Forward:
+					hasForwardSR = true;
+					break;
+				case Backward:
+					hasBackwardSR = true;
+					break;
+				}
 			}
+			if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+				list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
+			}
+			if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+				list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
+			}
+			list.addAll(IndelEvidence.create(source, minIndelSize, record));
+		} catch (IllegalArgumentException iae) {
+			String msg = String.format("createEvidence(): Fatal error processing %s from %s. Attempting recovery."
+					+ " This should not happen. Please raise an issue at https://github.com/PapenfussLab/gridss/issues"
+					+ " and include this stack trace as well as offending SAM record.", record.getReadName(), source == null ? null : source.getFile());
+			log.error(iae, msg);
 		}
-		if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-			list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
-		}
-		if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-			list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
-		}
-		list.addAll(IndelEvidence.create(source, minIndelSize, record));
 		return list;
 	}
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
