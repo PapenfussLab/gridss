@@ -244,13 +244,36 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval interval) {
 		SamReader reader = getReader();
 		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
-		SAMRecordIterator it = reader.queryOverlapping(new QueryInterval[] {
-			new QueryInterval(interval.referenceIndex, interval.start - getMaxConcordantFragmentSize() - 1, interval.end + getMaxConcordantFragmentSize() + 1)});
+		SAMRecordIterator it = tryOpenReader(reader, new QueryInterval(interval.referenceIndex, interval.start - getMaxConcordantFragmentSize() - 1, interval.end + getMaxConcordantFragmentSize() + 1));
 		Iterator<DirectedEvidence> eit = asEvidence(it);
 		final BreakendSummary bsf = new BreakendSummary(interval.referenceIndex, BreakendDirection.Forward, interval.start, interval.start, interval.end);
 		final BreakendSummary bsb = new BreakendSummary(interval.referenceIndex, BreakendDirection.Backward, interval.start, interval.start, interval.end);
 		eit = Iterators.filter(eit, e -> bsf.overlaps(e.getBreakendSummary()) || bsb.overlaps(e.getBreakendSummary()));
 		return new AutoClosingIterator<>(eit, reader, it);
+	}
+	/**
+	 * Attempts to open a new iterator.
+	 * 
+	 * As htsjdk performing memory mapping internally, many open/close cycles can results in an exhaustion
+	 * of file handles. 
+	 * 
+	 * @param reader
+	 * @param interval
+	 * @return
+	 */
+	private SAMRecordIterator tryOpenReader(SamReader reader, QueryInterval interval) {
+		SAMRecordIterator it = null;
+		try {
+			it = reader.queryOverlapping(new QueryInterval[] { interval });
+		} catch (Exception e) {
+			log.debug("Attempting to recover from query failure: ", e);
+			System.gc();
+			System.runFinalization();
+			System.gc();
+			it = reader.queryOverlapping(new QueryInterval[] { interval });
+			log.debug("Recovery successful");
+		}
+		return it;
 	}
 	public CloseableIterator<DirectedEvidence> iterator() {
 		SamReader reader = getReader();

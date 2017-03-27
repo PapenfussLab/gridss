@@ -29,6 +29,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private final Supplier<Iterator<DirectedEvidence>> iteratorGenerator;
 	private final QueryInterval filterInterval;
 	private Iterator<VariantContextDirectedBreakpoint> currentIterator;
+	private Iterator<DirectedEvidence> currentUnderlyingIterator;
 	private int currentDirectionOrdinal;
 	public VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence) throws InterruptedException {
 		this.processContext = processContext;
@@ -59,10 +60,12 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private void reinitialiseIterator() {
 		assert(currentIterator == null || !currentIterator.hasNext());
 		CloserUtil.close(currentIterator);
-		if (currentDirectionOrdinal >= DIRECTION_ORDER.size()) return; 
+		CloserUtil.close(currentUnderlyingIterator);
+		if (currentDirectionOrdinal >= DIRECTION_ORDER.size()) return;
+		currentUnderlyingIterator = iteratorGenerator.get();
 		currentIterator = new MaximalEvidenceCliqueIterator(
 				processContext,
-				iteratorGenerator.get(),
+				currentUnderlyingIterator,
 				DIRECTION_ORDER.get(currentDirectionOrdinal).getLeft(),
 				DIRECTION_ORDER.get(currentDirectionOrdinal).getRight(),
 				idGenerator);
@@ -92,6 +95,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	@Override
 	public void close() {
 		CloserUtil.close(currentIterator);
+		CloserUtil.close(currentUnderlyingIterator);
 	}
 }
  
