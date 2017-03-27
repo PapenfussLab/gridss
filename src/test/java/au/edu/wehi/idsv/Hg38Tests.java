@@ -19,7 +19,7 @@ public interface Hg38Tests {
 			File f = new File(path + reference);
 			if (f.exists()) return f;
 		}
-		throw new RuntimeException("Cannot find hg19 reference genome to use for testing.");
+		throw new RuntimeException("Cannot find hg38 reference genome to use for testing.");
 	}
 	public static File findHg38Reference() {
 		return findHg38Reference("Homo_sapiens_assembly38.fasta");
