@@ -51,8 +51,9 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
 		return super.customCommandLineValidation();
 	}
     private ReadPairConcordanceCalculator rpcc = null;
+    private boolean rpccInitialised = false;
     public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
-    	if (rpcc == null) {
+    	if (!rpccInitialised) {
     		// Read metrics file
     		InsertSizeDistribution isd = null;
     		if (INSERT_SIZE_METRICS != null) {
@@ -69,6 +70,7 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     				READ_PAIR_CONCORDANT_PERCENT,
     				isd,
     				null);
+    		rpccInitialised = true;
     	}
     	return rpcc;
     }
