@@ -33,7 +33,7 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 	}
 	@Test
 	public void getInsertSizeMetrics_should_use_most_plentiful_orientation() {
-		InsertSizeMetrics metrics = IdsvSamFileMetrics.getInsertSizeMetrics(new File("src/test/resources/multiple.idsv.metrics.insertsize.txt"));
+		InsertSizeMetrics metrics = IdsvSamFileMetrics.getInsertSizeMetrics(new File("src/test/resources/multiple.idsv.metrics.insertsize.txt"), false);
 		assertEquals(PairOrientation.FR, metrics.PAIR_ORIENTATION);
 	}
 	/*

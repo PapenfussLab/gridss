@@ -25,14 +25,15 @@ import picard.analysis.InsertSizeMetrics;
 
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);
-	public IdsvSamFileMetrics(GenomicProcessingContext pc, File source) {
+	public IdsvSamFileMetrics(GenomicProcessingContext pc, File source, boolean singleEndExpected) {
 		this(pc.getFileSystemContext().getInsertSizeMetrics(source),
 				pc.getFileSystemContext().getIdsvMetrics(source),
 				pc.getFileSystemContext().getMapqMetrics(source),
-				pc.getFileSystemContext().getCigarMetrics(source));
+				pc.getFileSystemContext().getCigarMetrics(source),
+				singleEndExpected);
 	}
-	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File mapqMetricsFile, File cigarMetricsFile) {
-		this(getInsertSizeMetrics(insertSizeMetricsFile),
+	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File mapqMetricsFile, File cigarMetricsFile, boolean singleEndExpected) {
+		this(getInsertSizeMetrics(insertSizeMetricsFile, singleEndExpected),
 				getIdsvMetrics(idsvMetricsFile),
 				getMapqMetrics(mapqMetricsFile),
 				getInsertSizeDistribution(insertSizeMetricsFile),
@@ -60,7 +61,7 @@ public class IdsvSamFileMetrics {
 		}
 		return metric;
 	}
-	public static InsertSizeMetrics getInsertSizeMetrics(File insertSizeMetricsFile) {
+	public static InsertSizeMetrics getInsertSizeMetrics(File insertSizeMetricsFile, boolean singleEndExpected) {
 		InsertSizeMetrics bestMetrics = null;
 		if (insertSizeMetricsFile != null && insertSizeMetricsFile.exists()) {
 			for (InsertSizeMetrics metric : Iterables.filter(MetricsFile.readBeans(insertSizeMetricsFile), InsertSizeMetrics.class)) {
@@ -71,7 +72,7 @@ public class IdsvSamFileMetrics {
 				}
 			}
 		}
-		if (bestMetrics == null) {
+		if (!singleEndExpected && bestMetrics == null) {
 			log.info(String.format("No pair-end insert size metrics found in %s. Assuming this library contains single-end reads", insertSizeMetricsFile));
 		}
 		return bestMetrics;

@@ -24,7 +24,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 		c.acceptRead(RP(0, 1, 7, 5)[1], null);
 		c.acceptRead(Read(0, 1, "100M"), null);
 		c.finish();
-		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null).getIdsvMetrics(); 
+		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics(); 
 		assertEquals(100, metrics.MAX_READ_LENGTH);
 	}
 	@Test
@@ -48,7 +48,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 		c.acceptRead(unmapped[0], null);
 		c.acceptRead(unmapped[1], null);
 		c.finish();
-		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null).getIdsvMetrics(); 
+		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics(); 
 		assertEquals(10, metrics.READS);
 		assertEquals(6, metrics.MAPPED_READS);
 	}
@@ -73,7 +73,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 		c.acceptRead(unmapped[0], null);
 		c.acceptRead(unmapped[1], null);
 		c.finish();
-		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null).getIdsvMetrics();
+		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics();
 		assertEquals(4, metrics.READ_PAIRS);
 		assertEquals(2, metrics.READ_PAIRS_BOTH_MAPPED);
 		assertEquals(1, metrics.READ_PAIRS_ONE_MAPPED);
@@ -97,7 +97,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 		r4.setAttribute("SA", "chr1,5,+,1M,0,0");
 		c.acceptRead(r4, null);
 		c.finish();
-		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null).getIdsvMetrics();
+		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics();
 		assertEquals(1, metrics.SECONDARY_NOT_SPLIT);
 	}
 }

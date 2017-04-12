@@ -139,9 +139,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				}
 				execute(new CollectGridssMetrics(), args);
 			}
-			metrics = new IdsvSamFileMetrics(getContext(), getFile());
+			metrics = new IdsvSamFileMetrics(getContext(), getFile(), knownSingleEnded());
 		}
-		
 	}
 	protected void execute(CommandLineProgram cmd, List<String> args) {
 		if (cmd instanceof ReferenceCommandLineProgram) {
