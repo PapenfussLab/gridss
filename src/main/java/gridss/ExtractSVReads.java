@@ -8,7 +8,6 @@ import java.util.List;
 
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
-import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;

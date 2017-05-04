@@ -27,11 +27,10 @@ import picard.cmdline.programgroups.Metrics;
 )
 public class CollectStructuralVariantReadMetrics extends ProcessStructuralVariantReadsCommandLineProgram {
 	public static final String METRICS_SUFFIX = ".sv_metrics";
-	private static final Log log = Log.getInstance(CollectStructuralVariantReadMetrics.class);
+	//private static final Log log = Log.getInstance(CollectStructuralVariantReadMetrics.class);
 	public static void main(String[] argv) {
         System.exit(new CollectStructuralVariantReadMetrics().instanceMain(argv));
     }
-	private InsertSizeDistribution isd;
 	private IndelReadFilter indelFilter;
 	private ClippedReadFilter softClipFilter;
 	private SplitReadFilter splitReadFilter;

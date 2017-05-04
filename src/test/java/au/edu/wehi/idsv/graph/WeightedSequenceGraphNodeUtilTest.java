@@ -45,6 +45,7 @@ public class WeightedSequenceGraphNodeUtilTest extends TestHelper {
 				new PathNode<DeBruijnNodeBase>(toNodes(g, "AGTTC"), g)),
 			3, 2));
 	}
+	@SuppressWarnings("unchecked")
 	@Test
 	public void nodeIterator_should_iterate_over_underlying_primary_nodes() {
 		BasePathGraph pg = PG(G(4)

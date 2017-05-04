@@ -32,6 +32,7 @@ public class IdsvVariantContextTest extends TestHelper {
 		assertTrue(IdsvVariantContext.create(getContext(), AES(), vc) instanceof VariantContextDirectedBreakpoint);
 	}
 	public class TestIdsvVariantContext extends IdsvVariantContext {
+		private static final long serialVersionUID = 1L;
 		public TestIdsvVariantContext(VariantContext context) {
 			super(getContext(), AES(), context);
 		}

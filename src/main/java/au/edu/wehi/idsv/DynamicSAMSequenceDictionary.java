@@ -11,6 +11,7 @@ import htsjdk.samtools.SAMSequenceRecord;
  *
  */
 public class DynamicSAMSequenceDictionary extends SAMSequenceDictionary {
+	private static final long serialVersionUID = 1L;
 	public DynamicSAMSequenceDictionary(SAMSequenceDictionary dictionary) {
 		super(Lists.newArrayList(dictionary.getSequences()));
 	}

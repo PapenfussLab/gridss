@@ -7,6 +7,7 @@ import htsjdk.samtools.SAMRecordCoordinateComparator;
  * Comparator for sorting SAMRecords by alignment coordinate end position
  */
 public class SAMRecordEndCoordinateComparator extends SAMRecordCoordinateComparator {
+	private static final long serialVersionUID = 1L;
 	@Override
 	public int fileOrderCompare(SAMRecord samRecord1, SAMRecord samRecord2) {
 		final int refIndex1 = samRecord1.getReferenceIndex();
