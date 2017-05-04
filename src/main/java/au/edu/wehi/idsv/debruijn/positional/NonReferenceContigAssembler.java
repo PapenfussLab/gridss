@@ -214,7 +214,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					callContig(forcedContig);
 				} while (forcedContig != null);
 				if (!called.isEmpty()) {
-					log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, flushPosition, frontierStart, nextPosition()));
+					log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, loadedStart, frontierStart, nextPosition()));
 					return;
 				}
 			}

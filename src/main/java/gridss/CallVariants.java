@@ -112,22 +112,25 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 		File lockFile = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.lock.");
 		if (lockFile.mkdir()) {
 			log.debug("Created lock ", lockFile);
-			try {
-		    	extractEvidence(threadpool, getSamEvidenceSources());
-		    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY);
-		    	if (!ASSEMBLY.exists()) {
-		    		assemblyEvidence.assembleBreakends(threadpool);
-		    	}
-		    	// convert breakend assemblies into breakpoint via split read identification
-		    	assemblyEvidence.ensureExtracted();
-		    	// call and annotate variants
-		    	callVariants(threadpool);
-			} finally {
-				log.debug("Deleting lock ", lockFile);
-				lockFile.delete();
-			}
+			// Set up lock file clean-up if GRIDSS execution is forcibly terminated using SIGINT
+			Runtime.getRuntime().addShutdownHook(new Thread() {
+				@Override
+				public void run() {
+					lockFile.delete();
+				}
+			});
+	    	extractEvidence(threadpool, getSamEvidenceSources());
+	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY);
+	    	if (!ASSEMBLY.exists()) {
+	    		assemblyEvidence.assembleBreakends(threadpool);
+	    	}
+	    	// convert breakend assemblies into breakpoint via split read identification
+	    	assemblyEvidence.ensureExtracted();
+	    	// call and annotate variants
+	    	callVariants(threadpool);
+	    	lockFile.delete();
 		} else {
-			log.error("Aborting since lock " + lockFile + " already exists. GRIDSS does not support multiple simulatenous instances running on the same data.");
+			log.error("Aborting since lock " + lockFile + " already exists. GRIDSS does not support multiple simultaneous instances running on the same data.");
 			return 3;
 		}
 		return 0;
