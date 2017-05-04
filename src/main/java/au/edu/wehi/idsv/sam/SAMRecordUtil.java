@@ -34,6 +34,7 @@ import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MathUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -660,8 +661,10 @@ public class SAMRecordUtil {
 				alignment = AlignerFactory.create().align_smith_waterman(ass, ref);
 			} catch (Exception e) {
 				// swallow and log alignment error
-				log.error(e, String.format("Error aligning %s to %s:%d-%d", read.getReadName(),
-						refSeq.getSequenceName(), start, end));
+				if (!MessageThrottler.Current.shouldSupress(log, "local realignment failures")) {
+					log.error(e, String.format("Error aligning %s to %s:%d-%d", read.getReadName(),
+							refSeq.getSequenceName(), start, end));
+				}
 			}
 		}
 		if (alignment == null) {
@@ -1081,8 +1084,9 @@ public class SAMRecordUtil {
 			referencedReads.remove(new ChimericAlignment(r));
 		}
 		if (!referencedReads.isEmpty()) {
-			log.warn(String.format("SA tag of read %s refers to missing alignments %s", list.get(0).getReadName(),
-					referencedReads));
+			if (!MessageThrottler.Current.shouldSupress(log, "Missing records referred to by SA tags")) {
+				log.warn(String.format("SA tag of read %s refers to missing alignments %s", list.get(0).getReadName(), referencedReads));
+			}
 		}
 	}
 
@@ -1127,8 +1131,9 @@ public class SAMRecordUtil {
 				r.setCigar(new Cigar(list));
 			}
 			if (r.getCigarString().contains("H")) {
-				// TODO: move this check to caller so we're less spammy
-				log.warn(String.format("Unable to soften hard clip for %s", r.getReadName()));
+				if (!MessageThrottler.Current.shouldSupress(log, "softening hard clips")) {
+					log.warn(String.format("Unable to soften hard clip for %s", r.getReadName()));
+				}
 			}
 		}
 	}

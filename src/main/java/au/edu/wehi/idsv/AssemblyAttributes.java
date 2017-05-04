@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.NotImplementedException;
 
 import au.edu.wehi.idsv.sam.SamTags;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 
@@ -91,7 +92,9 @@ public class AssemblyAttributes {
 	 */
 	public static void annotateAssembly(ProcessingContext context, SAMRecord record, Collection<DirectedEvidence> support) {
 		if (support == null) {
-			log.error("No support for assembly " + record.getReadName());
+			if (!MessageThrottler.Current.shouldSupress(log, "assemblies with no support")) {
+				log.error("No support for assembly " + record.getReadName());
+			}
 			support = Collections.emptyList();
 		}
 		int n = context.getCategoryCount();
@@ -138,21 +141,18 @@ public class AssemblyAttributes {
 		// TODO: proper mapq model
 		record.setMappingQuality(maxLocalMapq);
 		if (record.getMappingQuality() < context.getConfig().minMapq) {
-			log.warn(String.format("Sanity check failure: %s has mapq below minimum", record.getReadName()));
+			if (!MessageThrottler.Current.shouldSupress(log, "below minimum mapq")) {
+				log.warn(String.format("Sanity check failure: %s has mapq below minimum", record.getReadName()));
+			}
 		}
 	}
-	private static int uniqueEvidenceIDMessageCount = 0;
 	private static boolean ensureUniqueEvidenceID(String assemblyName, Collection<DirectedEvidence> support) {
 		boolean isUnique = true;
 		Set<String> map = new HashSet<String>();
 		for (DirectedEvidence id : support) {
 			if (map.contains(id.getEvidenceID())) {
-				if (uniqueEvidenceIDMessageCount < gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
+				if (!MessageThrottler.Current.shouldSupress(log, "duplicated evidenceIDs")) {
 					log.error("Found evidenceID " + id.getEvidenceID() + " multiple times in assembly " + assemblyName);
-					uniqueEvidenceIDMessageCount++;
-					if (uniqueEvidenceIDMessageCount == gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
-						log.warn(String.format("Supressing further message regarding duplicated evidenceIDs."));
-					}
 				}
 				isUnique = false;
 			}

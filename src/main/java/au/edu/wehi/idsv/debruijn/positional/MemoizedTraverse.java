@@ -20,6 +20,7 @@ import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
@@ -53,12 +54,16 @@ public class MemoizedTraverse {
 		Set<KmerPathNode> children = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerNodeUtil.HashByLastEndKmer<KmerPathNode>());
 		for (KmerPathNode node : nodes) {
 			if (node == null) {
-				log.error("Sanity check failure: removal of KmerPathNode (null)");
+				if (!MessageThrottler.Current.shouldSupress(log, "removal of null KmerPathNode")) {
+					log.error("Sanity check failure: removal of KmerPathNode (null)");
+				}
 				continue;
 			}
 			AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.remove(node);
 			if (cache == null) {
-				log.error(String.format("Sanity check failure: %s not memoized", node));
+				if (!MessageThrottler.Current.shouldSupress(log, "removal of unmemoized nodes")) {
+					log.error(String.format("Sanity check failure: %s not memoized", node));
+				}
 			} else if (!cache.isEmpty()) {
 				tns.addAll(cache.values());
 				children.addAll(node.next());

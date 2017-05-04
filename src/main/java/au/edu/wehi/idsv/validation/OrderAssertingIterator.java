@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.validation;
 import java.util.Comparator;
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
@@ -39,7 +40,9 @@ public class OrderAssertingIterator<T> implements CloseableIterator<T> {
 		boolean success = true;
 		if (last != null && current != null && comparator.compare(last, current) > 0) {
 			success = false;
-			log.error("Sanity check failure: iterator not sorted. " + last.toString() + " encountered before " + current.toString());
+			if (!MessageThrottler.Current.shouldSupress(log, "iterator ordering")) {
+				log.error("Sanity check failure: iterator not sorted. " + last.toString() + " encountered before " + current.toString());
+			}
 		}
 		last = current;;
 		return success;

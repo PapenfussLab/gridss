@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.sam;
 
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
@@ -34,12 +35,15 @@ public class SAMRecordCigarCleaningIterator implements CloseableIterator<SAMReco
 		if (cigar != null && cigar.getCigarElements().size() > 0) {
 			Cigar newCigar = new Cigar(CigarUtil.clean(cigar.getCigarElements(), true));
 			if (!cigar.equals(newCigar)) {
-				log.warn(String.format("Cigar %s of read %s is not a minimal representation.", cigar, next.getReadName()));
+				if (!MessageThrottler.Current.shouldSupress(log, "minimal CIGAR representation")) {
+					log.warn(String.format("Cigar %s of read %s is not a minimal representation.", cigar, next.getReadName()));
+				}
 				next.setCigar(newCigar);
 			}
 		}
 		return next;
 	}
+	
 	@Override
 	public void close() {
 		CloserUtil.close(underlying);

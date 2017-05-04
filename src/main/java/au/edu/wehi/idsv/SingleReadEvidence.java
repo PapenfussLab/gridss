@@ -10,6 +10,7 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
@@ -57,10 +58,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			}
 			list.addAll(IndelEvidence.create(source, minIndelSize, record));
 		} catch (IllegalArgumentException iae) {
-			String msg = String.format("createEvidence(): Fatal error processing %s from %s. Attempting recovery."
-					+ " This should not happen. Please raise an issue at https://github.com/PapenfussLab/gridss/issues"
-					+ " and include this stack trace as well as offending SAM record.", record.getReadName(), source == null ? null : source.getFile());
-			log.error(iae, msg);
+			if (!MessageThrottler.Current.shouldSupress(log, "SingleReadEvidence.createEvidence() failure")) {
+				String msg = String.format("createEvidence(): Fatal error processing %s from %s. Attempting recovery."
+						+ " This should not happen. Please raise an issue at https://github.com/PapenfussLab/gridss/issues"
+						+ " and include this stack trace as well as offending SAM record.", record.getReadName(), source == null ? null : source.getFile());
+				log.error(iae, msg);
+			}
 		}
 		return list;
 	}
@@ -311,7 +314,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 					remotelen,
 					strAnchor.length(),
 					strBreakend.length());
-			log.error(msg);
+			if (!MessageThrottler.Current.shouldSupress(log, "getHomologySequence() failures")) {
+				log.error(msg);
+			}
 			return "";
 		}
 	}

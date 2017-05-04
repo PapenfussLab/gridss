@@ -10,6 +10,7 @@ import com.google.common.collect.AbstractIterator;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
@@ -61,7 +62,9 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			String partnerId = e.getRemoteEvidenceID();
 			if (unpaired.containsKey(evidenceId)) {
 				String msg = String.format("%s: encountered %s multiple times.", name, evidenceId);
-				log.error(msg);
+				if (!MessageThrottler.Current.shouldSupress(log, "duplicate evidence")) {
+					log.error(msg);
+				}
 				return false;
 			}
 			if (unpaired.containsKey(partnerId)) {
@@ -73,7 +76,9 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 							partner.getBreakendSummary().toString(context),
 							e.getEvidenceID(),
 							partner.getEvidenceID()); 
-					log.error(msg);
+					if (!MessageThrottler.Current.shouldSupress(log, "asymetric evidence breakpoint positions")) {
+						log.error(msg);
+					}
 					return false;
 				}
 				// Scores must be the same
@@ -83,7 +88,9 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 							partner.getBreakpointQual(),
 							e.getEvidenceID(),
 							partner.getEvidenceID());
-					log.error(msg);
+					if (!MessageThrottler.Current.shouldSupress(log, "asymetric evidence backpoint quality")) {
+						log.error(msg);
+					}
 					return false;
 				}
 			} else {
@@ -98,10 +105,12 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 		list.sort(DirectedBreakpoint.ByStartEnd);
 		for (DirectedBreakpoint e : list) {
 			ProcessingContext context = e.getEvidenceSource().getContext();
-			log.error(String.format("%s (%s, %f) unpaired",
-					e.getEvidenceID(),
-					e.getBreakendSummary().toString(context),
-					e.getBreakpointQual()));
+			if (!MessageThrottler.Current.shouldSupress(log, "unpaired evidence")) {
+				log.error(String.format("%s (%s, %f) unpaired",
+						e.getEvidenceID(),
+						e.getBreakendSummary().toString(context),
+						e.getBreakpointQual()));
+			}
 		}
 		return unpaired.isEmpty();
 	}

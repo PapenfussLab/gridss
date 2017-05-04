@@ -38,6 +38,7 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.ContigStats;
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
@@ -240,7 +241,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				} else {
 					flushReferenceNodes();
 					if (!graphByPosition.isEmpty()) {
-						log.error("Sanity check failure: non-empty graph with no contigs called " + contigName);
+						if (!MessageThrottler.Current.shouldSupress(log, "non-empty graph with no contigs")) {
+							log.error("Sanity check failure: non-empty graph with no contigs called " + contigName);
+						}
 					}
 					return;
 				}
@@ -519,7 +522,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				bestContigCaller.sanityCheck(graphByPosition);
 			}
 		} else {
-			log.error("Sanity check failure: found path with no support. Attempting to recover by direct node removal ", contigName);
+			if (!MessageThrottler.Current.shouldSupress(log, "unsupported paths")) {
+				log.error("Sanity check failure: found path with no support. Attempting to recover by direct node removal ", contigName);
+			}
 			for (KmerPathSubnode n : contig) {
 				removeFromGraph(n.node(), true);
 			}

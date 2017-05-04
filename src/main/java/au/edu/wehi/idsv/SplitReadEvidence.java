@@ -9,6 +9,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import gridss.ComputeSamTags;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
@@ -33,16 +34,15 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, localUnanchoredWidth, remoteUnanchoredWidth);
 		this.remoteAlignment = remoteAlignment;
 	}
-	private static int hardClipMessageCount = 5;
 	public static List<SplitReadEvidence> create(SAMEvidenceSource source, SAMRecord record) {
 		if (record.getReadUnmappedFlag() || record.getCigar() == null) return Collections.emptyList();
 		List<ChimericAlignment> aln = ChimericAlignment.getChimericAlignments(record);
 		if (aln.isEmpty()) return Collections.emptyList();
 		if (record.getCigar().getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				|| record.getCigar().getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-			if (hardClipMessageCount > 0) {
-				log.warn(String.format("Read %s is hard clipped. Please run %s to soften hard clips. This message will be displayed %d more times.",
-						record.getReadName(), ComputeSamTags.class.getName(), --hardClipMessageCount));
+			if (!MessageThrottler.Current.shouldSupress(log, "hard clipped bases")) {
+				log.warn(String.format("Read %s is hard clipped. Please run %s to soften hard clips.",
+						record.getReadName(), ComputeSamTags.class.getName()));
 			}
 			record = SAMRecordUtil.hardClipToN(record);
 		}

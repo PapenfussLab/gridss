@@ -11,6 +11,7 @@ import com.google.common.collect.PeekingIterator;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SingleReadEvidence;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.util.Log;
 
 /**
@@ -68,17 +69,12 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		}
 		this.tracker = tracker;
 	}
-	private static int duplicateEvidenceIDMessageCount = 0;
 	private void process(DirectedEvidence de) {
 		if (tracker != null && tracker.isTracked(de.getEvidenceID())) {
-			if (duplicateEvidenceIDMessageCount  < gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
+			if (!MessageThrottler.Current.shouldSupress(log, "assembly duplicated reads")) {
 				log.warn(String.format("Attempting to add %s to assembly when already present. "
 						+ "Possible causes are: duplicate read name, alignment with multimapping aligner which writes read alignments as distinct pairs. ",
 						de.getEvidenceID()));
-				duplicateEvidenceIDMessageCount++;
-				if (duplicateEvidenceIDMessageCount == gridss.Defaults.SUPPRESS_DATA_ERROR_MESSAGES_AFTER) {
-					log.warn(String.format("Supressing further warnings regarding duplicate evidenceIDs."));
-				}
 			}
 			return;
 		}

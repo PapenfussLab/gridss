@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Bytes;
 
 import au.edu.wehi.idsv.sam.SamTags;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -161,8 +162,10 @@ public final class AssemblyFactory {
 				if (delSize != 0) {
 					c.add(new CigarElement(delSize, CigarOperator.DELETION));
 					if (delSize < 0) {
-						log.warn("Negative deletions not supported by SAM specs. Breakpoint assembly has been converted to breakend. "
-								+ "Sanity check failure: this should not be possible for positional assembly. ");
+						if (!MessageThrottler.Current.shouldSupress(log, "negative deletion")) {
+							log.warn("Negative deletions not supported by SAM specs. Breakpoint assembly has been converted to breakend. "
+									+ "Sanity check failure: this should not be possible for positional assembly. ");
+						}
 						return createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, samFileHeader, source, bp.localBreakend(), startAnchoredBaseCount, 0, baseCalls, baseQuals);
 					}
 				}
@@ -198,7 +201,9 @@ public final class AssemblyFactory {
 			ArrayList<CigarElement> cigar = new ArrayList<>(r.getCigar().getCigarElements());
 			cigar.set(0, new CigarElement(cigar.get(0).getLength() - basesToTruncate, cigar.get(0).getOperator()));
 			if (cigar.get(0).getLength() < 0) {
-				log.warn(String.format("Attempted to truncate %d bases from start of %s with CIGAR %s", basesToTruncate, r.getReadName(), r.getCigarString()));
+				if (!MessageThrottler.Current.shouldSupress(log, "truncating assembly to contig bounds")) {
+					log.warn(String.format("Attempted to truncate %d bases from start of %s with CIGAR %s", basesToTruncate, r.getReadName(), r.getCigarString()));
+				}
 			} else {
 				r.setAlignmentStart(1);
 				r.setCigar(new Cigar(cigar));
@@ -218,7 +223,9 @@ public final class AssemblyFactory {
 			CigarElement ce = cigar.get(cigar.size() - 1);
 			ce = new CigarElement(ce.getLength() - basesToTruncate, ce.getOperator());
 			if (ce.getLength() < 1) {
-				log.warn(String.format("Attempted to truncate %d bases from end of %s with CIGAR %s", basesToTruncate, r.getReadName(), r.getCigarString()));
+				if (!MessageThrottler.Current.shouldSupress(log, "truncating assembly to contig bounds")) {
+					log.warn(String.format("Attempted to truncate %d bases from end of %s with CIGAR %s", basesToTruncate, r.getReadName(), r.getCigarString()));
+				}
 			} else {
 				cigar.set(cigar.size() - 1, ce);
 				r.setCigar(new Cigar(cigar));

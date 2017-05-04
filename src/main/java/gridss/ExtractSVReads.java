@@ -175,13 +175,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 		}
 		return r;
 	}
-	@Override
-	protected String[] customCommandLineValidation() {
-		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {
-			return new String[] { "INSERT_SIZE_METRICS is required when using percentage based read pair concordance" };
-		}
-		return super.customCommandLineValidation();
-	}
 	public static void main(String[] argv) {
         System.exit(new ExtractSVReads().instanceMain(argv));
     }

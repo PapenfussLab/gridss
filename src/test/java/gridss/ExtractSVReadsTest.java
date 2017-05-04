@@ -234,4 +234,15 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		Assert.assertEquals(ImmutableList.of(true, true, true, true), result);
 		lookup.close();
 	}
+	@Test
+	public void should_extract_sam_flag_without_insert_size_metrics() {
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.instanceMain(new String[] {
+			"INPUT=example/chr12.1527326.DEL1024.bam",
+			"OUTPUT=" + output.toString(),
+			"READ_PAIR_CONCORDANCE_METHOD=SAM_FLAG",
+			"METRICS_OUTPUT=" + output.toString() + ".sv.metrics",
+		});
+		assertTrue(output.exists());
+	}
 }
