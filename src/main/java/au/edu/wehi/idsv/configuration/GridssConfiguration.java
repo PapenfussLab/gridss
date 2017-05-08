@@ -79,6 +79,10 @@ public class GridssConfiguration {
 	 * Consider multi-mapping read alignments.
 	 */
 	public boolean multimapping;
+	/**
+	 * Use the read group sample name as the category label
+	 */
+	public boolean useReadGroupSampleNameCategoryLabel;
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
@@ -123,6 +127,7 @@ public class GridssConfiguration {
 		multimappingUniqueAssemblyAllocation = config.getBoolean("multimappingUniqueAssemblyAllocation");
 		multimappingUniqueVariantAllocation = config.getBoolean("multimappingUniqueVariantAllocation");
 		multimapping = config.getBoolean("multimapping");
+		useReadGroupSampleNameCategoryLabel = config.getBoolean("useReadGroupSampleNameCategoryLabel");
 	}
 	public static Configuration LoadConfiguration(File configuration) throws ConfigurationException {
 		CompositeConfiguration config = new CompositeConfiguration();

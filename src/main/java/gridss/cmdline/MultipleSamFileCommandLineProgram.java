@@ -82,10 +82,28 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	if (obj == null) return defaultValue;
     	return obj;
     }
+    private String getCategoryLabelFor(File file) {
+    	String label = file.getName();
+    	if (file.exists() && getContext().getConfig().useReadGroupSampleNameCategoryLabel) {
+    		try (SamReader reader = SamReaderFactory.makeDefault().open(file)) {
+    			SAMFileHeader header = reader.getFileHeader();
+    			if (header.getReadGroups().size() == 1) {
+    				String sampleName = header.getReadGroups().get(0).getSample();
+    				if (sampleName != null && sampleName.length() > 0) {
+    					label = sampleName;
+						log.info(String.format("Using Read Group sample name %s for file %s", label, file));
+    				}
+    			}
+    		} catch (IOException e) {
+    			log.debug(e, "Unable to load read group headers for ", file);
+    		}
+    	}
+    	return label;
+    }
     public List<SAMEvidenceSource> getSamEvidenceSources() {
     	if (samEvidence == null) {
 	    	if (INPUT_LABEL == null || INPUT_LABEL.size() == 0) {
-	    		INPUT_LABEL = INPUT.stream().map(x -> x.getName()).collect(Collectors.toList());
+	    		INPUT_LABEL = INPUT.stream().map(x -> getCategoryLabelFor(x)).collect(Collectors.toList());
 			}
 	    	samEvidence = Lists.newArrayList();
 	    	for (int i = 0; i < INPUT.size(); i++) {
