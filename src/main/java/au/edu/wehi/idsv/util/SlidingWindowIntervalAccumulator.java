@@ -18,7 +18,7 @@ import java.util.TreeMap;
  * @author Daniel Cameron
  *
  */
-public class SlidingWindowIntervalAccumulator {
+public class SlidingWindowIntervalAccumulator implements Cloneable {
 	/**
 	 * Get the level of reference support (reads and concordant pairs) for the lack
 	 * of breakpoint immediately after the given position 

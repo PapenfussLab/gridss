@@ -131,7 +131,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		}
 		@Override
 		public String toString() {
-			String s = String.format("[%d,%d)(w=%f,s=%d,e=%d,x=%d)", getStartY(), getEndY(), weight, startHere, endHere, startX);
+			String s = String.format("[%d,%d)(w=%d,s=%d,e=%d,x=%d)", getStartY(), getEndY(), weight, startHere, endHere, startX);
 			if (next != null) return s + "\n" + next.toString();
 			return s;
 		}

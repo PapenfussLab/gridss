@@ -199,7 +199,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	 */
 	private static int pairSeparation(SAMRecord local, SAMRecord remote, PairOrientation expectedOrientation) {
 		if (remote == null || local.getReadUnmappedFlag() || remote.getReadUnmappedFlag()) return Integer.MAX_VALUE;
-		if (local.getReferenceIndex() != remote.getReferenceIndex()) return Integer.MAX_VALUE;
+		if (!local.getReferenceIndex().equals(remote.getReferenceIndex())) return Integer.MAX_VALUE;
 		// Assuming FR orientation
 		if (local.getReadNegativeStrandFlag() == remote.getReadNegativeStrandFlag()) return Integer.MAX_VALUE;
 				// <--local
@@ -219,7 +219,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 			return bsLocal;
 		} else {
 			BreakendSummary bsRemote = calculateLocalBreakendSummary(remote, local, maxFragmentSize, dictionary);
-			if (bsRemote == null && bsLocal == null) return null;
+			if (bsRemote == null || bsLocal == null) {
+				return null;
+			}
 			return new BreakpointSummary(bsLocal, bsRemote);
 		}
 	}

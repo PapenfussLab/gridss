@@ -619,7 +619,7 @@ public class TestHelper {
 		r2.setReadPairedFlag(true);
 		boolean properpair = !r1.getReadUnmappedFlag()
 				&& !r2.getReadUnmappedFlag()
-				&& r1.getReferenceIndex() == r2.getReferenceIndex()
+				&& r1.getReferenceIndex().equals(r2.getReferenceIndex())
 				&& r1.getReadNegativeStrandFlag() != r2
 						.getReadNegativeStrandFlag();
 		r1.setProperPairFlag(properpair);

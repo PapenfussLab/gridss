@@ -244,7 +244,7 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 	 * @param path path to split
 	 */
 	private void lengthSplit(int splitAfter, List<KmerPathSubnode> path) {
-		assert(splitAfter > 0);
+		assert(splitAfter >= 0);
 		if (splitAfter == 0) return;
 		int index = 0;
 		int length = 0;

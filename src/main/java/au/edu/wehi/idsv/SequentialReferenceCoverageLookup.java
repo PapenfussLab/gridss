@@ -157,7 +157,7 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 	}
 	private SAMRecord checkOrdered(SAMRecord read) {
 		if (lastRead != null && (read.getReferenceIndex() < lastRead.getReferenceIndex() ||
-				(read.getReferenceIndex() == lastRead.getReferenceIndex() && read.getAlignmentStart() < lastRead.getAlignmentStart()))) {
+				(read.getReferenceIndex().equals(lastRead.getReferenceIndex()) && read.getAlignmentStart() < lastRead.getAlignmentStart()))) {
 			throw new IllegalStateException(String.format("Input is not sorted read %s at %s:%d before read %s at %s:%d",
 					lastRead.getReadName(),
 					lastRead.getReferenceName(),
@@ -192,7 +192,7 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 				&& read.getReadPairedFlag()
 				&& !read.getMateUnmappedFlag()
 				&& read.getAlignmentEnd() < read.getMateAlignmentStart()
-				&& read.getReferenceIndex() == read.getMateReferenceIndex()
+				&& read.getReferenceIndex().equals(read.getMateReferenceIndex())
 				&& (read.getAlignmentStart() < read.getMateAlignmentStart()
 						|| (read.getAlignmentStart() == read.getMateAlignmentStart() && read.getFirstOfPairFlag()))
 				&& pairing.isConcordant(read);

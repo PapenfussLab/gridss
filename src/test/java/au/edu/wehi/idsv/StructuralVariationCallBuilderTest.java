@@ -544,7 +544,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 		evidence.add(incorporateRealignment(AES(),
 				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null, 0, 12, 1, B("NTTTT"), B("NTTTT")),
-				ImmutableList.of(new SAMRecord(getContext().getBasicSamHeader()) {{
+				ImmutableList.of(new SAMRecord(getContext().getBasicSamHeader()) {/**
+					 * 
+					 */
+					private static final long serialVersionUID = 1L;
+
+				{
 					setReferenceIndex(1);
 					setAlignmentStart(11);
 					setCigarString("4M");

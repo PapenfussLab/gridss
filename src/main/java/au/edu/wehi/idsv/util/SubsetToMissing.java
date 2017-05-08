@@ -78,7 +78,7 @@ public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 		for (File file : LOOKUP) {
 			log.info("Loading lookup hashes for " + file.getAbsolutePath());
 			SamReader lookup = factory.open(file);
-			Iterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(lookup.iterator(), 2, 16384);
+			AsyncBufferedIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(lookup.iterator(), 2, 16384);
 			File cache = new File(file.getAbsolutePath() + ".SubsetToMissing.cache");
 			if (cache.exists()) {
 				log.info("Loading lookup hashes from cache");
@@ -104,11 +104,11 @@ public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 				}
 			} else {
 				long n = stop;
-				it = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
+				ProgressLoggingSAMRecordIterator loggedit = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
 				try {
 					DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(cache)));
-					while (it.hasNext() && n-- > 0) {
-						long recordhash = hash(it.next());
+					while (loggedit.hasNext() && n-- > 0) {
+						long recordhash = hash(loggedit.next());
 						hashtable.add(recordhash);
 						dos.writeLong(recordhash);
 					}
@@ -116,7 +116,9 @@ public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 				} catch (Exception e) {
 					log.error(e, "Failed to load lookup. Running with partial results");
 				}
+				loggedit.close();
 			}
+			it.close();
 		}
 		long filtered = 0;
 		log.info("Processing input");

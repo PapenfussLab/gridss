@@ -71,7 +71,7 @@ public enum VcfInfoAttributes {
 	 */
 	public static VcfInfoAttributes getAttributefromKey(String key) {
 		for (VcfInfoAttributes a : values()) {
-			if (a.attribute() == key) return a;
+			if (a.attribute().equals(key)) return a;
 		}
 		return null;
 	}

@@ -34,7 +34,7 @@ public class BufferTracker {
 		this.writeIntervalInSeconds = writeIntervalInSeconds;
 	}
 	public void start() {
-		Worker worker = new Worker();
+		worker = new Worker();
 		worker.setName("BufferTracker");
 		worker.setDaemon(true);
 		worker.start();

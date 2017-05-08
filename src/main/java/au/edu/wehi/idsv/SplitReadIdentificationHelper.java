@@ -44,7 +44,7 @@ public class SplitReadIdentificationHelper {
 		int startClipLength = SAMRecordUtil.getStartSoftClipLength(r);
 		int endClipLength = SAMRecordUtil.getEndSoftClipLength(r);
 		if (startClipLength + endClipLength == 0 || r.getReadUnmappedFlag()) {
-			Collections.emptyList();
+			return Collections.emptyList();
 		}
 		int offset;
 		String name;

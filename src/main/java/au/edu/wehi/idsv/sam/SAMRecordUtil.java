@@ -311,7 +311,7 @@ public class SAMRecordUtil {
 
 	public static boolean overlap(SAMRecord r1, SAMRecord r2) {
 		boolean result = r1 != null && r2 != null && !r1.getReadUnmappedFlag() && !r2.getReadUnmappedFlag()
-				&& r1.getReferenceIndex() == r2.getReferenceIndex()
+				&& r1.getReferenceIndex().equals(r2.getReferenceIndex())
 				&& ((r1.getAlignmentStart() >= r2.getAlignmentStart() && r1.getAlignmentStart() <= r2.getAlignmentEnd())
 						|| (r2.getAlignmentStart() >= r1.getAlignmentStart()
 								&& r2.getAlignmentStart() <= r1.getAlignmentEnd()));
@@ -332,8 +332,8 @@ public class SAMRecordUtil {
 			int minExpectedAnchorBases) {
 		if (expectedOrientation != PairOrientation.FR)
 			throw new RuntimeException("NYI");
-		if (record.getReadUnmappedFlag() || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()
-				|| record.getReferenceIndex() != record.getMateReferenceIndex() ||
+		if (record.getReadUnmappedFlag() || record.getMateUnmappedFlag()
+				|| !record.getReferenceIndex().equals(record.getMateReferenceIndex()) ||
 				// FR assumption
 				record.getReadNegativeStrandFlag() == record.getMateNegativeStrandFlag()) {
 			return false;
@@ -373,7 +373,7 @@ public class SAMRecordUtil {
 		if (expectedOrientation != PairOrientation.FR)
 			throw new RuntimeException("NYI");
 		if (record1.getReadUnmappedFlag() || record2.getReadUnmappedFlag()
-				|| record1.getReferenceIndex() != record2.getReferenceIndex() ||
+				|| !record1.getReferenceIndex().equals(record2.getReferenceIndex()) ||
 				// FR assumption
 				record1.getReadNegativeStrandFlag() == record2.getReadNegativeStrandFlag()) {
 			return 0;
@@ -401,8 +401,8 @@ public class SAMRecordUtil {
 	public static int estimateFragmentSize(SAMRecord record, PairOrientation expectedOrientation) {
 		if (expectedOrientation != PairOrientation.FR)
 			throw new RuntimeException("NYI");
-		if (record.getReadUnmappedFlag() || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()
-				|| record.getReferenceIndex() != record.getMateReferenceIndex() ||
+		if (record.getReadUnmappedFlag() || record.getMateUnmappedFlag()
+				|| !record.getReferenceIndex().equals(record.getMateReferenceIndex()) ||
 				// FR assumption
 				record.getReadNegativeStrandFlag() == record.getMateNegativeStrandFlag()) {
 			return 0;
@@ -491,7 +491,7 @@ public class SAMRecordUtil {
 	public static boolean areSameRead(SAMRecord r1, SAMRecord r2) {
 		// TODO: compare read sequences
 		return !r1.getReadUnmappedFlag() && !r2.getReadUnmappedFlag()
-				&& r1.getReferenceIndex() == r2.getReferenceIndex()
+				&& r1.getReferenceIndex().equals(r2.getReferenceIndex())
 				&& (r1.getUnclippedStart() == r2.getUnclippedStart() || r1.getUnclippedEnd() == r2.getUnclippedEnd())
 				&& r1.getReadNegativeStrandFlag() == r2.getReadNegativeStrandFlag();
 	}

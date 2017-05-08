@@ -16,7 +16,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.Log;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.programgroups.Metrics;
 

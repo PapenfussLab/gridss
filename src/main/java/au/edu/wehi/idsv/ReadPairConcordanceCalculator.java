@@ -27,13 +27,13 @@ public abstract class ReadPairConcordanceCalculator {
 			return read1.getReadPairedFlag()
 					&& !read1.getReadUnmappedFlag()
 					&& !read1.getMateUnmappedFlag()
-					&& read1.getReferenceIndex() == read1.getMateReferenceIndex()
+					&& read1.getReferenceIndex().equals(read1.getMateReferenceIndex())
 					&& read1.getReadNegativeStrandFlag() != read1.getMateNegativeStrandFlag();
 		} else {
 			return read1.getReadPairedFlag()
 					&& !read1.getReadUnmappedFlag()
 					&& !read2.getReadUnmappedFlag()
-					&& read1.getReferenceIndex() == read2.getReferenceIndex()
+					&& read1.getReferenceIndex().equals(read2.getReferenceIndex())
 					&& read1.getReadNegativeStrandFlag() != read2.getReadNegativeStrandFlag(); 
 		}
 	}

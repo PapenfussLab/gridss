@@ -1037,8 +1037,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(sumWeights(weight) == totalWeight);
 		assert(sanityCheckEdges(this, true));
 		assert(EMPTY_KMER_LIST != null && EMPTY_KMER_LIST.size() == 0); // fastutil doesn't have ImmutableList wrappers
-		assert((additionalKmerOffsets == null && additionalKmers == null) || (additionalKmerOffsets != null && additionalKmers != null));
-		assert((additionalKmerOffsets == null && additionalKmers == null) || additionalKmerOffsets.size() == additionalKmers.size());
+		assert((additionalKmerOffsets == null && additionalKmers == null) ||
+				(additionalKmerOffsets != null && additionalKmers != null && additionalKmerOffsets.size() == additionalKmers.size()));
 		//if (additionalKmers != null) {
 		//	for (int i = 0; i < additionalKmers.size(); i++) {
 		//		assert(additionalKmerOffsets.getInt(i) < length());

@@ -211,7 +211,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		boolean complement = referenceStep != seqStep;
 		while (seqPosition >= 0 && seqPosition < seq.length &&
 				// next step must still be on the contig
-				referencePosition >= 1 & referencePosition <= refSeq.getSequenceLength()) {
+				referencePosition >= 1 && referencePosition <= refSeq.getSequenceLength()) {
 			byte base = seq[seqPosition];
 			if (complement) {
 				base = SequenceUtil.complement(base);
@@ -306,9 +306,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		} catch (StringIndexOutOfBoundsException e) {
 			String msg = String.format("Sanity check failure: getHomologySequence() failed for %s at %s:%d (%s). Local/remote homology lengths of %d/%d"
 					+ " not compatible anchor and breakend lengths of %d/%d",
+					record.getReadName(),
 					record.getContig(),
 					record.getAlignmentStart(),
-					record.getReadName(),
 					getBreakendSummary().toString(source.getContext()),
 					locallen,
 					remotelen,

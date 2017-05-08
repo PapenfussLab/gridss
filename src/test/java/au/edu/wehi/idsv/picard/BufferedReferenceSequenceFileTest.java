@@ -17,6 +17,7 @@ public class BufferedReferenceSequenceFileTest extends TestHelper {
 		for (String contig : SMALL_FA.getSequenceDictionary().getSequences().stream().map(ssr -> ssr.getSequenceName()).collect(Collectors.toList())) {
 			assertEquals(S(b.getSequence(contig).getBases()), S(SMALL_FA.getSequence(contig).getBases()));
 		}
+		b.close();
 	}
 	@Test
 	public void getSubsequenceAtShouldMatchUnderlying() throws IOException {
@@ -30,6 +31,7 @@ public class BufferedReferenceSequenceFileTest extends TestHelper {
 				}
 			}
 		}
+		b.close();
 	}
 	@Test
 	public void should_retain_Ns() throws IOException {
@@ -43,5 +45,6 @@ public class BufferedReferenceSequenceFileTest extends TestHelper {
 		assertEquals('N', b.getBase(0, 3));
 		assertEquals('N', b.getBase(0, 4));
 		assertEquals('T', b.getBase(0, 5));
+		b.close();
 	}
 }

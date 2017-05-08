@@ -392,7 +392,7 @@ public class PathCollapseIterator extends CollapseIterator implements DeBruijnGr
 		return String.format("[%d-%d] %s",
 			path.iterator().next().firstStart(),
 			path.iterator().next().firstEnd(),
-			KmerEncodingHelper.baseCalls(DeBruijnSequenceGraphNodeUtil.asKmers(path), k));
+			new String(KmerEncodingHelper.baseCalls(DeBruijnSequenceGraphNodeUtil.asKmers(path), k)));
 	}
 	@Override
 	public int getK() {

@@ -85,7 +85,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		}
 		@Override
 		public boolean equals(Object obj) {
-			return id.equals(((VariantEvidenceSupport)obj).id);
+			return obj != null && id.equals(((VariantEvidenceSupport)obj).id);
 		}
 	}
 	/**

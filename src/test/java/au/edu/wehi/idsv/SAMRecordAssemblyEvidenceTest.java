@@ -467,7 +467,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				2, 100, 50, B(seq), B(40, seq.length()));
 		
 		// breakend alignment is actually better
-		SAMRecord e1 = SAMRecordUtil.realign(getContext().getReference(), e, 200, true);
+		SAMRecord e1 = SAMRecordUtil.realign(pc.getReference(), e, 200, true);
 		assertEquals("48S102M50S", e1.getCigarString()); // 50S100M50S + homology
 		
 		// but if we constrain to require anchor bases, we shouldn't realign

@@ -117,7 +117,7 @@ public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer
 					+ "b) chosen aligner writing records out of order."
 					+ "The aligner is required to write records in same order as the input fastq. "
 					+ "Please raise a github enhancement request if use by an aligner with no capability to ensure this ordering is required. ", evidenceID);
-			log.equals(msg);
+			log.error(msg);
 			throw new RuntimeException(msg);
 		}
 	}

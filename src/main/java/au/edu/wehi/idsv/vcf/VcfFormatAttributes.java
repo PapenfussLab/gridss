@@ -56,7 +56,7 @@ public enum VcfFormatAttributes {
 	 */
 	public static VcfFormatAttributes getAttributefromKey(String key) {
 		for (VcfFormatAttributes a : values()) {
-			if (a.attribute() == key) return a;
+			if (a.attribute().equals(key)) return a;
 		}
 		return null;
 	}

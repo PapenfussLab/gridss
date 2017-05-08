@@ -264,7 +264,7 @@ public abstract class GreedyAllocationCache implements Closeable {
 		}
 		public Hash96bit getAlignment() { return this; } 
 		public String toString() {
-			return String.format("(%f,%s)", getAlignment(), getScore());
+			return String.format("(%s,%f)", getAlignment(), getScore());
 		}
 	}
 	protected static class EventScoreNode extends HashScoreNode {

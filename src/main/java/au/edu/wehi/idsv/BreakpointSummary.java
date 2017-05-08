@@ -51,9 +51,6 @@ public class BreakpointSummary extends BreakendSummary {
 		this.end2 = end2;
 		this.referenceIndex2 = referenceIndex2;
 		this.direction2 = direction2;
-		if (referenceIndex2 < 0) {
-			throw new IllegalArgumentException("Reference index must be valid");
-		}
 		if (end2 < start2) {
 			throw new IllegalArgumentException("end must be at or after start");
 		}

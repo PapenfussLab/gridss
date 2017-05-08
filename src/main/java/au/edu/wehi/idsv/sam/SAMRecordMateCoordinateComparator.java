@@ -10,7 +10,6 @@ import htsjdk.samtools.SAMRecordComparator;
 public class SAMRecordMateCoordinateComparator implements SAMRecordComparator {
 	public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
 		int cmp = fileOrderCompare(samRecord1, samRecord2);
-		if (cmp != 0) return cmp;
 		// Note: secondary sort order does not match SAMRecordCoordinateComparator
 		if (cmp != 0) return cmp;
 		cmp = samRecord1.getReadName().compareTo(samRecord2.getReadName());

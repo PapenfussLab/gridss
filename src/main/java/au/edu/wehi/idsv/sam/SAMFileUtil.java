@@ -207,7 +207,7 @@ public class SAMFileUtil {
 		try {
 			for (File in : input) {
 				SamReader r = readerFactory.open(in);
-				SAMFileHeader currentHeader = header = r.getFileHeader();
+				SAMFileHeader currentHeader = r.getFileHeader();
 				if (header == null) {
 					header = currentHeader;
 				}

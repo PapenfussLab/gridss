@@ -35,6 +35,7 @@ public class GreedyAssemblyAllocationCacheTest extends TestHelper {
 			assertTrue(merged.isBestBreakendAssemblyAllocation(r1b));
 			assertTrue(merged.isBestBreakendAssemblyAllocation(r2a));
 			assertFalse(merged.isBestBreakendAssemblyAllocation(r2b));
+			merged.close();
 		}
 	}
 }
