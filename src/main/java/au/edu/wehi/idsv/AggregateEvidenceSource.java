@@ -19,7 +19,7 @@ public class AggregateEvidenceSource extends EvidenceSource implements Iterable<
 	public CloseableIterator<DirectedEvidence> iterator() {
 		return SAMEvidenceSource.mergedIterator(all, true);
 	}
-	public CloseableIterator<DirectedEvidence> iterator(QueryInterval intervals) {
+	public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] intervals) {
 		return SAMEvidenceSource.mergedIterator(all, intervals);
 	}
 	@Override

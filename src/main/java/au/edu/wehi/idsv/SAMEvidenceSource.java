@@ -240,14 +240,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 			FileHelper.delete(withsplitreadsFile, true);
 		}
 	}
-	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval interval) {
+	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval[] intervals) {
 		SamReader reader = getReader();
 		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
-		SAMRecordIterator it = tryOpenReader(reader, new QueryInterval(interval.referenceIndex, interval.start - getMaxConcordantFragmentSize() - 1, interval.end + getMaxConcordantFragmentSize() + 1));
+		SAMRecordIterator it = tryOpenReader(reader, QueryIntervalUtil.padIntervals(getContext().getDictionary(), intervals, getMaxConcordantFragmentSize() + 1));
 		Iterator<DirectedEvidence> eit = asEvidence(it);
-		final BreakendSummary bsf = new BreakendSummary(interval.referenceIndex, BreakendDirection.Forward, interval.start, interval.start, interval.end);
-		final BreakendSummary bsb = new BreakendSummary(interval.referenceIndex, BreakendDirection.Backward, interval.start, interval.start, interval.end);
-		eit = Iterators.filter(eit, e -> bsf.overlaps(e.getBreakendSummary()) || bsb.overlaps(e.getBreakendSummary()));
+		eit = Iterators.filter(eit, e -> QueryIntervalUtil.overlaps(intervals, e.getBreakendSummary()));
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	/**
@@ -260,16 +258,16 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * @param interval
 	 * @return
 	 */
-	private SAMRecordIterator tryOpenReader(SamReader reader, QueryInterval interval) {
+	private SAMRecordIterator tryOpenReader(SamReader reader, QueryInterval[] intervals) {
 		SAMRecordIterator it = null;
 		try {
-			it = reader.queryOverlapping(new QueryInterval[] { interval });
+			it = reader.queryOverlapping(intervals);
 		} catch (Exception e) {
 			log.debug("Attempting to recover from query failure: ", e);
 			System.gc();
 			System.runFinalization();
 			System.gc();
-			it = reader.queryOverlapping(new QueryInterval[] { interval });
+			it = reader.queryOverlapping(intervals);
 			log.debug("Recovery successful");
 		}
 		return it;
@@ -497,7 +495,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
 		return merged;
 	}
-	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source, final QueryInterval intervals) {
+	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source, final QueryInterval[] intervals) {
 		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 		for (SAMEvidenceSource bam : source) {
 			CloseableIterator<DirectedEvidence> it = bam.iterator(intervals);

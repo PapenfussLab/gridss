@@ -72,11 +72,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}		
-		List<QueryInterval> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize);
+		List<QueryInterval[]> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize, getContext().getConfig().chunkSequenceChangePenalty);
 		List<File> assembledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();
 		for (int i = 0; i < chunks.size(); i++) {
-			QueryInterval chunck = chunks.get(i);
+			QueryInterval[] chunck = chunks.get(i);
 			File f = getContext().getFileSystemContext().getAssemblyChunkBam(getFile(), i);
 			int chunkNumber = i;
 			assembledChunk.add(f);
@@ -111,7 +111,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				try (GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache(svReadAlignmentCount)) {
 					tasks = new ArrayList<>();
 					for (int i = 0; i < chunks.size(); i++) {
-						QueryInterval chunk = chunks.get(i);
+						QueryInterval[] chunk = chunks.get(i);
 						File in = assembledChunk.get(i);
 						tasks.add(threadpool.submit(() -> { loadAssemblyEvidenceAllocation(cache, in, chunk); return null; }));
 					}
@@ -120,7 +120,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					log.info("Allocating multi-mapping reads to assemblies");
 					tasks = new ArrayList<>();
 					for (int i = 0; i < chunks.size(); i++) {
-						QueryInterval chunk = chunks.get(i);
+						QueryInterval[] chunk = chunks.get(i);
 						File in = assembledChunk.get(i);
 						File out = deduplicatedChunks.get(i);
 						if (!out.exists()) {
@@ -189,9 +189,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			throw new RuntimeException(firstException);
 		}
 	}
-	private void assembleChunk(File output, int chunkNumber, QueryInterval qi) throws IOException {
+	private void assembleChunk(File output, int chunkNumber, QueryInterval[] qi) throws IOException {
 		AssemblyIdGenerator assemblyNameGenerator = new SequentialIdGenerator(String.format("asm%d-", chunkNumber));
-		String chuckName = String.format("chunk %d (%s:%d-%d)", chunkNumber, getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end);
+		String chuckName = String.format("chunk %d (%s:%d-%s:%d)", chunkNumber,
+			getContext().getDictionary().getSequence(qi[0].referenceIndex).getSequenceName(), qi[0].start,
+			getContext().getDictionary().getSequence(qi[qi.length-1].referenceIndex).getSequenceName(), qi[qi.length-1].end);
 		log.info(String.format("Starting assembly on %s", chuckName));
 		Stopwatch timer = Stopwatch.createStarted();
 		SAMFileHeader header = getContext().getBasicSamHeader();
@@ -231,21 +233,23 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			System.runFinalization();
 		}
 	}
-	private QueryInterval getExpanded(QueryInterval qi) {
-		int expansion = (int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1;
-		int end = getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceLength();
-		QueryInterval expanded = new QueryInterval(qi.referenceIndex, Math.max(1, qi.start - expansion), Math.min(end, qi.end + expansion));
+	private QueryInterval[] getExpanded(QueryInterval[] intervals) {
+		QueryInterval[] expanded = QueryIntervalUtil.padIntervals(
+				getContext().getDictionary(),
+				intervals,
+				// expand bounds to keep any contig that could overlap our intervals
+				(int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1);
 		return expanded;
 	}
-	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval qi, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
-		QueryInterval expanded = getExpanded(qi);
+	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval[] intervals, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
+		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input);
 			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
 			while (evidenceIt.hasNext()) {
 				SAMRecord asm = evidenceIt.next();
 				asm = transformAssembly(asm); // transform before chunk bounds checking as the position may have moved
-				if (asm.getAlignmentStart() >= qi.start && asm.getAlignmentStart() <= qi.end) {
+				if (QueryIntervalUtil.overlaps(intervals, asm.getReferenceIndex(), asm.getAlignmentStart())) {
 					// only output assemblies that start within our chunk
 					if (shouldFilterAssembly(asm)) {
 						if (filteredWriter != null) {
@@ -258,9 +262,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			}
 		}
 	}
-	private void loadAssemblyEvidenceAllocation(GreedyAssemblyAllocationCache cache, File in, QueryInterval qi) throws IOException {
-		log.debug(String.format("Caching assembly evidence allocation in interval %s:%d-%d", getContext().getDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end));
-		QueryInterval expanded = getExpanded(qi);
+	private void loadAssemblyEvidenceAllocation(GreedyAssemblyAllocationCache cache, File in, QueryInterval intervals[]) throws IOException {
+		log.debug(String.format("Caching assembly evidence allocation in interval %s:%d-%s:%d",
+				getContext().getDictionary().getSequence(intervals[0].referenceIndex).getSequenceName(), intervals[0].start,
+				getContext().getDictionary().getSequence(intervals[intervals.length-1].referenceIndex).getSequenceName(), intervals[intervals.length-1].end));
+		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
 			try (SamReader reader = factory.open(in)) {
 				try (SAMRecordIterator assemblies = reader.iterator()) {
@@ -284,10 +290,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			}
 		}
 	}
-	private void deduplicateChunk(File in, File out, QueryInterval qi, GreedyAssemblyAllocationCache cache) throws IOException {
-		log.debug(String.format("Uniquely assigning assembly evidence allocation in interval %s:%d-%d", getContext().getDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end));
+	private void deduplicateChunk(File in, File out, QueryInterval[] intervals, GreedyAssemblyAllocationCache cache) throws IOException {
+		log.debug(String.format("Uniquely assigning assembly evidence allocation in interval %s:%d-%s:%d",
+				getContext().getDictionary().getSequence(intervals[0].referenceIndex).getSequenceName(), intervals[0].start,
+				getContext().getDictionary().getSequence(intervals[intervals.length-1].referenceIndex).getSequenceName(), intervals[intervals.length-1].end));
 		File tmpout = FileSystemContext.getWorkingFileFor(out);
-		QueryInterval expanded = getExpanded(qi);
+		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
 			try (SamReader reader = factory.open(in)) {
 				try (SAMRecordIterator assemblies = reader.iterator()) {

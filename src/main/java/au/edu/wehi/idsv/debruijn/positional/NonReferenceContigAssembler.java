@@ -105,7 +105,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private PositionalDeBruijnGraphTracker exportTracker = null;
 	public int getReferenceIndex() { return referenceIndex; }
 	private int retainWidth() {
-		return Math.max(
+		return  maxContigAnchorLength() + Math.max(
 				// safety check to ensure that flushed contigs don't call advanceUnderlying()
 				maxExpectedBreakendLength() + minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxAnchorLength + 1,
 				// calculate retain width from contig 
@@ -204,9 +204,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				do {
 					forcedContig = bestContigCaller.callBestContigStartingBefore(nextPosition(), flushPosition);
 					if (forcedContig != null && forcedContig.getLast().lastEnd() + maxEvidenceSupportIntervalWidth >= nextPosition()) {
-						// Could happen if ap.removeMisassembledPartialContigsDuringAssembly is false as
-						// contig length would then be unbounded
-						log.warn(String.format("Sanity check failure. Attempting to flush contig %s:%d-%d (+%d) when graph only loaded to %s:%d. Ignoring flush request.",
+						// could happen if ap.removeMisassembledPartialContigsDuringAssembly is false as contig length would then be unbounded
+						log.debug(String.format("Attempting to flush contig %s:%d-%d (+%d) when graph only loaded to %s:%d. Ignoring flush request.",
 								contigName, forcedContig.getFirst().firstStart(), forcedContig.getLast().lastEnd(), maxEvidenceSupportIntervalWidth,
 								contigName, nextPosition()));
 						forcedContig = null;
@@ -219,6 +218,12 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				}
 			}
 		}
+	}
+	public int maxContigAnchorLength() {
+		return maxContigAnchorLength(maxExpectedBreakendLength());
+	}
+	public int maxContigAnchorLength(int breakendContigLength) {
+		return Math.max(breakendContigLength, maxAnchorLength);
 	}
 	private void ensureCalledContig() {
 		while (called.isEmpty()) {
@@ -257,9 +262,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private int flushReferenceNodes_debug_message_count = 0;
 	private void flushReferenceNodes() {
 		int position = nonReferenceGraphByPosition.isEmpty() ? nextPosition() : nonReferenceGraphByPosition.first().firstStart();
-		int maxContigAnchorLength = Math.max(maxExpectedBreakendLength(), aes.getContext().getAssemblyParameters().anchorLength);
 		// first position at which we are guaranteed to not be involved in any contig anchor sequence
-		position -= minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxContigAnchorLength;
+		position -= minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxContigAnchorLength();
 		if (!graphByPosition.isEmpty() && graphByPosition.first().lastEnd() < position) {
 			Collection<KmerPathSubnode> nodes = new ArrayList<>();
 			for (KmerPathNode tn : graphByPosition) {
@@ -406,7 +410,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 		if (contig.isEmpty()) return null;
 		
-		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
+		int contigLength = contig.stream().mapToInt(sn -> sn.length()).sum();
+		int targetAnchorLength = Math.max(Math.min(contigLength, maxExpectedBreakendLength()), maxAnchorLength);
 		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getFirst().length());
 		startAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
@@ -482,6 +487,15 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 						referenceIndex, endAnchorPosition, endAnchorBaseCount - endingBasesToTrim,
 						bases, quals);
 			}
+		}
+		if (contigLength > maxExpectedBreakendLength()) {
+			log.debug(String.format("Called breakend contig %s at %s:%d-%d of length %d when maximum expected breakend contig length is %d",
+					assembledContig == null ? "" : assembledContig.getReadName(),
+					contigName,
+					rawcontig.getFirst().firstStart(),
+					rawcontig.getLast().lastEnd(),
+					contigLength,
+					maxExpectedBreakendLength()));
 		}
 		if (assembledContig != null) {
 			if (aes.getContext().getConfig().getVisualisation().assemblyGraph) {

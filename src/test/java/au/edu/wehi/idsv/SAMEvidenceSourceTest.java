@@ -95,7 +95,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		}
 		createInput(in);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(new QueryInterval(1, 20, 30)));
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(new QueryInterval[] {new QueryInterval(1, 20, 30)}));
 		assertTrue(list.stream().allMatch(e ->
 			e.getBreakendSummary().overlaps(new BreakendSummary(1, FWD, 20, 20, 30)) ||
 			e.getBreakendSummary().overlaps(new BreakendSummary(1, BWD, 20, 20, 30))));

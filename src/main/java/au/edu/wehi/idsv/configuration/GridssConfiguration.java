@@ -61,6 +61,13 @@ public class GridssConfiguration {
 	 */
 	public int chunkSize;
 	/**
+	 * Penalty (in base pairs) applied to each change of reference sequence for a given chunk.
+	 * Zeroo penalty will makes all chunks (except the last) contain the same number of bases,
+	 * and a penalty greater than or equal to the chunk size will ensure that each chunk comes
+	 * from a single reference sequence.
+	 */
+	public int chunkSequenceChangePenalty;
+	/**
 	 * Remove the assembly contribution of a multimapping read from all location except the mapping location with the best assembly
 	 */
 	public boolean multimappingUniqueAssemblyAllocation;
@@ -112,6 +119,7 @@ public class GridssConfiguration {
 		dovetailMargin = config.getInt("dovetailMargin");
 		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
 		chunkSize = config.getInt("chunkSize");
+		chunkSequenceChangePenalty = config.getInt("chunkSequenceChangePenalty");
 		multimappingUniqueAssemblyAllocation = config.getBoolean("multimappingUniqueAssemblyAllocation");
 		multimappingUniqueVariantAllocation = config.getBoolean("multimappingUniqueVariantAllocation");
 		multimapping = config.getBoolean("multimapping");

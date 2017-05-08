@@ -23,11 +23,11 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Forward),
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Backward),
 			Pair.of(BreakendDirection.Backward, BreakendDirection.Forward),
-			Pair.of( BreakendDirection.Backward, BreakendDirection.Backward));
+			Pair.of(BreakendDirection.Backward, BreakendDirection.Backward));
 	private final ProcessingContext processContext;
 	private final VariantIdGenerator idGenerator;
 	private final Supplier<Iterator<DirectedEvidence>> iteratorGenerator;
-	private final QueryInterval filterInterval;
+	private final QueryInterval[] filterInterval;
 	private Iterator<VariantContextDirectedBreakpoint> currentIterator;
 	private Iterator<DirectedEvidence> currentUnderlyingIterator;
 	private int currentDirectionOrdinal;
@@ -47,12 +47,12 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 		this.currentDirectionOrdinal = 0;
 		reinitialiseIterator();
 	}
-	public VariantCallIterator(AggregateEvidenceSource source, QueryInterval interval, int intervalNumber) {
-		int expandBy = source.getMaxConcordantFragmentSize() + 1;
-		QueryInterval inputInterval = new QueryInterval(interval.referenceIndex, interval.start - expandBy, interval.end + expandBy);
+	public VariantCallIterator(AggregateEvidenceSource source, QueryInterval[] interval, int intervalNumber) {
 		this.processContext = source.getContext();
 		this.idGenerator = new SequentialIdGenerator(String.format("gridss%d_", intervalNumber));
-		this.iteratorGenerator = () -> source.iterator(inputInterval);
+		int expandBy = source.getMaxConcordantFragmentSize() + 1;
+		QueryInterval[] expanded = QueryIntervalUtil.padIntervals(processContext.getDictionary(), interval, expandBy);
+		this.iteratorGenerator = () -> source.iterator(expanded);
 		this.filterInterval = interval;
 		this.currentDirectionOrdinal = 0;
 		reinitialiseIterator();
@@ -72,8 +72,8 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 		if (filterInterval != null) {
 			currentIterator = Iterators.filter(currentIterator, v -> {
 				BreakpointSummary bs = v.getBreakendSummary();
-				return (bs.referenceIndex == filterInterval.referenceIndex && bs.start >= filterInterval.start && bs.start <= filterInterval.end) ||
-						(bs.referenceIndex2 == filterInterval.referenceIndex && bs.start2 >= filterInterval.start && bs.start2 <= filterInterval.end);
+				return QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex, bs.start) || 
+						QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex2, bs.start2);
 			});
 		}
 	}

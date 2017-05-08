@@ -196,7 +196,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 100, 1, BWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), FWD, null, 0, 100, 1, B("NNN"), B("NNN")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(200);
@@ -208,7 +213,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 100, 1, FWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), FWD, null, 0, 100, 1, B("NNN"), B("NNN")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(199);
@@ -220,7 +230,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, BWD, 100, 1, FWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BWD, null, 0, 100, 1, B("NNN"), B("NNN")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(199);
@@ -232,7 +247,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, BWD, 100, 1, BWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BWD, null, 0, 100, 1, B("NNN"), B("NNN")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(200);
@@ -249,7 +269,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 100, 1, BWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), FWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(200);
@@ -261,7 +286,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 100, 1, FWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), FWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(199);
@@ -273,7 +303,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, BWD, 100, 1, FWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(199);
@@ -286,7 +321,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, BWD, 100, 1, BWD, 200),
 				incorporateRealignment(aes,
 					AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(200);
@@ -302,7 +342,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 150, 100, 200, 1, BWD, 450, 400, 500),
 				incorporateRealignment(aes,
 					AssemblyFactory.createUnanchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 150, 100, 200), null, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(500);
@@ -314,7 +359,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 150, 100, 200, 1, FWD, 450, 400, 500),
 				incorporateRealignment(aes,
 					AssemblyFactory.createUnanchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 150, 100, 200), null, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(396);
@@ -326,7 +376,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, BWD, 150, 100, 200, 1, FWD, 450, 400, 500),
 				incorporateRealignment(aes,
 					AssemblyFactory.createUnanchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, BWD, 150, 100, 200), null, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(396);
@@ -338,7 +393,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, BWD, 150, 100, 200, 1, BWD, 450, 400, 500),
 				incorporateRealignment(aes,
 					AssemblyFactory.createUnanchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, BWD, 150, 100, 200), null, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(500);
@@ -422,7 +482,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals("GT", 
 				incorporateRealignment(aes,
 					AssemblyFactory.createUnanchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 150, 100, 200), null, B("GTNAC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
+						 * 
+						 */
+						private static final long serialVersionUID = 1L;
+
+					{
 						setMappingQuality(40);
 						setReferenceIndex(1);
 						setAlignmentStart(500);

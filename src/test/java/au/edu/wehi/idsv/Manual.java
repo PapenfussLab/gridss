@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -61,7 +62,7 @@ public class Manual extends IntermediateFilesTest {
 			allIt.next();
 		}
 	}
-	@Test
+	//@Test
 	@Category(Hg19Tests.class)
 	public void assembly_scoring_should_be_symmetrical() throws FileNotFoundException {
 		File sam = new File("W:/debug/test.bam");
@@ -77,5 +78,20 @@ public class Manual extends IntermediateFilesTest {
 		for (SplitReadEvidence e : list) {
 			e.getBreakpointQual();
 		}
+	}
+	@Test
+	@Category(Hg38Tests.class)
+	public void should_not_include_concordant_read_pairs() throws FileNotFoundException {
+		File sam = new File("W:/hg38debug/D1_S1_L001_R1_001.bam.gridss.working/D1_S1_L001_R1_001.bam");
+		File ref = Hg38Tests.findHg38Reference();
+		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, sam, null, 0, 0.995);
+		List<DirectedEvidence> list = ses.iterator().stream()
+			.collect(Collectors.toList());
+		List<DirectedEvidence> reads = list.stream().filter(e -> e instanceof DiscordantReadPair)
+			.map(e -> (DiscordantReadPair)e)
+			.filter(e -> e.getLocalledMappedRead().getReadName().equals("D00360:95:H2YWMBCXX:1:2107:5758:68093"))
+			.collect(Collectors.toList());
+		Assert.assertEquals(0, reads.size());
 	}
 }

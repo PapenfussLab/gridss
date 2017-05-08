@@ -63,7 +63,6 @@ import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.CigarSizeDistribution;
@@ -954,13 +953,12 @@ public class TestHelper {
 			return new AutoClosingIterator<DirectedEvidence>(evidence.iterator());
 		}
 		@Override
-		public CloseableIterator<DirectedEvidence> iterator(QueryInterval qi) {
+		public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] qi) {
 			return new AutoClosingIterator<DirectedEvidence>(
 					Iterators.filter(evidence.iterator(), de -> 
 						de != null &&
 						de.getBreakendSummary() != null &&
-						de.getBreakendSummary().referenceIndex == qi.referenceIndex &&
-						IntervalUtil.overlapsClosed(de.getBreakendSummary().start, de.getBreakendSummary().end, qi.start, qi.end))
+						QueryIntervalUtil.overlaps(qi, de.getBreakendSummary()))
 					);
 		}
 	}
@@ -980,10 +978,9 @@ public class TestHelper {
 			return new AutoClosingIterator<>(assemblies.iterator());
 		}
 		@Override
-		public CloseableIterator<DirectedEvidence> iterator(QueryInterval qi) {
+		public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] qi) {
 			return new AutoClosingIterator<>(assemblies.stream().filter(
-					e -> IntervalUtil.overlapsClosed(e.getBreakendSummary().start, e.getBreakendSummary().end, qi.start, qi.end)
-					&& qi.referenceIndex == e.getBreakendSummary().referenceIndex).iterator());
+					e -> QueryIntervalUtil.overlaps(qi, e.getBreakendSummary())).iterator());
 		}
 	}
 	public static AssemblyEvidenceSource AES() {

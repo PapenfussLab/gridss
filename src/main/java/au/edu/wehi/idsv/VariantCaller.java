@@ -42,12 +42,12 @@ public class VariantCaller {
 		AggregateEvidenceSource es = new AggregateEvidenceSource(
 				processContext,
 				processContext.getVariantCallingParameters().callOnlyAssemblies ? Collections.emptyList() : samEvidence, assemblyEvidence);
-		List<QueryInterval> chunks = processContext.getReference().getIntervals(processContext.getConfig().chunkSize);
+		List<QueryInterval[]> chunks = processContext.getReference().getIntervals(processContext.getConfig().chunkSize, processContext.getConfig().chunkSequenceChangePenalty);
 		List<File> calledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();
 		
 		for (int i = 0; i < chunks.size(); i++) {
-			QueryInterval chunck = chunks.get(i);
+			QueryInterval[] chunck = chunks.get(i);
 			File f = processContext.getFileSystemContext().getVariantCallChunkVcf(vcf, i);
 			int chunkNumber = i;
 			calledChunk.add(f);
@@ -88,11 +88,13 @@ public class VariantCaller {
 			throw new RuntimeException(firstException);
 		}
 	}
-	private void callChunk(File output, AggregateEvidenceSource es, int chunkNumber, QueryInterval chunck) {
-		String chunkMsg =  String.format("chunk %d (%s:%d-%d)", chunkNumber, processContext.getDictionary().getSequence(chunck.referenceIndex).getSequenceName(), chunck.start, chunck.end);
+	private void callChunk(File output, AggregateEvidenceSource es, int chunkNumber, QueryInterval[] chunk) {
+		String chunkMsg = String.format("chunk %d (%s:%d-%s:%d)", chunkNumber,
+				processContext.getDictionary().getSequence(chunk[0].referenceIndex).getSequenceName(), chunk[0].start,
+				processContext.getDictionary().getSequence(chunk[chunk.length-1].referenceIndex).getSequenceName(), chunk[chunk.length-1].end);
 		String msg = "calling maximal cliques in " + chunkMsg;
 		File tmp = FileSystemContext.getWorkingFileFor(output);
-		try (VariantCallIterator rawit = new VariantCallIterator(es, chunck, chunkNumber)) {
+		try (VariantCallIterator rawit = new VariantCallIterator(es, chunk, chunkNumber)) {
 			try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
 				log.info("Start ", msg);
 				try (AsyncBufferedIterator<VariantContextDirectedBreakpoint> it = new AsyncBufferedIterator<>(rawit, "VariantCaller " + chunkMsg)) {
