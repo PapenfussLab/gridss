@@ -20,6 +20,7 @@ To run, GRIDSS the following must be installed:
 
 * Java 1.8 or later
 * NGS aligner. By default bwa mem is used.
+* R
 
 # Running
 
