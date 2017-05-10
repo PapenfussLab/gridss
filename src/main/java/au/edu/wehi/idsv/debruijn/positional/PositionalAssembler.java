@@ -118,6 +118,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
+		int firstPosition = it.peek().getBreakendSummary().start;
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
 		EvidenceTracker evidenceTracker = new EvidenceTracker();
@@ -154,7 +155,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
-			String filename = String.format("positional-%s-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), direction);
+			String filename = String.format("positional-%s_%d-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), firstPosition, direction);
 			File file = new File(vis.directory, filename);
 			PositionalDeBruijnGraphTracker exportTracker;
 			try {
