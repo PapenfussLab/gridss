@@ -74,7 +74,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}
-		telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()));
+		telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), getContext().getDictionary());
 		List<QueryInterval[]> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize, getContext().getConfig().chunkSequenceChangePenalty);
 		List<File> assembledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();

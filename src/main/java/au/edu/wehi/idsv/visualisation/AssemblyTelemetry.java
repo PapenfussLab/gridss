@@ -7,15 +7,18 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Log;
 
 public class AssemblyTelemetry implements Closeable {
 	private static final Log log = Log.getInstance(AssemblyTelemetry.class);
+	private final File file;
+	private final SAMSequenceDictionary dict;
 	private BlockingQueue<String> queue;
-	private File file;
-	public AssemblyTelemetry(File telemetryFile) {
+	public AssemblyTelemetry(File telemetryFile, SAMSequenceDictionary dict) {
 		this.file = telemetryFile;
 		this.queue = new ArrayBlockingQueue<>(4096);
+		this.dict = dict;
 		Thread thread = new Thread(new WriterRunnable(), "AT:" + file.getName());
 		thread.setDaemon(true);
 		thread.start();
@@ -33,17 +36,17 @@ public class AssemblyTelemetry implements Closeable {
 			this.direction = direction;
 		}
 		public void loadGraph(int referenceIndex, int start, int end, int nodes, boolean filtered) {
-			String str = String.format("%d,%s,load,%d,%d,%d,%d,%b\n", chunk, direction.toChar(), referenceIndex, start, end, nodes, filtered);
+			String str = String.format("%d,%s,load,%s,%d,%d,%d,%b\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), start, end, nodes, filtered);
 			put(str);
 		}
 
 		public void flushContigs(int referenceIndex, int flushStart, int flushEnd, int contigsFlushed) {
-			String str = String.format("%d,%s,flushContigs,%d,%d,%d,%d,\n", chunk, direction.toChar(), referenceIndex, flushStart, flushEnd, contigsFlushed);
+			String str = String.format("%d,%s,flushContigs,%d,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, contigsFlushed);
 			put(str);
 		}
 
 		public void flushReferenceNodes(int referenceIndex, int flushStart, int flushEnd, int readsFlushed) {
-			String str = String.format("%d,%s,flushReferenceNodes,%d,%d,%d,%d,\n", chunk, direction.toChar(), referenceIndex, flushStart, flushEnd, readsFlushed);
+			String str = String.format("%d,%s,flushReferenceNodes,%d,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, readsFlushed);
 			put(str);
 		}
 		public void callContig(int referenceIndex, int start, int end, int nodes, int reads, boolean repeatsSimplified) {
@@ -62,6 +65,7 @@ public class AssemblyTelemetry implements Closeable {
 	public void close() {
 		try {
 			queue.put("");
+			queue = null;
 		} catch (InterruptedException e) {
 		}
 	}
