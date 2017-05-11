@@ -17,6 +17,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.sam.SamTags;
+import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
@@ -36,6 +37,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	private final BreakendDirection direction;
 	private NonReferenceContigAssembler currentAssembler = null;
 	private String currentContig = "";
+	private AssemblyTelemetry telemetry = null;
 	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction) {
 		this.context = context;
 		this.source = source;
@@ -166,7 +168,14 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				log.debug(e);
 			}
 		}
+		currentAssembler.setTelemetry(getTelemetry());
 		return currentAssembler;
+	}
+	public AssemblyTelemetry getTelemetry() {
+		return telemetry;
+	}
+	public void setTelemetry(AssemblyTelemetry telemetry) {
+		this.telemetry = telemetry;
 	}
 	private static class ReferenceIndexIterator implements PeekingIterator<DirectedEvidence> {
 		private final PeekingIterator<DirectedEvidence> it;

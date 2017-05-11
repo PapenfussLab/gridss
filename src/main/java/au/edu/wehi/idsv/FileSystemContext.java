@@ -69,6 +69,7 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s.realign.%3$d" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s.breakpoint" + VCF_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_CHUNK_SAM = "%1$s/%2$s.assembly.chunk%3$d" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_TELEMETRY = "%1$s/%2$s.events.csv";
 	private static final String FORMAT_VARIANT_CALL_CHUNK_VCF = "%1$s/%2$s.breakpoint.chunk%3$d" + VCF_SUFFIX;
 	/**
 	 * Gets the idsv intermediate working directory for the given input
@@ -148,6 +149,9 @@ public class FileSystemContext {
 	}
 	public File getAssemblyChunkBam(File input, int chunk) {
 		return getFile(String.format(FORMAT_ASSEMBLY_CHUNK_SAM, getIntermediateDirectory(input), getSource(input).getName(), chunk));
+	}
+	public File getAssemblyTelemetry(File assembly) {
+		return getFile(String.format(FORMAT_ASSEMBLY_TELEMETRY, getIntermediateDirectory(assembly), getSource(assembly).getName()));
 	}
 	public File getVariantCallChunkVcf(File input, int chunk) {
 		return getFile(String.format(FORMAT_VARIANT_CALL_CHUNK_VCF, getIntermediateDirectory(input), getSource(input).getName(), chunk));

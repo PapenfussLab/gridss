@@ -24,6 +24,7 @@ import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import gridss.SoftClipsToSplitReads;
 import gridss.cmdline.CommandLineProgramHelper;
 import htsjdk.samtools.QueryInterval;
@@ -204,12 +205,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			if (getContext().getAssemblyParameters().writeFiltered) {
 				try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, filteredout)) {
 					for (BreakendDirection direction : BreakendDirection.values()) {
-						assembleChunk(writer, filteredWriter, qi, direction, assemblyNameGenerator);
+						assembleChunk(writer, filteredWriter, chunkNumber, qi, direction, assemblyNameGenerator);
 					}
 				}
 			} else {
 				for (BreakendDirection direction : BreakendDirection.values()) {
-					assembleChunk(writer, null, qi, direction, assemblyNameGenerator);
+					assembleChunk(writer, null, chunkNumber, qi, direction, assemblyNameGenerator);
 				}
 			}
 		} catch (Exception e) {
@@ -241,13 +242,15 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				(int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1);
 		return expanded;
 	}
-	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval[] intervals, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
+	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, int chunkNumber, QueryInterval[] intervals, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
 		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input);
-			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
-			while (evidenceIt.hasNext()) {
-				SAMRecord asm = evidenceIt.next();
+			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
+			AssemblyTelemetry at = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), chunkNumber, direction);
+			assembler.setTelemetry(at);
+			while (assembler.hasNext()) {
+				SAMRecord asm = assembler.next();
 				asm = transformAssembly(asm); // transform before chunk bounds checking as the position may have moved
 				if (QueryIntervalUtil.overlaps(intervals, asm.getReferenceIndex(), asm.getAlignmentStart())) {
 					// only output assemblies that start within our chunk
@@ -260,6 +263,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					}
 				}
 			}
+			at.close();
 		}
 	}
 	private void loadAssemblyEvidenceAllocation(GreedyAssemblyAllocationCache cache, File in, QueryInterval intervals[]) throws IOException {

@@ -39,6 +39,7 @@ import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.ContigStats;
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
@@ -103,6 +104,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private int contigsCalled = 0;
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
+	private AssemblyTelemetry telemetry = null;
 	public int getReferenceIndex() { return referenceIndex; }
 	private int retainWidth() {
 		return  maxContigAnchorLength() + Math.max(
@@ -213,7 +215,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					callContig(forcedContig);
 				} while (forcedContig != null);
 				if (!called.isEmpty()) {
-					log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, loadedStart, frontierStart, nextPosition()));
+					//log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, loadedStart, frontierStart, nextPosition()));
+					if (getTelemetry() != null) {
+						getTelemetry().flushContigs(referenceIndex, loadedStart, frontierStart, called.size());
+					}
 					return;
 				}
 			}
@@ -261,20 +266,21 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	}
 	private int flushReferenceNodes_debug_message_count = 0;
 	private void flushReferenceNodes() {
-		int position = nonReferenceGraphByPosition.isEmpty() ? nextPosition() : nonReferenceGraphByPosition.first().firstStart();
+		int endPosition = nonReferenceGraphByPosition.isEmpty() ? nextPosition() : nonReferenceGraphByPosition.first().firstStart();
 		// first position at which we are guaranteed to not be involved in any contig anchor sequence
-		position -= minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxContigAnchorLength();
-		if (!graphByPosition.isEmpty() && graphByPosition.first().lastEnd() < position) {
+		endPosition -= minDistanceFromNextPositionForEvidenceToBeFullyLoaded() + maxContigAnchorLength();
+		if (!graphByPosition.isEmpty() && graphByPosition.first().lastEnd() < endPosition) {
+			int startPosition = graphByPosition.first().firstStart();
 			Collection<KmerPathSubnode> nodes = new ArrayList<>();
 			for (KmerPathNode tn : graphByPosition) {
-				if (tn.lastEnd() >= position) {
+				if (tn.lastEnd() >= endPosition) {
 					break;
 				}
 				if (tn.isReference()) {
 					nodes.add(new KmerPathSubnode(tn));
 				} else {
 					if (flushReferenceNodes_debug_message_count == 0) {
-						log.debug(String.format("Sanity check failure when flushing reference nodes before %s:%d. Found non-reference node starting at %d", contigName, position, tn.firstStart()));
+						log.debug(String.format("Sanity check failure when flushing reference nodes before %s:%d. Found non-reference node starting at %d", contigName, endPosition, tn.firstStart()));
 						flushReferenceNodes_debug_message_count++;
 						break;
 					}
@@ -282,6 +288,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			}
 			Set<KmerEvidence> toRemove = evidenceTracker.untrack(nodes);
 			removeFromGraph(toRemove);
+			if (getTelemetry() != null) {
+				getTelemetry().flushReferenceNodes(referenceIndex, startPosition, endPosition, toRemove.size());
+			}
 		}
 	}
 	/**
@@ -371,9 +380,14 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 		int advanceWidth = nextPosition() - lastNextPosition;
 		float density = advanceWidth <= 0 ? 0 : count / (float)advanceWidth;
+		boolean filtered = false;
 		if (density > aes.getContext().getAssemblyParameters().positional.maximumNodeDensity) {
-			log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: excluding from assembling.", density, contigName, lastNextPosition, nextPosition()));
+			//log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: excluding from assembling.", density, contigName, lastNextPosition, nextPosition()));
 			toFlush.add(Range.closedOpen(lastNextPosition, nextPosition()));
+			filtered = true;
+		}
+		if (getTelemetry() != null) {
+			getTelemetry().loadGraph(referenceIndex, lastNextPosition, nextPosition(), count, filtered);
 		}
 	}
 	/**
@@ -794,6 +808,12 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	}
 	public void setExportTracker(PositionalDeBruijnGraphTracker exportTracker) {
 		this.exportTracker = exportTracker;
+	}
+	public AssemblyTelemetry getTelemetry() {
+		return telemetry;
+	}
+	public void setTelemetry(AssemblyTelemetry telemetry) {
+		this.telemetry = telemetry;
 	}
 	public ContigStats tracking_lastContig() {
 		return stats;
