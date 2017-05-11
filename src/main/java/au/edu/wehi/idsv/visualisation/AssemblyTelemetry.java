@@ -4,89 +4,84 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import au.edu.wehi.idsv.BreakendDirection;
-import htsjdk.samtools.util.Log;
 
 public class AssemblyTelemetry implements Closeable {
-	private static final Log log = Log.getInstance(AssemblyTelemetry.class);
-	private static HashMap<File, FileWriter> writers = new HashMap<>();
-	private static HashMap<File, Integer> counts = new HashMap<>();
-	private FileWriter writer;
+	//private static final Log log = Log.getInstance(AssemblyTelemetry.class);
+	private BlockingQueue<String> queue;
 	private File file;
-	private int chunk;
-	private BreakendDirection direction;
-	private static synchronized FileWriter init(File file) throws IOException {
-		if (counts.get(file) != null) {
-			counts.put(file, counts.get(file) + 1);
-		} else {
-			counts.put(file, 1);
-			boolean shouldWriteHeader = !file.exists();
-			FileWriter fw = new FileWriter(file, true);
-			if (shouldWriteHeader) {
-				writeHeader(fw);
-			}
-			writers.put(file, fw);
-		}
-		return writers.get(file);
-	}
-	private static synchronized void close(File file) {
-		if (counts.get(file) == null) {
-			log.debug("Sanity check failure: ", file, " has no open file handles");
-			writers.put(file, null);
-			return;
-		}
-		if (counts.get(file) <= 1) {
-			counts.remove(file);
-			try {
-				writers.remove(file).close();
-			} catch (IOException e) {
-				log.debug(e);
-			}
-		} else {
-			counts.put(file, counts.get(file) - 1);
-		}
+	public AssemblyTelemetry(File telemetryFile) {
+		this.file = telemetryFile;
+		this.queue = new ArrayBlockingQueue<>(4096);
+		Thread thread = new Thread(new WriterRunnable(), "AT:" + file.getName());
+		thread.setDaemon(true);
+		thread.start();
 	}
 	private static void writeHeader(FileWriter writer) {
 	}
-	public AssemblyTelemetry(File telemetryFile, int chunk, BreakendDirection direction) {
-		this.file = telemetryFile;
-		this.chunk = chunk;
-		this.direction = direction;
+	public AssemblyChunkTelemetry getTelemetry(int chunkNumber, BreakendDirection direction) {
+		return new AssemblyChunkTelemetry(chunkNumber, direction);
+	}
+	public class AssemblyChunkTelemetry {
+		private int chunk;
+		private BreakendDirection direction;
+		private AssemblyChunkTelemetry(int chunk, BreakendDirection direction) {
+			this.chunk = chunk;
+			this.direction = direction;
+		}
+		public void loadGraph(int referenceIndex, int start, int end, int nodes, boolean filtered) {
+			String str = String.format("%d,%s,load,%d,%d,%d,%d,%b\n", chunk, direction.toChar(), referenceIndex, start, end, nodes, filtered);
+			put(str);
+		}
+
+		public void flushContigs(int referenceIndex, int flushStart, int flushEnd, int contigsFlushed) {
+			String str = String.format("%d,%s,flushContigs,%d,%d,%d,%d,\n", chunk, direction.toChar(), referenceIndex, flushStart, flushEnd, contigsFlushed);
+			put(str);
+		}
+
+		public void flushReferenceNodes(int referenceIndex, int flushStart, int flushEnd, int readsFlushed) {
+			String str = String.format("%d,%s,flushReferenceNodes,%d,%d,%d,%d,\n", chunk, direction.toChar(), referenceIndex, flushStart, flushEnd, readsFlushed);
+			put(str);
+		}
+		public void callContig(int referenceIndex, int start, int end, int nodes, int reads, boolean repeatsSimplified) {
+		}
+	}
+	private void put(String str) {
 		try {
-			this.writer = init(telemetryFile);
-		} catch (IOException e) {
-			log.debug(e, String.format("Unable to load chunk %d assembly telemetry for %s", chunk, telemetryFile));
+			if (queue != null) {
+				queue.put(str);
+			}
+		} catch (InterruptedException e) {
+			queue = null;
+		}
+	}
+	@Override
+	public void close() {
+		try {
+			queue.put("");
+		} catch (InterruptedException e) {
 		}
 	}
 	
-	public void loadGraph(int referenceIndex, int start, int end, int nodes, boolean filtered) {
-		try {
-			writer.write(String.format("%d,%s,load,%d,%d,%d,%d,%b\n", chunk, direction.toChar(), referenceIndex, start, end, nodes, filtered));
-		} catch (IOException e) {
+	private class WriterRunnable implements Runnable {
+		public void run() {
+			boolean shouldWriteHeader = !file.exists();
+			try (FileWriter writer = new FileWriter(file, true)) {
+				if (shouldWriteHeader) {
+					writeHeader(writer);
+				}
+				while (!queue.peek().equals("")) {
+					try {
+						writer.write(queue.poll());
+					} catch (Exception e) {
+						// consume all exceptions
+					}
+				}
+			} catch (IOException e) {
+			}
 		}
-	}
-
-	public void flushContigs(int referenceIndex, int flushStart, int flushEnd, int contigsFlushed) {
-		try {
-			writer.write(String.format("%d,%s,flushContigs,%d,%d,%d,%d,\n", chunk, direction.toChar(), referenceIndex, flushStart, flushEnd, contigsFlushed));
-		} catch (IOException e) {
-		}
-	}
-
-	public void flushReferenceNodes(int referenceIndex, int flushStart, int flushEnd, int readsFlushed) {
-		try {
-			writer.write(String.format("%d,%s,flushReferenceNodes,%d,%d,%d,%d,\n", chunk, direction.toChar(), referenceIndex, flushStart, flushEnd, readsFlushed));
-		} catch (IOException e) {
-		}
-	}
-
-	public void callContig(int referenceIndex, int start, int end, int nodes, int reads, boolean repeatsSimplified) {
-	}
-
-	@Override
-	public void close() {
-		close(file);
 	}
 }

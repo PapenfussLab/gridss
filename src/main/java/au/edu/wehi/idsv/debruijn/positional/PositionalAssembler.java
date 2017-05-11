@@ -17,7 +17,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.sam.SamTags;
-import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
+import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
@@ -37,7 +37,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	private final BreakendDirection direction;
 	private NonReferenceContigAssembler currentAssembler = null;
 	private String currentContig = "";
-	private AssemblyTelemetry telemetry = null;
+	private AssemblyChunkTelemetry telemetry = null;
 	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction) {
 		this.context = context;
 		this.source = source;
@@ -171,11 +171,11 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		currentAssembler.setTelemetry(getTelemetry());
 		return currentAssembler;
 	}
-	public AssemblyTelemetry getTelemetry() {
+	public AssemblyChunkTelemetry getTelemetry() {
 		return telemetry;
 	}
-	public void setTelemetry(AssemblyTelemetry telemetry) {
-		this.telemetry = telemetry;
+	public void setTelemetry(AssemblyChunkTelemetry assemblyChunkTelemetry) {
+		this.telemetry = assemblyChunkTelemetry;
 	}
 	private static class ReferenceIndexIterator implements PeekingIterator<DirectedEvidence> {
 		private final PeekingIterator<DirectedEvidence> it;

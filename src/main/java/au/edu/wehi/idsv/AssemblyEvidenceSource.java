@@ -54,6 +54,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
 	private final IntervalBed throttled;
+	private AssemblyTelemetry telemetry;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -72,7 +73,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	public void assembleBreakends(ExecutorService threadpool) throws IOException {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
-		}		
+		}
+		telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()));
 		List<QueryInterval[]> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize, getContext().getConfig().chunkSequenceChangePenalty);
 		List<File> assembledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();
@@ -87,6 +89,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			
 		}
 		runTasks(tasks);
+		telemetry.close();
 		log.info("Breakend assembly complete.");
 		List<File> deduplicatedChunks = assembledChunk;
 		if (Iterables.any(source, ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0)) {
@@ -247,8 +250,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input);
 			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
-			AssemblyTelemetry at = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), chunkNumber, direction);
-			assembler.setTelemetry(at);
+			assembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
 			while (assembler.hasNext()) {
 				SAMRecord asm = assembler.next();
 				asm = transformAssembly(asm); // transform before chunk bounds checking as the position may have moved
@@ -263,7 +265,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					}
 				}
 			}
-			at.close();
 		}
 	}
 	private void loadAssemblyEvidenceAllocation(GreedyAssemblyAllocationCache cache, File in, QueryInterval intervals[]) throws IOException {

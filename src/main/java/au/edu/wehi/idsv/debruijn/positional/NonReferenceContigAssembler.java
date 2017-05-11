@@ -39,7 +39,7 @@ import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
-import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
+import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.ContigStats;
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
@@ -104,7 +104,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private int contigsCalled = 0;
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
-	private AssemblyTelemetry telemetry = null;
+	private AssemblyChunkTelemetry telemetry = null;
 	public int getReferenceIndex() { return referenceIndex; }
 	private int retainWidth() {
 		return  maxContigAnchorLength() + Math.max(
@@ -809,10 +809,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	public void setExportTracker(PositionalDeBruijnGraphTracker exportTracker) {
 		this.exportTracker = exportTracker;
 	}
-	public AssemblyTelemetry getTelemetry() {
+	public AssemblyChunkTelemetry getTelemetry() {
 		return telemetry;
 	}
-	public void setTelemetry(AssemblyTelemetry telemetry) {
+	public void setTelemetry(AssemblyChunkTelemetry telemetry) {
 		this.telemetry = telemetry;
 	}
 	public ContigStats tracking_lastContig() {
