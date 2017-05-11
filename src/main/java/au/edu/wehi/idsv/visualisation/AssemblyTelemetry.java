@@ -41,12 +41,12 @@ public class AssemblyTelemetry implements Closeable {
 		}
 
 		public void flushContigs(int referenceIndex, int flushStart, int flushEnd, int contigsFlushed) {
-			String str = String.format("%d,%s,flushContigs,%d,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, contigsFlushed);
+			String str = String.format("%d,%s,flushContigs,%s,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, contigsFlushed);
 			put(str);
 		}
 
 		public void flushReferenceNodes(int referenceIndex, int flushStart, int flushEnd, int readsFlushed) {
-			String str = String.format("%d,%s,flushReferenceNodes,%d,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, readsFlushed);
+			String str = String.format("%d,%s,flushReferenceNodes,%s,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, readsFlushed);
 			put(str);
 		}
 		public void callContig(int referenceIndex, int start, int end, int nodes, int reads, boolean repeatsSimplified) {
