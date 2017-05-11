@@ -3,14 +3,14 @@ package au.edu.wehi.idsv.visualisation;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import htsjdk.samtools.util.Log;
 
 public class AssemblyTelemetry implements Closeable {
-	//private static final Log log = Log.getInstance(AssemblyTelemetry.class);
+	private static final Log log = Log.getInstance(AssemblyTelemetry.class);
 	private BlockingQueue<String> queue;
 	private File file;
 	public AssemblyTelemetry(File telemetryFile) {
@@ -69,18 +69,24 @@ public class AssemblyTelemetry implements Closeable {
 	private class WriterRunnable implements Runnable {
 		public void run() {
 			boolean shouldWriteHeader = !file.exists();
-			try (FileWriter writer = new FileWriter(file, true)) {
-				if (shouldWriteHeader) {
-					writeHeader(writer);
-				}
-				while (!queue.peek().equals("")) {
-					try {
-						writer.write(queue.poll());
-					} catch (Exception e) {
-						// consume all exceptions
+			try {
+				file.getParentFile().mkdirs();
+				try (FileWriter writer = new FileWriter(file, true)) {
+					if (shouldWriteHeader) {
+						writeHeader(writer);
+					}
+					String str = queue.take();
+					while (!str.equals("")) {
+						try {
+							writer.write(str);
+						} catch (Exception e) {
+							// consume all exceptions
+						}
+						str = queue.take();
 					}
 				}
-			} catch (IOException e) {
+			} catch (Exception e) {
+				log.debug(e);
 			}
 		}
 	}
