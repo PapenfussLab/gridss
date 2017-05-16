@@ -54,7 +54,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
 	private final IntervalBed throttled;
-	private final int maxSourceFragSize;
+	private final int maxSourceFragSizeNoAssemblyFile;
+	private int maxSourceFragSizeAssemblyFile = -1;
 	private AssemblyTelemetry telemetry;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -65,7 +66,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
 		this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
-		this.maxSourceFragSize = source.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
+		this.maxSourceFragSizeNoAssemblyFile = source.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
 	}
 	/**
 	 * Perform breakend assembly 
@@ -438,11 +439,14 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
-		int maxfs = maxSourceFragSize;
 		if (getFile().exists()) {
-			maxfs = Math.max(super.getMaxConcordantFragmentSize(), maxSourceFragSize);
+			if (maxSourceFragSizeAssemblyFile == -1) {
+				maxSourceFragSizeAssemblyFile = Math.max(super.getMaxConcordantFragmentSize(), maxSourceFragSizeNoAssemblyFile);
+			}
+			return maxSourceFragSizeAssemblyFile;
+		} else {
+			return maxSourceFragSizeNoAssemblyFile;
 		}
-		return maxfs;
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
