@@ -55,6 +55,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private final List<SAMEvidenceSource> source;
 	private final IntervalBed throttled;
 	private int cachedMaxSourceFragSize = -1;
+	private int cachedMinConcordantFragmentSize = -1;
+	private int cachedMaxReadLength = -1;
+	private int cachedMaxReadMappedLength = -1;
 	private AssemblyTelemetry telemetry;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -75,7 +78,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}
-		cachedMaxSourceFragSize = -1;
+		invalidateSummaryCache();
 		if (getContext().getConfig().getVisualisation().assemblyTelemetry) {
 			telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), getContext().getDictionary());
 		}
@@ -164,7 +167,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		// contains sequential genomic coordinates. We also don't need to index as we only need assembly.sv.bam indexed
 		// SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
 		FileHelper.move(tmpout, getFile(), true);
-		cachedMaxSourceFragSize = -1; // invalidate cache
+		invalidateSummaryCache();
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(tmpout, true);
 			for (File f : assembledChunk) {
@@ -437,6 +440,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		int windowSize = super.getSortWindowSize() + getMaxConcordantFragmentSize();
 		return windowSize;
 	}
+	private void invalidateSummaryCache() {
+		cachedMaxSourceFragSize = -1;
+		cachedMinConcordantFragmentSize = -1;
+		cachedMaxReadLength = -1;
+		cachedMaxReadMappedLength = -1;
+	}
 	private int calcMaxConcordantFragmentSize() {
 		int fs = source.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
 		if (getFile().exists()) {
@@ -453,6 +462,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
+		if (cachedMinConcordantFragmentSize == -1) {
+			cachedMinConcordantFragmentSize = calcMinConcordantFragmentSize();
+		}
+		return cachedMinConcordantFragmentSize;
+	}
+	public int calcMinConcordantFragmentSize() {
 		int minSourceFragSize = source.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
 		if (getFile().exists()) {
 			minSourceFragSize = Math.min(super.getMinConcordantFragmentSize(), minSourceFragSize);
@@ -465,6 +480,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 */
 	@Override
 	public int getMaxReadLength() {
+		if (cachedMaxReadLength == -1) {
+			cachedMaxReadLength = calcMaxReadLength();
+		}
+		return cachedMaxReadLength;
+	}
+	public int calcMaxReadLength() {
 		int maxReadLength = source.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
 		if (getFile().exists()) {
 			maxReadLength = Math.max(super.getMaxReadLength(), maxReadLength);
@@ -473,6 +494,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	}
 	@Override
 	public int getMaxReadMappedLength() {
+		if (cachedMaxReadMappedLength == -1) {
+			cachedMaxReadMappedLength = calcMaxReadMappedLength();
+		}
+		return cachedMaxReadMappedLength;
+	}
+	public int calcMaxReadMappedLength() {
 		int maxMappedReadLength = source.stream().mapToInt(s -> s.getMaxReadMappedLength()).max().orElse(0);
 		if (getFile().exists()) {
 			maxMappedReadLength = Math.max(super.getMaxReadMappedLength(), maxMappedReadLength);
