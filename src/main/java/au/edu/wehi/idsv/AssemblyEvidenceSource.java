@@ -54,8 +54,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
 	private final IntervalBed throttled;
-	private final int maxSourceFragSizeNoAssemblyFile;
-	private int maxSourceFragSizeAssemblyFile = -1;
+	private int cachedMaxSourceFragSize = -1;
 	private AssemblyTelemetry telemetry;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -66,7 +65,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
 		this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
-		this.maxSourceFragSizeNoAssemblyFile = source.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
 	}
 	/**
 	 * Perform breakend assembly 
@@ -77,6 +75,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}
+		cachedMaxSourceFragSize = -1;
 		if (getContext().getConfig().getVisualisation().assemblyTelemetry) {
 			telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), getContext().getDictionary());
 		}
@@ -165,6 +164,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		// contains sequential genomic coordinates. We also don't need to index as we only need assembly.sv.bam indexed
 		// SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
 		FileHelper.move(tmpout, getFile(), true);
+		cachedMaxSourceFragSize = -1; // invalidate cache
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(tmpout, true);
 			for (File f : assembledChunk) {
@@ -437,16 +437,19 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		int windowSize = super.getSortWindowSize() + getMaxConcordantFragmentSize();
 		return windowSize;
 	}
+	private int calcMaxConcordantFragmentSize() {
+		int fs = source.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
+		if (getFile().exists()) {
+			fs = Math.max(super.getMaxConcordantFragmentSize(), fs);
+		}
+		return fs;
+	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
-		if (getFile().exists()) {
-			if (maxSourceFragSizeAssemblyFile == -1) {
-				maxSourceFragSizeAssemblyFile = Math.max(super.getMaxConcordantFragmentSize(), maxSourceFragSizeNoAssemblyFile);
-			}
-			return maxSourceFragSizeAssemblyFile;
-		} else {
-			return maxSourceFragSizeNoAssemblyFile;
+		if (cachedMaxSourceFragSize == -1) {
+			cachedMaxSourceFragSize = calcMaxConcordantFragmentSize();
 		}
+		return cachedMaxSourceFragSize;
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
