@@ -76,7 +76,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}
-		telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), getContext().getDictionary());
+		if (getContext().getConfig().getVisualisation().assemblyTelemetry) {
+			telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), getContext().getDictionary());
+		}
 		List<QueryInterval[]> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize, getContext().getConfig().chunkSequenceChangePenalty);
 		List<File> assembledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();
@@ -91,7 +93,10 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			
 		}
 		runTasks(tasks);
-		telemetry.close();
+		if (telemetry != null) {
+			telemetry.close();
+			telemetry = null;
+		}
 		log.info("Breakend assembly complete.");
 		List<File> deduplicatedChunks = assembledChunk;
 		if (Iterables.any(source, ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0)) {

@@ -14,9 +14,11 @@ public class VisualisationConfiguration {
 		assemblyGraphFullSize = config.getBoolean("assemblyGraphFullSize");
 		assemblyProgress = config.getBoolean("assemblyProgress");
 		assemblyContigMemoization = config.getBoolean("assemblyContigMemoization");
+		assemblyTelemetry = config.getBoolean("assemblyTelemetry");
 		evidenceAllocation = config.getBoolean("evidenceAllocation");
 		buffers = config.getBoolean("buffers");
 		bufferTrackingItervalInSeconds = config.getFloat("bufferTrackingItervalInSeconds");
+		
 		if (!directory.exists() && (timeouts || assemblyGraph || assemblyGraphFullSize || assemblyProgress || evidenceAllocation || buffers)) {
 			directory.mkdir();
 		}
@@ -39,4 +41,5 @@ public class VisualisationConfiguration {
 	public boolean evidenceAllocation;
 	public boolean buffers;
 	public float bufferTrackingItervalInSeconds;
+	public boolean assemblyTelemetry;
 }
