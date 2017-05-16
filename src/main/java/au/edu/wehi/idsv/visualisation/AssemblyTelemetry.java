@@ -35,18 +35,18 @@ public class AssemblyTelemetry implements Closeable {
 			this.chunk = chunk;
 			this.direction = direction;
 		}
-		public void loadGraph(int referenceIndex, int start, int end, int nodes, boolean filtered) {
-			String str = String.format("%d,%s,load,%s,%d,%d,%d,%b\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), start, end, nodes, filtered);
+		public void loadGraph(int referenceIndex, int start, int end, int nodes, boolean filtered, long nsSinceLast) {
+			String str = String.format("%d,%s,load,%s,%d,%d,%d,%b,%d\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), start, end, nodes, filtered, nsSinceLast / 1000);
 			put(str);
 		}
 
-		public void flushContigs(int referenceIndex, int flushStart, int flushEnd, int contigsFlushed) {
-			String str = String.format("%d,%s,flushContigs,%s,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, contigsFlushed);
+		public void flushContigs(int referenceIndex, int flushStart, int flushEnd, int contigsFlushed, long nsSinceLast) {
+			String str = String.format("%d,%s,flushContigs,%s,%d,%d,%d,,%d\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, contigsFlushed, nsSinceLast / 1000);
 			put(str);
 		}
 
-		public void flushReferenceNodes(int referenceIndex, int flushStart, int flushEnd, int readsFlushed) {
-			String str = String.format("%d,%s,flushReferenceNodes,%s,%d,%d,%d,\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, readsFlushed);
+		public void flushReferenceNodes(int referenceIndex, int flushStart, int flushEnd, int readsFlushed, long nsSinceLast) {
+			String str = String.format("%d,%s,flushReferenceNodes,%s,%d,%d,%d,,%d\n", chunk, direction.toChar(), dict.getSequence(referenceIndex).getSequenceName(), flushStart, flushEnd, readsFlushed, nsSinceLast / 1000);
 			put(str);
 		}
 		public void callContig(int referenceIndex, int start, int end, int nodes, int reads, boolean repeatsSimplified) {

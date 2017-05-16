@@ -64,6 +64,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * Debugging tracker to ensure memoization export files have unique names
 	 */
 	private static final AtomicInteger pathExportCount = new AtomicInteger();
+	private long telemetryLastflushContigs = System.nanoTime();
+	private long telemetryLastflushReferenceNodes = System.nanoTime();
+	private long telemetryLastloadGraphs = System.nanoTime();
 	/**
 	 * Since reference kmers are not scored, calculating 
 	 * highest weighted results in a preference for paths
@@ -217,7 +220,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				if (!called.isEmpty()) {
 					//log.debug(String.format("Forced %d contigs in interval %s:%d-%d(%d)", called.size(), contigName, loadedStart, frontierStart, nextPosition()));
 					if (getTelemetry() != null) {
-						getTelemetry().flushContigs(referenceIndex, loadedStart, frontierStart, called.size());
+						long currentTime = System.nanoTime();
+						getTelemetry().flushContigs(referenceIndex, loadedStart, frontierStart, called.size(), currentTime - telemetryLastflushContigs);
+						telemetryLastflushContigs = currentTime;
 					}
 					return;
 				}
@@ -289,7 +294,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			Set<KmerEvidence> toRemove = evidenceTracker.untrack(nodes);
 			removeFromGraph(toRemove);
 			if (getTelemetry() != null) {
-				getTelemetry().flushReferenceNodes(referenceIndex, startPosition, endPosition, toRemove.size());
+				long currentTime = System.nanoTime();
+				getTelemetry().flushReferenceNodes(referenceIndex, startPosition, endPosition, toRemove.size(), currentTime - telemetryLastflushReferenceNodes);
+				telemetryLastflushReferenceNodes = currentTime;
 			}
 		}
 	}
@@ -387,7 +394,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			filtered = true;
 		}
 		if (getTelemetry() != null) {
-			getTelemetry().loadGraph(referenceIndex, lastNextPosition, nextPosition(), count, filtered);
+			long currentTime = System.nanoTime();
+			getTelemetry().loadGraph(referenceIndex, lastNextPosition, nextPosition(), count, filtered, currentTime - telemetryLastloadGraphs);
+			telemetryLastloadGraphs = currentTime;
 		}
 	}
 	/**
