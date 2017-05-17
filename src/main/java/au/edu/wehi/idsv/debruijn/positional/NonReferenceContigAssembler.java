@@ -599,6 +599,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		for (KmerEvidence e : evidence) {
 			updateRemovalList(toRemove, e);
 		}
+		if (toRemove.size() > aes.getContext().getAssemblyParameters().positional.forceFullMemoizationRecalculationAt * graphByPosition.size()) {
+			bestContigCaller = null;
+		}
 		if (bestContigCaller != null) {
 			// removes all KmerPathNodes that need mutation from the memoization 
 			bestContigCaller.remove(toRemove.keySet());
@@ -624,6 +627,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			bestContigCaller.bestContig(nextPosition());
 			// so we can check that our removal was correct
 			verifyMemoization();
+		}
+		if (bestContigCaller == null) {
+			initialiseBestCaller();
 		}
 	}
 	/**

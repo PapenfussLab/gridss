@@ -11,6 +11,7 @@ public class PositionalAssemblyConfiguration {
 		flushWidthMultiple = config.getFloat("flushWidthMultiple");
 		maximumNodeDensity = config.getFloat("maximumNodeDensity");
 		trimSelfIntersectingReads = config.getBoolean("trimSelfIntersectingReads");
+		forceFullMemoizationRecalculationAt = config.getFloat("forceFullMemoizationRecalculationAt");
 		if (retainWidthMultiple < 1) {
 			throw new IllegalArgumentException("retainWidthMultiple must be at least 1");
 		}
@@ -53,4 +54,9 @@ public class PositionalAssemblyConfiguration {
 	 * Removing such nodes reduces the misassembly rate and improves runtime performance.
 	 */
 	public boolean trimSelfIntersectingReads;
+	/**
+	 * Force full rememoization recalculation whenever more that this portion of the graph is to
+	 * be removed.
+	 */
+	public float forceFullMemoizationRecalculationAt;
 }

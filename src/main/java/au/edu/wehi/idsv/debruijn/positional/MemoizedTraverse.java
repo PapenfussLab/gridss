@@ -81,7 +81,7 @@ public class MemoizedTraverse {
 		frontier.removeAll(childPaths);
 		onFrontierRemove(childPaths);
 		
-		// Individually remove any descendent of the children
+		// Individually remove any descendant of the children
 		// (bulk KmerPathNode-based removal code requires better data structure)
 		int frontierResetCount = 0;
 		Stack<TraversalNode> callStack = new Stack<>();
