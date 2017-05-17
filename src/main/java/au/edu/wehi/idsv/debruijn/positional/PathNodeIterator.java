@@ -40,7 +40,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	 */
 	private final Long2ObjectOpenHashMap<List<KmerNode>> edgeLookup = new Long2ObjectOpenHashMap<List<KmerNode>>();
 	/**
-	 * Need a seperate lookup for path node start kmers. Since we can start and end on the same kmer
+	 * Need a separate lookup for path node start kmers. Since we can start and end on the same kmer
 	 * which causes duplicate next/prev paths for those nodes
 	 */
 	private final Long2ObjectOpenHashMap<List<KmerPathNode>> firstKmerEdgeLookup = new Long2ObjectOpenHashMap<List<KmerPathNode>>();

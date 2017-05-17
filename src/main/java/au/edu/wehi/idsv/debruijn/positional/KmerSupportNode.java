@@ -16,6 +16,7 @@ public class KmerSupportNode implements KmerNode {
 	public int weight() { return evidence.weight(offset); }
 	public boolean isReference() { return evidence.isAnchored(offset); }
 	public KmerEvidence evidence() { return evidence; }
+	public int offset() { return offset; }
 	public KmerSupportNode(KmerEvidence evidence, int offset) {
 		this.evidence = evidence;
 		this.offset = offset;

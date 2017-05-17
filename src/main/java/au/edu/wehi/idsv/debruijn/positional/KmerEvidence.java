@@ -1,11 +1,13 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.tuple.Pair;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
@@ -18,9 +20,11 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 /**
  * Minimal evidence for incorporating soft clip and
@@ -38,7 +42,7 @@ public class KmerEvidence extends PackedKmerList {
 	private final int refContigLength;
 	private final int firstAnchorKmer;
 	private final int lastAnchorKmer;
-	private final BitSet ambiguous;
+	private BitSet ambiguous;
 	private final int start;
 	private final int end;
 	private final float score;
@@ -97,10 +101,74 @@ public class KmerEvidence extends PackedKmerList {
 		this.refContigLength = getReferenceContigLength(evidence);
 		this.start = start;
 		this.end = end;
-		this.ambiguous = ambiguousKmers(k, bases);
 		this.firstAnchorKmer = firstAnchoredKmer;
 		this.lastAnchorKmer = lastAnchoredKmer;
 		this.score = evidenceQual;
+		this.ambiguous = ambiguousKmers(k, bases);
+		if (start != end && evidence.getEvidenceSource().getContext().getConfig().getAssembly().positional.trimSelfIntersectingReads) {
+			this.ambiguous = flagSelfIntersectingKmersAsAmbiguous(this.ambiguous);
+		}
+		
+	}
+	/**
+	 * Treats kmers that self-intersect with earlier nodes as ambiguous.
+	 * This reduces the explosion nodes that occur in a positional de Bruijn graph
+	 * in the presence of low complexity sequence.  
+	 */
+	private BitSet flagSelfIntersectingKmersAsAmbiguous(BitSet toFlag) {
+		// populate lookups
+		Long2ObjectOpenHashMap<List<KmerSupportNode>> lookup = new Long2ObjectOpenHashMap<List<KmerSupportNode>>();
+		KmerSupportNode[] nodes = new KmerSupportNode[length()];
+		for (int i = 0; i < length(); i++) {
+			KmerSupportNode n = node(i);
+			nodes[i] = n;
+			if (n != null) {
+				long kmer = n.firstKmer();
+				List<KmerSupportNode> kmerList = lookup.get(kmer);
+				if (kmerList == null) {
+					kmerList = new ArrayList<>(2);
+					lookup.put(kmer, kmerList);
+				}
+				kmerList.add(n);
+			}
+		}
+		// calculcate adjacencies
+		List<Pair<Integer, Integer>> unexpectedAdjacencies = new ArrayList<>();
+		for (int i = 0; i < length(); i++) {
+			KmerSupportNode n = nodes[i];
+			if (n != null) {
+				long currentkmer = n.firstKmer();
+				for (long kmer : KmerEncodingHelper.nextStates(k, currentkmer)) {
+					List<KmerSupportNode> kmerList = lookup.get(kmer);
+					if (kmerList != null) {
+						for (KmerSupportNode adj : kmerList) {
+							// we only need to track unexpected adjacencies
+							// we already know that it is adjacent to its successor
+							if (adj.offset() != n.offset() + 1) {  
+								if (IntervalUtil.overlapsClosed(n.firstStart() + 1, n.firstEnd() + 1, adj.firstStart(), adj.firstEnd())) {
+									unexpectedAdjacencies.add(Pair.of(n.offset(), adj.offset()));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		// flag the nodes furtherest into the breakpoint as this
+		// favours breakpoint truncation over split assemblies
+		if (unexpectedAdjacencies.size() > 0 && toFlag == null) {
+			toFlag = new BitSet(length());  
+		}
+		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
+			for (Pair<Integer, Integer> pair : unexpectedAdjacencies) {
+				toFlag.set(Math.max(pair.getLeft(), pair.getRight()));
+			}
+		} else {
+			for (Pair<Integer, Integer> pair : unexpectedAdjacencies) {
+				toFlag.set(Math.min(pair.getLeft(), pair.getRight()));
+			}
+		}
+		return toFlag;
 	}
 	public static KmerEvidence create(int k, NonReferenceReadPair pair) {
 		SAMRecord local = pair.getLocalledMappedRead();

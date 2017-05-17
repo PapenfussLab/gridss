@@ -358,6 +358,7 @@ public class TestHelper {
 		config.getSoftClip().minAverageQual = 0;
 		config.minAnchorShannonEntropy = 0;
 		config.getAssembly().minReads = 2;
+		config.getAssembly().positional.trimSelfIntersectingReads = false;
 		config.getVariantCalling().breakendMargin = 3;
 		config.getVisualisation().buffers = false;
 		return config;

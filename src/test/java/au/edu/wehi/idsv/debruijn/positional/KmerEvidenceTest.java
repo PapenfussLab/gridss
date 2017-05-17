@@ -309,4 +309,32 @@ public class KmerEvidenceTest extends TestHelper {
 	public void does_not_handling_XNX_unanchored_clips() {
 		KmerEvidence.create(2, SCE(BWD, Read(0, 1, "10S1X10N1X")));
 	}
+	@Test
+	public void flagSelfIntersectingKmersAsAmbiguous_should_flag_kmers_furtherest_from_forward_anchor() {
+		MockSAMEvidenceSource ses = SES(0, 100);
+		ses.getContext().getAssemblyParameters().positional.trimSelfIntersectingReads = true;
+		KmerEvidence e = KmerEvidence.create(4, NRRP(ses, withSequence("AATTAATTAATT", DP(0, 1, "12M", true, 1, 1, "12M", true))));
+		// AATT 0 
+		//  ATTA 1
+		//   TTAA 2
+		//    TAAT 3 - loops back to AATT - trim from here onward
+		for (int i = 0; i < 3; i++) {
+			assertNotNull(e.node(i));
+		}
+		for (int i = 3; i < e.length(); i++) {
+			assertNull(e.node(i));
+		}
+	}
+	@Test
+	public void flagSelfIntersectingKmersAsAmbiguous_should_flag_kmers_furtherest_from_backward_anchor() {
+		MockSAMEvidenceSource ses = SES(0, 100);
+		ses.getContext().getAssemblyParameters().positional.trimSelfIntersectingReads = true;
+		KmerEvidence e = KmerEvidence.create(4, NRRP(ses, withSequence("AATTAATTAATT", DP(0, 1, "12M", false, 1, 1, "12M", true))));
+		for (int i = e.length(); i > e.length() - 4; i--) {
+			assertNotNull(e.node(i));
+		}
+		for (int i = e.length() - 4; i >=0; i--) {
+			assertNull(e.node(i));
+		}
+	}
 }

@@ -3,7 +3,7 @@ package au.edu.wehi.idsv.debruijn;
 
 public class PackedKmerList extends PackedSequence {
 	private final byte[] weights;
-	private final byte k;
+	protected final byte k;
 	public PackedKmerList(int k, byte[] bases, byte[] qual, boolean reverse, boolean complement) {
 		super(bases, reverse, complement);
 		int kmers = bases.length - k + 1;

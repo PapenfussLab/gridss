@@ -10,6 +10,7 @@ public class PositionalAssemblyConfiguration {
 		retainWidthMultiple = config.getFloat("retainWidthMultiple");
 		flushWidthMultiple = config.getFloat("flushWidthMultiple");
 		maximumNodeDensity = config.getFloat("maximumNodeDensity");
+		trimSelfIntersectingReads = config.getBoolean("trimSelfIntersectingReads");
 		if (retainWidthMultiple < 1) {
 			throw new IllegalArgumentException("retainWidthMultiple must be at least 1");
 		}
@@ -47,4 +48,9 @@ public class PositionalAssemblyConfiguration {
 	 */
 	public float maximumNodeDensity;
 	public int maxPathLengthInBases(int readLength) { return (int)(maxPathLengthMultiple * readLength); }
+	/**
+	 * Removes self-intersecting kmers from reads prior to inclusion in the positional de Bruijn graph.
+	 * Removing such nodes reduces the misassembly rate and improves runtime performance.
+	 */
+	public boolean trimSelfIntersectingReads;
 }
