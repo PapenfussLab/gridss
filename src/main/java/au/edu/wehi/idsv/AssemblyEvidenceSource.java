@@ -261,7 +261,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input);
 			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
-			assembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
+			if (telemetry != null) {
+				assembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
+			}
 			while (assembler.hasNext()) {
 				SAMRecord asm = assembler.next();
 				asm = transformAssembly(asm); // transform before chunk bounds checking as the position may have moved
