@@ -3,35 +3,25 @@ package au.edu.wehi.idsv;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
 
-public class EvidenceIDHelper {
+public class StringEvidenceIdentifierGenerator implements EvidenceIdentifierGenerator {
 	// can't use /1 and /2 since bwa strips it from the read name during alignment
 	// so realignment will fail
-	private static final char SEPERATOR = '#'; 
-	/**
-	 * Gets a string that is unique for the given alignment of the read.
-	 * Note: the identifier is only unique with respect to the alignment of the segment/read
-	 * not the entire template/read pair.
-	 * @param record record
-	 * @return alignment-unique identifier for the given SAMRecord
-	 */
-	public static String getAlignmentUniqueName(SAMRecord record) {
+	private static final char SEPERATOR = '#';
+	@Override
+	public String getSegmentUniqueName(SAMRecord record) {
+		return buildSegmentUniqueName(record).toString();
+	}
+	@Override
+	public String getAlignmentUniqueName(SAMRecord record) {
 		return buildAlignmentUniqueName(record).toString();
 	}
-	/**
-	 * Extracts an identifier unique for the given read alignment
-	 * @param evidenceId evidenceID of evidence from read with the given alignment
-	 * @return read alignment unique identifier
-	 */
-	public static String extractAlignmentUniqueName(String evidenceId) {
+	@Override
+	public String extractAlignmentUniqueName(String evidenceId) {
 		// strip off final seperator
 		return evidenceId.substring(0, evidenceId.lastIndexOf(SEPERATOR));
 	}
-	/**
-	 * Extracts an identifier unique for the given read
-	 * @param evidenceId evidenceID of evidence from read
-	 * @return read alignment unique identifier
-	 */
-	public static String extractSegmentUniqueName(String evidenceId) {
+	@Override
+	public String extractSegmentUniqueName(String evidenceId) {
 		return stripSeperators(evidenceId, 5);
 	}
 	private static String stripSeperators(String evidenceId, int seperatorsToStrip) {
@@ -55,7 +45,7 @@ public class EvidenceIDHelper {
 	 * @param evidenceId evidenceID of evidence from read
 	 * @return read alignment unique identifier
 	 */
-	public static String extractReadName(String evidenceId) {
+	public String extractReadName(String evidenceId) {
 		return stripSeperators(evidenceId, 6);
 	}
 	private static StringBuilder buildSegmentUniqueName(SAMRecord record) {
@@ -83,7 +73,8 @@ public class EvidenceIDHelper {
 		}
 		return sb;
 	}
-	public static String getEvidenceID(NonReferenceReadPair e) {
+	@Override
+	public String getEvidenceID(NonReferenceReadPair e) {
 		StringBuilder sb = buildAlignmentUniqueName(e.getLocalledMappedRead());
 		sb.append(SEPERATOR);
 		sb.append("rp");
@@ -94,21 +85,24 @@ public class EvidenceIDHelper {
 		}
 		return sb.toString();
 	}
-	public static String getEvidenceID(SoftClipEvidence e) {
+	@Override
+	public String getEvidenceID(SoftClipEvidence e) {
 		StringBuilder sb = buildAlignmentUniqueName(e.getSAMRecord());
 		sb.append(SEPERATOR);
 		sb.append("sc");
 		sb.append(e.getBreakendSummary().direction.toChar());
 		return sb.toString();
 	}
-	public static String getEvidenceID(SplitReadEvidence e) {
+	@Override
+	public String getEvidenceID(SplitReadEvidence e) {
 		StringBuilder sb = buildAlignmentUniqueName(e.getSAMRecord());
 		sb.append(SEPERATOR);
 		sb.append("sr");
 		sb.append(e.getBreakendSummary().direction.toChar());
 		return sb.toString();
 	}
-	public static String getEvidenceID(IndelEvidence e) {
+	@Override
+	public String getEvidenceID(IndelEvidence e) {
 		StringBuilder sb = buildAlignmentUniqueName(e.getSAMRecord());
 		sb.append(SEPERATOR);
 		sb.append(e.getIndelCigarOffset());

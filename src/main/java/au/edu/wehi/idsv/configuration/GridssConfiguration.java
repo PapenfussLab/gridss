@@ -83,6 +83,10 @@ public class GridssConfiguration {
 	 * Use the read group sample name as the category label
 	 */
 	public boolean useReadGroupSampleNameCategoryLabel;
+	/**
+	 * Use a hashed evidenceID to save space and prevent read names exceeding the 254 character limit imposed by BAM 
+	 */
+	public boolean hashEvidenceID;
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
@@ -128,6 +132,7 @@ public class GridssConfiguration {
 		multimappingUniqueVariantAllocation = config.getBoolean("multimappingUniqueVariantAllocation");
 		multimapping = config.getBoolean("multimapping");
 		useReadGroupSampleNameCategoryLabel = config.getBoolean("useReadGroupSampleNameCategoryLabel");
+		hashEvidenceID = config.getBoolean("hashEvidenceID");
 	}
 	public static Configuration LoadConfiguration(File configuration) throws ConfigurationException {
 		CompositeConfiguration config = new CompositeConfiguration();

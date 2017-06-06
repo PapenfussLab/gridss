@@ -39,6 +39,13 @@ public class SplitReadRealigner {
 	private FastqWriterFactory fastqWriterFactory = new FastqWriterFactory();
 	private boolean processSecondaryAlignments = false;
 	private FastqAligner aligner;
+	/**
+	 * Alignment-unique read identifier must be hashed to ensure that the read names
+	 * written to the fastq files do not exceed the BAM limit of 254 even when the
+	 * input reads names are at this limit.
+	 * See https://github.com/PapenfussLab/gridss/issues/82
+	 */
+	private EvidenceIdentifierGenerator eidgen = new HashedEvidenceIdentifierGenerator(); 
 	private List<File> tmpFiles = new ArrayList<>();
 	
 	public SplitReadRealigner(GenomicProcessingContext pc, FastqAligner aligner) {
@@ -170,7 +177,7 @@ public class SplitReadRealigner {
 		while (it.hasNext()) {
 			salist.clear();
 			SAMRecord r = it.next();
-			String name = EvidenceIDHelper.getAlignmentUniqueName(r);
+			String name = eidgen.getAlignmentUniqueName(r);
 			for (PeekingIterator<SAMRecord> sit : alignments) {
 				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
 					SAMRecord supp = sit.next();
@@ -197,7 +204,7 @@ public class SplitReadRealigner {
 		try (SamReader reader = readerFactory.open(input)) {
 			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
 				try (FastqWriter writer = fastqWriterFactory.newWriter(fq)) {
-					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(bufferedIt, isRecursive, minSoftClipLength, minSoftClipQuality, !isRecursive && isProcessSecondaryAlignments());
+					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(bufferedIt, isRecursive, minSoftClipLength, minSoftClipQuality, !isRecursive && isProcessSecondaryAlignments(), eidgen);
 					while (fastqit.hasNext()) {
 						writer.write(fastqit.next());
 						recordsWritten++;

@@ -32,6 +32,7 @@ public class ProcessingContext extends GenomicProcessingContext {
 	private final List<Header> metricsHeaders;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	private final List<String> categories = Lists.newArrayList();
+	private EvidenceIdentifierGenerator eidgen;
 	private BufferTracker bufferTracker = null;
 	
 	public ProcessingContext(
@@ -44,6 +45,7 @@ public class ProcessingContext extends GenomicProcessingContext {
 			bufferTracker = new BufferTracker(new File(config.getVisualisation().directory, "gridss.buffers.csv"), config.getVisualisation().bufferTrackingItervalInSeconds);
 			bufferTracker.start();
 		}
+		this.eidgen = config.hashEvidenceID ? new HashedEvidenceIdentifierGenerator() : new StringEvidenceIdentifierGenerator();
 	}
 	/**
 	 * Creates a new metrics file with appropriate headers for this context 
@@ -113,5 +115,11 @@ public class ProcessingContext extends GenomicProcessingContext {
 		vcfHeader.setSequenceDictionary(getReference().getSequenceDictionary());
 		vcfWriter.writeHeader(vcfHeader);
 		return vcfWriter;
+	}
+	public EvidenceIdentifierGenerator getEvidenceIDGenerator() {
+		return eidgen;
+	}
+	public void setEvidenceIDGenerator(EvidenceIdentifierGenerator gen) {
+		this.eidgen = gen;
 	}
 }

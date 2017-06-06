@@ -40,7 +40,7 @@ public class SplitReadIdentificationHelper {
 	 * from a previous call to getSplitReadRealignments() 
 	 * @return bases requiring alignment to identify split reads
 	 */
-	public static List<FastqRecord> getSplitReadRealignments(SAMRecord r, boolean recordIsPartialAlignment) {
+	public static List<FastqRecord> getSplitReadRealignments(SAMRecord r, boolean recordIsPartialAlignment, EvidenceIdentifierGenerator eidgen) {
 		int startClipLength = SAMRecordUtil.getStartSoftClipLength(r);
 		int endClipLength = SAMRecordUtil.getEndSoftClipLength(r);
 		if (startClipLength + endClipLength == 0 || r.getReadUnmappedFlag()) {
@@ -53,7 +53,7 @@ public class SplitReadIdentificationHelper {
 			name = getOriginatingAlignmentUniqueName(r);
 		} else {
 			offset = 0;
-			name = EvidenceIDHelper.getAlignmentUniqueName(r);
+			name = eidgen.getAlignmentUniqueName(r);
 		}
 		List<FastqRecord> list = new ArrayList<>(2);
 		if (startClipLength > 0) {

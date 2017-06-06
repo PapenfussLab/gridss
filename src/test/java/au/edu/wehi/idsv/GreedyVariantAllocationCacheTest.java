@@ -153,7 +153,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 	@Test
 	public void should_allow_multiple_split_reads_given_same_alignment() throws IOException {
 		SAMRecord mid = withReadName("read", Read(0, 100, "10S5M8S"))[0];
-		List<FastqRecord> ralist = SplitReadIdentificationHelper.getSplitReadRealignments(mid, false);
+		List<FastqRecord> ralist = SplitReadIdentificationHelper.getSplitReadRealignments(mid, false, getContext().getEvidenceIDGenerator());
 		SAMRecord pre = Read(0, 50, "10M");
 		SAMRecord post = Read(0, 150, "8M");
 		pre.setReadName(ralist.get(0).getReadHeader());

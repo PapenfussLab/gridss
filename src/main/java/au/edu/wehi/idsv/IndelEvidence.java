@@ -161,7 +161,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	
 	@Override
 	protected String getUncachedEvidenceID() {
-		return EvidenceIDHelper.getEvidenceID(this);
+		return source.getContext().getEvidenceIDGenerator().getEvidenceID(this);
 	}
 	/**
 	 * Identifies which indel in the read this evidence corresponds to.

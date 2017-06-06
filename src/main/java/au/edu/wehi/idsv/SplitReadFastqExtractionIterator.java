@@ -21,17 +21,20 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 	private final int minSoftClipLength;
 	private final float minClipQuality;
 	private final boolean processSecondaryAlignments;
+	private final EvidenceIdentifierGenerator eidgen;
 	public SplitReadFastqExtractionIterator(
 			Iterator<SAMRecord> it,
 			boolean isSplit,
 			int minSoftClipLength,
 			float minClipQuality,
-			boolean processSecondaryAlignments) {
+			boolean processSecondaryAlignments,
+			EvidenceIdentifierGenerator eidgen) {
 		this.it = it;
 		this.isSplit = isSplit;
 		this.minSoftClipLength = minSoftClipLength;
 		this.minClipQuality = minClipQuality;
 		this.processSecondaryAlignments = processSecondaryAlignments;
+		this.eidgen = eidgen;
 	}
 
 	private void ensureBuffer() {
@@ -46,7 +49,7 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 			if (r.getNotPrimaryAlignmentFlag() && !processSecondaryAlignments) {
 				continue;
 			}
-			for (FastqRecord fqr : SplitReadIdentificationHelper.getSplitReadRealignments(r, isSplit)) {
+			for (FastqRecord fqr : SplitReadIdentificationHelper.getSplitReadRealignments(r, isSplit, eidgen)) {
 				if (fqr.length() < minSoftClipLength) continue;
 				if (averageBaseQuality(fqr) < minClipQuality) continue;
 				buffer.add(fqr);

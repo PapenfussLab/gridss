@@ -171,7 +171,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	}
 	@Override
 	protected String getUncachedEvidenceID() {
-		return EvidenceIDHelper.getEvidenceID(this);
+		return source.getContext().getEvidenceIDGenerator().getEvidenceID(this);
 	}
 	@Override
 	public String getRemoteEvidenceID() {
@@ -183,7 +183,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		remote.setCigar(remoteAlignment.cigar);
 		remote.setAttribute(SAMTag.SA.name(), new ChimericAlignment(this.getSAMRecord()).toString());
 		SplitReadEvidence remoteEvidence = SplitReadEvidence.create(source, remote).get(0);
-		return EvidenceIDHelper.getEvidenceID(remoteEvidence);
+		return source.getContext().getEvidenceIDGenerator().getEvidenceID(remoteEvidence);
 	}
 	@Override
 	public boolean involvesPrimaryReadAlignment() {

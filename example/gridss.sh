@@ -7,7 +7,7 @@ BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
 REFERENCE=~/reference_genomes/human/hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.3.0-jar-with-dependencies.jar
+GRIDSS_JAR=~/bin/gridss-1.4.1-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
@@ -20,7 +20,7 @@ fi
 if [[ ! -f "$REFERENCE" ]] ; then
 	echo "Missing reference genome $REFERENCE. Update the REFERENCE variable in the shell script to your hg19 location"
 	echo "For the example file chr12.1527326.DEL1024.bam, ReorderSam can be used to match to your version of hg19. In the case of this example, only \"chr12\" is required to exist, and difference in alternate contigs can be ignored (using ALLOW_INCOMPLETE_DICT_CONCORDANCE=true)."
-	echo "For real data, please ensure that all BAM files are aligned to the same reference, and the reference supplied to GRIDSS matched that used for alignment."
+	echo "For real data, please ensure that all BAM files are aligned to the same reference, and the reference supplied to GRIDSS matches that used for alignment."
 	exit 1
 fi
 if [[ ! -f "$REFERENCE.bwt" ]] ; then
@@ -46,7 +46,6 @@ java -ea -Xmx31g \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
-	-Dsamjdk.compression_level=1 \
 	-cp $GRIDSS_JAR gridss.CallVariants \
 	TMP_DIR=. \
 	WORKING_DIR=. \

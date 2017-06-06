@@ -139,7 +139,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r2", Read(2, 2, "15M15S")),
 				withReadName("r3", Read(3, 3, "15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
-		new SplitReadRealigner(pc, new StubFastqAligner(pc)
+		new SplitReadRealigner(pc, new StubFastqAligner(pc, pc.getEvidenceIDGenerator())
 				.align(inputRecords.get(0), 3, 10, false, "15M")
 				.align(inputRecords.get(1), 2, 10, false, "15M")
 				.align(inputRecords.get(2), 1, 10, false, "15M"))
@@ -166,7 +166,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r2", Read(2, 2, "15S15M15S")),
 				withReadName("r3", Read(3, 3, "15S15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
-		new SplitReadRealigner(getCommandlineContext(), new StubFastqAligner(getCommandlineContext())
+		new SplitReadRealigner(getCommandlineContext(), new StubFastqAligner(getCommandlineContext(), getCommandlineContext().getEvidenceIDGenerator())
 				.align(inputRecords.get(0), FWD, 3, 10, false, "15M")
 				.align(inputRecords.get(0), BWD, 2, 15, false, "15M")
 				.align(inputRecords.get(1), FWD, 2, 10, false, "15M")
@@ -188,7 +188,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(
 				withReadName("r2", Read(1, 2, "15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
-		new SplitReadRealigner(getCommandlineContext(), new StubFastqAligner(getCommandlineContext())
+		new SplitReadRealigner(getCommandlineContext(), new StubFastqAligner(getCommandlineContext(), getCommandlineContext().getEvidenceIDGenerator())
 				.align(inputRecords.get(0), FWD, 1, 10, false, "15M"))
 			.createSupplementaryAlignments(input, input); 
 		
@@ -458,7 +458,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
 		Files.copy(new File("src/test/resources/indelerror.bam"), input);
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
-		List<DirectedEvidence> reads = Lists.newArrayList(source.iterator());
+		Lists.newArrayList(source.iterator());
 	}
 	@Test
 	public void should_filter_reads_aligning_outside_contig_bounds() {

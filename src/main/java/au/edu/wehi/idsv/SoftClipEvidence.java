@@ -63,7 +63,7 @@ public class SoftClipEvidence extends SingleReadEvidence {
 	}
 	@Override
 	protected String getUncachedEvidenceID() {
-		return EvidenceIDHelper.getEvidenceID(this);
+		return source.getContext().getEvidenceIDGenerator().getEvidenceID(this);
 	}
 	@Override
 	public boolean isReference() {

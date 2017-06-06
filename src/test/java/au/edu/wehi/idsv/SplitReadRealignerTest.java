@@ -103,4 +103,17 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals(2, fq.size());
 		assertNotEquals(fq.get(0).getReadHeader(), fq.get(1).getReadHeader());
 	}
+	@Test
+	public void fastq_keys_should_not_exceed_254_character_BAM_limit() throws IOException {
+		SAMRecord r = Read(0, 1, "1S1M1S");
+		r.setReadName(S("R", 254));
+		createBAM(input, SortOrder.coordinate, r);
+		File fq1 = getContext().getFileSystemContext().getRealignmentFastq(input, 0);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext(), aligner);
+		srr.createSupplementaryAlignmentFastq(input, fq1, false);
+		List<FastqRecord> fq = getFastqRecords(fq1);
+		for (FastqRecord fqr : fq) {
+			assertTrue(fqr.getReadHeader().length() <= 254);
+		}
+	}
 }

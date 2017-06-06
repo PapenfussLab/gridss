@@ -257,7 +257,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	@Override
 	public String getEvidenceID() {
 		if (evidenceID == null) {
-			evidenceID = EvidenceIDHelper.getEvidenceID(this);
+			evidenceID = source.getContext().getEvidenceIDGenerator().getEvidenceID(this);
 		}
 		return evidenceID;
 	}
