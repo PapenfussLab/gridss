@@ -15,21 +15,41 @@ public class IntervalAccumulatorTest {
 		Assert.assertArrayEquals(new int[] { 2, 2, 1}, IntStream.of(ia.getBinStarts().toIntArray()).map(i -> ia.getBinSize(i)).toArray());
 	}
 	@Test
-	public void should_pro_rata_across_adjacent_bins() {
+	public void bins_should_span_interval() {
+		IntervalAccumulator ia = new IntervalAccumulator(1, 3, 1);
+		ia.finaliseBins();
+		int[] binStarts = ia.getBinStarts().toIntArray();
+		Assert.assertArrayEquals(new int[] { 1, 2, 3}, binStarts);
+		Assert.assertArrayEquals(new int[] { 1, 1, 1}, IntStream.of(ia.getBinStarts().toIntArray()).map(i -> ia.getBinSize(i)).toArray());
+	}
+	@Test
+	public void should_average_across_bin() {
+		IntervalAccumulator ia = new IntervalAccumulator(1, 5, 10);
+		ia.finaliseBins();
+		ia.add(1, 2, 1);
+		Assert.assertEquals(0.4, ia.getMeanValue(1), 0);
+	}
+	@Test
+	public void should_average_across_adjacent_bins() {
 		IntervalAccumulator ia = new IntervalAccumulator(1, 5, 2);
 		ia.finaliseBins();
 		ia.add(2, 3, 1);
-		Assert.assertEquals(0.5, ia.getValue(1), 0);
-		Assert.assertEquals(0.5, ia.getValue(3), 0);
+		Assert.assertEquals(0.5, ia.getMeanValue(1), 0);
+		Assert.assertEquals(0.5, ia.getMeanValue(3), 0);
 	}
 	@Test
-	public void should_pro_rata_across_multiple_bins() {
+	public void should_average_across_multiple_bins() {
 		IntervalAccumulator ia = new IntervalAccumulator(1, 5, 2);
 		ia.finaliseBins();
+		// 12345
+		// 11223 bin
+		//  **** coverage
+		//  **
 		ia.add(2, 5, 1);
-		Assert.assertEquals(0.25, ia.getValue(1), 0);
-		Assert.assertEquals(0.5, ia.getValue(3), 0);
-		Assert.assertEquals(0.25, ia.getValue(5), 0);
+		ia.add(2, 3, 1);
+		Assert.assertEquals(1, ia.getMeanValue(1), 0);
+		Assert.assertEquals(1.5, ia.getMeanValue(3), 0);
+		Assert.assertEquals(1, ia.getMeanValue(5), 0);
 	}
 	@Test
 	public void should_split_bins_at_position() {

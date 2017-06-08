@@ -1,8 +1,10 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.bed.BedWriter;
 import au.edu.wehi.idsv.util.IntervalAccumulator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -57,16 +59,17 @@ public class IntervalCoverageAccumulator {
 			break;
 		}
 	}
-	public void writeToBed(File bed) {
-		for (int i = 0; i < coverage.length; i++) {
-			String refname = dictionary.getSequence(i).getSequenceName();
-			ObjectBidirectionalIterator<Entry> it = coverage[i].iterator();
-			while (it.hasNext()) {
-				Entry e = it.next();
-				int start = e.getIntKey();
-				int end = start + coverage[i].getBinSize(start) - 1;
-				double value = e.getDoubleValue();
-				writeBed(refname, start, end, value);
+	public void writeToBed(File bed) throws IOException {
+		try (BedWriter writer = new BedWriter(dictionary, bed)) {
+			for (int i = 0; i < coverage.length; i++) {
+				ObjectBidirectionalIterator<Entry> it = coverage[i].iterator();
+				while (it.hasNext()) {
+					Entry e = it.next();
+					int start = e.getIntKey();
+					int binWidth = coverage[i].getBinSize(start);
+					int end = start + binWidth - 1;
+					writer.write(i, start, end, coverage[i].getMeanValue(start));
+				}
 			}
 		}
 	}

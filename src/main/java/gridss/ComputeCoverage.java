@@ -1,6 +1,7 @@
 package gridss;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 
 import com.google.common.collect.Iterators;
@@ -11,6 +12,7 @@ import au.edu.wehi.idsv.GcBiasAdjuster;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IntervalCoverageAccumulator;
+import au.edu.wehi.idsv.PrecomputedGcBiasAdjuster;
 import au.edu.wehi.idsv.ReadGcSummary;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import gridss.cmdline.GcSinglePassSamProgram;
@@ -19,24 +21,21 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
-import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-        usage = "Computes reference genome coverage for a given BAM", usageShort = "Compute coverage"
+        usage = "Computes reference genome coverage for a given BAM", usageShort = "Computes coverage"
 )
 public class ComputeCoverage extends GcSinglePassSamProgram {
-	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
-    public File INPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Coverage BED")
-    public File OUTPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="GC-adjusted coverage BED", optional=true)
-    public File GC_OUTPUT;
+	private static final Log log = Log.getInstance(ComputeCoverage.class);
+	@Option(shortName="GCO", doc="GC-adjusted coverage BED", optional=true)
+    public File OUTPUT_GC;
 	@Option(shortName="B", doc="Bin size used to output coverage", optional=true)
-    public int BIN_SIZE = 100;
+    public int BIN_SIZE = 1000;
 	@Option(shortName="V", doc="GRIDSS VCF containing breakpoint to split bins at", optional=true)
 	public File VCF;
 	@Option(shortName="GC", doc="GC adjustment file. This file must contain two tab-seperated columns without any header lines."
@@ -53,8 +52,25 @@ public class ComputeCoverage extends GcSinglePassSamProgram {
 	private IntervalCoverageAccumulator ica_raw;
 	private GcBiasAdjuster gcAdjust;
 	@Override
+	protected String[] customCommandLineValidation() {
+		if (OUTPUT_GC != null) {
+			if (GC_ADJUSTMENT == null) {
+				return new String[] { "GC_ADJUSTMENT file is required if GC_OUTPUT specified" };
+			}
+		}
+		return super.customCommandLineValidation();
+	}
+	@Override
 	protected void setup(SAMFileHeader header, File samFile) {
-		ica_gc = initIntervalCoverageAccumulator();
+		ica_gc = null;
+		if (GC_ADJUSTMENT != null) {
+			try {
+				gcAdjust = new PrecomputedGcBiasAdjuster(GC_ADJUSTMENT);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			ica_gc = initIntervalCoverageAccumulator();
+		}
 		ica_raw = initIntervalCoverageAccumulator();
 	}
 	private IntervalCoverageAccumulator initIntervalCoverageAccumulator() {
@@ -75,13 +91,29 @@ public class ComputeCoverage extends GcSinglePassSamProgram {
 	@Override
 	protected void acceptRead(SAMRecord record, ReferenceSequence refSeq) {
 		ReadGcSummary gc = new ReadGcSummary(record, refSeq, UNPAIRED_FRAGMENT_SIZE, getReadPairConcordanceCalculator());
-		ica_gc.add(record, gc, gcAdjust.adjustmentMultiplier((int)gc.gcPercentage));
+		if (ica_gc != null) {
+			ica_gc.add(record, gc, gcAdjust.adjustmentMultiplier((int)gc.gcPercentage));
+		}
 		ica_raw.add(record, gc, 1.0);
 	}
 	@Override
 	protected void finish() {
 		// Write BED files
-		ica_raw.writeToBed(OUTPUT);
-		ica_gc.writeToBed(GC_OUTPUT);
+		try {
+			ica_raw.writeToBed(OUTPUT);
+		} catch (IOException e) {
+			String msg = String.format("Unable to write to %s", OUTPUT);
+			log.error(e, msg);
+			throw new RuntimeException(msg, e);
+		}
+		if (ica_gc != null) {
+			try {
+				ica_gc.writeToBed(OUTPUT_GC);
+			} catch (IOException e) {
+				String msg = String.format("Unable to write to %s", OUTPUT_GC);
+				log.error(e, msg);
+				throw new RuntimeException(msg, e);
+			}
+		}
 	}
 }

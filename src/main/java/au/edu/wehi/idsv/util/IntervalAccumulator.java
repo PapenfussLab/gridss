@@ -54,32 +54,50 @@ public class IntervalAccumulator {
 		while (it.hasNext()) {
 			int start = it.nextInt();
 			binWidth.put(lastStart, start - lastStart);
+			lastStart = start;
 		}
+		binWidth.put(lastStart, lastBinEnd - lastStart + 1);
 	}
+	/**
+	 * Add the given value at all positions in the given interval
+	 * @param start start position (inclusive)
+	 * @param end end position (inclusive)
+	 * @param value value to add
+	 */
 	public void add(int start, int end, double value) {
 		if (binWidth == null) {
 			throw new IllegalStateException("Must be called after finaliseBins()");
 		}
-		double perBaseValue = value / (end - start + 1);
+		if (end < start) {
+			throw new IllegalArgumentException("end cannot be before start");
+		}
+		//double perBaseValue = value / (end - start + 1);
 		start = Math.max(start, firstBinStart);
 		end = Math.min(end, lastBinEnd);
 		int startBinStartKey = bins.headMap(start + 1).lastIntKey();
-		int endBinStartKey = bins.headMap(end).lastIntKey();
+		int endBinStartKey = bins.headMap(end + 1).lastIntKey();
 		Int2DoubleSortedMap toUpdate = bins.subMap(startBinStartKey, endBinStartKey + 1);
 		ObjectBidirectionalIterator<Int2DoubleMap.Entry> it = toUpdate.int2DoubleEntrySet().iterator();
 		int widthLeft = end - start + 1;
 		while (widthLeft > 0) {
+			assert(it.hasNext());
 			Int2DoubleMap.Entry entry = it.next();
 			int entryStartPosition = entry.getIntKey();
 			int overlap = IntervalUtil.overlapsWidthClosed(start, end, entryStartPosition, entryStartPosition + getBinSize(entryStartPosition) - 1);
-			entry.setValue(entry.getDoubleValue() + overlap * perBaseValue);
+			entry.setValue(entry.getDoubleValue() + overlap * value);
+			widthLeft -= overlap;
 		}
 	}
 	public int getBinSize(int binStart) {
 		return binWidth.get(binStart);
 	}
-	public double getValue(int binStart) {
-		return bins.get(binStart);
+	/**
+	 * Gets the average value for the given bin
+	 * @param binStart
+	 * @return
+	 */
+	public double getMeanValue(int binStart) {
+		return bins.get(binStart) / getBinSize(binStart);
 	}
 	public IntSortedSet getBinStarts() {
 		return bins.keySet();

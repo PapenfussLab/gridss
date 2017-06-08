@@ -36,10 +36,23 @@ public class BedWriter implements Closeable {
 	 * @throws IOException
 	 */
 	public void write(int referenceIndex, int start, int end, double score) throws IOException {
+		write(referenceIndex, start, end, ".", score);
+	}
+	/**
+	 * Writes the given information to a BED file 
+	 * @param referenceIndex reference index
+	 * @param start 1-based inclusive start position of interval 
+	 * @param end 1-based inclusive end position of interval
+	 * @param name name of feature
+	 * @param score score
+	 * @throws IOException
+	 */
+	public void write(int referenceIndex, int start, int end, String name, double score) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		sb.append(dict.getSequence(referenceIndex).getSequenceName());
 		sb.append('\t'); sb.append(Integer.toString(start - 1));
 		sb.append('\t'); sb.append(Integer.toString(end));
+		sb.append('\t'); sb.append(name);
 		sb.append('\t'); sb.append(Double.toString(score));
 		sb.append('\n');
 		os.write(sb.toString().getBytes(StandardCharsets.UTF_8));
