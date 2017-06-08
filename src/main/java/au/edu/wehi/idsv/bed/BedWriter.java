@@ -39,7 +39,7 @@ public class BedWriter implements Closeable {
 		StringBuilder sb = new StringBuilder();
 		sb.append(dict.getSequence(referenceIndex).getSequenceName());
 		sb.append('\t'); sb.append(Integer.toString(start - 1));
-		sb.append('\t'); sb.append(Integer.toString(end - 1));
+		sb.append('\t'); sb.append(Integer.toString(end));
 		sb.append('\t'); sb.append(Double.toString(score));
 		sb.append('\n');
 		os.write(sb.toString().getBytes(StandardCharsets.UTF_8));
