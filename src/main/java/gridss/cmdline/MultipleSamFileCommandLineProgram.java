@@ -280,10 +280,10 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     		return new String[] { "INPUT_NAME_SORTED must omitted or specified for every INPUT." };
     	}
     	if (INPUT_LABEL != null && INPUT_LABEL.size() > 0 && INPUT_LABEL.size() != INPUT.size()) {
-    		return new String[] { "INPUT_CATEGORY must omitted or specified for every INPUT." };
+    		return new String[] { "INPUT_LABEL must omitted or specified for every INPUT." };
     	}
     	if (INPUT_LABEL != null && INPUT_LABEL.stream().anyMatch(x -> x == null || x.equals(""))) {
-    		return new String[] { "INPUT_CATEGORY must omitted or specified for every INPUT." };
+    		return new String[] { "INPUT_LABEL must omitted or specified for every INPUT." };
     	}
     	return null;
 	}
