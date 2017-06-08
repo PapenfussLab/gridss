@@ -28,13 +28,13 @@
   <classpathentry kind="var" path="M2_REPO/org/codehaus/woodstox/stax2-api/3.1.1/stax2-api-3.1.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/it/unimi/dsi/fastutil/7.2.1/fastutil-7.2.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3.jar" sourcepath="M2_REPO/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3-sources.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/github/samtools/htsjdk/2.10.0/htsjdk-2.10.0.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/github/samtools/htsjdk/2.9.1/htsjdk-2.9.1.jar" sourcepath="M2_REPO/com/github/samtools/htsjdk/2.9.1/htsjdk-2.9.1-sources.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-jexl/2.1.1/commons-jexl-2.1.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/xerial/snappy/snappy-java/1.0.3-rc3/snappy-java-1.0.3-rc3.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-compress/1.4.1/commons-compress-1.4.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/tukaani/xz/1.5/xz-1.5.jar"/>
   <classpathentry kind="var" path="M2_REPO/gov/nih/nlm/ncbi/ngs-java/1.2.4/ngs-java-1.2.4.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/github/broadinstitute/picard/2.9.2/picard-2.9.2.jar"/>
+  <classpathentry kind="var" path="M2_REPO/com/github/broadinstitute/picard/2.9.1/picard-2.9.1.jar"/>
   <classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-map/3.13.0/chronicle-map-3.13.0.jar"/>
   <classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-core/1.7.15/chronicle-core-1.7.15.jar"/>
   <classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-api/1.7.14/slf4j-api-1.7.14.jar"/>

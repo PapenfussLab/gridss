@@ -990,8 +990,9 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		@Override
 		public boolean equals(T a, T b) {
-			return a.firstEnd() == b.firstEnd()
-					&& a.firstKmer() == b.firstKmer();
+			return (a == b) || (a != null && b != null &&
+					a.firstEnd() == b.firstEnd()
+					&& a.firstKmer() == b.firstKmer());
 		}
 	}
 	public static class HashByFirstKmerStartPositionKmer<T extends KmerPathNode> implements Hash.Strategy<T> {
@@ -1003,8 +1004,9 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		@Override
 		public boolean equals(T a, T b) {
-			return a.firstStart() == b.firstStart()
-					&& a.firstKmer() == b.firstKmer();
+			return (a == b) || (a != null && b != null &&
+					a.firstStart() == b.firstStart()
+					&& a.firstKmer() == b.firstKmer());
 		}
 	}
 	public boolean sanityCheck(int k, int maxSupportWidth, int maxPathLength) {

@@ -124,8 +124,9 @@ public class KmerNodeUtil {
 		}
 		@Override
 		public boolean equals(T a, T b) {
-			return a.lastEnd() == b.lastEnd()
-					&& a.lastKmer() == b.lastKmer();
+			return (a == b) || (a != null && b != null &&
+					a.lastEnd() == b.lastEnd()
+					&& a.lastKmer() == b.lastKmer());
 		}
 	}
 	public static class HashByLastStartKmer<T extends KmerNode> implements Hash.Strategy<T> {
@@ -137,8 +138,9 @@ public class KmerNodeUtil {
 		}
 		@Override
 		public boolean equals(T a, T b) {
-			return a.lastStart() == b.lastStart()
-					&& a.lastKmer() == b.lastKmer();
+			return (a == b) || (a != null && b != null &&
+					a.lastStart() == b.lastStart()
+					&& a.lastKmer() == b.lastKmer());
 		}
 	}
 }

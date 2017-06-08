@@ -61,18 +61,18 @@ public class VcfBreakendToBedpeTest extends IntermediateFilesTest {
 		assertEquals("random", result.get(1).get(3));
 	}
 	@Test
-	public void should_write_zero_based_coordinates() throws IOException {
+	public void should_write_zero_based_half_open_coordinates() throws IOException {
 		create();
 		getCmd().doWork();
 		List<List<String>> result = parse();
 		assertEquals(1 - 1, Integer.parseInt(result.get(0).get(1)));
-		assertEquals(2 - 1, Integer.parseInt(result.get(0).get(2)));
+		assertEquals(2, Integer.parseInt(result.get(0).get(2)));
 		assertEquals(4 - 1, Integer.parseInt(result.get(0).get(4)));
-		assertEquals(5 - 1, Integer.parseInt(result.get(0).get(5)));
+		assertEquals(5, Integer.parseInt(result.get(0).get(5)));
 		assertEquals(10 - 1, Integer.parseInt(result.get(1).get(1)));
-		assertEquals(20 - 1, Integer.parseInt(result.get(1).get(2)));
+		assertEquals(20, Integer.parseInt(result.get(1).get(2)));
 		assertEquals(40 - 1, Integer.parseInt(result.get(1).get(4)));
-		assertEquals(50 - 1, Integer.parseInt(result.get(1).get(5)));
+		assertEquals(50, Integer.parseInt(result.get(1).get(5)));
 	}
 	@Test
 	public void should_write_qual_score() throws IOException {
