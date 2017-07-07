@@ -40,8 +40,12 @@ public class BreakpointHomology {
 	 * @return breakpoint homology length
 	 */
 	public static BreakpointHomology calculate(ReferenceLookup lookup, BreakpointSummary bs, String insertedSequence, int maxBreakendLength, int margin) {
-		if (bs.start - bs.end != 0 || bs.start2 - bs.end2 != 0) throw new IllegalArgumentException("Breakpoint position must be exact");
-		if (insertedSequence == null) insertedSequence = "";
+		if (bs.start - bs.end != 0 || bs.start2 - bs.end2 != 0) {
+			throw new IllegalArgumentException("Breakpoint position must be exact");
+		}
+		if (insertedSequence == null) {
+			insertedSequence = "";
+		}
 		int seqLength = maxBreakendLength;
 		int refLength = maxBreakendLength + insertedSequence.length() + margin;
 		if (bs.getEventSize() != null) {

@@ -18,7 +18,7 @@ public class BedpeWriterTest extends IntermediateFilesTest {
 	@Test
 	public void should_write_headers() throws IOException {
 		BedpeWriter w = new BedpeWriter(getSequenceDictionary(), output);
-		w.writeHeader();
+		w.writeHeader(false, true);
 		w.close();
 		List<String> out = Files.readAllLines(output.toPath(), StandardCharsets.US_ASCII);
 		
@@ -29,7 +29,7 @@ public class BedpeWriterTest extends IntermediateFilesTest {
 	@Test
 	public void should_write_one_line_per_record() throws IOException {
 		BedpeWriter w = new BedpeWriter(getSequenceDictionary(), output);
-		w.writeHeader();
+		w.writeHeader(false, true);
 		w.write(BP("id", new BreakpointSummary(0, FWD, 2, 1, 2, 3, BWD, 5, 4, 5)));
 		w.close();
 		List<String> out = Files.readAllLines(output.toPath(), StandardCharsets.US_ASCII);

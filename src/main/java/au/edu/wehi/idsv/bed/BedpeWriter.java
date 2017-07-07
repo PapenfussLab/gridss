@@ -7,6 +7,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
@@ -21,8 +24,10 @@ import htsjdk.samtools.SAMSequenceDictionary;
  *
  */
 public class BedpeWriter implements Closeable {
-	private OutputStream os;
+	private boolean includeGridssVcfFields;
+	private boolean includeUntemplatedSequence;
 	private SAMSequenceDictionary dict;
+	private OutputStream os;
 	public BedpeWriter(SAMSequenceDictionary dictionary, File file) throws IOException {
 		this(dictionary, new FileOutputStream(file));
 	}
@@ -30,9 +35,10 @@ public class BedpeWriter implements Closeable {
 		this.dict = dictionary;
 		this.os = new BufferedOutputStream(stream);
 	}
-	public void writeHeader() throws IOException {
-		os.write((
-				"#" +
+	public void writeHeader(boolean includeUntemplatedSequence, boolean includeGridssVcfFields) throws IOException {
+		this.includeUntemplatedSequence = includeUntemplatedSequence;
+		this.includeGridssVcfFields = includeGridssVcfFields;
+		String str = "#" +
 				"chrom1" + "\t" +
 				"start1" + "\t" +
 				"end1" + "\t" +
@@ -42,24 +48,52 @@ public class BedpeWriter implements Closeable {
 				"name" + "\t" +
 				"score" + "\t" +
 				"strand1" + "\t" +
-				"strand2" + "\t" +
-				VcfSvConstants.HOMOLOGY_SEQUENCE_KEY + "\t" +
-				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute() + "\t" +
-				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute() + "\t" +
-				VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute() + "\t" +
-				//VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute() + "\t" +
-				VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT.attribute() + "\t" +
-				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute() + "\t" +
-				VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute() + "\t" +
-				VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute() + "\t" +
-				//VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE.attribute() + "\t" +
-				VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL.attribute() + "\t" +
-				VcfInfoAttributes.REFERENCE_READ_COUNT.attribute() + "\t" +
-				VcfInfoAttributes.REFERENCE_READPAIR_COUNT.attribute() +
-				"\n").getBytes(StandardCharsets.UTF_8));
+				"strand2";
+		if (includeUntemplatedSequence) {
+			str += "\t" + "untemplatedSequence";
+		}
+		if (includeGridssVcfFields) {
+			str += "\t" + VcfSvConstants.HOMOLOGY_SEQUENCE_KEY + "\t" +
+					VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute() + "\t" +
+					VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute() + "\t" +
+					VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute() + "\t" +
+					VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT.attribute() + "\t" +
+					VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute() + "\t" +
+					VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute() + "\t" +
+					VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute() + "\t" +
+					VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL.attribute() + "\t" +
+					VcfInfoAttributes.REFERENCE_READ_COUNT.attribute() + "\t" +
+					VcfInfoAttributes.REFERENCE_READPAIR_COUNT.attribute();
+		}
+		str += "\n";
+		os.write(str.getBytes(StandardCharsets.UTF_8));
 	}
 	public void write(VariantContextDirectedBreakpoint variant) throws IOException {
 		BreakpointSummary bp = variant.getBreakendSummary();
+		List<String> args = new ArrayList<>();
+		if (includeUntemplatedSequence) {
+			args.add(variant.getHomologySequence());
+		}
+		if (includeGridssVcfFields) {
+			args.addAll(Arrays.asList(new String[] {
+				Integer.toString(variant.getBreakpointEvidenceCountLocalAssembly()),
+				Integer.toString(variant.getBreakpointEvidenceCountRemoteAssembly()),
+				Integer.toString(variant.getBreakpointEvidenceCountSoftClip()),
+				Integer.toString(variant.getBreakpointEvidenceCountReadPair()),
+				Double.toString(variant.getBreakpointEvidenceQualLocalAssembly()),
+				Double.toString(variant.getBreakpointEvidenceQualRemoteAssembly()),
+				Double.toString(variant.getBreakpointEvidenceQualSoftClip()),
+				Double.toString(variant.getBreakpointEvidenceQualReadPair()),
+				Integer.toString(variant.getReferenceReadCount()),
+				Integer.toString(variant.getReferenceReadPairCount())
+			}));
+		}
+		write(bp,
+				variant.getID(),
+				variant.getPhredScaledQual(),
+				args.toArray(new String[0]));
+	}
+	public void write(BreakpointSummary bp, String id, double score, String... fields) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		sb.append(dict.getSequence(bp.referenceIndex).getSequenceName());
 		sb.append('\t'); sb.append(Integer.toString(bp.start - 1));
@@ -67,26 +101,13 @@ public class BedpeWriter implements Closeable {
 		sb.append('\t'); sb.append(dict.getSequence(bp.referenceIndex2).getSequenceName());
 		sb.append('\t'); sb.append(Integer.toString(bp.start2 - 1));
 		sb.append('\t'); sb.append(Integer.toString(bp.end2));
-		sb.append('\t'); sb.append(variant.getID());
-		sb.append('\t'); sb.append(variant.getPhredScaledQual());
+		sb.append('\t'); sb.append(id);
+		sb.append('\t'); sb.append(score);
 		sb.append('\t'); sb.append(bp.direction == BreakendDirection.Forward ? '+' : '-');
 		sb.append('\t'); sb.append(bp.direction2 == BreakendDirection.Forward ? '+' : '-');
-		//header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_LENGTH);
-		// header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_SEQUENCE);
-		sb.append('\t'); sb.append(variant.getHomologySequence());
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountLocalAssembly()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteAssembly()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountSoftClip()));
-		//sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteSoftClip()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountReadPair()));
-
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualLocalAssembly()));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteAssembly()));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualSoftClip()));
-		//sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteSoftClip()));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualReadPair()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadCount()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadPairCount()));
+		for (String s : fields) {
+			sb.append('\t'); sb.append(s);
+		}
 		sb.append('\n');
 		os.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 	}

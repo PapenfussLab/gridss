@@ -72,8 +72,8 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 			writer = new BedpeWriter(pc.getDictionary(), working);
 			writerFiltered = new BedpeWriter(pc.getDictionary(), workingFiltered);
 			if (includeHeader) {
-				writer.writeHeader();
-				writerFiltered.writeHeader();
+				writer.writeHeader(true, true);
+				writerFiltered.writeHeader(true, true);
 			}
 			while (it.hasNext()) {
 				IdsvVariantContext variant = IdsvVariantContext.create(pc, null, it.next());
