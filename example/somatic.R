@@ -19,10 +19,10 @@ loh_vcf <- vcf[geno(vcf)$QUAL[,"tumour.bam"] == 0,]
 gr <- breakpointRanges(somatic_vcf)
 bedpe <- data.frame(
     chrom1=seqnames(gr),
-    start1=start(gr),
+    start1=start(gr) - 1,
     end1=end(gr),
     chrom1=seqnames(partner(gr)),
-    start1=start(partner(gr)),
+    start1=start(partner(gr) - 1),
     end1=end(partner(gr)),
     name=names(gr),
     score=gr$QUAL,
