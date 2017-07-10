@@ -116,4 +116,7 @@ public class ComputeCoverage extends GcSinglePassSamProgram {
 			}
 		}
 	}
+	public static void main(String[] argv) {
+        System.exit(new ComputeCoverage().instanceMain(argv));
+    }
 }

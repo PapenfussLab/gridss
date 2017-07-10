@@ -77,4 +77,7 @@ public class AnnotateInexactHomologyBedpe extends ReferenceCommandLineProgram {
 			}
 		}
 	}
+	public static void main(String[] argv) {
+        System.exit(new AnnotateInexactHomologyBedpe().instanceMain(argv));
+    }
 }
