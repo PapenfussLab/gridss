@@ -24,9 +24,9 @@ public class AnnotateInexactHomologyBedpeTest extends IntermediateFilesTest {
 				"M=0",
 				"D=5",
 		}));
-		List<BedpeRecord> result = Lists.newArrayList(new BedpeIterator(output, SMALL_FA));
+		List<BedpeRecord> result = Lists.newArrayList(new BedpeIterator(output, SMALL_FA.getSequenceDictionary()));
 		Assert.assertEquals(3, result.size());
-		Assert.assertEquals(10, result.get(1).score, 0);
+		Assert.assertEquals("10", result.get(1).score);
 	}
 	@Test
 	public void should_include_untemplated_sequence_in_homology_calculation() throws FileNotFoundException {
@@ -39,8 +39,8 @@ public class AnnotateInexactHomologyBedpeTest extends IntermediateFilesTest {
 				"D=10",
 				"UC=11",
 		}));
-		List<BedpeRecord> result = Lists.newArrayList(new BedpeIterator(output, SMALL_FA));
+		List<BedpeRecord> result = Lists.newArrayList(new BedpeIterator(output, SMALL_FA.getSequenceDictionary()));
 		Assert.assertEquals(3, result.size()); 
-		Assert.assertEquals(5, result.get(2).score, 0);
+		Assert.assertEquals("5", result.get(2).score);
 	}
 }

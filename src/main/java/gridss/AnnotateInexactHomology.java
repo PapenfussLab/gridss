@@ -17,4 +17,7 @@ public class AnnotateInexactHomology extends VcfTransformCommandLineProgram {
 				calls, call -> BreakpointHomology.annotate(getContext(), call), WORKER_THREADS + 1, threadpool);
 		return new AutoClosingIterator<>(it, calls);
 	}
+	public static void main(String[] argv) {
+        System.exit(new AnnotateInexactHomology().instanceMain(argv));
+    }
 }

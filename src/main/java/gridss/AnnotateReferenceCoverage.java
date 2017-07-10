@@ -24,4 +24,7 @@ public class AnnotateReferenceCoverage extends VcfTransformCommandLineProgram {
 		int windowSize = SAMEvidenceSource.maximumWindowSize(context, sources, asm);
 		return new SequentialCoverageAnnotator<VariantContextDirectedBreakpoint>(context, sources, calls, 2 * windowSize + WINDOW_SIZE_SAFETY_MARGIN, threadpool);
 	}
+	public static void main(String[] argv) {
+        System.exit(new AnnotateReferenceCoverage().instanceMain(argv));
+    }
 }

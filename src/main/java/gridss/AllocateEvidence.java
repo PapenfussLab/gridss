@@ -45,9 +45,6 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		GREEDY,
 	}
 	private GreedyVariantAllocationCache cache;
-	public static void main(String[] argv) {
-        System.exit(new AllocateEvidence().instanceMain(argv));
-    }
 	public CloseableIterator<DirectedEvidence> getEvidenceIterator() {
 		CloseableIterator<DirectedEvidence> evidenceIt;
 		boolean assemblyOnly = getContext().getVariantCallingParameters().callOnlyAssemblies;
@@ -137,4 +134,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		bp = (VariantContextDirectedBreakpoint)vc.applyConfidenceFilter(getContext(), bp);
 		return bp;
 	}
+	public static void main(String[] argv) {
+        System.exit(new AllocateEvidence().instanceMain(argv));
+    }
 }

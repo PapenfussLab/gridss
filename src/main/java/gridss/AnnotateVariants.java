@@ -66,4 +66,7 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		calls = ihom.iterator(calls, threadpool);
 		return calls;
 	}
+	public static void main(String[] argv) {
+        System.exit(new AnnotateVariants().instanceMain(argv));
+    }
 }

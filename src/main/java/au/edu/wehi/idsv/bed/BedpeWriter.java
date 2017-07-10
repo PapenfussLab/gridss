@@ -90,10 +90,10 @@ public class BedpeWriter implements Closeable {
 		}
 		write(bp,
 				variant.getID(),
-				variant.getPhredScaledQual(),
+				Double.toString(variant.getPhredScaledQual()),
 				args.toArray(new String[0]));
 	}
-	public void write(BreakpointSummary bp, String id, double score, String... fields) throws IOException {
+	public void write(BreakpointSummary bp, String id, String score, String... fields) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		sb.append(dict.getSequence(bp.referenceIndex).getSequenceName());
 		sb.append('\t'); sb.append(Integer.toString(bp.start - 1));

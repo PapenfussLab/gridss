@@ -13,7 +13,7 @@ import org.apache.commons.io.LineIterator;
 
 import com.google.common.collect.Iterators;
 
-import au.edu.wehi.idsv.picard.ReferenceLookup;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Very basic parser that iterates over a BEDPE file
@@ -23,15 +23,15 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 public class BedpeIterator implements Iterator<BedpeRecord>, Closeable {
 	private BufferedReader br;
 	private Iterator<BedpeRecord> it;
-	public BedpeIterator(File file, ReferenceLookup reference) throws FileNotFoundException {
-		this(new FileReader(file), reference);
+	public BedpeIterator(File file, SAMSequenceDictionary dict) throws FileNotFoundException {
+		this(new FileReader(file), dict);
 	}
-	public BedpeIterator(Reader reader, ReferenceLookup reference) {
+	public BedpeIterator(Reader reader, SAMSequenceDictionary dict) {
 		br = new BufferedReader(reader);
 		Iterator<String> rawit = new LineIterator(br);
 		// strip headers and empty lines
 		Iterator<String> filteredit = Iterators.filter(rawit, line -> line.length() > 0 && line.charAt(0) != '#');
-		it = Iterators.transform(filteredit, str -> new BedpeRecord(reference, str));
+		it = Iterators.transform(filteredit, str -> new BedpeRecord(dict, str));
 	}
 	@Override
 	public boolean hasNext() {

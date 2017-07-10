@@ -3,17 +3,19 @@ package gridss;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import com.google.common.collect.Iterators;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.BreakpointHomology;
 import au.edu.wehi.idsv.bed.BedpeIterator;
 import au.edu.wehi.idsv.bed.BedpeRecord;
 import au.edu.wehi.idsv.bed.BedpeWriter;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.ParallelTransformIterator;
 import gridss.cmdline.ReferenceCommandLineProgram;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import picard.cmdline.Option;
@@ -31,12 +33,19 @@ public class AnnotateInexactHomologyBedpe extends ReferenceCommandLineProgram {
 	public int MARGIN = 32;
 	@Option(shortName="UC", doc="1-based index of column containing untemplated sequenced based included in the breakpoint.", optional=true)
 	public Integer UNTEMPLATED_SEQUENCE_COLUMN = null;
+	@Option(doc="Number of worker threads to spawn. Defaults to number of cores available."
+			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
+    		shortName="THREADS")
+    public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
 	protected int doWork() {
 		ensureArgs();
 		try {
 			log.info("Loading aligner");
 			AlignerFactory.create();
-			annotate();
+			log.info(String.format("Using %d worker threads", WORKER_THREADS));
+    		ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
+			annotate(threadpool);
+			threadpool.shutdown();
 		} catch (Exception e) {
 			log.error(e);
 			return 1;
@@ -60,19 +69,23 @@ public class AnnotateInexactHomologyBedpe extends ReferenceCommandLineProgram {
 			bh = BreakpointHomology.calculate(getReference(), record.bp.getNominalPosition(), untemplated, DISTANCE, MARGIN);
 		}
 	}
-	private void annotate() throws FileNotFoundException, IOException {
-		try (BedpeIterator bit = new BedpeIterator(INPUT, getReference())) {
-			try (BedpeWriter writer = new BedpeWriter(getReference().getSequenceDictionary(), OUTPUT)) {
-				Iterator<InexactHomologyBedpeRecord> it = Iterators.transform(bit, rec -> new InexactHomologyBedpeRecord(rec));
-				try (AsyncBufferedIterator<InexactHomologyBedpeRecord> asyncit = new AsyncBufferedIterator<InexactHomologyBedpeRecord>(it, "AsyncAnnotateInexactHomologyBedpe")) {
-					while (asyncit.hasNext()) {
-						InexactHomologyBedpeRecord rec = asyncit.next();
-						writer.write(
-								rec.record.bp,
-								rec.record.name,
-								rec.bh.getLocalHomologyLength() + rec.bh.getRemoteHomologyLength()
-								);//Arrays.copyOfRange(rec.record, 10, rec.record.length));
-					}
+	private void annotate(ExecutorService threadpool) throws FileNotFoundException, IOException {
+		SAMSequenceDictionary dict = getReference().getSequenceDictionary();
+		try (BedpeIterator bit = new BedpeIterator(INPUT, dict)) {
+			try (BedpeWriter writer = new BedpeWriter(dict, OUTPUT)) {
+				ParallelTransformIterator<BedpeRecord, InexactHomologyBedpeRecord> asyncit = new ParallelTransformIterator<BedpeRecord, InexactHomologyBedpeRecord>(
+						bit, rec -> new InexactHomologyBedpeRecord(rec), WORKER_THREADS + 1, threadpool);
+				while (asyncit.hasNext()) {
+					InexactHomologyBedpeRecord rec = asyncit.next();
+					writer.write(
+							rec.record.bp,
+							rec.record.name,
+							Integer.toString(rec.bh.getLocalHomologyLength() + rec.bh.getRemoteHomologyLength()),
+							new String[] {
+									Integer.toString(rec.bh.getLocalHomologyLength()),
+									Integer.toString(rec.bh.getRemoteHomologyLength()),
+							}
+							);//Arrays.copyOfRange(rec.record, 10, rec.record.length));
 				}
 			}
 		}
