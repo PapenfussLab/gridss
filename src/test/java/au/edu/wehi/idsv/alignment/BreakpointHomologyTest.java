@@ -4,9 +4,11 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 
 
 public class BreakpointHomologyTest extends TestHelper {
@@ -91,5 +93,29 @@ public class BreakpointHomologyTest extends TestHelper {
 		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 10, 1, BWD, 11), "c", 20, 10);
 		assertEquals(7, bh.getLocalHomologyLength());
 		assertEquals(9, bh.getRemoteHomologyLength());
+	}
+	@Test
+	public void should_not_exceed_contig_bounds() {
+		InMemoryReferenceSequenceFile underlying = new InMemoryReferenceSequenceFile(
+				new String[] { "0", "1", },
+				new byte[][] { B("CCCCCCCCCCC"),
+							   B("AAAAAAAAAAA"), });
+		//BreakpointHomology bh0 = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 1, 1, BWD, 20), "", 50, 50);
+		TwoBitBufferedReferenceSequenceFile ref = new TwoBitBufferedReferenceSequenceFile(underlying);
+		for (int b1pos = 1; b1pos <= ref.getSequenceDictionary().getSequences().get(0).getSequenceLength(); b1pos++) {
+			for (int b2pos = 1; b2pos <= ref.getSequenceDictionary().getSequences().get(0).getSequenceLength(); b2pos++) {
+				for (BreakendDirection b1dir : BreakendDirection.values()) {
+					for (BreakendDirection b2dir : BreakendDirection.values()) {
+						for (int maxBreakendLength = 1; maxBreakendLength < ref.getSequenceDictionary().getSequences().get(0).getSequenceLength() + 2; maxBreakendLength++) {
+							for (int margin = 0; margin < ref.getSequenceDictionary().getSequences().get(0).getSequenceLength() + 2; margin++) {
+								BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, b1dir, b1pos, 1, b2dir, b2pos), "", maxBreakendLength, margin);
+								assertEquals(0, bh.getLocalHomologyLength());
+								assertEquals(0, bh.getRemoteHomologyLength());
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }

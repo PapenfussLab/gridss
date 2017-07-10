@@ -106,6 +106,10 @@ public class BreakpointHomology {
 		}
 		start = Math.max(1, start);
 		end = Math.min(refseq.getSequenceLength(), end);
+		if (start > end) {
+			// anchor is outside of contig bounds
+			return "";
+		}
 		byte[] bseq = lookup.getSubsequenceAt(refseq.getSequenceName(), start, end).getBases();
 		if (bs.direction == BreakendDirection.Backward) {
 			SequenceUtil.reverseComplement(bseq);
