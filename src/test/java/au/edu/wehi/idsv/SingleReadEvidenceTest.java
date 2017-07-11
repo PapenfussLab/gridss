@@ -213,4 +213,10 @@ public class SingleReadEvidenceTest extends TestHelper {
 		//list = SingleReadEvidence.createEvidence(SES(), 0, r);
 		//assertTrue(list.stream().allMatch(e -> !e.involvesPrimaryReadAlignment()));
 	}
+	@Test
+	public void should_not_create_split_read_if_read_length_does_not_match_SA_tag() {
+		SAMRecord r = withAttr("SA", "polyA,100,-,108S40M,29,1;polyA,200,-,35M113S,13,1", Read(1, 5, "36M2I10M"))[0];
+		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(SES(), 0, r);
+		assertEquals(0,  e.size());
+	}
 }

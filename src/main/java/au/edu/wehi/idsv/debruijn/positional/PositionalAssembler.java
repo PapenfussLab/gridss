@@ -91,11 +91,15 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				log.error(e, msg);
 				throw e;
 			} else {
-				if (it.hasNext()) {
-					msg = String.format("%s. Attempting recovery by resuming assembly at %s:%d",
-							msg,
-							context.getReference().getSequenceDictionary().getSequence(it.peek().getBreakendSummary().referenceIndex).getSequenceName(),
-							it.peek().getBreakendSummary().start);
+				try {
+					if (it.hasNext()) {
+						msg = String.format("%s. Attempting recovery by resuming assembly at %s:%d",
+								msg,
+								context.getReference().getSequenceDictionary().getSequence(it.peek().getBreakendSummary().referenceIndex).getSequenceName(),
+								it.peek().getBreakendSummary().start);
+					}
+				} catch (AssertionError|Exception nested) {
+					log.error(nested, "Assembly recovery attempt failed due to exception thrown by underlying iterator");
 				}
 				log.error(e, msg);
 			}
