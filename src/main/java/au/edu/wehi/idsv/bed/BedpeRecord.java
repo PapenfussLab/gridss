@@ -4,6 +4,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 
 /**
  * Basic data structure for a BEDPE record
@@ -38,6 +39,10 @@ public class BedpeRecord {
 		} else if (strDirection.equals("-")) {
 			dir = BreakendDirection.Backward;
 		}
-		return new BreakendSummary(dict.getSequence(chr).getSequenceIndex(), dir, (start + end) / 2, start, end);
+		SAMSequenceRecord seq = dict.getSequence(chr);
+		if (seq == null) {
+			throw new IllegalArgumentException(String.format("Contig %s missing from reference genome", chr));
+		}
+		return new BreakendSummary(seq.getSequenceIndex(), dir, (start + end) / 2, start, end);
 	}
 }
