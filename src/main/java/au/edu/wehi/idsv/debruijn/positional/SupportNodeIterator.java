@@ -12,6 +12,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 
 /**
@@ -129,10 +130,36 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 				KmerSupportNode support = e.node(i); 
 				if (support != null) {
 					// make sure that we are actually able to resort into kmer order
-					assert(support.firstStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
-					assert(support.weight() > 0);
-					supportNodes.add(support);
-					hasNonReference |= !support.isReference();
+					if (support.firstStart() < de.getBreakendSummary().start - maxSupportStartPositionOffset) {
+						SAMRecord read = null;
+						if (de instanceof SingleReadEvidence) {
+							read = ((SingleReadEvidence)de).getSAMRecord(); 
+						} else if (de instanceof NonReferenceReadPair) {
+							read = ((NonReferenceReadPair)de).getLocalledMappedRead();
+						}
+						String readString = "";
+						if (read != null) {
+							readString = read.getReadName();
+							if (!read.getReadUnmappedFlag()) {
+								readString += String.format(" (%s:%d %s)", read.getReferenceName(), read.getStart(), read.getCigarString());
+							}
+						}
+						String msg = String.format("Error: kmer in evidence %s of read %s out of bounds."
+								+ " Kmer support starts at %d which is more than %d before the breakpoint start position at %s",
+								de.getEvidenceID(),
+								readString,
+								support.firstStart(), maxSupportStartPositionOffset, de.getBreakendSummary());
+						log.error(msg);
+						// Try to continue
+						//throw new RuntimeException(msg);
+					} else if (support.weight() <= 0) {
+						String msg = String.format("Invalid support weight of %d for evidence %s", support.weight(), de.getEvidenceID());
+						log.error(msg);
+						throw new RuntimeException(msg);
+					} else {
+						supportNodes.add(support);
+						hasNonReference |= !support.isReference();
+					}
 				}
 			}
 		}
