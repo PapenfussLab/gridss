@@ -12,7 +12,6 @@ import com.google.common.math.IntMath;
 public class PackedSequence {
 	private static final int BITS_PER_BASE = 2;
 	private static final int BASES_PER_WORD = Long.SIZE / BITS_PER_BASE;
-	//private static final long BASE_MASK = (1 << BITS_PER_BASE) - 1;
 	private static final int ARRAY_SHIFT = Long.SIZE - 1 - Long.numberOfLeadingZeros(BASES_PER_WORD);
 	private static final int ARRAY_OFFSET_MASK = (1 << ARRAY_SHIFT) - 1;
 	private static final long BASE_MASK = (1 << BITS_PER_BASE) - 1;
@@ -22,6 +21,7 @@ public class PackedSequence {
 	 * and so on
 	 */
 	private final long[] packed;
+	private final int baseCount;
 	public PackedSequence(byte[] bases, boolean reverse, boolean complement) {
 		packed = new long[IntMath.divide(bases.length, BASES_PER_WORD, RoundingMode.CEILING)];
 		int revMultiplier = 1;
@@ -97,5 +97,47 @@ public class PackedSequence {
 	@Override
 	public String toString() {
 		return new String(getBytes(0, packed.length * BASES_PER_WORD));
+	}
+	private static final long MATCH_MASK = 0x5555555555555555L;
+	public static int overlap(PackedSequence s1, PackedSequence s2, int start2RelativeToStart1, int matchScore, int mismatchScore) {
+		if (start2RelativeToStart1 < 0) {
+			return overlap(s2, s1, -start2RelativeToStart1, matchScore, mismatchScore);
+		}
+		int matches = 0;
+		int overlapLength = Math.min(s1.baseCount, s1.baseCount - start2RelativeToStart1);
+		if (overlapLength <= 0) {
+			return 0;
+		}
+		for (int start = 0; start < s1.baseCount && start + start2RelativeToStart1 < s2.baseCount; start += BASES_PER_WORD) {
+			long s1bases = s1.get2BitBases(start);
+			long s2bases = s2.get2BitBases(start + start2RelativeToStart1);
+			// match pairs of bits
+			long matchVector = s1bases ^ s2bases;
+			matchVector &= matchVector >>> 1;
+			matchVector &= MATCH_MASK; // only keep the matches within each base (/bit pair)
+			// zero out LSBs running off the end of either sequence
+			int basesInWordToConsider = Math.min(BASES_PER_WORD, Math.min(s1.baseCount - start, s2.baseCount - (start + start2RelativeToStart1)));
+			matchVector &= -1L << ((BASES_PER_WORD - basesInWordToConsider) * BITS_PER_BASE);
+			matches += Long.bitCount(matchVector);
+		}
+		return matches;
+	}
+	/**
+	 * Returns the 32 bases starting with the base at the given offset
+	 * @param start 0-based offset of sequence to extract
+	 * @return packed sequenced in MSBs
+	 */
+	private long get2BitBases(int start) {
+		assert(start < baseCount);
+		assert(start > 0);
+		int wordIndex = start / BASES_PER_WORD;
+		int wordBaseIndex = start % BASES_PER_WORD;
+		long result = packed[wordIndex] << wordBaseIndex * BITS_PER_BASE;
+		if (wordIndex + 1 < packed.length) {
+			// grab second word
+			result &= packed[wordIndex + 1] >>> (BASES_PER_WORD - wordBaseIndex) * BITS_PER_BASE;
+		}
+		// TODO: zero out bases after length?
+		return result;
 	}
 }

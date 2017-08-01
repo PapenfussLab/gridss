@@ -77,10 +77,15 @@ public class VcfBreakendSummary {
 		if (StringUtils.isNotEmpty(remoteContig)) {
 			// flanking square brackets have already been removed
 			// format of chr:pos so breakend should always specify a contig position
-			String[] components = remoteContig.split(":");
-			remoteContig = components[0];
-			if (components.length > 1) {
-				remotePosition = Integer.parseInt(components[1]);
+			// can't use .split(":") as hg38 HLA contigs contain colon characters
+			int splitPos = remoteContig.lastIndexOf(':');
+			if (splitPos > 0) {
+				try {
+					remotePosition = Integer.parseInt(remoteContig.substring(splitPos + 1));
+					remoteContig = remoteContig.substring(0, splitPos);
+				} catch (NumberFormatException nfe) {
+					// parsing failure implies the breakend was not using contig:position notation
+				}
 			}
 		}
 		int refLength = variant.getReference().length();
