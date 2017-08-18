@@ -80,7 +80,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		Histogram<Integer> histo = loadHistogram(cmm.OUTPUT);
 		assertEquals(50, histo.values().size());
 		for (Bin<Integer> bin : histo.values()) {
-			assertEquals((int)bin.getId(), (int)bin.getValue());
+			assertEquals((int)bin.getId(), 50 - (int)bin.getValue());
 		}
 	}
 }

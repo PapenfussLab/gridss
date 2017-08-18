@@ -24,6 +24,7 @@ public class PackedSequence {
 	private final int baseCount;
 	public PackedSequence(byte[] bases, boolean reverse, boolean complement) {
 		packed = new long[IntMath.divide(bases.length, BASES_PER_WORD, RoundingMode.CEILING)];
+		baseCount = bases.length;
 		int revMultiplier = 1;
 		int revOffset = 0;
 		if (reverse) {
@@ -99,12 +100,12 @@ public class PackedSequence {
 		return new String(getBytes(0, packed.length * BASES_PER_WORD));
 	}
 	private static final long MATCH_MASK = 0x5555555555555555L;
-	public static int overlap(PackedSequence s1, PackedSequence s2, int start2RelativeToStart1, int matchScore, int mismatchScore) {
+	public static int overlapMatches(PackedSequence s1, PackedSequence s2, int start2RelativeToStart1) {
 		if (start2RelativeToStart1 < 0) {
-			return overlap(s2, s1, -start2RelativeToStart1, matchScore, mismatchScore);
+			return overlapMatches(s2, s1, -start2RelativeToStart1);
 		}
 		int matches = 0;
-		int overlapLength = Math.min(s1.baseCount, s1.baseCount - start2RelativeToStart1);
+		int overlapLength = overlapLength(s1, s2, start2RelativeToStart1);
 		if (overlapLength <= 0) {
 			return 0;
 		}
@@ -121,6 +122,13 @@ public class PackedSequence {
 			matches += Long.bitCount(matchVector);
 		}
 		return matches;
+	}
+	public static int overlapLength(PackedSequence s1, PackedSequence s2, int start2RelativeToStart1) {
+		if (start2RelativeToStart1 < 0) {
+			return overlapLength(s2, s1, -start2RelativeToStart1);
+		}
+		int overlapLength = Math.min(s1.baseCount, s2.baseCount - start2RelativeToStart1);
+		return overlapLength;
 	}
 	/**
 	 * Returns the 32 bases starting with the base at the given offset
@@ -139,5 +147,8 @@ public class PackedSequence {
 		}
 		// TODO: zero out bases after length?
 		return result;
+	}
+	public int length() {
+		return baseCount;
 	}
 }
