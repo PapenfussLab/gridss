@@ -24,16 +24,37 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	public Integer getEventSize() {
 		BreakendSummary low = getBreakendSummary().lowBreakend();
 		BreakendSummary high = getBreakendSummary().highBreakend();
-		if (low.referenceIndex != high.referenceIndex) return null;
+		if (low.referenceIndex != high.referenceIndex) {
+			return null;
+		}
 		int sizeAdjustment = -1; // assume indel
 		if (low.direction == high.direction) {
 			// inversion
 			sizeAdjustment = 0;
+			// requires a second breakpoint to explain - we're not going to assume this breakpoint exists
+			// as the event could be a large fold-back inversion
+			return null; 
 		} else if (low.direction == BreakendDirection.Backward && high.direction == BreakendDirection.Forward) {
 			// tandem dup
 			sizeAdjustment = 1;
 		}
 		return high.nominal - low.nominal + getUntemplatedSequence().length() + sizeAdjustment; 
+	}
+	/**
+	 * Size of indel event. 
+	 * @return size of indel inferred by breakpoint, null otherwise
+	 */
+	public Integer getIndelSize() {
+		BreakendSummary low = getBreakendSummary().lowBreakend();
+		BreakendSummary high = getBreakendSummary().highBreakend();
+		if (low.direction == high.direction) {
+			// inversion
+			return null;
+		} else if (low.direction == BreakendDirection.Backward && high.direction == BreakendDirection.Forward) {
+			// tandem dup
+			return null;
+		}
+		return getEventSize(); 
 	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {

@@ -77,9 +77,12 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	public void getEventSize_DUP() {
 		assertEquals(4, (int)BP("dup", new BreakpointSummary(0, FWD, 10, 0, BWD, 7)).getEventSize());
 	}
+	/**
+	 * inversion have two breakpoints - we don't know the event size unless we actually have both of them
+	 */
 	@Test
 	public void getEventSize_INV() {
-		assertEquals(4, (int)BP("inv", new BreakpointSummary(0, FWD, 6, 0, FWD, 10)).getEventSize());
-		assertEquals(4, (int)BP("inv", new BreakpointSummary(0, BWD, 11, 0, BWD, 7)).getEventSize());
+		assertEquals(null, BP("inv", new BreakpointSummary(0, FWD, 6, 0, FWD, 10)).getEventSize());
+		assertEquals(null, BP("inv", new BreakpointSummary(0, BWD, 11, 0, BWD, 7)).getEventSize());
 	}
 }
