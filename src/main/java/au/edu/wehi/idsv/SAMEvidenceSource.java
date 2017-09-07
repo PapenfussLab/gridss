@@ -431,17 +431,18 @@ public class SAMEvidenceSource extends EvidenceSource {
 		int softClipSortWindowSize = 2 * Math.max(getMaxReadMappedLength(), getMaxReadLength()) + 1;
 		// Read pair:
 		// worst case scenario is a fully mapped forward read followed by a large soft-clipped backward read at max distance
-		// MMMMMMMMMMMMMMMMMM>
-		// ^--read length --^
-		// ^--------max concordant fragment size-----^
-		//                   |-----breakend call-----|
-		//                   |----------breakend call--------|
+		// MDDDDDDDDDDDDDDDDDMSSSSSSSSSSSSSSS>
+		// ^--mapped length--^
+		//                  ^--------max concordant fragment size-----^
+		//                  |-----       breakend call            ----|
 		//                                                   <SSSSSSSSSM
 		//                   ^--------max concordant fragment size-----^
 		// ^ alignment start                                           ^ alignment start
-		int readPairSortWindowSize = getMaxConcordantFragmentSize() + getMaxReadMappedLength() + 1;
+		int readPairSortWindowSize = getMaxConcordantFragmentSize() + getMaxReadMappedLength() + getMaxReadLength() + 1;
 		int windowSize = Math.max(softClipSortWindowSize, readPairSortWindowSize);
-		return windowSize;
+		// add safety margin to window size due the number of edge cases encountered which
+		// result in a larger window size required
+		return (int)(1.1 * windowSize);
 	}
 	public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
 		if (rpcc == null) {

@@ -19,7 +19,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	}
 	@Override
 	public String toString() {
-		return String.format("DP %s MQ=%d,%d RN=%s", getBreakendSummary(), getLocalMapq(), getRemoteMapq(), getEvidenceID());
+		return String.format("DP %s MQ=%d,%d RN=%s EID=%s", getBreakendSummary(), getLocalMapq(), getRemoteMapq(), getLocalledMappedRead().getReadName(), getEvidenceID());
 	}
 	@Override
 	public String getUntemplatedSequence() {
