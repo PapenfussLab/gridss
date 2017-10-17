@@ -178,7 +178,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		ra.setReadBases(B("CGTAAAAT"));
 		ra.setMappingQuality(17);
 		ra.setBaseQualities(new byte[] { 0,1,2,3,4,5,6,7 });
-		ra.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(r, false, AES().getContext().getEvidenceIDGenerator()).get(0).getReadHeader());
+		ra.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(r, false, AES().getContext().getEvidenceIDGenerator()).get(0).getReadName());
 		SplitReadIdentificationHelper.convertToSplitRead(r, ImmutableList.of(ra));
 		return SplitReadEvidence.create(AES(), r).get(0);
 	}

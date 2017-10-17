@@ -59,8 +59,8 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		r.setReadName("r");
 		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
 		assertEquals(2, result.size());
-		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#0", result.get(0).getReadHeader());
-		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#3", result.get(1).getReadHeader());
+		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#0", result.get(0).getReadName());
+		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#3", result.get(1).getReadName());
 	}
 	@Test
 	public void getSplitReadRealignments_should_consider_strand() {
@@ -75,11 +75,11 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		// GAACGT read
 		// 654321 base qualities
 		// 012345 offset
-		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#4", result.get(0).getReadHeader());
+		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#4", result.get(0).getReadName());
 		assertEquals("GT", result.get(0).getReadString());
 		assertEquals(SAMUtils.phredToFastq(B("21")), result.get(0).getBaseQualityString());
 		
-		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#0", result.get(1).getReadHeader());
+		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#0", result.get(1).getReadName());
 		assertEquals("GAA", result.get(1).getReadString());
 		assertEquals(SAMUtils.phredToFastq(B("654")), result.get(1).getBaseQualityString());
 	}
@@ -95,7 +95,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		r.setBaseQualities(B("321"));
 		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, true, getContext().getEvidenceIDGenerator());
 		assertEquals(1, result.size());
-		assertEquals("unique#4", result.get(0).getReadHeader());
+		assertEquals("unique#4", result.get(0).getReadName());
 		assertEquals("GT", result.get(0).getReadString());
 		assertEquals(SAMUtils.phredToFastq(B("21")), result.get(0).getBaseQualityString());
 	}

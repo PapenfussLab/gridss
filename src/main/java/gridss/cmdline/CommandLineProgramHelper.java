@@ -18,7 +18,7 @@ public class CommandLineProgramHelper {
 		to.GA4GH_CLIENT_SECRETS = from.GA4GH_CLIENT_SECRETS;
 		to.MAX_RECORDS_IN_RAM = from.MAX_RECORDS_IN_RAM;
 		to.QUIET = from.QUIET;
-		to.REFERENCE_SEQUENCE = from.REFERENCE_SEQUENCE;
+		to.referenceSequence = from.referenceSequence;
 		to.TMP_DIR = from.TMP_DIR;
 		to.VALIDATION_STRINGENCY = from.VALIDATION_STRINGENCY;
 		to.VERBOSITY = from.VERBOSITY;
@@ -31,7 +31,9 @@ public class CommandLineProgramHelper {
 		args.add("GA4GH_CLIENT_SECRETS=" + (program.GA4GH_CLIENT_SECRETS == null ? "null" : program.GA4GH_CLIENT_SECRETS));
 		args.add("MAX_RECORDS_IN_RAM=" + (program.MAX_RECORDS_IN_RAM == null ? "null" : program.MAX_RECORDS_IN_RAM.toString()));
 		args.add("QUIET=" + (program.QUIET == null ? "null" : Boolean.toString(program.QUIET)));
-		args.add("REFERENCE_SEQUENCE=" + (program.REFERENCE_SEQUENCE == null ? "null" : program.REFERENCE_SEQUENCE.getAbsolutePath()));
+		if (program.referenceSequence.getReferenceFile() != null) {
+			args.add("REFERENCE_SEQUENCE=" + program.referenceSequence.getReferenceFile().getAbsolutePath());	
+		}
 		args.add("VALIDATION_STRINGENCY=" + (program.VALIDATION_STRINGENCY == null ? "null" : program.VALIDATION_STRINGENCY.toString()));
 		args.add("VERBOSITY=" + (program.VERBOSITY == null ? "null" : program.VERBOSITY.toString()));
 		if (program.TMP_DIR == null || program.TMP_DIR.size() == 0) {

@@ -6,6 +6,9 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.FileSystemContext;
@@ -30,36 +33,35 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-        usage = "Populates computed SAM tags. "
+		summary = "Populates computed SAM tags. "
         		+ "The NM tags requires the reference genome to be specified. "
         		+ "Tags requiring information from mate reads, or alternative, secondary, or chimeric alignments require"
         		+ " all reads from the same fragment/template to be sorted together."
         		+ " This can be achieved by queryname sorting of the input file, although the raw output from most aligners"
         		+ " also fulfills this criteria.",
-        usageShort = "Populates computed SAM tags."
+        oneLineSummary = "Populates computed SAM tags.",
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class ComputeSamTags extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(ComputeSamTags.class);
-	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
     public File INPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated BAM file.")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated BAM file.")
     public File OUTPUT;
-	@Option(shortName=StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME, doc="Assume that all records with the same read name are consecutive. "
+	@Argument(shortName=StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME, doc="Assume that all records with the same read name are consecutive. "
 			+ "Incorrect tags will be written if this is not the case.", optional=true)
     public boolean ASSUME_SORTED = false;
-	@Option(doc="Convert hard clips to soft clips if the entire read sequence for the read is available in another record.", optional=true)
+	@Argument(doc="Convert hard clips to soft clips if the entire read sequence for the read is available in another record.", optional=true)
 	public boolean SOFTEN_HARD_CLIPS = true;
-	@Option(doc="Fixes missing mate information. Unlike Picard tools FixMateInformation, reads for which no mate can be found"
+	@Argument(doc="Fixes missing mate information. Unlike Picard tools FixMateInformation, reads for which no mate can be found"
 			+ " are converted to unpaired reads.", optional=true)
 	public boolean FIX_MATE_INFORMATION = true;
-	@Option(doc="Recalculates the supplementary flag based on the SA tag. The supplementary flag should be set on all split read alignments except one.", optional=true)
+	@Argument(doc="Recalculates the supplementary flag based on the SA tag. The supplementary flag should be set on all split read alignments except one.", optional=true)
 	public boolean RECALCULATE_SA_SUPPLEMENTARY = true;
-	@Option(shortName="T", doc="Tags to calculate")
+	@Argument(shortName="T", doc="Tags to calculate")
 	public Set<String> TAGS = Sets.newHashSet(
 			SAMTag.NM.name(),
 			SAMTag.SA.name(),

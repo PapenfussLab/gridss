@@ -103,9 +103,10 @@ public class GenomicProcessingContext implements Closeable {
 				if (program != null) {
 					CommandLineProgramHelper.copyInputs(program, csd);
 				}
-				csd.OUTPUT = dictPath.toFile();
-				csd.REFERENCE = referenceFile;
-				csd.instanceMain(new String[0]);
+				csd.instanceMain(new String[] {
+					"OUTPUT=" + dictPath.toFile(),
+					"REFERENCE_SEQUENCE=" + referenceFile.getAbsolutePath()
+				});
 			}
 			rsf.close();
 		} catch (Exception e) {

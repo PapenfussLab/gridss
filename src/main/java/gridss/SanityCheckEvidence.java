@@ -4,22 +4,24 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 
 @CommandLineProgramProperties(
-        usage = "Sanity checks GRIDSS evidence scores by ensuring that both sides of each breakpoint-supporting evidence have the same score",  
-        usageShort = "Sanity checks GRIDSS evidence scores."
+        summary = "Sanity checks GRIDSS evidence scores by ensuring that both sides of each breakpoint-supporting evidence have the same score",  
+        oneLineSummary = "Sanity checks GRIDSS evidence scores.",
+        programGroup = gridss.cmdline.programgroups.VariantCalling.class
 )
 public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SanityCheckEvidence.class);
-	@Option(doc="Margin of error allowed for matching.", optional=true)
+	@Argument(doc="Margin of error allowed for matching.", optional=true)
 	public double ERROR_MARGIN = 0.0001;
 	public SanityCheckEvidence() {
 		super(false);

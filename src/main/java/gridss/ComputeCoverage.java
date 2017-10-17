@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.Iterators;
 
 import au.edu.wehi.idsv.CoverageCalculationMethod;
@@ -24,26 +27,26 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 
 @CommandLineProgramProperties(
-        usage = "Computes reference genome coverage for a given BAM", usageShort = "Computes coverage"
+		summary = "Computes reference genome coverage for a given BAM",
+		oneLineSummary = "Computes coverage",
+		programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class ComputeCoverage extends GcSinglePassSamProgram {
 	private static final Log log = Log.getInstance(ComputeCoverage.class);
-	@Option(shortName="GCO", doc="GC-adjusted coverage BED", optional=true)
+	@Argument(shortName="GCO", doc="GC-adjusted coverage BED", optional=true)
     public File OUTPUT_GC;
-	@Option(shortName="B", doc="Bin size used to output coverage", optional=true)
+	@Argument(shortName="B", doc="Bin size used to output coverage", optional=true)
     public int BIN_SIZE = 1000;
-	@Option(shortName="V", doc="GRIDSS VCF containing breakpoint to split bins at", optional=true)
+	@Argument(shortName="V", doc="GRIDSS VCF containing breakpoint to split bins at", optional=true)
 	public File VCF;
-	@Option(shortName="GC", doc="GC adjustment file. This file must contain two tab-seperated columns without any header lines."
+	@Argument(shortName="GC", doc="GC adjustment file. This file must contain two tab-seperated columns without any header lines."
 			+ " The first column must contain the GC percentage for adjustment, the second the adjustment multipler."
 			+ " The first column should contain the integer values 0-100 inclusive, the second a floating point adjustment multiplier."
 			+ " ", optional=true)
 	public File GC_ADJUSTMENT;
-	@Option(shortName="CM", doc="Approach used to calculate coverage. Valid values are READ, which calculates the"
+	@Argument(shortName="CM", doc="Approach used to calculate coverage. Valid values are READ, which calculates the"
 			+ " actual aligned sequence coverage, and FRAGMENT which calculated physical coverage based on the"
 			+ " alignment of read pairs.", optional=true)
 	public CoverageCalculationMethod COVERAGE_METHOD = CoverageCalculationMethod.READ;

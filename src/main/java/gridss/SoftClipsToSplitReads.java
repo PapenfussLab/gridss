@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -18,34 +21,33 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-        usage = "Uses an external aligner to identify split reads by iterative alignment of soft clipped bases. "
+        summary = "Uses an external aligner to identify split reads by iterative alignment of soft clipped bases. "
         		+ "Existing split read alignments are left untouched.",
-        usageShort = "Converts soft clipped reads to split reads"
+        oneLineSummary = "Converts soft clipped reads to split reads",
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);
 	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-t", "%3$d", "%2$s", "%1$s");
 	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of("bowtie2", "--threads", "%3$d", "--local", "--mm", "--reorder", "-x", "%2$s", "-U", "%1$s");
-    @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
+    @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
     public File INPUT;
-    @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file", optional=false)
+    @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file", optional=false)
     public File OUTPUT;
-    @Option(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
+    @Argument(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
     public int MIN_CLIP_LENGTH = 15;
-    @Option(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
+    @Argument(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
     public float MIN_CLIP_QUAL = 5;
-    @Option(doc="Indicates whether to perform split read identification on secondary read alignments.", optional=true)
+    @Argument(doc="Indicates whether to perform split read identification on secondary read alignments.", optional=true)
     public boolean PROCESS_SECONDARY_ALIGNMENTS = false;
-    @Option(doc="Number of threads to use for realignment. Defaults to number of cores available."
+    @Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-    @Option(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
+    @Argument(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
     public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);

@@ -2,12 +2,13 @@ package gridss.cmdline;
 
 import java.io.File;
 
+import org.broadinstitute.barclay.argparser.Argument;
+
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import picard.cmdline.CommandLineProgram;
-import picard.cmdline.Option;
 
 public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileCommandLineProgram {
-	@Option(doc="Breakend assemblies which have undergone split read identification", optional=false)
+	@Argument(doc="Breakend assemblies which have undergone split read identification", optional=false)
 	public File ASSEMBLY;
 	private final boolean requireAssembly;
 	public FullEvidenceCommandLineProgram() {

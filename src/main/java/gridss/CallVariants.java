@@ -8,6 +8,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
@@ -21,8 +24,6 @@ import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import picard.analysis.InsertSizeMetrics;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 /**
@@ -31,12 +32,13 @@ import picard.cmdline.StandardOptionDefinitions;
  *
  */
 @CommandLineProgramProperties(
-        usage = "Calls structural variations from one or more SAM/BAM input files.",  
-        usageShort = "Calls structural variations from NGS sequencing data"
+		summary = "Calls structural variations from one or more SAM/BAM input files.",  
+        oneLineSummary = "Calls structural variations from NGS sequencing data",
+        programGroup = gridss.cmdline.programgroups.VariantCalling.class
 )
 public class CallVariants extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(CallVariants.class);
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
 	public CallVariants() {
 		super(false);

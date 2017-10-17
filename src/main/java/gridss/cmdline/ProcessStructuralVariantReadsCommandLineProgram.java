@@ -2,11 +2,12 @@ package gridss.cmdline;
 
 import java.io.File;
 
+import org.broadinstitute.barclay.argparser.Argument;
+
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import gridss.analysis.InsertSizeDistribution;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.Option;
 
 /**
  * Base class used to transform a VCF breakpoint call set given the full evidence available.
@@ -17,31 +18,31 @@ import picard.cmdline.Option;
  */
 public abstract class ProcessStructuralVariantReadsCommandLineProgram extends ByReadNameSinglePassSamProgram {
 	private static final Log log = Log.getInstance(ProcessStructuralVariantReadsCommandLineProgram.class);
-	@Option(doc="Minimum indel size", optional=true)
+	@Argument(doc="Minimum indel size", optional=true)
     public int MIN_INDEL_SIZE = 1;
-    @Option(doc="Minimum bases clipped", optional=true)
+    @Argument(doc="Minimum bases clipped", optional=true)
     public int MIN_CLIP_LENGTH = 1;
-    @Option(doc="Include hard and soft clipped reads in output", optional=true)
+    @Argument(doc="Include hard and soft clipped reads in output", optional=true)
     public boolean CLIPPED = true;
-    @Option(doc="Include reads containing indels in output", optional=true)
+    @Argument(doc="Include reads containing indels in output", optional=true)
     public boolean INDELS = true;
-    @Option(doc="Include split reads in output", optional=true)
+    @Argument(doc="Include split reads in output", optional=true)
     public boolean SPLIT = true;
-    @Option(doc="Include read pairs in which only one of the read is aligned to the reference.", optional=true)
+    @Argument(doc="Include read pairs in which only one of the read is aligned to the reference.", optional=true)
     public boolean SINGLE_MAPPED_PAIRED = true;
-    @Option(doc="Include read pairs that align do not align in the expected orientation within the expected fragment size distribution.", optional=true)
+    @Argument(doc="Include read pairs that align do not align in the expected orientation within the expected fragment size distribution.", optional=true)
     public boolean DISCORDANT_READ_PAIRS = true;
-    @Option(doc="Method of calculating read pair concordance. Valid values are SAM_FLAG, PERCENTAGE, and FIXED", optional=true)
+    @Argument(doc="Method of calculating read pair concordance. Valid values are SAM_FLAG, PERCENTAGE, and FIXED", optional=true)
     public ReadPairConcordanceMethod READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.SAM_FLAG;
-    @Option(doc="Minimum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
+    @Argument(doc="Minimum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
     public int FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 0;
-    @Option(doc="Maximum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
+    @Argument(doc="Maximum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
     public int FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 0;
-    @Option(doc = "Percent (0.0-1.0) of read pairs considered concorant if using the PERCENTAGE method of calculation.", optional=true)
+    @Argument(doc = "Percent (0.0-1.0) of read pairs considered concorant if using the PERCENTAGE method of calculation.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
-    @Option(doc="Picard tools insert size distribution metrics txt file. Required if using the PERCENTAGE read pair concordance calculation method.", optional=true)
+    @Argument(doc="Picard tools insert size distribution metrics txt file. Required if using the PERCENTAGE read pair concordance calculation method.", optional=true)
     public File INSERT_SIZE_METRICS = null;
-    @Option(doc="Include unmapped reads", optional=true)
+    @Argument(doc="Include unmapped reads", optional=true)
     public boolean UNMAPPED_READS = true;
     @Override
 	protected String[] customCommandLineValidation() {

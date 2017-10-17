@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.broadinstitute.barclay.argparser.Argument;
+
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import au.edu.wehi.idsv.alignment.AlignerFactory;
@@ -18,22 +20,21 @@ import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 public class AnnotateInexactHomologyBedpe extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(AnnotateInexactHomologyBedpe.class);
-	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BEDPE")
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BEDPE")
     public File INPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE with the score column populated by the length of inexact homology between breakends")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE with the score column populated by the length of inexact homology between breakends")
     public File OUTPUT;
-	@Option(shortName="D", doc="Number of bases from nominal breakpoint position to consider when calculating homology", optional=true)
+	@Argument(shortName="D", doc="Number of bases from nominal breakpoint position to consider when calculating homology", optional=true)
 	public int DISTANCE = 300;
-	@Option(shortName="M", doc="Additional reference bases to include in alignment (to account for indels near the breakpoint).", optional=true)
+	@Argument(shortName="M", doc="Additional reference bases to include in alignment (to account for indels near the breakpoint).", optional=true)
 	public int MARGIN = 32;
-	@Option(shortName="UC", doc="1-based index of column containing untemplated sequenced based included in the breakpoint.", optional=true)
+	@Argument(shortName="UC", doc="1-based index of column containing untemplated sequenced based included in the breakpoint.", optional=true)
 	public Integer UNTEMPLATED_SEQUENCE_COLUMN = null;
-	@Option(doc="Number of worker threads to spawn. Defaults to number of cores available."
+	@Argument(doc="Number of worker threads to spawn. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();

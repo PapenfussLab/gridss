@@ -13,6 +13,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
@@ -29,25 +32,24 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import it.unimi.dsi.fastutil.longs.LongOpenHashBigSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-        usage = "Subsets the given BAM file, returning only reads that are not found in the given data set.",  
-        usageShort = "Subsets on the given lookup"
+        summary = "Subsets the given BAM file, returning only reads that are not found in the given data set.",  
+        oneLineSummary = "Subsets on the given lookup",
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(SubsetToMissing.class);
-	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="BAM to test")
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="BAM to test")
     public File INPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file")
     public File OUTPUT;
-	@Option(doc="Known reads")
+	@Argument(doc="Known reads")
 	public List<File> LOOKUP;
-	@Option(doc="Finish processing after this many records", optional=true)
+	@Argument(doc="Finish processing after this many records", optional=true)
 	public Long STOP_AFTER = null;
-	@Option(doc="Size of lookup to preallocate", optional=true)
+	@Argument(doc="Size of lookup to preallocate", optional=true)
 	public Long PREALLOCATE = null;
 	@Override
 	protected int doWork() {

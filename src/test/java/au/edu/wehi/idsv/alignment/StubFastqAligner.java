@@ -45,9 +45,9 @@ public class StubFastqAligner implements FastqAligner {
 				fqr = srs.get(1);
 			}
 		}
-		map.put(fqr.getReadHeader(), new ChimericAlignment(r.getHeader().getSequenceDictionary().getSequence(referenceIndex).getSequenceName(),
+		map.put(fqr.getReadName(), new ChimericAlignment(r.getHeader().getSequenceDictionary().getSequence(referenceIndex).getSequenceName(),
 				pos, isNegativeStrand, TextCigarCodec.decode(cigar), 40, 0));
-		nameLookup.put(fqr.getReadHeader(), r);
+		nameLookup.put(fqr.getReadName(), r);
 		return this;
 	}
 	public StubFastqAligner align(SAMRecord r, int referenceIndex, int pos, boolean isNegativeStrand, String cigar) {
@@ -62,15 +62,15 @@ public class StubFastqAligner implements FastqAligner {
 		try (FastqReader reader = new FastqReader(fastq)) {
 			try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, true, output)) {
 				for (FastqRecord fqr : reader) {
-					SAMRecord source = nameLookup.get(fqr.getReadHeader());
+					SAMRecord source = nameLookup.get(fqr.getReadName());
 					SAMRecord r = new SAMRecord(header);
-					r.setReadName(fqr.getReadHeader());
+					r.setReadName(fqr.getReadName());
 					r.setReadBases(fqr.getReadString().getBytes());
 					r.setBaseQualities(SAMUtils.fastqToPhred(fqr.getBaseQualityString()));
 					if (source == null) {
 						r.setReadUnmappedFlag(true);
 					} else {
-						ChimericAlignment aln = map.get(fqr.getReadHeader());
+						ChimericAlignment aln = map.get(fqr.getReadName());
 						r.setReferenceName(aln.rname);
 						r.setAlignmentStart(aln.pos);
 						r.setCigar(aln.cigar);

@@ -35,7 +35,7 @@ public class SmithWatermanFastqAligner implements FastqAligner {
 					for (FastqRecord fqr : reader) {
 						Alignment aln = aligner.align_smith_waterman(fqr.getReadString().getBytes(), bases);
 						SAMRecord r = new SAMRecord(header);
-						r.setReadName(fqr.getReadHeader());
+						r.setReadName(fqr.getReadName());
 						r.setReferenceIndex(referenceIndex);
 						r.setAlignmentStart(aln.getStartPosition() + 1);
 						r.setCigarString(aln.getCigar());

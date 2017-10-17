@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -31,19 +34,18 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 
 @CommandLineProgramProperties(
-        usage = "Extracts reads and read pairs supporting putative structural variations. "
+		summary = "Extracts reads and read pairs supporting putative structural variations. "
         		+ "If the input file is queryname sorted, a multi-mapping aware extraction is performed "
         		+ "and reads/read pairs are only extracted when all alignments are consistent with the "
         		+ "presence of of a structural variant.",
-        usageShort = "Extracts reads and read pairs supporting putative structural variations."
+        oneLineSummary = "Extracts reads and read pairs supporting putative structural variations.",
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProgram {
 	private static final Log log = Log.getInstance(ExtractSVReads.class);
-    @Option(shortName="MO", doc="Output file containing SV metrics", optional=true)
+    @Argument(shortName="MO", doc="Output file containing SV metrics", optional=true)
     public File METRICS_OUTPUT;
     private CollectStructuralVariantReadMetrics metricsCollector;
     private File tmpoutput;

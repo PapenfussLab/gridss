@@ -305,7 +305,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getConfig().minMapq = 10;
 		createInput(
-				SR(withMapq(10, Read(0, 1, "50M50S"))[0], withMapq(5, Read(1, 1, "50M50S"))[0]).getSAMRecord());
+				SR(withMapq(10, Read(0, 1, "50M50S"))[0], withMapq(5, Read(1, 1, "50M"))[0]).getSAMRecord());
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(1, list.size());

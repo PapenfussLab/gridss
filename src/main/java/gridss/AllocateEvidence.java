@@ -3,6 +3,9 @@ package gridss;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -25,21 +28,20 @@ import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 
 @CommandLineProgramProperties(
-        usage = "Evidence reallocation is required to ensure that any given read/read pair/assembly, "
+        summary = "Evidence reallocation is required to ensure that any given read/read pair/assembly, "
         		+ " supports only a consistent set breakpoints. \n"
         		+ "For discordant read pairs, this means that only a single breakpoint can be supported. \n"
         		+ "For split reads, only a single set of partial read mappings can be supported, and only one breakpoint per split can be supported.\n"
         		+ "For indels, only a single read mapping can be supported, and only one breakpoint per indel can be supported.\n"
         		+ "Note: the EID attribute must be populated with the relevant GRIDSS EvidenceID's using AllocateEvidence",  
-        usageShort = "Uniquely allocates evidence supporting multiple mutually exclusive breakpoints."
+        oneLineSummary = "Uniquely allocates evidence supporting multiple mutually exclusive breakpoints.",
+        programGroup=picard.cmdline.programgroups.Metrics.class
 )
 public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	private static final Log log = Log.getInstance(AllocateEvidence.class);
-	@Option(doc="Evidence allocation strategy used to uniquely assign evidence.")
+	@Argument(doc="Evidence allocation strategy used to uniquely assign evidence.")
 	public EvidenceAllocationStrategy ALLOCATION_STRATEGY = EvidenceAllocationStrategy.GREEDY;
 	public static enum EvidenceAllocationStrategy {
 		GREEDY,

@@ -156,8 +156,8 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 		List<FastqRecord> ralist = SplitReadIdentificationHelper.getSplitReadRealignments(mid, false, getContext().getEvidenceIDGenerator());
 		SAMRecord pre = Read(0, 50, "10M");
 		SAMRecord post = Read(0, 150, "8M");
-		pre.setReadName(ralist.get(0).getReadHeader());
-		post.setReadName(ralist.get(1).getReadHeader());
+		pre.setReadName(ralist.get(0).getReadName());
+		post.setReadName(ralist.get(1).getReadName());
 		SplitReadIdentificationHelper.convertToSplitRead(mid, ImmutableList.of(pre, post));
 		List<SplitReadEvidence> sr = new ArrayList<>();
 		sr.addAll(SplitReadEvidence.create(SES(), pre));

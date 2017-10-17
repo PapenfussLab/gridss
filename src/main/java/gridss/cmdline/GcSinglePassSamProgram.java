@@ -27,6 +27,8 @@ package gridss.cmdline;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+import org.broadinstitute.barclay.argparser.Argument;
+
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -36,22 +38,21 @@ import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.Option;
 
 public abstract class GcSinglePassSamProgram extends SinglePassSamProgram {
 	private static final Log log = Log.getInstance(GcSinglePassSamProgram.class);
-    @Option(doc="Fragment size to use when inferring fragment GC content of single-end or discordantly paired reads", optional=false)
+    @Argument(doc="Fragment size to use when inferring fragment GC content of single-end or discordantly paired reads", optional=false)
     public int UNPAIRED_FRAGMENT_SIZE;
     // --------- start chunk from ProcessStructuralVariantReadsCommandLineProgram ---------
-    @Option(doc="Method of calculating read pair concordance. Valid values are SAM_FLAG, PERCENTAGE, and FIXED", optional=true)
+    @Argument(doc="Method of calculating read pair concordance. Valid values are SAM_FLAG, PERCENTAGE, and FIXED", optional=true)
     public ReadPairConcordanceMethod READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.SAM_FLAG;
-    @Option(doc="Minimum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
+    @Argument(doc="Minimum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
     public int FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 0;
-    @Option(doc="Maximum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
+    @Argument(doc="Maximum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
     public int FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 0;
-    @Option(doc = "Percent (0.0-1.0) of read pairs considered concorant if using the PERCENTAGE method of calculation.", optional=true)
+    @Argument(doc = "Percent (0.0-1.0) of read pairs considered concorant if using the PERCENTAGE method of calculation.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
-    @Option(doc="Picard tools insert size distribution metrics txt file. Required if using the PERCENTAGE read pair concordance calculation method.", optional=true)
+    @Argument(doc="Picard tools insert size distribution metrics txt file. Required if using the PERCENTAGE read pair concordance calculation method.", optional=true)
     public File INSERT_SIZE_METRICS = null;
 	protected String[] customCommandLineValidation_ProcessStructuralVariantReadsCommandLineProgram() {
 		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {
@@ -85,7 +86,7 @@ public abstract class GcSinglePassSamProgram extends SinglePassSamProgram {
     }
     // --------- end chunk from ProcessStructuralVariantReadsCommandLineProgram ---------
     // --------- start chunk from ReferenceCommandLineProgram ---------
-    @Option(doc = "Ignore reads marked as duplicates.", optional = true)
+    @Argument(doc = "Ignore reads marked as duplicates.", optional = true)
     public boolean IGNORE_DUPLICATES = true;
 	private ReferenceLookup reference;
 	public ReferenceLookup getReference() {

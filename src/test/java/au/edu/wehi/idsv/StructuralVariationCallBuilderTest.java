@@ -740,9 +740,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		builder.addEvidence(ae);
 		VariantContextDirectedEvidence e = builder.make();
 		FastqRecord fr = e.getBreakendAssemblyFastq();
-		assertEquals(e.getEvidenceID() + "#" + Integer.toString(anchor), fr.getReadHeader());
+		assertEquals(e.getEvidenceID() + "#" + Integer.toString(anchor), fr.getReadName());
 		assertEquals(seq, fr.getReadString());
-		assertEquals(fr.getReadHeader(), e.getAttribute(VcfSvConstants.BREAKPOINT_ID_KEY));
+		assertEquals(fr.getReadName(), e.getAttribute(VcfSvConstants.BREAKPOINT_ID_KEY));
 	}
 	@Test
 	public void breakpoint_assembly_should_be_local() {

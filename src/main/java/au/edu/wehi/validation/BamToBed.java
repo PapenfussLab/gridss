@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import htsjdk.samtools.CigarElement;
@@ -21,8 +24,6 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.tribble.bed.SimpleBEDFeature;
 import picard.cmdline.CommandLineProgram;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 /**
@@ -31,26 +32,27 @@ import picard.cmdline.StandardOptionDefinitions;
  *
  */
 @CommandLineProgramProperties(
-		usage = "Converts split read alignments to bed intervals",
-		usageShort = "Converts split read alignments to bed intervals")
+		summary = "Converts split read alignments to bed intervals",
+		oneLineSummary = "Converts split read alignments to bed intervals",
+		programGroup = picard.cmdline.programgroups.SamOrBam.class)
 public class BamToBed extends CommandLineProgram {
-    @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, optional=false)
+    @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, optional=false)
     public File INPUT;
-    @Option(doc="Split read support", shortName="SR", optional=true)
+    @Argument(doc="Split read support", shortName="SR", optional=true)
     public File SPLIT_READS;
-    @Option(doc="Indel support for reads spanning", shortName="SP", optional=true)
+    @Argument(doc="Indel support for reads spanning", shortName="SP", optional=true)
     public File SPANNING_READS;
-    @Option(doc="Only report deletions", shortName="OD", optional=true)
+    @Argument(doc="Only report deletions", shortName="OD", optional=true)
     public boolean ONLY_DELETIONS = true;
-    @Option(doc="Minimum percentage of spplit read bases aligned to each location. Chimeric alignments aligning few than this portion of the read will be ignored.", shortName="MAP", optional=true)
+    @Argument(doc="Minimum percentage of spplit read bases aligned to each location. Chimeric alignments aligning few than this portion of the read will be ignored.", shortName="MAP", optional=true)
     public double MINIMUM_ALIGNED_PORTION = 0.25;
-    @Option(doc="Minimum mapq to be considered a valid alignment.", shortName="MQ", optional=true)
+    @Argument(doc="Minimum mapq to be considered a valid alignment.", shortName="MQ", optional=true)
     public int MAPQ = 1;
-    @Option(doc="Ignore indels smaller than this size", shortName="MIS", optional=true)
+    @Argument(doc="Ignore indels smaller than this size", shortName="MIS", optional=true)
     public int MIN_FINAL_INDEL_SIZE = 50;
-    @Option(doc="Merge indels with few than this many reads aligned. This is useful for PacBio reads alignments that contain fragmented indel calls.", shortName="MIMB", optional=true)
+    @Argument(doc="Merge indels with few than this many reads aligned. This is useful for PacBio reads alignments that contain fragmented indel calls.", shortName="MIMB", optional=true)
     public int MAX_INTERVENING_MAPPED_BASES = 0;
-    @Option(doc="Minimum size of partial indel. This is useful for PacBio reads alignments that contain fragmented indel calls.", shortName="MCIS", optional=true)
+    @Argument(doc="Minimum size of partial indel. This is useful for PacBio reads alignments that contain fragmented indel calls.", shortName="MCIS", optional=true)
     public int MIN_COMPONENT_INDEL_SIZE = 5;
     protected int doWork() {
     	if (!ONLY_DELETIONS) {

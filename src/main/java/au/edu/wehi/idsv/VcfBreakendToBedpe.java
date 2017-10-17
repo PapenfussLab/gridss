@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.BedpeWriter;
@@ -13,31 +16,30 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-        usage = "Converts VCF breakend calls to BEDPE format. "
+		summary = "Converts VCF breakend calls to BEDPE format. "
         		+ "All variants, including structural variations, that are not in breakend format are ignored. "
         		+ "Gridss breakpoint fields, if present, are stored in the optional columns. ",  
-        usageShort = "Converts VCF breakend calls to BEDPE format."
+        oneLineSummary = "Converts VCF breakend calls to BEDPE format.",
+        programGroup = picard.cmdline.programgroups.VcfOrBcf.class
 )
 public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(VcfBreakendToBedpe.class);
-	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="VCF containing structural variation breakend calls")
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="VCF containing structural variation breakend calls")
     public File INPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE output file containing unfiltered calls")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE output file containing unfiltered calls")
     public File OUTPUT;
-	@Option(shortName="OF", doc="BEDPE output file of filtered calls")
+	@Argument(shortName="OF", doc="BEDPE output file of filtered calls")
     public File OUTPUT_FILTERED;
-	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
+	@Argument(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     public File REFERENCE;
-	@Option(doc="Include header line with column names.")
+	@Argument(doc="Include header line with column names.")
 	public boolean INCLUDE_HEADER = false;
-	@Option(shortName="LOW", doc="Write record at breakend with lower genomic coordinate")
+	@Argument(shortName="LOW", doc="Write record at breakend with lower genomic coordinate")
 	public boolean INCLUDE_LOW_BREAKEND = true;
-	@Option(shortName="HIGH", doc="Write record at breakend with higher genomic coordinate")
+	@Argument(shortName="HIGH", doc="Write record at breakend with higher genomic coordinate")
 	public boolean INCLUDE_HIGH_BREAKEND = false;
 	@Override
 	protected int doWork() {

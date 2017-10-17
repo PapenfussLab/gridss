@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -14,9 +16,6 @@ import com.google.common.collect.Lists;
 import picard.analysis.CollectMultipleMetrics;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
-import picard.cmdline.programgroups.Metrics;
 
 /**
  * Class that is designed to instantiate and execute multiple metrics programs that extend
@@ -25,10 +24,10 @@ import picard.cmdline.programgroups.Metrics;
  *
  */
 @CommandLineProgramProperties(
-        usage = "Extension of picard.CollectMultipleMetrics to include GRIDSS metrics. "
+        summary = "Extension of picard.CollectMultipleMetrics to include GRIDSS metrics. "
         		+ "Additional metrics are CollectCigarMetrics, CollectIdsvMetrics, CollectTagMetrics, and CollectMapqMetrics.",
-        usageShort = "A \"meta-metrics\" calculating program that produces multiple metrics for the provided SAM/BAM",
-        programGroup = Metrics.class
+        oneLineSummary = "A \"meta-metrics\" calculating program that produces multiple metrics for the provided SAM/BAM",
+        programGroup = picard.cmdline.programgroups.Metrics.class
 )
 public class CollectGridssMetrics extends CollectMultipleMetrics {
     public static enum GridssProgram {
@@ -38,10 +37,10 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
         CollectIdsvMetrics,
         ReportThresholdCoverage,
     }
-    @Option(doc = "Set of gridss metrics programs to apply during the pass through the SAM file.")
+    @Argument(doc = "Set of gridss metrics programs to apply during the pass through the SAM file.")
     public Set<GridssProgram> GRIDSS_PROGRAM = new LinkedHashSet<>(Arrays.asList(GridssProgram.values()));
     
-    @Option(doc = "Threshold coverage to report for ReportThresholdCoverage.", optional=true)
+    @Argument(doc = "Threshold coverage to report for ReportThresholdCoverage.", optional=true)
     public Integer THRESHOLD_COVERAGE = null;
 
     public CollectGridssMetrics() {
@@ -85,7 +84,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 	    	                // to just set them anyway. These are set here to make sure that in case of a the derived class
 	    	                // overrides
 	    	                program.INPUT = input;
-	    	                program.REFERENCE_SEQUENCE = reference;
+	    	                program.setReferenceSequence(reference);
 	
 	    	                return program;
 	    				}
@@ -110,7 +109,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     		                // to just set them anyway. These are set here to make sure that in case of a the derived class
     		                // overrides
     		                program.INPUT = input;
-    		                program.REFERENCE_SEQUENCE = reference;
+    		                program.setReferenceSequence(reference);
     		                return program;
     					}
 
@@ -137,7 +136,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     		                // to just set them anyway. These are set here to make sure that in case of a the derived class
     		                // overrides
     		                program.INPUT = input;
-    		                program.REFERENCE_SEQUENCE = reference;
+    		                program.setReferenceSequence(reference);
 
     		                return program;
     					}
@@ -164,7 +163,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     		                // to just set them anyway. These are set here to make sure that in case of a the derived class
     		                // overrides
     		                program.INPUT = input;
-    		                program.REFERENCE_SEQUENCE = reference;
+    		                program.setReferenceSequence(reference);
 
     		                return program;
     					}
@@ -191,7 +190,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     		                // to just set them anyway. These are set here to make sure that in case of a the derived class
     		                // overrides
     		                program.INPUT = input;
-    		                program.REFERENCE_SEQUENCE = reference;
+    		                program.setReferenceSequence(reference);
     		                program.THRESHOLD_COVERAGE = THRESHOLD_COVERAGE;
     		                return program;
     					}

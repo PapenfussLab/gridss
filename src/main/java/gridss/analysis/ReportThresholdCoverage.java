@@ -27,6 +27,9 @@ package gridss.analysis;
 import java.io.File;
 import java.io.IOException;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.PaddedLinearGenomicCoordinate;
@@ -37,17 +40,16 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 
 @CommandLineProgramProperties(
-        usage = "Reads a SAM or BAM file and writes a BED file containing the regions in which coverage equals or exceeds the given threshold",
-        usageShort = "Reports regions at least threshold coverage."
+        summary = "Reads a SAM or BAM file and writes a BED file containing the regions in which coverage equals or exceeds the given threshold",
+        oneLineSummary = "Reports regions at least threshold coverage.",
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class ReportThresholdCoverage extends SinglePassSamProgram {
 	public static final String SUFFIX = ".coverage.blacklist.bed";
 	
-	@Option(doc = "Minimum coverage to report.", optional=false)
+	@Argument(doc = "Minimum coverage to report.", optional=false)
 	public int THRESHOLD_COVERAGE;
 	
 	private SequentialCoverageThreshold threshold;

@@ -26,6 +26,8 @@ package gridss.analysis;
 
 import java.io.File;
 
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -35,13 +37,12 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.programgroups.Metrics;
 
 @CommandLineProgramProperties(
-        usage = "Reads a SAM or BAM file and writes a file containing metrics " +
+		summary = "Reads a SAM or BAM file and writes a file containing metrics " +
                 "used by idsv.",
-        usageShort = "Writes idsv metrics for a SAM or BAM file",
+        oneLineSummary = "Writes idsv metrics for a SAM or BAM file",
         programGroup = Metrics.class
 )
 public class CollectIdsvMetrics extends SinglePassSamProgram {

@@ -3,25 +3,27 @@ package au.edu.wehi.idsv.sim;
 import java.util.List;
 import java.util.Locale;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.vcf.SvType;
 import htsjdk.samtools.util.IOUtil;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 
 @CommandLineProgramProperties(
-        usage = "Create a fasta containing structural variants of the requested types. Can simulate, insertion of random sequence, deletion, inversion, and tandem duplication.",  
-        usageShort = "Simple structural variant simulator"
+        summary = "Create a fasta containing structural variants of the requested types. Can simulate, insertion of random sequence, deletion, inversion, and tandem duplication.",  
+        oneLineSummary = "Simple structural variant simulator",
+        programGroup = gridss.cmdline.programgroups.Benchmarking.class
 )
 public class GenerateSimpleVariants extends SimulationGenerator {
 
-    @Option(doc="List of variants to insert. Valid variants are {INS, DEL, INV, DUP} for novel sequence insertion, deletion, inversion, and tandem duplication", optional=true)
+    @Argument(doc="List of variants to insert. Valid variants are {INS, DEL, INV, DUP} for novel sequence insertion, deletion, inversion, and tandem duplication", optional=true)
     public List<SvType> TYPE = Lists.newArrayList(SvType.INS, SvType.DEL, SvType.INV, SvType.DUP);
-    @Option(doc="Variant sizes", optional=true)
+    @Argument(doc="Variant sizes", optional=true)
 	public List<Integer> SIZE = Lists.newArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, 288, 320, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536);
-    @Option(doc="Number of copies of each variant (type,size) pairing to insert. Defaults to as many copies as possible ", optional=true)
+    @Argument(doc="Number of copies of each variant (type,size) pairing to insert. Defaults to as many copies as possible ", optional=true)
     public Integer COPIES;
     //private static Log log = Log.getInstance(GenerateSimpleVariants.class);
     @Override

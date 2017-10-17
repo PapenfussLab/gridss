@@ -29,6 +29,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
@@ -36,13 +38,12 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.programgroups.Metrics;
 
 @CommandLineProgramProperties(
-        usage = "Reads a SAM or BAM file and writes a file containing metrics about " +
+		summary = "Reads a SAM or BAM file and writes a file containing metrics about " +
                 "the presence of SAM tags",
-        usageShort = "Writes SAM tag metrics for a SAM or BAM file",
+        oneLineSummary = "Writes SAM tag metrics for a SAM or BAM file",
         programGroup = Metrics.class
 )
 public class CollectTagMetrics extends SinglePassSamProgram {

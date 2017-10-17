@@ -9,6 +9,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.Iterators;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -29,27 +32,27 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import picard.cmdline.CommandLineProgram;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-		usage = "Converts split reads and indel-containing reads to BEDPE notation.", usageShort = "")
+		summary = "Converts split reads and indel-containing reads to BEDPE notation.",
+		oneLineSummary = "Converts split reads and indel-containing reads to BEDPE notation.",
+        programGroup = picard.cmdline.programgroups.SamOrBam.class)
 public class ReadsToBedpe extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ReadsToBedpe.class);
-    @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
+    @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
     public File INPUT;
-    @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output BEDPE", optional=false)
+    @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output BEDPE", optional=false)
     public File OUTPUT;
-    @Option(doc="Minimum event size", optional=true)
+    @Argument(doc="Minimum event size", optional=true)
     public int MIN_SIZE = 50;
-    @Option(doc="Minimum mapq of read alignments", optional=true)
+    @Argument(doc="Minimum mapq of read alignments", optional=true)
     public int MIN_MAPQ = 0;
-    @Option(doc="Write split reads", optional=true)
+    @Argument(doc="Write split reads", optional=true)
     public boolean SPLIT_READS = true;
-    @Option(doc="Write indel reads", optional=true)
+    @Argument(doc="Write indel reads", optional=true)
     public boolean INDELS = true;
-    @Option(doc="Include a unique identifier for each breakpoint supported by each read. "
+    @Argument(doc="Include a unique identifier for each breakpoint supported by each read. "
     		+ "Note that this identified can be quite long for long read sequencing technologies.", optional=true)
     public boolean UNIQUE_IDENTIFIER= true;
     @Override

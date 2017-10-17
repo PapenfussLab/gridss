@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -17,27 +20,26 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.FixMateInformation;
 
 @CommandLineProgramProperties(
-        usage = "Converts VCF breakend calls to BAM format for visualisation. "
+        summary = "Converts VCF breakend calls to BAM format for visualisation. "
         		+ "Each breakpoint is represented as a read pair: one for each breakend. "
         		+ "All variants, including structural variations, that are not in breakend format are ignored. "
         		+ "VCF fields are not imported into the BAM",  
-        usageShort = "Converts VCF breakend calls to BAM format for visualisation."
+        oneLineSummary = "Converts VCF breakend calls to BAM format for visualisation.",
+        programGroup = picard.cmdline.programgroups.VcfOrBcf.class
 )
 public class VcfBreakendToReadPair extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(VcfBreakendToReadPair.class);
-	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="VCF containing structural variation breakend calls")
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="VCF containing structural variation breakend calls")
     public File INPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BAM output file")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BAM output file")
     public File OUTPUT;
-	@Option(shortName="OF", doc="BAM output file of filtered calls")
+	@Argument(shortName="OF", doc="BAM output file of filtered calls")
     public File OUTPUT_FILTERED;
-	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome")
+	@Argument(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome")
     public File REFERENCE;
 	@Override
 	protected int doWork() {

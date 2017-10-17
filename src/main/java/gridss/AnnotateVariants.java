@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -18,11 +20,11 @@ import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgramProperties;
 
 @CommandLineProgramProperties(
-        usage = "Annotates breakpoint variant calls",  
-        usageShort = "Annotates breakpoint variant calls"
+        summary = "Annotates breakpoint variant calls",  
+        oneLineSummary = "Annotates breakpoint variant calls",
+        programGroup = gridss.cmdline.programgroups.VariantCalling.class
 )
 public class AnnotateVariants extends VcfTransformCommandLineProgram {
 	private static final Log log = Log.getInstance(AnnotateVariants.class);

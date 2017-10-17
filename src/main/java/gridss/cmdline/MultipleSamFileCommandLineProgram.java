@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.broadinstitute.barclay.argparser.Argument;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -31,36 +32,35 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import picard.cmdline.CommandLineProgram;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.CreateSequenceDictionary;
 
 public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(MultipleSamFileCommandLineProgram.class);
-	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
-	@Option(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
+	@Argument(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
     public List<File> INPUT_NAME_SORTED;
-	@Option(doc="Input label. Variant calling evidence breakdowns are reported for each label."
+	@Argument(doc="Input label. Variant calling evidence breakdowns are reported for each label."
 			+ " Default labels correspond to INPUT filenames. "
 			+ "When specifying labels, labels must be provided for all input files.", optional=true)
     public List<String> INPUT_LABEL;
-    @Option(doc = "Per input maximum concordant fragment size.", optional=true)
+    @Argument(doc = "Per input maximum concordant fragment size.", optional=true)
     public List<Integer> INPUT_MAX_FRAGMENT_SIZE;
-    @Option(doc = "Per input minimum concordant fragment size.", optional=true)
+    @Argument(doc = "Per input minimum concordant fragment size.", optional=true)
     public List<Integer> INPUT_MIN_FRAGMENT_SIZE;
-    @Option(doc = "Percent of read pairs considered concorant (0.0-1.0). "
+    @Argument(doc = "Percent of read pairs considered concorant (0.0-1.0). "
     		+ "If this is unset, the SAM proper pair flag is used to determine whether a read is discordantly aligned. "
     		+ "Explicit fragment size specification overrides this setting.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
-    @Option(shortName="BL", doc = "BED blacklist of regions to ignore. Assembly of regions such as high-coverage centromeric repeats is slow, "
+    @Argument(shortName="BL", doc = "BED blacklist of regions to ignore. Assembly of regions such as high-coverage centromeric repeats is slow, "
     		+ "and if such regions are to be filtered in downstream analysis anyway, blacklisting those region will improve runtime "
     		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended.", optional=true)
     public File BLACKLIST = null;
     // --- evidence filtering parameters ---
-    @Option(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
+    @Argument(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
     public File CONFIGURATION_FILE = null;
-	@Option(doc="Number of worker threads to spawn. Defaults to number of cores available."
+	@Argument(doc="Number of worker threads to spawn. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();

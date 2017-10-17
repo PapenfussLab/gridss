@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
+import org.broadinstitute.barclay.argparser.Argument;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
@@ -24,7 +26,6 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 /**
@@ -36,9 +37,9 @@ import picard.cmdline.StandardOptionDefinitions;
  */
 public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(VcfTransformCommandLineProgram.class);
-	@Option(shortName="VCF", doc="Coordinate sorted VCF file")
+	@Argument(shortName="VCF", doc="Coordinate sorted VCF file")
     public File INPUT_VCF;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT_VCF;
 	public abstract CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool);
 	@Override

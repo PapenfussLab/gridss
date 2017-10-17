@@ -3,6 +3,8 @@ package gridss.analysis;
 import java.io.File;
 import java.util.List;
 
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import gridss.ExtractSVReads;
@@ -16,12 +18,11 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.metrics.MetricsFile;
-import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.programgroups.Metrics;
 
 @CommandLineProgramProperties(
-        usage = "Collects metrics regarding the structural variant reads present in the input.",
-		usageShort = "Collects metrics regarding the structural variant reads present in the input.",
+		summary = "Collects metrics regarding the structural variant reads present in the input.",
+		oneLineSummary = "Collects metrics regarding the structural variant reads present in the input.",
         programGroup = Metrics.class
 )
 public class CollectStructuralVariantReadMetrics extends ProcessStructuralVariantReadsCommandLineProgram {

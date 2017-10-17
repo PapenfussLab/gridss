@@ -543,7 +543,7 @@ public class TestHelper {
 	public static SplitReadEvidence SR(SAMEvidenceSource source, SAMRecord read, SAMRecord realigned) {
 		List<FastqRecord> ralist = SplitReadIdentificationHelper.getSplitReadRealignments(read, false, source.getContext().getEvidenceIDGenerator());
 		if (ralist.size() == 1) {
-			realigned.setReadName(ralist.get(0).getReadHeader());
+			realigned.setReadName(ralist.get(0).getReadName());
 		}
 		SplitReadIdentificationHelper.convertToSplitRead(read, ImmutableList.of(realigned));
 		return SplitReadEvidence.create(source, read).get(0);
@@ -551,7 +551,7 @@ public class TestHelper {
 	public static SplitReadEvidence SR(SAMEvidenceSource source, BreakendDirection dir, SAMRecord read, SAMRecord realigned) {
 		List<FastqRecord> ralist = SplitReadIdentificationHelper.getSplitReadRealignments(read, false, source.getContext().getEvidenceIDGenerator());
 		if (ralist.size() == 1) {
-			realigned.setReadName(ralist.get(0).getReadHeader());
+			realigned.setReadName(ralist.get(0).getReadName());
 		}
 		SplitReadIdentificationHelper.convertToSplitRead(read, ImmutableList.of(realigned));
 		return SplitReadEvidence.create(SES(), read).stream()
@@ -698,6 +698,11 @@ public class TestHelper {
 		@Override
 		public boolean checkError() {
 			return false;
+		}
+
+		@Override
+		public void setHeader(VCFHeader header) {
+			this.header = header;
 		}
 	}
 	
@@ -1235,7 +1240,7 @@ public class TestHelper {
 	}
 	public static SingleReadEvidence incorporateRealignment(SAMEvidenceSource aes, SAMRecord assembly, List<SAMRecord> realignments) {
 		SAMRecord out = assembly.deepCopy();
-		realignments.stream().forEach(r -> r.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(assembly, false, aes.getContext().getEvidenceIDGenerator()).get(0).getReadHeader()));
+		realignments.stream().forEach(r -> r.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(assembly, false, aes.getContext().getEvidenceIDGenerator()).get(0).getReadName()));
 		SplitReadIdentificationHelper.convertToSplitRead(out, realignments);
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, 0, out);
 		return list.get(0);

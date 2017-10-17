@@ -30,6 +30,9 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import com.google.common.collect.Iterables;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
@@ -41,20 +44,17 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
-import picard.cmdline.programgroups.Metrics;
 
 @CommandLineProgramProperties(
-        usage = "Reads a SAM or BAM file and writes a file containing metrics about " +
+        summary = "Reads a SAM or BAM file and writes a file containing metrics about " +
                 "the statistical distribution of alignment CIGARs.",
-        usageShort = "Writes CIGAR distribution metrics for a SAM or BAM file",
-        programGroup = Metrics.class
+        oneLineSummary = "Writes CIGAR distribution metrics for a SAM or BAM file",
+        programGroup = picard.cmdline.programgroups.Metrics.class
 )
 public class CollectCigarMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".cigar_metrics";
 	
-	@Option(shortName="Z", doc="If set to true include a zero length operator for each operator not included in the alignment CIGAR.")
+	@Argument(shortName="Z", doc="If set to true include a zero length operator for each operator not included in the alignment CIGAR.")
     public boolean INCLUDE_OMITTED_OPERATORS = true;
 	
     private EnumMap<CigarOperator, List<CigarDetailMetrics>> cigar;    

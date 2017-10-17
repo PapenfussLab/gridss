@@ -8,9 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import picard.cmdline.CommandLineProgram;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 /**
@@ -19,24 +20,25 @@ import picard.cmdline.StandardOptionDefinitions;
  *
  */
 @CommandLineProgramProperties(
-		usage = "Validations deletions 50bp or more from long read alignments.",
-		usageShort = "Validations deletions 50bp or more from long read alignments.")
+		summary = "Validations deletions 50bp or more from long read alignments.",
+		oneLineSummary = "Validations deletions 50bp or more from long read alignments.",
+        programGroup = gridss.cmdline.programgroups.Benchmarking.class)
 public class ValidateDeletions extends CommandLineProgram {
-    @Option(doc="Deletions in BEDPE format", shortName=StandardOptionDefinitions.INPUT_SHORT_NAME)
+    @Argument(doc="Deletions in BEDPE format", shortName=StandardOptionDefinitions.INPUT_SHORT_NAME)
     public File BEDPE = null;
-    @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
+    @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
     public File OUTPUT;
-    @Option(doc="Long read BAM file", shortName="LR")
+    @Argument(doc="Long read BAM file", shortName="LR")
     public List<File> LONG_READS;
-    //@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
+    //@Argument(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     //public File REFERENCE;
-    @Option(doc="Minimum left of a long read soft clip before it is considered supporting", shortName="MSC", optional=true)
+    @Argument(doc="Minimum left of a long read soft clip before it is considered supporting", shortName="MSC", optional=true)
     public int MIN_SOFT_CLIP_LENGTH = 30;
-    @Option(doc="Error margin allowed between the soft clip position and the call position", shortName="SCM", optional=true)
+    @Argument(doc="Error margin allowed between the soft clip position and the call position", shortName="SCM", optional=true)
     public int SOFT_CLIP_MARGIN = 30;
-    @Option(doc="Number of bases to expand the called deletion when counting spanning deletion events", shortName="SWS", optional=true)
+    @Argument(doc="Number of bases to expand the called deletion when counting spanning deletion events", shortName="SWS", optional=true)
     public int SPANNING_WINDOW_SIZE = 50;
-    @Option(doc="Minimum size of a deletion before it is considered to contribute to a spanning event."
+    @Argument(doc="Minimum size of a deletion before it is considered to contribute to a spanning event."
     		+ " This is used to remove PacBio short indel from the deletion signal.", shortName="MDS", optional=true)
     public int MIN_DELETION_LENGTH = 4;
     private static final String EOF_INDICATOR = "EOF";

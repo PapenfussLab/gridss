@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+import org.broadinstitute.barclay.argparser.Argument;
+
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -25,7 +27,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SequenceUtil;
 import picard.PicardException;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 /**
@@ -37,18 +38,18 @@ import picard.cmdline.StandardOptionDefinitions;
  */
 public abstract class ByReadNameSinglePassSamProgram extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(ByReadNameSinglePassSamProgram.class);
-	@Option(shortName = StandardOptionDefinitions.INPUT_SHORT_NAME, doc = "Input SAM or BAM file. " +
+	@Argument(shortName = StandardOptionDefinitions.INPUT_SHORT_NAME, doc = "Input SAM or BAM file. " +
 			" If multiple mapping locations are reported for each read, these reads must be grouped together.")
     public File INPUT;
 
-    @Option(shortName = "O", doc = "File to write the output to.")
+    @Argument(shortName = "O", doc = "File to write the output to.")
     public File OUTPUT;
 
-    @Option(doc = "If true (default), then the sort order in the header file will be ignored.",
+    @Argument(doc = "If true (default), then the sort order in the header file will be ignored.",
             shortName = StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME)
     public boolean ASSUME_SORTED = true;
 
-    @Option(doc = "Stop after processing N reads, mainly for debugging.")
+    @Argument(doc = "Stop after processing N reads, mainly for debugging.")
     public long STOP_AFTER = 0;
 
         /**

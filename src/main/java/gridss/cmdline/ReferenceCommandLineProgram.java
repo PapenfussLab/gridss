@@ -3,6 +3,8 @@ package gridss.cmdline;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+import org.broadinstitute.barclay.argparser.Argument;
+
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
@@ -10,15 +12,14 @@ import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import picard.cmdline.CommandLineProgram;
-import picard.cmdline.Option;
 
 public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ReferenceCommandLineProgram.class);
 	// --- intermediate file parameters ---
-    @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
+    @Argument(doc = "Directory to place intermediate results directories. Default location is the same directory"
     		+ " as the associated input or output file.", optional = true)
     public File WORKING_DIR = null;
-    @Option(doc = "Ignore reads marked as duplicates.", optional = true)
+    @Argument(doc = "Ignore reads marked as duplicates.", optional = true)
     public boolean IGNORE_DUPLICATES = true;
     private FileSystemContext fsc;
 	private ReferenceLookup reference;

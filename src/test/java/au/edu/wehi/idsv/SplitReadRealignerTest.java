@@ -101,7 +101,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		new SplitReadRealigner(getContext(), aligner).createSupplementaryAlignmentFastq(input, fq1, false);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		assertEquals(2, fq.size());
-		assertNotEquals(fq.get(0).getReadHeader(), fq.get(1).getReadHeader());
+		assertNotEquals(fq.get(0).getReadName(), fq.get(1).getReadName());
 	}
 	@Test
 	public void fastq_keys_should_not_exceed_254_character_BAM_limit() throws IOException {
@@ -113,7 +113,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		srr.createSupplementaryAlignmentFastq(input, fq1, false);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		for (FastqRecord fqr : fq) {
-			assertTrue(fqr.getReadHeader().length() <= 254);
+			assertTrue(fqr.getReadName().length() <= 254);
 		}
 	}
 }

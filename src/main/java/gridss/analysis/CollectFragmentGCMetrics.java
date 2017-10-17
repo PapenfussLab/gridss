@@ -27,6 +27,9 @@ package gridss.analysis;
 import java.io.File;
 import java.util.Set;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import gridss.cmdline.GcSinglePassSamProgram;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -36,9 +39,6 @@ import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.IOUtil;
 import picard.PicardException;
 import picard.analysis.MetricAccumulationLevel;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
-import picard.cmdline.programgroups.Metrics;
 import picard.util.RExecutor;
 
 /**
@@ -48,21 +48,21 @@ import picard.util.RExecutor;
  * @author Daniel Cameron
  */
 @CommandLineProgramProperties(
-        usage = "Reads a SAM or BAM file and writes a file containing metrics about " +
+        summary = "Reads a SAM or BAM file and writes a file containing metrics about " +
                 "the statistical distribution of read mapping qualities (excluding duplicates) " +
                 "and generates a Histogram plot.",
-        usageShort = "Writes mapq distribution metrics for a SAM or BAM file",
-        programGroup = Metrics.class
+        oneLineSummary = "Writes mapq distribution metrics for a SAM or BAM file",
+        programGroup = picard.cmdline.programgroups.Metrics.class
 )
 public class CollectFragmentGCMetrics extends GcSinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".gc_metrics";
 	public static final String HISTOGRAM_SUFFIX = ".gc_histogram.pdf";
     private static final String Histogram_R_SCRIPT = "gridss/analysis/gcHistogram.R";
     
-    @Option(shortName="H", doc="File to write insert size Histogram chart to.")
+    @Argument(shortName="H", doc="File to write insert size Histogram chart to.")
     public File Histogram_FILE = null;
 
-    @Option(shortName="LEVEL", doc="The level(s) at which to accumulate metrics.  ")
+    @Argument(shortName="LEVEL", doc="The level(s) at which to accumulate metrics.  ")
     private Set<MetricAccumulationLevel> METRIC_ACCUMULATION_LEVEL = CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS);
 
     // Calculates Metrics for all METRIC_ACCUMULATION_LEVELs provided

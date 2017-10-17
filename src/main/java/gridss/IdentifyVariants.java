@@ -5,21 +5,23 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import au.edu.wehi.idsv.VariantCaller;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-        usage = "Identifies putative structural variants.",  
-        usageShort = "Identifies putative structural variants."
+		summary = "Identifies putative structural variants.",  
+        oneLineSummary = "Identifies putative structural variants.",
+        programGroup = gridss.cmdline.programgroups.VariantCalling.class
 )
 public class IdentifyVariants extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(IdentifyVariants.class);
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT_VCF;
 	public static void main(String[] argv) {
         System.exit(new IdentifyVariants().instanceMain(argv));
