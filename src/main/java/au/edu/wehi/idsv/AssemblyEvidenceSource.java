@@ -147,7 +147,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		log.info("Merging assembly files");
 		// Merge chunk files
-		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
+		File out = getFile();
+		File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(getFile()) : out;
 		GatherBamFiles gather = new picard.sam.GatherBamFiles();
 		List<String> args = new ArrayList<>();
 		for (File f : deduplicatedChunks) {
@@ -166,10 +167,14 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		// Sorting is not required since each chunk was already sorted, and each chunk
 		// contains sequential genomic coordinates. We also don't need to index as we only need assembly.sv.bam indexed
 		// SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
-		FileHelper.move(tmpout, getFile(), true);
+		if (tmpout != out) {
+			FileHelper.move(tmpout, out, true);
+		}
 		invalidateSummaryCache();
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
-			FileHelper.delete(tmpout, true);
+			if (tmpout != out) {
+				FileHelper.delete(tmpout, true);
+			}
 			for (File f : assembledChunk) {
 				FileHelper.delete(f, true);
 			}
@@ -312,7 +317,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		log.debug(String.format("Uniquely assigning assembly evidence allocation in interval %s:%d-%s:%d",
 				getContext().getDictionary().getSequence(intervals[0].referenceIndex).getSequenceName(), intervals[0].start,
 				getContext().getDictionary().getSequence(intervals[intervals.length-1].referenceIndex).getSequenceName(), intervals[intervals.length-1].end));
-		File tmpout = FileSystemContext.getWorkingFileFor(out);
+		File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(out) : out;
 		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
 			try (SamReader reader = factory.open(in)) {
@@ -342,7 +347,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				}
 			}
 		}
-		FileHelper.move(tmpout, out, true);
+		if (tmpout != out) {
+			FileHelper.move(tmpout, out, true);
+		}
 	}
 	@Override
 	public void ensureExtracted() throws IOException {

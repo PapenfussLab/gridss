@@ -63,7 +63,7 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
     	if (header.getSortOrder() != SortOrder.queryname) {
 			log.info("Not considering multiple read alignments as the input file is not queryname sorted.");
 		}
-    	tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ExtractSVReads.");
+    	tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ExtractSVReads.") : OUTPUT;
     	writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput);
     	
     	IndelReadFilter indelFilter = new IndelReadFilter(INDELS ? MIN_INDEL_SIZE : Integer.MAX_VALUE);
@@ -209,7 +209,9 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 	protected void finish() {
 		writer.close();
 		try {
-			FileHelper.move(tmpoutput, OUTPUT, true);
+			if (tmpoutput != OUTPUT) {
+				FileHelper.move(tmpoutput, OUTPUT, true);
+			}
 			log.info(String.format("Extracted %d reads from %s", count, INPUT));
 		} catch (IOException e) {
 			log.error(e);

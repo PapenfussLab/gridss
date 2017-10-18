@@ -107,20 +107,24 @@ public class SplitReadRealigner {
 			while (recordsWritten > 0) {
 				// Align
 				File out = pc.getFileSystemContext().getRealignmentBam(input, iteration);
-				File tmpout = FileSystemContext.getWorkingFileFor(out);
+				File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(out) : out;
 				tmpFiles.add(out);
 				tmpFiles.add(tmpout);
 				aligner.align(fq, tmpout, pc.getReferenceFile(), workerThreads);
-				FileHelper.move(tmpout, out, true);
+				if (tmpout != out) {
+					FileHelper.move(tmpout, out, true);
+				}
 				aligned.add(out);
 				// start next iteration
 				iteration++;
 				fq = pc.getFileSystemContext().getRealignmentFastq(out, iteration);
-				tmpfq = FileSystemContext.getWorkingFileFor(fq);
+				tmpfq = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(fq) : fq;
 				tmpFiles.add(fq);
 				tmpFiles.add(tmpfq);
 				recordsWritten = createSupplementaryAlignmentFastq(out, tmpfq, true);
-				Files.move(tmpfq, fq);
+				if (tmpfq != fq) {
+					Files.move(tmpfq, fq);
+				}
 			}
 			mergeSupplementaryAlignment(input, aligned, output);
 		} finally {

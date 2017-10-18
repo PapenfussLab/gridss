@@ -45,6 +45,12 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
+	@Option(doc="Keeps the same sort order as the input file", optional=true)
+	public boolean RETAIN_SORT_ORDER = true;
+	@Option(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files and invoking the aligner as a stand-alone program. "
+			+ " Streaming alignment required RETAIN_SORT_ORDER to be false but enables SoftClipsToSplitReads to be used in a pipe as it does not require any"
+			+ " intermediate files to be written.", optional=true)
+	public boolean ALIGNER_STREAMING = false;
     @Option(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
@@ -86,6 +92,9 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
+		if (ALIGNER_STREAMING & !RETAIN_SORT_ORDER) {
+			return new String[]{"ALIGNER_STREAMING only supported when RETAIN_SORT_ORDER is false"};
+		}
 		return super.customCommandLineValidation();
 	}
 	public static void main(String[] argv) {

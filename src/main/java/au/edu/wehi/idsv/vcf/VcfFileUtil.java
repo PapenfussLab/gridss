@@ -81,7 +81,7 @@ public class VcfFileUtil {
 			}
 			log.info("Sorting to " + output);
 			SortingCollection<VariantContext> collection = null;
-			File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.");
+			File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.") : output;
 			if (tmpout.exists()) {
 				FileHelper.delete(tmpout, true);
 			}
@@ -110,10 +110,12 @@ public class VcfFileUtil {
 				}
 				collection.cleanup();
 				collection = null;
-				FileHelper.move(tmpout, output, true);
+				if (tmpout != output) {
+					FileHelper.move(tmpout, output, true);
+				}
 			} finally {
 				if (collection != null) collection.cleanup();
-				if (tmpout.exists()) {
+				if (tmpout != output & tmpout.exists()) {
 					FileHelper.delete(tmpout, true);
 				}
 			}
@@ -127,7 +129,7 @@ public class VcfFileUtil {
 	 * @throws IOException
 	 */
 	public static void concat(SAMSequenceDictionary dictionary, List<File> input, File output) throws IOException {
-		File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.concat.");
+		File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output, "gridss.tmp.concat.") : output;
 		try (VariantContextWriter writer = new VariantContextWriterBuilder()
 				.setOutputFile(tmpout)
 				.setReferenceDictionary(dictionary)
@@ -147,6 +149,8 @@ public class VcfFileUtil {
 			}
 			writer.close();
 		}
-		FileHelper.move(tmpout, output, true);
+		if (tmpout != output) {
+			FileHelper.move(tmpout, output, true);
+		}
 	}
 }

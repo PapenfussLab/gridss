@@ -88,11 +88,13 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     				}
     			}
     			try (SAMRecordIterator it = reader.iterator()) {
-    				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.");
+    				File tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.") : OUTPUT;
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
     					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, RECALCULATE_SA_SUPPLEMENTARY, INPUT.getName() + "-");
     				}
-    				FileHelper.move(tmpoutput, OUTPUT, true);
+    				if (tmpoutput != OUTPUT) {
+    					FileHelper.move(tmpoutput, OUTPUT, true);
+    				}
     			}
     		}
 		} catch (IOException e) {

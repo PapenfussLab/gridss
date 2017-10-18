@@ -60,8 +60,8 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 		if (!writeLow && !writeHigh) {
 			throw new IllegalArgumentException("No breakends to be written. At least one of {LOW, HIGH} breakends should be specified");
 		}
-		File working = FileSystemContext.getWorkingFileFor(bedpe);
-		File workingFiltered = FileSystemContext.getWorkingFileFor(bedpeFiltered);
+		File working = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(bedpe) : bedpe;
+		File workingFiltered = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(bedpeFiltered) : bedpeFiltered;
 		VCFFileReader vcfReader = null;
 		CloseableIterator<VariantContext> it = null; 
 		BedpeWriter writer = null;
@@ -97,13 +97,17 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 			}
 			writer.close();
 			writerFiltered.close();
-			FileHelper.move(working, bedpe, false);
-			FileHelper.move(workingFiltered, bedpeFiltered, false);
 		} finally {
 			CloserUtil.close(writer);
 			CloserUtil.close(writerFiltered);
 			CloserUtil.close(it);
 			CloserUtil.close(vcfReader);
+		}
+		if (working != bedpe) {
+			FileHelper.move(working, bedpe, false);
+		}
+		if (workingFiltered != bedpeFiltered) {
+			FileHelper.move(workingFiltered, bedpeFiltered, false);
 		}
 	}
 	public static void main(String[] argv) {
