@@ -3,14 +3,17 @@ package au.edu.wehi.idsv;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.Files;
 
+import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
@@ -23,6 +26,7 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.CloserUtil;
@@ -38,7 +42,6 @@ public class SplitReadRealigner {
 	private SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
 	private FastqWriterFactory fastqWriterFactory = new FastqWriterFactory();
 	private boolean processSecondaryAlignments = false;
-	private FastqAligner aligner;
 	/**
 	 * Alignment-unique read identifier must be hashed to ensure that the read names
 	 * written to the fastq files do not exceed the BAM limit of 254 even when the
@@ -48,9 +51,8 @@ public class SplitReadRealigner {
 	private EvidenceIdentifierGenerator eidgen = new HashedEvidenceIdentifierGenerator(); 
 	private List<File> tmpFiles = new ArrayList<>();
 	
-	public SplitReadRealigner(GenomicProcessingContext pc, FastqAligner aligner) {
+	public SplitReadRealigner(GenomicProcessingContext pc) {
 		this.pc = pc;
-		this.aligner = aligner;
 	}
 	public int getMinSoftClipLength() {
 		return minSoftClipLength;
@@ -94,7 +96,102 @@ public class SplitReadRealigner {
 	public void setProcessSecondaryAlignments(boolean processSecondaryAlignments) {
 		this.processSecondaryAlignments = processSecondaryAlignments;
 	}
-	public void createSupplementaryAlignments(File input, File output) throws IOException {
+	private class SplitReadRealignmentInfo {
+		@Override
+		public int hashCode() {
+			return lookupKey.hashCode();
+		}
+		@Override
+		public boolean equals(Object obj) {
+			return lookupKey.equals(((SplitReadRealignmentInfo)obj).lookupKey);
+		}
+		public SplitReadRealignmentInfo(SAMRecord record) {
+			this.originatingRecord = record;
+			this.lookupKey = eidgen.getAlignmentUniqueName(record);
+		}
+		public SAMRecord originatingRecord;
+		public String lookupKey;
+		public List<SAMRecord> realignments = new ArrayList<>(2);
+		public int outstandingRealignments = 0;
+	}
+	public void createSupplementaryAlignments(ExternalProcessStreamingAligner aligner, File input, File output) throws IOException {
+		SplitReadFastqExtractor rootExtractor = new SplitReadFastqExtractor(false, minSoftClipLength, minSoftClipQuality, isProcessSecondaryAlignments(), eidgen);
+		SplitReadFastqExtractor recursiveExtractor = new SplitReadFastqExtractor(true, minSoftClipLength, minSoftClipQuality, false, eidgen);
+		
+		Map<String, SplitReadRealignmentInfo> realignments = new HashMap<>();
+		
+		try (SamReader reader = readerFactory.open(input)) {
+			SAMFileHeader header = reader.getFileHeader().clone();
+			header.setSortOrder(SortOrder.unsorted);
+			try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, output)) {
+				try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
+					while (bufferedIt.hasNext()) {
+						SAMRecord r = bufferedIt.next();
+						processInputRecord(aligner, rootExtractor, realignments, writer, r);
+						while (aligner.hasAlignmentRecord()) {
+							processAlignmentRecord(aligner, recursiveExtractor, realignments, writer);
+						}
+					}
+					// flush out all realignments
+					aligner.flush();
+					while (aligner.hasAlignmentRecord()) {
+						// perform nested realignment
+						while (aligner.hasAlignmentRecord()) {
+							processAlignmentRecord(aligner, recursiveExtractor, realignments, writer);
+						}
+						aligner.flush();
+					}
+				}
+			}
+		}
+	}
+	private void processInputRecord(ExternalProcessStreamingAligner aligner, SplitReadFastqExtractor rootExtractor,
+			Map<String, SplitReadRealignmentInfo> realignments, SAMFileWriter writer, SAMRecord r) throws IOException {
+		List<FastqRecord> softclipRealignments = rootExtractor.extract(r);
+		if (softclipRealignments.size() == 0) {
+			// nothing to do - just output the record
+			writer.addAlignment(r);
+		} else {
+			// perform split read realignment
+			SplitReadRealignmentInfo info = new SplitReadRealignmentInfo(r);
+			realignments.put(info.lookupKey, info);
+			for (FastqRecord fq : softclipRealignments) {
+				aligner.asyncAlign(fq);
+				info.outstandingRealignments++;
+			}
+		}
+	}
+	private void processAlignmentRecord(ExternalProcessStreamingAligner aligner,
+			SplitReadFastqExtractor recursiveExtractor, Map<String, SplitReadRealignmentInfo> realignments,
+			SAMFileWriter writer) throws IOException {
+		SAMRecord supp = aligner.getAlignment();
+		SplitReadRealignmentInfo info = realignments.get(SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(supp));
+		if (supp.getSupplementaryAlignmentFlag() || supp.getNotPrimaryAlignmentFlag()) {
+			// only consider the best mapping location reported by the aligner
+		} else {
+			assert(info.outstandingRealignments > 0);
+			info.outstandingRealignments--;
+			if (!supp.getReadUnmappedFlag()) {
+				info.realignments.add(supp);
+				List<FastqRecord> nestedRealignments = recursiveExtractor.extract(supp);
+				for (FastqRecord fq : nestedRealignments) {
+					aligner.asyncAlign(fq);
+					info.outstandingRealignments++;
+				}
+			}
+			// all splits identified
+			if (info.outstandingRealignments == 0) {
+				if (info.realignments.size() > 0) {
+					SplitReadIdentificationHelper.convertToSplitRead(info.originatingRecord, info.realignments);
+				}
+				writer.addAlignment(info.originatingRecord);
+				for (SAMRecord sar : info.realignments) {
+					writer.addAlignment(sar);
+				}
+			}
+		}
+	}
+	public void createSupplementaryAlignments(FastqAligner aligner, File input, File output) throws IOException {
 		try {
 			int iteration = 0;
 			File fq = pc.getFileSystemContext().getRealignmentFastq(input, iteration);

@@ -121,14 +121,15 @@ public class SAMFileUtil {
 			switch (existingSortOrder) {
 				case coordinate:
 				case queryname:
-					throw new RuntimeException("TODO: move this check upstream");
-					//if (sortOrder.equals(existingSortOrder)) {
-					//	log.info(unsorted + " already sorted by " + sortOrder);
-					//	FileHelper.copy(unsorted, tmpFile, true);
-					//	FileHelper.move(tmpFile, output, true);
-					//	return null;
-					//}
-					//break;
+					if (sortOrder.equals(existingSortOrder)) {
+						log.info(unsorted + " already sorted by " + sortOrder);
+						FileHelper.copy(unsorted, tmpFile, true);
+						if (tmpFile != output) {
+							FileHelper.move(tmpFile, output, true);
+						}
+						return null;
+					}
+					break;
 				default:
 					break;
 			}

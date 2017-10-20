@@ -14,6 +14,7 @@ import org.junit.Test;
 import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.alignment.SmithWatermanFastqAligner;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
@@ -31,8 +32,9 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Test
 	public void should_not_call_aligner_unless_required() throws IOException {
 		createInput(Read(0, 1, "50M"));
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), null);
-		srr.createSupplementaryAlignments(input, output);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
+		FastqAligner aligner = null;
+		srr.createSupplementaryAlignments(aligner, input, output);
 		assertEquals(1, getRecords(output).size());
 	}
 	@Test
@@ -42,8 +44,8 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setReadName("r");
 		
 		createBAM(input, SortOrder.coordinate, r);
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		
 		List<SAMRecord> result = getRecords(output);
 		assertEquals(2, result.size());
@@ -57,8 +59,8 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setReadName("r");
 		
 		createBAM(input, SortOrder.coordinate, r);
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		
 		List<SAMRecord> result = getRecords(output);
 		assertEquals(3, result.size());
@@ -75,22 +77,22 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		SplitReadRealigner srr;
 		
 		createBAM(input, SortOrder.coordinate, r);
-		srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 		assertTrue(Ordering.from(SortOrder.coordinate.getComparatorInstance()).isOrdered(result));
 		
 		createBAM(input, SortOrder.queryname, r);
-		srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 		assertTrue(Ordering.from(SortOrder.queryname.getComparatorInstance()).isOrdered(result));
 		
 		createBAM(input, SortOrder.unsorted, r);
-		srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 	}
@@ -98,7 +100,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	public void fastq_keys_should_be_unique() throws IOException {
 		createBAM(input, SortOrder.coordinate, Read(0, 1, "1S1M1S"));
 		File fq1 = getContext().getFileSystemContext().getRealignmentFastq(input, 0);
-		new SplitReadRealigner(getContext(), aligner).createSupplementaryAlignmentFastq(input, fq1, false);
+		new SplitReadRealigner(getContext()).createSupplementaryAlignmentFastq(input, fq1, false);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		assertEquals(2, fq.size());
 		assertNotEquals(fq.get(0).getReadHeader(), fq.get(1).getReadHeader());
@@ -109,7 +111,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setReadName(S("R", 254));
 		createBAM(input, SortOrder.coordinate, r);
 		File fq1 = getContext().getFileSystemContext().getRealignmentFastq(input, 0);
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), aligner);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
 		srr.createSupplementaryAlignmentFastq(input, fq1, false);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		for (FastqRecord fqr : fq) {

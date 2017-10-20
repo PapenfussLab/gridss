@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import htsjdk.samtools.SAMFileHeader;
@@ -20,7 +19,6 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 	/**
 	 * Number of seconds to wait for the external aligner to shut down
 	 */
-	private static final int SHUTDOWN_GRACE_PERIOD = 10;
 	private static final Log log = Log.getInstance(ExternalProcessFastqAligner.class);
 	private final List<String> template;
 	private final SamReaderFactory readerFactory;
@@ -53,28 +51,6 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 				writer.addAlignment(it.next());
 			}
 		}
-		try {
-			aligner.waitFor(SHUTDOWN_GRACE_PERIOD, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			// Restore the interrupted status
-            Thread.currentThread().interrupt();
-		}
-		if (aligner.isAlive()) {
-			log.error("External process still alive after alignment");
-		}
-		if (aligner.exitValue() != 0) {
-			String msg = String.format(
-					"Subprocess terminated with with exit status %1$d. "
-					+ "Alignment failed for %2$s executing \"%3$s\". "
-					+ "Can you run the alignment command from the command line? "
-					+ "Is the aligner on PATH? "
-					+ "Did you build an index with prefix %4$s?",
-					aligner.exitValue(),
-					fastq,
-					commandlinestr,
-					reference);
-			log.error(msg);
-			throw new RuntimeException(msg);
-		}
+		ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference);
 	}
 }
