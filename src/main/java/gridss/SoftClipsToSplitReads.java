@@ -60,32 +60,28 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
     	pc.setCommandLineProgram(this);
     	pc.setFilterDuplicates(IGNORE_DUPLICATES);
-    	if (ALIGNER_STREAMING) {
+    	SplitReadRealigner realigner = new SplitReadRealigner(pc);
+    	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
+    	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
+    	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
+    	realigner.setWorkerThreads(WORKER_THREADS);
+    	try {
+    		SamReaderFactory readerFactory = SamReaderFactory.make();
+        	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
+        	
+        	if (ALIGNER_STREAMING) {
+        		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
+        	} else {
+        		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
+        	}
     		
-    	} else {
-	    	SplitReadRealigner realigner = new SplitReadRealigner(pc);
-	    	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
-	    	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
-	    	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
-	    	realigner.setWorkerThreads(WORKER_THREADS);
-	    	try {
-	    		SamReaderFactory readerFactory = SamReaderFactory.make();
-	        	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-	        	
-	        	if (ALIGNER_STREAMING) {
-	        		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
-	        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
-	        	} else {
-	        		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
-	        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
-	        	}
-	    		
-	    		
-			} catch (IOException e) {
-				log.error(e);
-				return -1;
-			}
-    	}
+    		
+		} catch (IOException e) {
+			log.error(e);
+			return -1;
+		}
     	return 0;
 	}
     

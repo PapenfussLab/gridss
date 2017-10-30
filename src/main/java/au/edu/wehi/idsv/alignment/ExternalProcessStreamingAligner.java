@@ -29,8 +29,8 @@ import htsjdk.samtools.util.Log;
  * @author Daniel Cameron
  *
  */
-public class ExternalProcessStreamingAligner implements Closeable, Flushable {
-	private static final int POLL_INTERVAL = 100;
+public class ExternalProcessStreamingAligner implements Closeable, Flushable, StreamingAligner {
+	private static final int POLL_INTERVAL = 1000;
 	private static final Log log = Log.getInstance(ExternalProcessStreamingAligner.class);	
 	private final AtomicInteger outstandingReads = new AtomicInteger(0);
 	private final BlockingQueue<SAMRecord> buffer = new LinkedBlockingQueue<>();
@@ -48,15 +48,19 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable {
 		this.args = commandline.stream()
 				.map(s -> String.format(s, "-", reference.getAbsolutePath(), threads))
 				.collect(Collectors.toList());
-		this.commandlinestr = commandline.stream().collect(Collectors.joining(" "));
+		this.commandlinestr = args.stream().collect(Collectors.joining(" "));
 	}
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#asyncAlign(htsjdk.samtools.fastq.FastqRecord)
+	 */
+	@Override
 	public synchronized void asyncAlign(FastqRecord fq) throws IOException {
 		ensureAligner();
 		outstandingReads.incrementAndGet();
 		toExternalProgram.write(fq);
 		toExternalProgram.flush();
 	}
-	public void ensureAligner() throws IOException {
+	private void ensureAligner() throws IOException {
 		if (aligner == null) {
 			log.info("Starting external aligner");
 			log.info(commandlinestr);
@@ -67,34 +71,28 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable {
 					.start();
 			toExternalProgram = new BasicFastqWriter(new PrintStream(new BufferedOutputStream(aligner.getOutputStream())));
 			reader = new Thread(() -> readAllAlignments(readerFactory));
+			reader.setName("ExternalProcessStreamingAligner");
 			reader.start();
 		}
 	}
-	/***
-	 * Flushes outstanding alignment requests.
-	 * 
-	 * Note that both external programs and the OS buffer both the input and output streams.
-	 * To guarantee that the reads have been flushed, this methods closes the external
-	 * program and as such, is a very expensive operation.
-	 * @throws IOException 
-	 * 
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#flush()
 	 */
+	@Override
 	public void flush() throws IOException {
 		close();
 	}
-	/**
-	 * Returns true if there is at least one outstanding alignment completed   
-	 * @return
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#hasAlignmentRecord()
 	 */
+	@Override
 	public boolean hasAlignmentRecord() {
 		return buffer.size() > 0;
 	}
-	/**
-	 * Gets an alignment completed by the caller.
-	 * 
-	 * @return
-	 * @throws IllegalStateException thrown when no alignment record is available from the aligner. Check if a record is available using hasAlignmentRecord() 
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#getAlignment()
 	 */
+	@Override
 	public SAMRecord getAlignment() {
 		if (!hasAlignmentRecord()) {
 			throw new IllegalStateException("No alignments available. getAlignment() should only be called if at least one alignment record is available.");
@@ -110,24 +108,32 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable {
 		SAMRecordIterator it = fromExternalProgram.iterator();
 		while (it.hasNext()) {
 			SAMRecord r = it.next();
-			outstandingReads.decrementAndGet();
 			buffer.add(r);
+			outstandingReads.decrementAndGet();
 		}
+		log.info("Reader thread complete.");
 	}
-	public void close() throws IOException {
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#close()
+	 */
+	@Override
+	public synchronized void close() throws IOException {
 		if (aligner == null) {
 			// nothing to do
 			return;
 		}
 		log.info("Waiting for external aligner to complete all alignments.");
+		toExternalProgram.flush();
+		aligner.getOutputStream().flush();
 		toExternalProgram.close();
 		// and just to be sure we don't hit any more htsjdk bugs where they don't close the underlying stream
-		aligner.getOutputStream().close(); 
+		aligner.getOutputStream().close();
 		// wait for the aligner to complete all outstanding alignments
 		// This doesn't deadlock as buffer is unbounded in size so we're guaranteed to be able to
 		// read the entire output stream without blocking
 		while (outstandingReads.get() > 0) {
 			try {
+				log.debug(String.format("%d alignments outstanding", outstandingReads.get()));
 				Thread.sleep(POLL_INTERVAL);
 			} catch (InterruptedException e) {
 				log.warn(e);

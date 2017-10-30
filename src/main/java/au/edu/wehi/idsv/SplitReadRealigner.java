@@ -13,8 +13,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.Files;
 
-import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import au.edu.wehi.idsv.alignment.FastqAligner;
+import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -114,7 +114,7 @@ public class SplitReadRealigner {
 		public List<SAMRecord> realignments = new ArrayList<>(2);
 		public int outstandingRealignments = 0;
 	}
-	public void createSupplementaryAlignments(ExternalProcessStreamingAligner aligner, File input, File output) throws IOException {
+	public void createSupplementaryAlignments(StreamingAligner aligner, File input, File output) throws IOException {
 		SplitReadFastqExtractor rootExtractor = new SplitReadFastqExtractor(false, minSoftClipLength, minSoftClipQuality, isProcessSecondaryAlignments(), eidgen);
 		SplitReadFastqExtractor recursiveExtractor = new SplitReadFastqExtractor(true, minSoftClipLength, minSoftClipQuality, false, eidgen);
 		
@@ -144,8 +144,9 @@ public class SplitReadRealigner {
 				}
 			}
 		}
+		assert(realignments.size() == 0);
 	}
-	private void processInputRecord(ExternalProcessStreamingAligner aligner, SplitReadFastqExtractor rootExtractor,
+	private void processInputRecord(StreamingAligner aligner, SplitReadFastqExtractor rootExtractor,
 			Map<String, SplitReadRealignmentInfo> realignments, SAMFileWriter writer, SAMRecord r) throws IOException {
 		List<FastqRecord> softclipRealignments = rootExtractor.extract(r);
 		if (softclipRealignments.size() == 0) {
@@ -161,13 +162,15 @@ public class SplitReadRealigner {
 			}
 		}
 	}
-	private void processAlignmentRecord(ExternalProcessStreamingAligner aligner,
+	private void processAlignmentRecord(StreamingAligner aligner,
 			SplitReadFastqExtractor recursiveExtractor, Map<String, SplitReadRealignmentInfo> realignments,
 			SAMFileWriter writer) throws IOException {
 		SAMRecord supp = aligner.getAlignment();
-		SplitReadRealignmentInfo info = realignments.get(SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(supp));
+		String lookupkey = SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(supp);
+		SplitReadRealignmentInfo info = realignments.get(lookupkey);
 		if (supp.getSupplementaryAlignmentFlag() || supp.getNotPrimaryAlignmentFlag()) {
 			// only consider the best mapping location reported by the aligner
+			//log.debug(String.format("%s: ignoring supp alignment", supp.getReadName()));
 		} else {
 			assert(info.outstandingRealignments > 0);
 			info.outstandingRealignments--;
@@ -177,6 +180,7 @@ public class SplitReadRealigner {
 				for (FastqRecord fq : nestedRealignments) {
 					aligner.asyncAlign(fq);
 					info.outstandingRealignments++;
+					//log.debug(String.format("%s: performing nested realignment. %d realignments now outstanding", info.originatingRecord.getReadName(), info.outstandingRealignments));
 				}
 			}
 			// all splits identified
@@ -188,6 +192,10 @@ public class SplitReadRealigner {
 				for (SAMRecord sar : info.realignments) {
 					writer.addAlignment(sar);
 				}
+				//log.debug(String.format("%s: %d supp alignments found.", info.originatingRecord.getReadName(), info.realignments.size()));
+				realignments.remove(lookupkey);
+			} else {
+				//log.debug(String.format("%s: %d outstanding alignments", info.originatingRecord.getReadName(), info.outstandingRealignments));
 			}
 		}
 	}

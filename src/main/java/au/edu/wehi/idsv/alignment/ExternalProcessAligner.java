@@ -9,7 +9,7 @@ class ExternalProcessHelper {
 	/**
 	 * Number of seconds to wait for the external process to shut down
 	 */
-	private static final int SHUTDOWN_GRACE_PERIOD = 10;
+	private static final int SHUTDOWN_GRACE_PERIOD = 60;
 	private static final Log log = Log.getInstance(ExternalProcessHelper.class);	
 	public static void shutdown(Process process, String commandline, String helpfulErrorMessage) {
 		try {
@@ -32,7 +32,7 @@ class ExternalProcessHelper {
 		if (process.exitValue() != 0) {
 			String msg = String.format(
 					"Subprocess terminated with with exit status %d. "
-					+ "Failed executing \"%s\". %s" +
+					+ "Failed executing \"%s\". %s",
 					process.exitValue(),
 					commandline,
 					helpfulErrorMessage);

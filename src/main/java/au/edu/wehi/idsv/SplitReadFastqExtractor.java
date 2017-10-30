@@ -36,7 +36,8 @@ public class SplitReadFastqExtractor {
 		// Logic for extending an existing SA alignment not yet complete. Need to:
 		// - only realign bases not in any existing SA alignment
 		// - update all SA record (requires queryname sorted input file)
-		if (r.getAttribute(SAMTag.SA.name()) != null) return list;
+		// Note that realignments may be split reads, but we currently only consider the primary alignment
+		if (!isSplit && r.getAttribute(SAMTag.SA.name()) != null) return list;
 		if (r.getSupplementaryAlignmentFlag()) return list;
 		if (r.getNotPrimaryAlignmentFlag() && !processSecondaryAlignments) {
 			return list;
