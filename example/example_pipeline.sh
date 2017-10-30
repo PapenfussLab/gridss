@@ -14,12 +14,11 @@ REFERENCE=~/reference_genomes/human/hg19.fa
 INPUT=example.input.bam
 OUTPUT=example.sv.vcf
 RAW_GRIDSS_ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.4.5-SNAPSHOT-jar-with-dependencies.jar
-JVM_ARGS="
+GRIDSS_JAR=~/bin/gridss-1.5.0-SNAPSHOT-jar-with-dependencies.jar
+GRIDSS_JVM_ARGS="
 	-Dsamjdk.use_async_io_read_samtools=true 
 	-Dsamjdk.use_async_io_write_samtools=true 
 	-Dsamjdk.use_async_io_write_tribble=true"
-
 GRIDSS_THRESHOLD_COVERAGE=10000
 ####################
 # Environment/external tools sanity checks
@@ -69,7 +68,7 @@ if [[ ! -f $INPUT ]] ; then
 		# RECALCULATE_SA_SUPPLEMENTARY not needed since we aligned with -Y and without -M
 		# SOFTEN_HARD_CLIPS not needed since we supplied the -Y flag to bwa
 		# FIX_MATE_INFORMATION not needed since we used bwa
-		java $JVM_ARGS -Dsamjdk.create_index=false \
+		java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=false \
 			-cp $GRIDSS_JAR gridss.ComputeSamTags \
 			REFERENCE_SEQUENCE=$REFERENCE \
 			WORKING_DIR=$INPUT_WORKING_DIR \
@@ -89,7 +88,7 @@ if [[ ! -f $INPUT ]] ; then
 			| \
 		# Although bwa reports split reads, you can identify additional split reads
 		# by feeding the soft clipped reads back to bwa
-		java $JVM_ARGS -Dsamjdk.create_index=false \
+		java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=false \
 			-cp $GRIDSS_JAR gridss.SoftClipsToSplitReads \
 			REFERENCE_SEQUENCE=$REFERENCE \
 			I=/dev/stdin \
@@ -103,7 +102,7 @@ if [[ ! -f $INPUT ]] ; then
 	samtools markdup - - -O BAM | \
 	# THRESHOLD_COVERAGE=gridss.properties/maxCoverage
 	# Using non-POSIX-compatble process substitution feature of bash to fork the output stream
-	tee >(java $JVM_ARGS -cp $GRIDSS_JAR gridss.analysis.CollectGridssMetrics REFERENCE_SEQUENCE=$REFERENCE I=/dev/stdin O=$INPUT_WORKING_PREFIX THRESHOLD_COVERAGE=$GRIDSS_THRESHOLD_COVERAGE) > $INPUT && \
+	tee >(java $GRIDSS_JVM_ARGS -cp $GRIDSS_JAR gridss.analysis.CollectGridssMetrics REFERENCE_SEQUENCE=$REFERENCE I=/dev/stdin O=$INPUT_WORKING_PREFIX THRESHOLD_COVERAGE=$GRIDSS_THRESHOLD_COVERAGE) > $INPUT && \
 	samtools index $INPUT && \
 	# the unsorted input file can now be deleted
 	rm $INPUT_WORKING_PREFIX.unsorted.bam
@@ -129,34 +128,35 @@ fi
 
 # Add BLACKLIST parameter if using hg19 to speed up runtime
 OUTPUT_WORKING_DIR=$(dirname $OUTPUT)/$(basename $OUTPUT).gridss.working
-OUTPUT_WORKING_PREFIX=$INPUT_WORKING_DIR/$(basename $INPUT)
+OUTPUT_WORKING_PREFIX=$OUTPUT_WORKING_DIR/$(basename $INPUT)
 # Multiple input files require INPUT= to be specified multiple times
 GRIDSS_COMMON_ARGS="
 	REFERENCE_SEQUENCE=$REFERENCE
 	INPUT=$INPUT
 	WORKER_THREADS=$(nproc)
 	"
-
+mkdir -p $OUTPUT_WORKING_DIR
 mkdir -p $RAW_GRIDSS_ASSEMBLY.gridss.working
 PROCESSED_GRIDSS_ASSEMBLY=$RAW_GRIDSS_ASSEMBLY.gridss.working/$(basename $RAW_GRIDSS_ASSEMBLY).sv.bam
 if [[ ! -f $PROCESSED_GRIDSS_ASSEMBLY ]] ; then	
 	# GRIDSS assembly
-	java $JVM_ARGS -Dsamjdk.create_index=true \
+	java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=true \
 		-cp $GRIDSS_JAR gridss.AssembleBreakends \
 		$GRIDSS_COMMON_ARGS \
-		OUTPUT=$RAW_GRIDSS_ASSEMBLY
+		OUTPUT=$RAW_GRIDSS_ASSEMBLY && \
 	# We now need to work out which breakpoint is supported by each breakend assembly
 	# We do this by aligning the soft clipped bases of breakend assembly contigs
 	# This is exactly the same process as converting soft clipped reads into split reads 
-	java $JVM_ARGS -Dsamjdk.create_index=false \
+	java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=false \
 			-cp $GRIDSS_JAR gridss.SoftClipsToSplitReads \
 			REFERENCE_SEQUENCE=$REFERENCE \
 			I=$RAW_GRIDSS_ASSEMBLY \
 			O=/dev/stdout \
 			ALIGNER_STREAMING=true \
 			WORKER_THREADS=$(nproc) | \
-	samtools sort -@ $(nproc) -O BAM -T $RAW_GRIDSS_ASSEMBLY.gridss.working - > $PROCESSED_GRIDSS_ASSEMBLY
-	java $JVM_ARGS -cp $GRIDSS_JAR gridss.analysis.CollectGridssMetrics \
+	samtools sort -@ $(nproc) -O BAM -T $RAW_GRIDSS_ASSEMBLY.gridss.working - > $PROCESSED_GRIDSS_ASSEMBLY && \
+	samtools index $PROCESSED_GRIDSS_ASSEMBLY && \
+	java $GRIDSS_JVM_ARGS -cp $GRIDSS_JAR gridss.analysis.CollectGridssMetrics \
 		REFERENCE_SEQUENCE=$REFERENCE \
 		I=$RAW_GRIDSS_ASSEMBLY \
 		O=$RAW_GRIDSS_ASSEMBLY.gridss.working/$(basename $RAW_GRIDSS_ASSEMBLY) \
@@ -164,20 +164,36 @@ if [[ ! -f $PROCESSED_GRIDSS_ASSEMBLY ]] ; then
 fi
 if [[ ! -f $OUTPUT_WORKING_PREFIX.breakpoint.vcf ]] ; then
 	# GRIDSS variant calling
-	java $JVM_ARGS -Dsamjdk.create_index=true \
+	java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=true \
 		-cp $GRIDSS_JAR gridss.IdentifyVariants \
 		$GRIDSS_COMMON_ARGS \
 		ASSEMBLY=$PROCESSED_GRIDSS_ASSEMBLY \
 		OUTPUT_VCF=$OUTPUT_WORKING_PREFIX.breakpoint.vcf
 fi
-exit
 if [[ ! -f $OUTPUT ]] ; then
 	# GRIDSS evidence allocation and annotation
 	# AnnotateVariants combines AllocateEvidence, AnnotateReferenceCoverage and AnnotateInexactHomology
-	java $JVM_ARGS -Dsamjdk.create_index=true \
+	java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=true \
 		-cp $GRIDSS_JAR gridss.AnnotateVariants \
 		$GRIDSS_COMMON_ARGS \
-		ASSEMBLY=$ASSEMBLY \
+		ASSEMBLY=$PROCESSED_GRIDSS_ASSEMBLY \
 		INPUT_VCF=$OUTPUT_WORKING_PREFIX.breakpoint.vcf \
 		OUTPUT_VCF=$OUTPUT
 fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
