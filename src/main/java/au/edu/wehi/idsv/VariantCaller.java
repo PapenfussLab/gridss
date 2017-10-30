@@ -119,7 +119,9 @@ public class VariantCaller {
 		log.info("Complete ", msg);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			try {
-				FileHelper.delete(tmp, true);
+				if (tmp != output) {
+					FileHelper.delete(tmp, true);
+				}
 			} catch (IOException e) {
 				log.warn(e, "Error removing intermediate file ", tmp.getAbsolutePath());
 			}

@@ -82,7 +82,7 @@ public class VcfFileUtil {
 			log.info("Sorting to " + output);
 			SortingCollection<VariantContext> collection = null;
 			File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.") : output;
-			if (tmpout.exists()) {
+			if (tmpout != output && tmpout.exists()) {
 				FileHelper.delete(tmpout, true);
 			}
 			try {
