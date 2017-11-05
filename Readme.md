@@ -12,6 +12,14 @@ If you have any trouble running GRIDSS, please raise an issue using the Issues t
 
 [Click here to download GRIDSS](https://github.com/PapenfussLab/gridss/releases)
 
+# Citation
+
+Daniel L. Cameron, Jan Schröder, Jocelyn Sietsma Penington, Hongdo Do, Ramyar Molania, Alexander Dobrovic, Terence P. Speed and Anthony T. Papenfuss.
+GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly.
+Genome Research, 2017
+doi: 10.1101/gr.222109.117
+
+
 For citing GRIDSS and for an overview of the GRIDSS algorithms, see http://biorxiv.org/content/early/2017/02/21/110387.
 
 # Pre-requisites
