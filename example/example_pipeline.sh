@@ -15,11 +15,12 @@ INPUT=example.input.bam
 OUTPUT=example.sv.vcf
 RAW_GRIDSS_ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
 GRIDSS_JAR=~/bin/gridss-1.5.0-SNAPSHOT-jar-with-dependencies.jar
-GRIDSS_JVM_ARGS="
+GRIDSS_JVM_ARGS="-ea
 	-Dsamjdk.use_async_io_read_samtools=true 
 	-Dsamjdk.use_async_io_write_samtools=true 
 	-Dsamjdk.use_async_io_write_tribble=true"
 GRIDSS_THRESHOLD_COVERAGE=10000
+LOG_PREFIX=log.gridss.pipeline.$HOSTNAME.$$
 ####################
 # Environment/external tools sanity checks
 
@@ -62,8 +63,8 @@ mkdir -p $INPUT_WORKING_DIR
 if [[ ! -f $INPUT ]] ; then
 	if [[ ! -f $INPUT_WORKING_PREFIX.unsorted.bam ]] ; then
 		# First step of pipeline: alignment
-		bwa mem -t $(nproc) -Y $REFERENCE $FQ1 $FQ2 | \
-		samtools fixmate -m - - | \
+		bwa mem -t $(nproc) -Y $REFERENCE $FQ1 $FQ2 2> $LOG_PREFIX.1.1.bwa.log | \
+		samtools fixmate -m - - 2> $LOG_PREFIX.1.2.fixmate.log | \
 		# Skip compression since we're in a pipe
 		# RECALCULATE_SA_SUPPLEMENTARY not needed since we aligned with -Y and without -M
 		# SOFTEN_HARD_CLIPS not needed since we supplied the -Y flag to bwa
@@ -85,7 +86,7 @@ if [[ ! -f $INPUT ]] ; then
 			TAGS=MC \
 			TAGS=MQ \
 			AS=true \
-			| \
+			2> $LOG_PREFIX.1.3.ComputeSamTags.log | \
 		# Although bwa reports split reads, you can identify additional split reads
 		# by feeding the soft clipped reads back to bwa
 		java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=false \
@@ -95,15 +96,15 @@ if [[ ! -f $INPUT ]] ; then
 			O=/dev/stdout \
 			ALIGNER_STREAMING=true \
 			WORKER_THREADS=$(nproc) \
-			> $INPUT_WORKING_PREFIX.unsorted.bam
+			2> $LOG_PREFIX.1.4.SoftClipsToSplitReads.log > $INPUT_WORKING_PREFIX.unsorted.bam
 	fi
 	# Second step of pipeline: sorting
-	samtools sort -@ $(nproc) -O BAM -l 0 -T $INPUT_WORKING_DIR $INPUT_WORKING_PREFIX.unsorted.bam | \
-	samtools markdup - - -O BAM | \
+	samtools sort -@ $(nproc) -O BAM -l 0 -T $INPUT_WORKING_DIR $INPUT_WORKING_PREFIX.unsorted.bam 2> $LOG_PREFIX.2.1.sort.log | \
+	samtools markdup - - -O BAM 2> $LOG_PREFIX.2.2.markdup.log | \
 	# THRESHOLD_COVERAGE=gridss.properties/maxCoverage
 	# Using non-POSIX-compatble process substitution feature of bash to fork the output stream
-	tee >(java $GRIDSS_JVM_ARGS -cp $GRIDSS_JAR gridss.analysis.CollectGridssMetrics REFERENCE_SEQUENCE=$REFERENCE I=/dev/stdin O=$INPUT_WORKING_PREFIX THRESHOLD_COVERAGE=$GRIDSS_THRESHOLD_COVERAGE) > $INPUT && \
-	samtools index $INPUT && \
+	tee >(java $GRIDSS_JVM_ARGS -cp $GRIDSS_JAR gridss.analysis.CollectGridssMetrics REFERENCE_SEQUENCE=$REFERENCE I=/dev/stdin O=$INPUT_WORKING_PREFIX THRESHOLD_COVERAGE=$GRIDSS_THRESHOLD_COVERAGE 2> $LOG_PREFIX.2.4.CollectGridssMetrics.log ) > $INPUT && \
+	samtools index $INPUT 2> $LOG_PREFIX.2.5.index.log && \
 	# the unsorted input file can now be deleted
 	rm $INPUT_WORKING_PREFIX.unsorted.bam
 	###
@@ -140,10 +141,11 @@ mkdir -p $RAW_GRIDSS_ASSEMBLY.gridss.working
 PROCESSED_GRIDSS_ASSEMBLY=$RAW_GRIDSS_ASSEMBLY.gridss.working/$(basename $RAW_GRIDSS_ASSEMBLY).sv.bam
 if [[ ! -f $PROCESSED_GRIDSS_ASSEMBLY ]] ; then	
 	# GRIDSS assembly
-	java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=true \
+	java $GRIDSS_JVM_ARGS -Xmx31g -Dsamjdk.create_index=true \
 		-cp $GRIDSS_JAR gridss.AssembleBreakends \
 		$GRIDSS_COMMON_ARGS \
-		OUTPUT=$RAW_GRIDSS_ASSEMBLY && \
+		OUTPUT=$RAW_GRIDSS_ASSEMBLY \
+	2> $LOG_PREFIX.3.1.AssembleBreakends.log && \
 	# We now need to work out which breakpoint is supported by each breakend assembly
 	# We do this by aligning the soft clipped bases of breakend assembly contigs
 	# This is exactly the same process as converting soft clipped reads into split reads 
@@ -153,32 +155,36 @@ if [[ ! -f $PROCESSED_GRIDSS_ASSEMBLY ]] ; then
 			I=$RAW_GRIDSS_ASSEMBLY \
 			O=/dev/stdout \
 			ALIGNER_STREAMING=true \
-			WORKER_THREADS=$(nproc) | \
-	samtools sort -@ $(nproc) -O BAM -T $RAW_GRIDSS_ASSEMBLY.gridss.working - > $PROCESSED_GRIDSS_ASSEMBLY && \
-	samtools index $PROCESSED_GRIDSS_ASSEMBLY && \
+			WORKER_THREADS=$(nproc) \
+	2> $LOG_PREFIX.3.2.SoftClipsToSplitReads.log | \
+	samtools sort -@ $(nproc) -O BAM -T $RAW_GRIDSS_ASSEMBLY.gridss.working - > $PROCESSED_GRIDSS_ASSEMBLY 2> $LOG_PREFIX.3.3.sort.log && \
+	samtools index $PROCESSED_GRIDSS_ASSEMBLY 2> $LOG_PREFIX.3.4.index.log && \
 	java $GRIDSS_JVM_ARGS -cp $GRIDSS_JAR gridss.analysis.CollectGridssMetrics \
 		REFERENCE_SEQUENCE=$REFERENCE \
 		I=$RAW_GRIDSS_ASSEMBLY \
 		O=$RAW_GRIDSS_ASSEMBLY.gridss.working/$(basename $RAW_GRIDSS_ASSEMBLY) \
-		THRESHOLD_COVERAGE=$GRIDSS_THRESHOLD_COVERAGE
+		THRESHOLD_COVERAGE=$GRIDSS_THRESHOLD_COVERAGE \
+	2> $LOG_PREFIX.3.5.CollectGridssMetrics.log 
 fi
 if [[ ! -f $OUTPUT_WORKING_PREFIX.breakpoint.vcf ]] ; then
 	# GRIDSS variant calling
-	java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=true \
+	java $GRIDSS_JVM_ARGS -Xmx4g -Dsamjdk.create_index=true \
 		-cp $GRIDSS_JAR gridss.IdentifyVariants \
 		$GRIDSS_COMMON_ARGS \
 		ASSEMBLY=$PROCESSED_GRIDSS_ASSEMBLY \
-		OUTPUT_VCF=$OUTPUT_WORKING_PREFIX.breakpoint.vcf
+		OUTPUT_VCF=$OUTPUT_WORKING_PREFIX.breakpoint.vcf \
+	2> $LOG_PREFIX.4.1.IdentifyVariants.log 
 fi
 if [[ ! -f $OUTPUT ]] ; then
 	# GRIDSS evidence allocation and annotation
 	# AnnotateVariants combines AllocateEvidence, AnnotateReferenceCoverage and AnnotateInexactHomology
-	java $GRIDSS_JVM_ARGS -Dsamjdk.create_index=true \
+	java $GRIDSS_JVM_ARGS -Xmx4g -Dsamjdk.create_index=true \
 		-cp $GRIDSS_JAR gridss.AnnotateVariants \
 		$GRIDSS_COMMON_ARGS \
 		ASSEMBLY=$PROCESSED_GRIDSS_ASSEMBLY \
 		INPUT_VCF=$OUTPUT_WORKING_PREFIX.breakpoint.vcf \
-		OUTPUT_VCF=$OUTPUT
+		OUTPUT_VCF=$OUTPUT \
+	2> $LOG_PREFIX.5.1.AnnotateVariants.log 
 fi
 
 
