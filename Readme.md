@@ -46,8 +46,6 @@ It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-th
 (WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for heavily multi-threaded
 server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS so is strongly discouraged.
 
-When processing input files containing multiple (non-split) alignment locations for each read (multi-mapping alignment), GRIDSS must perform the additional steps of uniquely assigning reads to assemblies, and reads to variant calls. As this cannot be done in a streaming manner, GRIDSS caches this information in a large off-heap lookup table. This lookup uses a large amount of memory in addition to the 32GB heap. For human 50x WGS with up to 100 alignment locations per read (thus resulting in a 5TB input BAM file), approximately 300GB of memory is required for this lookup. This additional memory is only required if the aligner reports multiple alignment locations per read (e.g. mrFAST alignment, or the bowtie2 -k and -a options). Multi-mapping alignments should only be used when precision is unimportant. Our benchmarking indicates that running GRIDSS in multi-mapping mode increases sensitivity by around 25% but reduces precision by 75%.
-
 ## GRIDSS tools
 
 GRIDSS takes a modular approach so each step of the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline:
@@ -331,7 +329,7 @@ If GRIDSS was built successfully, a combined jar containing GRIDSS and all requi
 
 # Multi-mapping read alignment
 
-WARNING: our benchmarking results indicates that multi-mapping read alignment increases overall sensitivity by around 25% but reduces precision by 75%. Only use multi-mapping alignments if extremely low precision is acceptable for your use case (hint: it probably isn't).
+WARNING: Multi-mapping support has been deprecated and will be removed in a future release. Our benchmarking results indicates that multi-mapping read alignment increases overall sensitivity by around 25% but reduces precision by 75%. Only use multi-mapping alignments if extremely low precision is acceptable for your use case (hint: it probably isn't).
 
 GRIDSS supports input files that report multiple read alignments for each input read. GRIDSS supports multi-mapping read alignments in which each alignment is reported as an independent SAM record with the primary.secondary flags set as per the SAM specifications.
 
@@ -348,6 +346,8 @@ scoring.model=ReadCount
 ```
 
 When multi-mapping mode is enabled, both `INPUT` and `INPUT_NAME_SORTED` must be supplied for all input files.
+
+For multi-mapping input files, GRIDSS must perform the additional steps of uniquely assigning reads to assemblies and reads to variant calls. As this cannot be done in a streaming manner, GRIDSS caches this information in a large off-heap lookup table. This lookup uses a large amount of memory in addition to the 32GB heap. For human 50x WGS with up to 100 alignment locations per read (thus resulting in a 5TB input BAM file), approximately 300GB of memory is required for this lookup. This additional memory is only required for multi-mapping input files (e.g. mrFAST alignment, or the bowtie2 -k and -a options).
 
 Due to 3rd party library dependencies, multi-mapping mode requires a full Java JDK installed and will not run with just a JRE.
 
