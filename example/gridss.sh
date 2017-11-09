@@ -35,7 +35,7 @@ if ! which java >/dev/null 2>&1 ; then
 	echo "Missing java. Please add java 1.8 or later to PATH"
 	exit 1
 fi
-JAVA_VERSION="$(java -version 2>&1 | head -1)"
+JAVA_VERSION="$(java -version 2>&1 | grep version )"
 if [[ ! "$JAVA_VERSION" =~ "\"1.8" ]] ; then
 	echo "Detected $JAVA_VERSION. GRIDSS requires Java 1.8 or later."
 	exit 1
