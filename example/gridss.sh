@@ -40,6 +40,10 @@ if [[ ! "$JAVA_VERSION" =~ "\"1.8" ]] ; then
 	echo "Detected $JAVA_VERSION. GRIDSS requires Java 1.8 or later."
 	exit 1
 fi
+if ! which Rscript >/dev/null 2>&1 ; then
+	echo "Missing R installation. Please add Rscript to PATH"
+	exit 1
+fi
 
 java -ea -Xmx31g \
 	-Dsamjdk.create_index=true \
