@@ -329,27 +329,32 @@ If GRIDSS was built successfully, a combined jar containing GRIDSS and all requi
 
 # Multi-mapping read alignment
 
-WARNING: Multi-mapping support has been deprecated and will be removed in a future release. Our benchmarking results indicates that multi-mapping read alignment increases overall sensitivity by around 25% but reduces precision by 75%. Only use multi-mapping alignments if extremely low precision is acceptable for your use case (hint: it probably isn't).
+**WARNING: Multi-mapping support has been deprecated and will be removed in a future release.** Our benchmarking results indicates that multi-mapping read alignment increases overall sensitivity by around 25% but reduces precision by 75%. Only use multi-mapping alignments if extremely low precision is acceptable for your use case (hint: it probably isn't).
 
-GRIDSS supports input files that report multiple read alignments for each input read. GRIDSS supports multi-mapping read alignments in which each alignment is reported as an independent SAM record with the primary.secondary flags set as per the SAM specifications.
+~~GRIDSS supports input files that report multiple read alignments for each input read. GRIDSS supports multi-mapping read alignments in which each alignment is reported as an independent SAM record with the primary.secondary flags set as per the SAM specifications.~~
 
-As the default GRIDSS configuration parameters are suitable for input BAMs in which only the best read alignment is reported, some configuration settings overrides must be supplied. If the aligner does not report a meaningful MAPQ for multi-mapping alignments (true for all aligners we have tested), the scoring model should be updated to ignore mapping quality. The mapping quality filter should be removed and the maximum coverage increased. A typical configuration file for a multi-mapping input looks as follows:
+~~As the default GRIDSS configuration parameters are suitable for input BAMs in which only the best read alignment is reported, some configuration settings overrides must be supplied. If the aligner does not report a meaningful MAPQ for multi-mapping alignments (true for all aligners we have tested), the scoring model should be updated to ignore mapping quality. The mapping quality filter should be removed and the maximum coverage increased. A typical configuration file for a multi-mapping input looks as follows:~~
 
-```
-multimapping=true
-maxCoverage=50000
-minMapq=0
-variantcalling.lowQuality=13
-variantcalling.minScore=2
-variantcalling.minSize=32
-scoring.model=ReadCount
-```
 
-When multi-mapping mode is enabled, both `INPUT` and `INPUT_NAME_SORTED` must be supplied for all input files.
+> ~~multimapping=true~~
 
-For multi-mapping input files, GRIDSS must perform the additional steps of uniquely assigning reads to assemblies and reads to variant calls. As this cannot be done in a streaming manner, GRIDSS caches this information in a large off-heap lookup table. This lookup uses a large amount of memory in addition to the 32GB heap. For human 50x WGS with up to 100 alignment locations per read (thus resulting in a 5TB input BAM file), approximately 300GB of memory is required for this lookup. This additional memory is only required for multi-mapping input files (e.g. mrFAST alignment, or the bowtie2 -k and -a options).
+> ~~maxCoverage=50000~~
 
-Due to 3rd party library dependencies, multi-mapping mode requires a full Java JDK installed and will not run with just a JRE.
+> ~~minMapq=0~~
+
+> ~~variantcalling.lowQuality=13~~
+
+> ~~variantcalling.minScore=2~~
+
+> ~~variantcalling.minSize=32~~
+
+> ~~scoring.model=ReadCount~~
+
+~~When multi-mapping mode is enabled, both `INPUT` and `INPUT_NAME_SORTED` must be supplied for all input files.~~
+
+~~For multi-mapping input files, GRIDSS must perform the additional steps of uniquely assigning reads to assemblies and reads to variant calls. As this cannot be done in a streaming manner, GRIDSS caches this information in a large off-heap lookup table. This lookup uses a large amount of memory in addition to the 32GB heap. For human 50x WGS with up to 100 alignment locations per read (thus resulting in a 5TB input BAM file), approximately 300GB of memory is required for this lookup. This additional memory is only required for multi-mapping input files (e.g. mrFAST alignment, or the bowtie2 -k and -a options).~~
+
+~~Due to 3rd party library dependencies, multi-mapping mode requires a full Java JDK installed and will not run with just a JRE.~~
 
 # Error Messages
 
