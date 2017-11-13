@@ -413,5 +413,13 @@ GRIDSS has run out of memory. Either not enough memory has been allocated to run
 
 You are running GRIDSS in multi-mapping mode using only a JRE instead of a full JDK. Update your PATH and JAVA_HOME to a Java 1.8+ JDK installation.
 
+### htsjdk.samtools.util.RuntimeIOException: java.io.IOException: No space left on device
+
+Just like Picard tools and htsjdk libraries that GRIDSS uses, intermediate files are sorted according the the `TEMP` file location. On many system, /tmp does not have enough space to sort a BAM file so it is possible to run out of intermediate file storage even if you have plenty of space left on the file system the input and output files are stored on. Using the same command-line options as Picard tools, the intermediate files location can be set using the `TMP_DIR` command-line argument.
+
+It's also possible that you've just run out of space.
+
+
+
 
 
