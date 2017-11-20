@@ -54,4 +54,52 @@ public class PackedSequenceTest extends TestHelper {
 		PackedSequence seq = new PackedSequence(B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC"), false, false);
 		assertEquals("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC", S(seq.getBytes(0, 33)));
 	}
+	@Test
+	public void overlapMatches_should_return_matching_base_count() {
+		PackedSequence seq1 = new PackedSequence(B("ACGT"), false, false);
+		assertEquals(4, PackedSequence.overlapMatches(seq1, seq1, 0));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, 1));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, 2));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, 3));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, 4));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, -1));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, -2));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, -3));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq1, -4));
+	}
+	@Test
+	public void overlapMatches_should_allow_difference_sequence_lengths() {
+		PackedSequence seq1 = new PackedSequence(B("ACGT"), false, false);
+		PackedSequence seq2 = new PackedSequence(B("ACTTT"), false, false);
+		// ACGT
+		// ACTTT
+		assertEquals(3, PackedSequence.overlapMatches(seq1, seq2, 0));
+		// ACGT
+		// -ACTTT
+		assertEquals(1, PackedSequence.overlapMatches(seq1, seq2, 1));
+		// ACGT
+		// --ACTTT
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, 2));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, 3));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, 4));
+		// -ACGT
+		// ACTTT
+		assertEquals(1, PackedSequence.overlapMatches(seq1, seq2, -1));
+		// --ACGT
+		// ACTTT
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, -2));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, -3));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, -4));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, -5));
+		assertEquals(0, PackedSequence.overlapMatches(seq1, seq2, -6));
+	}
+	@Test
+	public void overlapMatches_should_span_words() {
+		PackedSequence seq1 = new PackedSequence(B(
+				"CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCGAACGGGCGAATCTACCTAGGTCGCTCAGAACCGGCACCCTTAACCATCCATAT"), false, false);
+		PackedSequence seq2 = new PackedSequence(B(
+				"CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAAAAAGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCGAACGGGCGAATCTACCTAGGTCGCTCAGAACCGGCACCCTTAACCATCCATAT"), false, false);
+		assertEquals(seq1.length(), PackedSequence.overlapMatches(seq1, seq1, 0));
+		assertEquals(seq1.length() - 4, PackedSequence.overlapMatches(seq1, seq2, 0));
+	}
 }
