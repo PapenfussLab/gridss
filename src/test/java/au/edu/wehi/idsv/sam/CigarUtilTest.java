@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import htsjdk.samtools.Cigar;
@@ -120,12 +119,7 @@ public class CigarUtilTest {
 	}
 	@Test
 	public void commonReferenceBases_should_match_unencoded_and_decoded_negative_deletions() {
-		Cigar c1 = new Cigar(ImmutableList.of(
-				new CigarElement(2, CigarOperator.M),
-				new CigarElement(-2, CigarOperator.D),
-				new CigarElement(2, CigarOperator.M)
-				));
-		assertEquals(4, CigarUtil.commonReferenceBases(c1, new Cigar(C("2M5P5N5P2M"))));
+		assertEquals(4, CigarUtil.commonReferenceBases(new Cigar(C("2M5D2M")), new Cigar(C("2M2D2M"))));
 	}
 	//@Test
 	public void test_realign_anchor_direction_changing_na12878() throws IOException {

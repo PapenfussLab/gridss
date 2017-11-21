@@ -306,7 +306,7 @@ public class KmerEvidenceTest extends TestHelper {
 		assertEquals(-3, e.endPosition());
 	}
 	@Test(expected=NotImplementedException.class)
-	public void does_not_handling_XNX_unanchored_clips() {
+	public void does_not_handle_XNX_unanchored_clips() {
 		KmerEvidence.create(2, SCE(BWD, Read(0, 1, "10S1X10N1X")));
 	}
 	@Test

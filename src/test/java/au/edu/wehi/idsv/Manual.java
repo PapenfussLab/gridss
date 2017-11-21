@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Assert;
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
