@@ -13,7 +13,6 @@ public interface Hg38Tests {
 		for (String path : new String[] {
 				"../",
 				"C:/dev/",
-				"C:/dev/",
 				"~/projects/reference_genomes/human/",
 			}) {
 			File f = new File(path + reference);
@@ -22,6 +21,10 @@ public interface Hg38Tests {
 		throw new RuntimeException("Cannot find hg38 reference genome to use for testing.");
 	}
 	public static File findHg38Reference() {
-		return findHg38Reference("Homo_sapiens_assembly38.fasta");
+		File f = findHg38Reference("Homo_sapiens_assembly38.fasta");
+		if (f == null) {
+			f = findHg38Reference("hg38.fa");
+		}
+		return f;
 	}
 }

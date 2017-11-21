@@ -8,15 +8,12 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import au.edu.wehi.idsv.SequentialEvidenceAssemblyAllocator.BreakendAssemblyEvidenceSupport;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
@@ -33,8 +30,6 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -102,48 +97,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		log.info("Breakend assembly complete.");
 		List<File> deduplicatedChunks = assembledChunk;
-		if (Iterables.any(source, ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0)) {
-			if (!getContext().getConfig().multimapping) {
-				log.info("Not performing unique assembly allocation of multimapping reads as the configuration setting multimapping is set to false.");
-			} else if (!getContext().getConfig().multimappingUniqueAssemblyAllocation) {
-				log.info("Not performing unique assembly allocation of multimapping reads as the configuration setting multimappingUniqueAssemblyAllocation is set to false.");
-			} else { 
-				log.info("Multimapping mode invoked due to existiance of at least one BAM file with a non-split secondary alignment.");
-				log.info("Uniquely assigning multi-mapping reads to alignment location supported by the best assembly.");
-				log.info("Loading assembly evidence allocations");
-				deduplicatedChunks = assembledChunk.stream()
-						.map(f -> FileSystemContext.getWorkingFileFor(f, "deduplicated."))
-						.collect(Collectors.toList());
-				// technically this is an overestimation as a single alignment can
-				// a DP or OEA and an Indel/SC/SR.
-				long svReadAlignmentCount = source.stream()
-					.map(ses -> ses.getSVMetrics())
-					.mapToLong(m -> m.DISCORDANT_READ_PAIR_ALIGNMENTS +
-							m.UNMAPPED_MATE_READ_ALIGNMENTS +
-							m.STRUCTURAL_VARIANT_READ_ALIGNMENTS)
-					.sum();
-				try (GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache(svReadAlignmentCount)) {
-					tasks = new ArrayList<>();
-					for (int i = 0; i < chunks.size(); i++) {
-						QueryInterval[] chunk = chunks.get(i);
-						File in = assembledChunk.get(i);
-						tasks.add(threadpool.submit(() -> { loadAssemblyEvidenceAllocation(cache, in, chunk); return null; }));
-					}
-					runTasks(tasks);
-					
-					log.info("Allocating multi-mapping reads to assemblies");
-					tasks = new ArrayList<>();
-					for (int i = 0; i < chunks.size(); i++) {
-						QueryInterval[] chunk = chunks.get(i);
-						File in = assembledChunk.get(i);
-						File out = deduplicatedChunks.get(i);
-						if (!out.exists()) {
-							tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, cache); return null; }));
-						}
-					}
-					runTasks(tasks);
-				}
-			}
+		long secondaryNotSplit = source.stream().mapToLong(ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT).sum();
+		if (secondaryNotSplit > 0) {
+			log.warn(String.format("Found %d secondary alignments that were not split read alignments. GRIDSS no longer supports multi-mapping alignment. These reads will be ignored.", secondaryNotSplit));
 		}
 		log.info("Merging assembly files");
 		// Merge chunk files
@@ -283,72 +239,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					}
 				}
 			}
-		}
-	}
-	private void loadAssemblyEvidenceAllocation(GreedyAssemblyAllocationCache cache, File in, QueryInterval intervals[]) throws IOException {
-		log.debug(String.format("Caching assembly evidence allocation in interval %s:%d-%s:%d",
-				getContext().getDictionary().getSequence(intervals[0].referenceIndex).getSequenceName(), intervals[0].start,
-				getContext().getDictionary().getSequence(intervals[intervals.length-1].referenceIndex).getSequenceName(), intervals[intervals.length-1].end));
-		QueryInterval[] expanded = getExpanded(intervals);
-		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
-			try (SamReader reader = factory.open(in)) {
-				try (SAMRecordIterator assemblies = reader.iterator()) {
-					SequentialEvidenceAssemblyAllocator it = new SequentialEvidenceAssemblyAllocator(
-							getContext().getLinear(),
-							reads,
-							assemblies, 0);
-					while (it.hasNext()) {
-						BreakendAssemblyEvidenceSupport allocation = it.next();
-						float score = 0;
-						for (DirectedEvidence assemblyEvidence : SingleReadEvidence.createEvidence(this, 0, allocation.assemblyRecord)) {
-							score = Math.max(score, assemblyEvidence.getBreakendQual());
-						}
-						for (DirectedEvidence support : allocation.support) {
-							if (support.isFromMultimappingFragment()) {
-								cache.addBreakendAssemblyAllocation(score, support);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	private void deduplicateChunk(File in, File out, QueryInterval[] intervals, GreedyAssemblyAllocationCache cache) throws IOException {
-		log.debug(String.format("Uniquely assigning assembly evidence allocation in interval %s:%d-%s:%d",
-				getContext().getDictionary().getSequence(intervals[0].referenceIndex).getSequenceName(), intervals[0].start,
-				getContext().getDictionary().getSequence(intervals[intervals.length-1].referenceIndex).getSequenceName(), intervals[intervals.length-1].end));
-		File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(out) : out;
-		QueryInterval[] expanded = getExpanded(intervals);
-		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
-			try (SamReader reader = factory.open(in)) {
-				try (SAMRecordIterator assemblies = reader.iterator()) {
-					try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(), true, tmpout)) {
-						SequentialEvidenceAssemblyAllocator it = new SequentialEvidenceAssemblyAllocator(
-								getContext().getLinear(),
-								reads,
-								assemblies, 0);
-						while (it.hasNext()) {
-							BreakendAssemblyEvidenceSupport allocation = it.next();
-							SAMRecord asm = allocation.assemblyRecord;
-							List<DirectedEvidence> newSupport = new ArrayList<>(allocation.support.size());
-							for (DirectedEvidence support : allocation.support) {
-								if (!support.isFromMultimappingFragment() || cache.isBestBreakendAssemblyAllocation(support)) {
-									newSupport.add(support);
-								}
-							}
-							AssemblyAttributes.annotateAssembly(getContext(), asm, newSupport);
-							if (shouldFilterAssembly(asm)) {
-								// TODO: append to filtered bam
-							} else {
-								writer.addAlignment(asm);
-							}
-						}
-					}
-				}
-			}
-		}
-		if (tmpout != out) {
-			FileHelper.move(tmpout, out, true);
 		}
 	}
 	@Override

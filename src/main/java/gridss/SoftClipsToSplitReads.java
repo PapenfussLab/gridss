@@ -46,11 +46,11 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-	@Option(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files."
+    @Argument(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files."
 			+ " The aligner must support using \"-\" as the input filename when reading from stdin."
 			+ " The sort order of the input file will not be retained.", optional=true)
 	public boolean ALIGNER_STREAMING = false;
-    @Option(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
+    @Argument(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
     public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);

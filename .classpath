@@ -1,38 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
-		<attributes>
-			<attribute name="optional" value="true"/>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry excluding="**" kind="src" output="target/test-classes" path="src/test/resources">
-		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" output="target/classes" path="src/main/java">
-		<attributes>
-			<attribute name="optional" value="true"/>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry excluding="**" kind="src" output="target/classes" path="src/main/resources">
-		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry including="**/*.java" kind="src" output="target/test-classes" path="src/test/java"/>
+	<classpathentry excluding="**/*.java" kind="src" output="target/test-classes" path="src/test/resources"/>
+	<classpathentry including="**/*.java" kind="src" path="src/main/java"/>
+	<classpathentry excluding="**/*.java" kind="src" path="src/main/resources"/>
 	<classpathentry kind="var" path="M2_REPO/javax/xml/stream/stax-api/1.0-2/stax-api-1.0-2.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
-		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="var" path="M2_REPO/jaligner/jaligner/1.0/jaligner-1.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/ssw/ssw/1.0/ssw-1.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/junit/junit/4.12/junit-4.12.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"/>
-	<classpathentry kind="var" path="M2_REPO/com/google/guava/guava/23.2-jre/guava-23.2-jre.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/google/guava/guava/23.4-jre/guava-23.4-jre.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/google/code/findbugs/jsr305/1.3.9/jsr305-1.3.9.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/google/errorprone/error_prone_annotations/2.0.18/error_prone_annotations-2.0.18.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar"/>
@@ -48,45 +26,32 @@
 	<classpathentry kind="var" path="M2_REPO/org/codehaus/woodstox/stax2-api/3.1.4/stax2-api-3.1.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/it/unimi/dsi/fastutil/8.1.0/fastutil-8.1.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/net/sf/trove4j/trove4j/3.0.3/trove4j-3.0.3.jar"/>
-	<classpathentry kind="var" path="M2_REPO/com/github/samtools/htsjdk/2.12.0/htsjdk-2.12.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/github/samtools/htsjdk/2.13.1/htsjdk-2.13.1.jar" sourcepath="/HTSJDK_ROOT"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-jexl/2.1.1/commons-jexl-2.1.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/xerial/snappy/snappy-java/1.1.4/snappy-java-1.1.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-compress/1.4.1/commons-compress-1.4.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/tukaani/xz/1.5/xz-1.5.jar"/>
 	<classpathentry kind="var" path="M2_REPO/gov/nih/nlm/ncbi/ngs-java/1.2.4/ngs-java-1.2.4.jar"/>
-	<classpathentry kind="var" path="M2_REPO/com/github/broadinstitute/picard/2.13.2/picard-2.13.2.jar" sourcepath="/PICARD_ROOT"/>
+	<classpathentry kind="var" path="M2_REPO/com/github/broadinstitute/picard/2.15.0/picard-2.15.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/intel/gkl/gkl/0.5.3/gkl-0.5.3.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/broadinstitute/gatk-native-bindings/0.0.3/gatk-native-bindings-0.0.3.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/apache/logging/log4j/log4j-api/2.5/log4j-api-2.5.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/apache/logging/log4j/log4j-core/2.5/log4j-core-2.5.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/broadinstitute/barclay/1.1.0/barclay-1.1.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/apache/logging/log4j/log4j-api/2.3/log4j-api-2.3.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/apache/logging/log4j/log4j-core/2.3/log4j-core-2.3.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/broadinstitute/barclay/1.2.2/barclay-1.2.2.jar"/>
 	<classpathentry kind="var" path="M2_REPO/net/sf/jopt-simple/jopt-simple/5.0.3/jopt-simple-5.0.3.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/freemarker/freemarker/2.3.18/freemarker-2.3.18.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/freemarker/freemarker/2.3.23/freemarker-2.3.23.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/google/code/gson/gson/2.2.2/gson-2.2.2.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-map/3.13.0/chronicle-map-3.13.0.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-core/1.7.15/chronicle-core-1.7.15.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-api/1.7.14/slf4j-api-1.7.14.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/intellij/annotations/12.0/annotations-12.0.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-values/1.5.5/chronicle-values-1.5.5.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-bytes/1.7.34/chronicle-bytes-1.7.34.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/squareup/javapoet/1.5.1/javapoet-1.5.1.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-threads/1.7.7/chronicle-threads-1.7.7.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/affinity/3.0.5/affinity-3.0.5.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/java/dev/jna/jna/4.2.1/jna-4.2.1.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/java/dev/jna/jna-platform/4.2.1/jna-platform-4.2.1.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-wire/1.7.30/chronicle-wire-1.7.30.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/openhft/chronicle-algorithms/1.1.8/chronicle-algorithms-1.1.8.jar"/>
+	<classpathentry kind="var" path="M2_REPO/net/java/dev/jna/jna/4.4.0/jna-4.4.0.jar"/>
+	<classpathentry kind="var" path="M2_REPO/net/java/dev/jna/jna-platform/4.4.0/jna-platform-4.4.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/thoughtworks/xstream/xstream/1.4.9/xstream-1.4.9.jar"/>
 	<classpathentry kind="var" path="M2_REPO/xmlpull/xmlpull/1.1.3.1/xmlpull-1.1.3.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/xpp3/xpp3_min/1.1.4c/xpp3_min-1.1.4c.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/codehaus/jettison/jettison/1.3.7/jettison-1.3.7.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/codehaus/jettison/jettison/1.3.8/jettison-1.3.8.jar"/>
 	<classpathentry kind="var" path="M2_REPO/stax/stax-api/1.0.1/stax-api-1.0.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/ops4j/pax/url/pax-url-aether/2.4.5/pax-url-aether-2.4.5.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/slf4j/jcl-over-slf4j/1.6.6/jcl-over-slf4j-1.6.6.jar"/>
-	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
-		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

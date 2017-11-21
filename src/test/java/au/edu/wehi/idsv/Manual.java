@@ -79,7 +79,7 @@ public class Manual extends IntermediateFilesTest {
 			e.getBreakpointQual();
 		}
 	}
-	@Test
+	//@Test
 	@Category(Hg38Tests.class)
 	public void should_not_include_concordant_read_pairs() throws FileNotFoundException {
 		File sam = new File("W:/hg38debug/D1_S1_L001_R1_001.bam.gridss.working/D1_S1_L001_R1_001.bam");

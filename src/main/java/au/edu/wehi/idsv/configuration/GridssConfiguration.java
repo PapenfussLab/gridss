@@ -68,18 +68,6 @@ public class GridssConfiguration {
 	 */
 	public int chunkSequenceChangePenalty;
 	/**
-	 * Remove the assembly contribution of a multimapping read from all location except the mapping location with the best assembly
-	 */
-	public boolean multimappingUniqueAssemblyAllocation;
-	/**
-	 * Remove the variant contribution of a multimapping read/read pair from all location except the mapping location supporting the best variant
-	 */
-	public boolean multimappingUniqueVariantAllocation;
-	/**
-	 * Consider multi-mapping read alignments.
-	 */
-	public boolean multimapping;
-	/**
 	 * Use the read group sample name as the category label
 	 */
 	public boolean useReadGroupSampleNameCategoryLabel;
@@ -128,9 +116,6 @@ public class GridssConfiguration {
 		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
 		chunkSize = config.getInt("chunkSize");
 		chunkSequenceChangePenalty = config.getInt("chunkSequenceChangePenalty");
-		multimappingUniqueAssemblyAllocation = config.getBoolean("multimappingUniqueAssemblyAllocation");
-		multimappingUniqueVariantAllocation = config.getBoolean("multimappingUniqueVariantAllocation");
-		multimapping = config.getBoolean("multimapping");
 		useReadGroupSampleNameCategoryLabel = config.getBoolean("useReadGroupSampleNameCategoryLabel");
 		hashEvidenceID = config.getBoolean("hashEvidenceID");
 	}

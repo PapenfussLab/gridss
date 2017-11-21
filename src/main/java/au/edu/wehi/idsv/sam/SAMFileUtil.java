@@ -15,7 +15,6 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 
 import com.google.common.collect.PeekingIterator;
-import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;

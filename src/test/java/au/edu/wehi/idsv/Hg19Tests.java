@@ -13,7 +13,6 @@ public interface Hg19Tests {
 		for (String path : new String[] {
 				"../",
 				"C:/dev/",
-				"C:/dev/",
 				"~/projects/reference_genomes/human/",
 			}) {
 			File f = new File(path + reference);

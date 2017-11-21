@@ -166,7 +166,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		List<SAMRecord> records = getRecords(output);
 		assertEquals(0, records.size());
 	}
-	@Test
+	//@Test
 	@Category(Hg38Tests.class)
 	public void regression_should_extract_split_read_alignments_as_group() throws IOException {
 		File ref = Hg38Tests.findHg38Reference();
@@ -200,7 +200,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		Assert.assertEquals(records.stream().map(r -> r.getSecondOfPairFlag()).collect(Collectors.toList()), result);
 		lookup.close();
 	}
-	@Test
+	//@Test
 	@Category(Hg38Tests.class)
 	public void regression_should_extract_split_read_alignments_as_group_2() throws IOException {
 		File ref = Hg38Tests.findHg38Reference();

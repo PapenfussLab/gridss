@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -291,26 +290,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		threadpool.shutdown();
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
 		assertEquals(100, list.size());
-	}
-	@Test
-	public void should_deduplicate_assembly_with_multimapping_reads() throws IOException {
-		createInput(
-				withReadName("read1", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "91M8S"))),
-				withReadName("read2", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "91M9S"))),
-				applying(f -> f.setNotPrimaryAlignmentFlag(true), withReadName("read1", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1000, "91M8S")))),
-				applying(f -> f.setNotPrimaryAlignmentFlag(true), withReadName("read2", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1000, "91M9S"))))
-				);
-		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().getAssembly().minReads = 1;
-		pc.getConfig().getSoftClip().minLength = 1;
-		pc.getConfig().multimapping = true;
-		File nameSortedInput = new File(input.getAbsolutePath() + ".queryname.bam");
-		SAMFileUtil.sort(getFSContext(), input, nameSortedInput, SortOrder.queryname);
-		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, nameSortedInput, 0);
-		ses.ensureExtracted();
-		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
-		aes.assembleBreakends(null);
-		assertEquals(1, getRecords(assemblyFile).size());
 	}
 	@Test
 	public void bounds_check_should_apply_to_final_assembly_SAMRecord() throws IOException {
