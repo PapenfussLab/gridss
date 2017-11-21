@@ -74,7 +74,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		return new AutoClosingIterator<>(mergedIt, vcfReader, it);
 	}
 	protected void saveVcf(File file, Iterator<IdsvVariantContext> calls) throws IOException {
-		File tmp = FileSystemContext.getWorkingFileFor(file);
+		File tmp = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(file) : file;
 		final ProgressLogger writeProgress = new ProgressLogger(log);
 		try (VariantContextWriter vcfWriter = getContext().getVariantContextWriter(tmp, true)) {
 			while (calls.hasNext()) {
@@ -83,6 +83,8 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 				writeProgress.record(record.getContig(), record.getStart());
 			}
 		}
-		FileHelper.move(tmp, file, true);
+		if (tmp != file) {
+			FileHelper.move(tmp, file, true);
+		}
 	}
 }

@@ -30,7 +30,7 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 	private static final Log log = Log.getInstance(AnnotateVariants.class);
 	public static void writeAssemblyBreakends(File file, AssemblyEvidenceSource assemblyEvidence) throws IOException {
 		log.info("Writing breakend assembly support.");
-		File tmp = FileSystemContext.getWorkingFileFor(file);
+		File tmp = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(file) : file;
 		try (BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(tmp))) {
 			try (CloseableIterator<DirectedEvidence> it = assemblyEvidence.iterator()) {
 				while (it.hasNext()) {
@@ -51,7 +51,9 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 				}
 			}
 		}
-		Files.move(tmp, file);
+		if (tmp != file) {
+			Files.move(tmp, file);
+		}
 		log.info("Writing breakend assembly support complete.");
 	}
 	@Override

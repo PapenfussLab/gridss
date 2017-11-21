@@ -120,11 +120,9 @@ public class IntermediateFilesTest extends TestHelper {
 	public void createBAM(File file, SortOrder sortOrder, List<SAMRecord> data) {
 		createBAM(file, sortOrder, data.toArray(new SAMRecord[data.size()]));
 	}
-	public void createBAM(File file, SortOrder sortOrder, SAMRecord... data) {
-		SAMFileHeader header = getHeader();
-		header.setSortOrder(sortOrder);
+	public void createBAM(File file, SAMFileHeader header, SAMRecord... data) {
 		SAMFileWriter writer =  new SAMFileWriterFactory().setCreateIndex(true).makeSAMOrBAMWriter(header, true, file);
-		if (sortOrder == SortOrder.coordinate) {
+		if (header.getSortOrder() == SortOrder.coordinate) {
 			SortingCollection<SAMRecord> presort = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(header), new SAMRecordCoordinateComparator(), 100000000, testFolder.getRoot());
 			for (SAMRecord r : data) {
 				presort.add(r);
@@ -139,6 +137,11 @@ public class IntermediateFilesTest extends TestHelper {
 			}
 		}
 		writer.close();
+	}
+	public void createBAM(File file, SortOrder sortOrder, SAMRecord... data) {
+		SAMFileHeader header = getHeader();
+		header.setSortOrder(sortOrder);
+		createBAM(file, header, data);
 	}
 	public void createVCF(GenomicProcessingContext context, File file, VariantContext... data) {
 		VariantContextWriter writer = context.getVariantContextWriter(file, true);

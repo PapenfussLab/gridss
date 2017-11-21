@@ -113,7 +113,7 @@ public class PackedSequence {
 			long s1bases = s1.get2BitBases(start);
 			long s2bases = s2.get2BitBases(start + start2RelativeToStart1);
 			// match pairs of bits
-			long matchVector = s1bases ^ s2bases;
+			long matchVector = ~(s1bases ^ s2bases);
 			matchVector &= matchVector >>> 1;
 			matchVector &= MATCH_MASK; // only keep the matches within each base (/bit pair)
 			// zero out LSBs running off the end of either sequence
@@ -137,13 +137,13 @@ public class PackedSequence {
 	 */
 	private long get2BitBases(int start) {
 		assert(start < baseCount);
-		assert(start > 0);
+		assert(start >= 0);
 		int wordIndex = start / BASES_PER_WORD;
 		int wordBaseIndex = start % BASES_PER_WORD;
-		long result = packed[wordIndex] << wordBaseIndex * BITS_PER_BASE;
-		if (wordIndex + 1 < packed.length) {
+		long result = packed[wordIndex] << (wordBaseIndex * BITS_PER_BASE);
+		if (wordIndex + 1 < packed.length && wordBaseIndex > 0) {
 			// grab second word
-			result &= packed[wordIndex + 1] >>> (BASES_PER_WORD - wordBaseIndex) * BITS_PER_BASE;
+			result &= packed[wordIndex + 1] >>> ((BASES_PER_WORD - wordBaseIndex) * BITS_PER_BASE);
 		}
 		// TODO: zero out bases after length?
 		return result;

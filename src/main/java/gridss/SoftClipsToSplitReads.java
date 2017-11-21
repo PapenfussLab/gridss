@@ -14,8 +14,7 @@ import com.google.common.collect.Lists;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.SplitReadRealigner;
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
-import au.edu.wehi.idsv.alignment.FastqAligner;
-import au.edu.wehi.idsv.alignment.SequentialExecutionFastqAligner;
+import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SamReaderFactory;
@@ -47,34 +46,40 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-    @Argument(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
+	@Option(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files."
+			+ " The aligner must support using \"-\" as the input filename when reading from stdin."
+			+ " The sort order of the input file will not be retained.", optional=true)
+	public boolean ALIGNER_STREAMING = false;
+    @Option(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
     public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
-    private FastqAligner createAligner() {
-    	SamReaderFactory readerFactory = SamReaderFactory.make();
-    	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-    	FastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
-    	aligner = new SequentialExecutionFastqAligner(aligner);
-    	return aligner;
-    }
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
     	java.util.Locale.setDefault(Locale.ROOT);
     	validateParameters();
-    	
-    	FastqAligner aligner = createAligner();
     	GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
     	pc.setCommandLineProgram(this);
     	pc.setFilterDuplicates(IGNORE_DUPLICATES);
-    	SplitReadRealigner realigner = new SplitReadRealigner(pc, aligner);
+    	SplitReadRealigner realigner = new SplitReadRealigner(pc);
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
     	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
     	realigner.setWorkerThreads(WORKER_THREADS);
     	try {
-    		realigner.createSupplementaryAlignments(INPUT, OUTPUT);
+    		SamReaderFactory readerFactory = SamReaderFactory.make();
+        	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
+        	
+        	if (ALIGNER_STREAMING) {
+        		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
+        	} else {
+        		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
+        	}
+    		
+    		
 		} catch (IOException e) {
 			log.error(e);
 			return -1;

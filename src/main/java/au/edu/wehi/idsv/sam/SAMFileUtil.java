@@ -116,7 +116,7 @@ public class SAMFileUtil {
 				log.info("Not sorting as output already exists: " + output);
 				return null;
 			}
-			File tmpFile = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.SAMFileUtil.");
+			File tmpFile = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.SAMFileUtil.") : output;
 			SortOrder existingSortOrder = getSortOrder(readerFactory, unsorted);  
 			switch (existingSortOrder) {
 				case coordinate:
@@ -124,7 +124,9 @@ public class SAMFileUtil {
 					if (sortOrder.equals(existingSortOrder)) {
 						log.info(unsorted + " already sorted by " + sortOrder);
 						FileHelper.copy(unsorted, tmpFile, true);
-						FileHelper.move(tmpFile, output, true);
+						if (tmpFile != output) {
+							FileHelper.move(tmpFile, output, true);
+						}
 						return null;
 					}
 					break;
@@ -133,7 +135,9 @@ public class SAMFileUtil {
 			}
 			log.info("Sorting " + unsorted);
 			SortingCollection<SAMRecord> collection = null;
-			if (tmpFile.exists()) FileHelper.delete(tmpFile, true);
+			if (tmpFile != output && tmpFile.exists()) {
+				FileHelper.delete(tmpFile, true);
+			}
 			try {
 				SAMFileHeader header = null;
 				try (SamReader reader = readerFactory.open(unsorted)) {
@@ -170,10 +174,14 @@ public class SAMFileUtil {
 				}
 				collection.cleanup();
 				collection = null;
-				FileHelper.move(tmpFile, output, true);
+				if (tmpFile != output) {
+					FileHelper.move(tmpFile, output, true);
+				}
 			} finally {
 				if (collection != null) collection.cleanup();
-				if (tmpFile.exists()) FileHelper.delete(tmpFile, true);
+				if (tmpFile != output & tmpFile.exists()) {
+					FileHelper.delete(tmpFile, true);
+				}
 			}
 			return null;
 		}
@@ -196,12 +204,8 @@ public class SAMFileUtil {
 	 * @throws IOException 
 	 */
 	public static void merge(Collection<File> input, File output, SamReaderFactory readerFactory, SAMFileWriterFactory writerFactory) throws IOException {
-		if (input == null || input.size() == 0) return;
-		if (input.size() == 1) {
-			Files.copy(input.iterator().next(), output);
-			return;
-		}
-		File tmpFile = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.merging.SAMFileUtil.");
+		if (input == null) throw new IllegalArgumentException("input is null");
+		File tmpFile = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output, "gridss.tmp.merging.SAMFileUtil.") : output;
 		Map<SamReader, AsyncBufferedIterator<SAMRecord>> map = new HashMap<>(input.size());
 		SAMFileHeader header = null;
 		try {
@@ -241,13 +245,15 @@ public class SAMFileUtil {
 				CloserUtil.close(entry.getValue());
 				CloserUtil.close(entry.getKey());
 			}
-			FileHelper.move(tmpFile, output, true);
+			if (tmpFile != output) {
+				FileHelper.move(tmpFile, output, true);
+			}
 		} finally {
 			for (Entry<SamReader, AsyncBufferedIterator<SAMRecord>> entry : map.entrySet()) {
 				CloserUtil.close(entry.getValue());
 				CloserUtil.close(entry.getKey());
 			}
-			if (tmpFile.exists()) {
+			if (tmpFile != output & tmpFile.exists()) {
 				FileHelper.delete(tmpFile, true);
 			}
 		}

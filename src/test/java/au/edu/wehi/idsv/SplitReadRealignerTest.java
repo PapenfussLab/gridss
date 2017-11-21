@@ -11,13 +11,22 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.alignment.ExternalAlignerTests;
+import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
+import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.alignment.SmithWatermanFastqAligner;
+import au.edu.wehi.idsv.alignment.StreamingAligner;
+import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 
 public class SplitReadRealignerTest extends IntermediateFilesTest {
 	private static final SmithWatermanFastqAligner aligner = new SmithWatermanFastqAligner(AlignerFactory.create(), 2);
@@ -31,8 +40,9 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Test
 	public void should_not_call_aligner_unless_required() throws IOException {
 		createInput(Read(0, 1, "50M"));
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), null);
-		srr.createSupplementaryAlignments(input, output);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
+		FastqAligner aligner = null;
+		srr.createSupplementaryAlignments(aligner, input, output);
 		assertEquals(1, getRecords(output).size());
 	}
 	@Test
@@ -42,8 +52,8 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setReadName("r");
 		
 		createBAM(input, SortOrder.coordinate, r);
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		
 		List<SAMRecord> result = getRecords(output);
 		assertEquals(2, result.size());
@@ -57,8 +67,8 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setReadName("r");
 		
 		createBAM(input, SortOrder.coordinate, r);
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		
 		List<SAMRecord> result = getRecords(output);
 		assertEquals(3, result.size());
@@ -75,22 +85,22 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		SplitReadRealigner srr;
 		
 		createBAM(input, SortOrder.coordinate, r);
-		srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 		assertTrue(Ordering.from(SortOrder.coordinate.getComparatorInstance()).isOrdered(result));
 		
 		createBAM(input, SortOrder.queryname, r);
-		srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 		assertTrue(Ordering.from(SortOrder.queryname.getComparatorInstance()).isOrdered(result));
 		
 		createBAM(input, SortOrder.unsorted, r);
-		srr = new SplitReadRealigner(getContext(), aligner);
-		srr.createSupplementaryAlignments(input, output);
+		srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(aligner, input, output);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 	}
@@ -98,7 +108,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	public void fastq_keys_should_be_unique() throws IOException {
 		createBAM(input, SortOrder.coordinate, Read(0, 1, "1S1M1S"));
 		File fq1 = getContext().getFileSystemContext().getRealignmentFastq(input, 0);
-		new SplitReadRealigner(getContext(), aligner).createSupplementaryAlignmentFastq(input, fq1, false);
+		new SplitReadRealigner(getContext()).createSupplementaryAlignmentFastq(input, fq1, false);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		assertEquals(2, fq.size());
 		assertNotEquals(fq.get(0).getReadName(), fq.get(1).getReadName());
@@ -109,11 +119,84 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setReadName(S("R", 254));
 		createBAM(input, SortOrder.coordinate, r);
 		File fq1 = getContext().getFileSystemContext().getRealignmentFastq(input, 0);
-		SplitReadRealigner srr = new SplitReadRealigner(getContext(), aligner);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
 		srr.createSupplementaryAlignmentFastq(input, fq1, false);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		for (FastqRecord fqr : fq) {
 			assertTrue(fqr.getReadName().length() <= 254);
 		}
+	}
+	public class StubStreamingAligner implements StreamingAligner {
+		private int out = 0;
+		private int in = 0;
+		private SAMRecord[] alignments;
+		public StubStreamingAligner(SAMRecord... alignments) {
+			this.alignments = alignments;
+		}
+		@Override
+		public void asyncAlign(FastqRecord fq) throws IOException {
+			this.alignments[in++].setReadName(fq.getReadHeader());
+		}
+		@Override
+		public void flush() throws IOException { }
+
+		@Override
+		public boolean hasAlignmentRecord() {
+			return in > out & out < alignments.length;
+			}
+
+		@Override
+		public SAMRecord getAlignment() {
+			return alignments[out++];
+		}
+
+		@Override
+		public void close() throws IOException { }
+	}
+	@Test
+	public void streaming_should_realign_multiple_times() throws IOException {
+		SAMRecord r0 = Read(0, 100, "10M30S");
+		r0.setReadName("r");
+		SAMRecord r1 = Read(0, 200, "10M20S");
+		r1.setAttribute("SA", "this record is a split read realignment");
+		SAMRecord r2 = Read(0, 200, "10M10S");
+		
+		SAMRecord r3 = Read(0, 200, "10M");
+		
+		createBAM(input, SortOrder.coordinate, r0);
+		SplitReadRealigner srr = new SplitReadRealigner(getContext());
+		srr.createSupplementaryAlignments(new StubStreamingAligner(r1, r2, r3), input, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(4, list.size());
+	}
+	/**
+	 * TODO: Requires an aligner that will align 4 separate 100bp parts of a 400bp read
+	 */
+	//@Test
+	//@Category(ExternalAlignerTests.class)
+	public void should_realign_multiple_times() throws IOException {
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.make(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
+		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), ExternalAlignerTests.REFERENCE, lookup, Lists.newArrayList(), getConfig(testFolder.getRoot()));
+		SplitReadRealigner srr = new SplitReadRealigner(pc);
+		
+		SAMFileHeader header = new SAMFileHeader();
+		header.setSequenceDictionary(lookup.getSequenceDictionary());
+		header.setSortOrder(SortOrder.coordinate);
+		
+		
+		SAMRecord r = new SAMRecord(header);
+		r.setReferenceIndex(0);
+		r.setAlignmentStart(1399998);
+		r.setCigarString("301S103M");
+		r.setReadBases(B("GGATATATAGGGATAGAAGCTTGAATAGTCTGGACATATATTTGTATTGAAATACAAATGTAAGATTTCAGTTAATCAATTTAAACATTTTTATTTTCAAGGGCTTCCAGCGTCCACTTCCTACGGCAAGCAGGAGGAGACAAGCGCCACCCTGCGCTCGCGGAGCCGACCCCGGCTCTCCCCTCCCGTGGCCGCAGGGGTCTGACAGAAAGGGGTCACTAATCTACTTGGCCTTTTGAGGACTGATCCTTAAGAATAATTTTTTTTTTTTTATGATCTTGAAGGCTGAGAAGTATTAGAGTAGGTTTTTTTCTCCTTCATAAGGCCAGATTCTTCTTTCTGTCACAGATTTCAAGTCCCCGCCTCAGCAGCCTTTCACTGTCAGTTCTTTCTCACGTGACCCT"));
+		r.setBaseQualities(B("?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA"));
+		r.setReadName("four_way_split_read");
+		
+		createBAM(input, header, r);
+		
+		srr.createSupplementaryAlignments(aligner, input, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(4, list.size());
 	}
 }

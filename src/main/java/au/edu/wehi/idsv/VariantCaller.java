@@ -93,7 +93,7 @@ public class VariantCaller {
 				processContext.getDictionary().getSequence(chunk[0].referenceIndex).getSequenceName(), chunk[0].start,
 				processContext.getDictionary().getSequence(chunk[chunk.length-1].referenceIndex).getSequenceName(), chunk[chunk.length-1].end);
 		String msg = "calling maximal cliques in " + chunkMsg;
-		File tmp = FileSystemContext.getWorkingFileFor(output);
+		File tmp = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output) : output;
 		try (VariantCallIterator rawit = new VariantCallIterator(es, chunk, chunkNumber)) {
 			try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
 				log.info("Start ", msg);
@@ -110,14 +110,18 @@ public class VariantCaller {
 			}
 		}
 		try {
-			FileHelper.move(tmp, output, true);
+			if (tmp != output) {
+				FileHelper.move(tmp, output, true);
+			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 		log.info("Complete ", msg);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			try {
-				FileHelper.delete(tmp, true);
+				if (tmp != output) {
+					FileHelper.delete(tmp, true);
+				}
 			} catch (IOException e) {
 				log.warn(e, "Error removing intermediate file ", tmp.getAbsolutePath());
 			}

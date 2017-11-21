@@ -7,7 +7,7 @@ BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
 REFERENCE=~/reference_genomes/human/hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.4.1-jar-with-dependencies.jar
+GRIDSS_JAR=~/bin/gridss-1.5.0-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
@@ -50,6 +50,7 @@ java -ea -Xmx31g \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
+	-Dgridss.gridss.output_to_temp_file=true \
 	-cp $GRIDSS_JAR gridss.CallVariants \
 	TMP_DIR=. \
 	WORKING_DIR=. \
