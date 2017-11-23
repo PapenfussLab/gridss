@@ -15,7 +15,7 @@ public class PocTest extends IntermediateFilesTest {
 	public void circular_example() {
 		output = new File(testFolder.getRoot(), "uncompressed_string_graph.gexf");
 		Poc poc = new Poc();
-		String seq = S(RANDOM);
+		String seq = S(RANDOM).substring(0, 1000);
 		int readLength = 100;
 		List<SAMRecord> reads = new ArrayList<>();
 		for (int i = 0; i < seq.length(); i++) {
@@ -25,7 +25,7 @@ public class PocTest extends IntermediateFilesTest {
 			r.setReadBases(B(perfect_read));
 			reads.add(r);
 		}
-		poc.exportOverlapGraph(reads, 10, output);
+		poc.exportOverlapGraph(reads, 16, output);
 		Assert.assertTrue(output.exists());
 	}
 }

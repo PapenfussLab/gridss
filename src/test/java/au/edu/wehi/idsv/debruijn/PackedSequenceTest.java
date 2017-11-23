@@ -102,4 +102,27 @@ public class PackedSequenceTest extends TestHelper {
 		assertEquals(seq1.length(), PackedSequence.overlapMatches(seq1, seq1, 0));
 		assertEquals(seq1.length() - 4, PackedSequence.overlapMatches(seq1, seq2, 0));
 	}
+	@Test
+	public void overlapMatches_should_match_offset_reads() {
+		PackedSequence seq1 = new PackedSequence(B("TTATTTGAGTTAGAGAGCTTCGGGGATACTTATTCAGGTACGGTCTGTCTTCGGGAGTGTGACAGTACATGAATTAGCCTTGGTAGCAAGACAATTTTGT"), false, false);
+		PackedSequence seq2 = new PackedSequence(B( "TATTTGAGTTAGAGAGCTTCGGGGATACTTATTCAGGTACGGTCTGTCTTCGGGAGTGTGACAGTACATGAATTAGCCTTGGTAGCAAGACAATTTTGTG"), false, false);
+		assertEquals(99, PackedSequence.overlapMatches(seq1, seq2, 1));
+	}
+	private void test_overlapLength(String s1, String s2, int offset, int expectedOverlap) {
+		PackedSequence seq1 = new PackedSequence(B(s1), false, false);
+		PackedSequence seq2 = new PackedSequence(B(s2), false, false);
+		assertEquals(expectedOverlap, PackedSequence.overlapLength(seq1, seq2, offset));
+	}
+	@Test
+	public void overlapLength_should_return_common_base_count() {
+		test_overlapLength("AAAT", "AA", -3, 0);
+		test_overlapLength("AAAT", "AA", -2, 0);
+		test_overlapLength("AAAT", "AA", -1, 1);
+		test_overlapLength("AAAT", "AA", 0, 2);
+		test_overlapLength("AAAT", "AA", 1, 2);
+		test_overlapLength("AAAT", "AA", 2, 2);
+		test_overlapLength("AAAT", "AA", 3, 1);
+		test_overlapLength("AAAT", "AA", 4, 0);
+		test_overlapLength("AAAT", "AA", 5, 0);
+	}
 }

@@ -82,6 +82,7 @@ public class Poc {
 			startLookup.put(r, startnode);
 			endLookup.put(r, endnode);
 			ol.add(r);
+			r.sanityCheck();
 		}
 		for (Read r : startLookup.keySet()) {
 			Node rend = endLookup.get(r);
@@ -89,7 +90,7 @@ public class Poc {
 				Node ostart = startLookup.get(o.read2);
 				Edge edge = ostart.connectTo(rend).setEdgeType(EdgeType.DIRECTED);
 				edge.setWeight(o.overlap);
-				edge.getAttributeValues().createValue(attrSeq, o.read2.getRead().getReadBases().toString().substring(0, o.overlap));
+				edge.getAttributeValues().createValue(attrSeq, new String(o.read2.getSeq().getBytes(0, o.overlap)));
 			}
 		}
 		GexfHelper.saveTo(gexf, file);

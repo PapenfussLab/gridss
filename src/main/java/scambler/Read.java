@@ -35,4 +35,14 @@ public class Read {
 	public Read getMate() {
 		return mate;
 	}
+	@Override
+	public String toString() {
+		return seq.toString() + " " + read.getReadName();
+	}
+	public void sanityCheck() {
+		for (int i = 0; i < read.getReadLength(); i++) {
+			assert(read.getReadBases()[i] == seq.get(i));
+		}
+		assert(new String(read.getReadBases()).equals(seq.toString()));
+	}
 }
