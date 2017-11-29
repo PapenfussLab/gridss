@@ -48,6 +48,28 @@ public class PackedSequence {
 			}
 		}
 	}
+	/**
+	 * Subsequence of the given packed sequence
+	 * @param offset 0-based position to start
+	 * @param length length
+	 */
+	public PackedSequence(PackedSequence sequence, int offset, int length) {
+		if (offset + length > sequence.length()) {
+			throw new IllegalArgumentException("subsequence out of bounds");
+		}
+		this.packed = new long[IntMath.divide(length, BASES_PER_WORD, RoundingMode.CEILING)];
+		this.baseCount = length;
+		if (length == 0) { 
+			return;
+		}
+		for (int i = 0; i < packed.length; i++) {
+			int wordOffset = offset + i * BASES_PER_WORD;
+			int remainingLength = length - i * BASES_PER_WORD;
+			int wordLength = Math.min(BASES_PER_WORD, remainingLength);
+			// bit shift is required to pack the sequence bases for the final word in the MSBs.
+			this.packed[i] = sequence.getKmer(wordOffset, wordLength) << 2 * (BASES_PER_WORD - wordLength);
+		}
+	}
 	private void setBaseEncoded(final int offset, final long base) {
 		if (offset < 0 || offset >= baseCount) throw new IllegalArgumentException("offset must fall within sequence");
 		int wordIndex = offset >> ARRAY_SHIFT;

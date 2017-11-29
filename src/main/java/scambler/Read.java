@@ -8,6 +8,8 @@ import htsjdk.samtools.SAMRecord;
 public class Read {
 	private final SAMRecord read;
 	private final PackedSequence seq;
+	private final SgNode startNode;
+	private final SgNode endNode;
 	private Read mate;
 	private Read(SAMRecord read) {
 		this.read = read;
@@ -15,6 +17,8 @@ public class Read {
 		if (read.getReadUnmappedFlag()) {
 			throw new IllegalStateException("Orientation of unmapped read unknown");
 		}
+		this.startNode = new SgNode(this, 0);
+		this.endNode = new SgNode(this, seq.length());
 	}
 	public static Read create(SAMRecord read) {
 		return new Read(read);
@@ -34,6 +38,12 @@ public class Read {
 	}
 	public Read getMate() {
 		return mate;
+	}
+	public SgNode getStartNode() {
+		return startNode;
+	}
+	public SgNode getEndNode() {
+		return endNode;
 	}
 	@Override
 	public String toString() {

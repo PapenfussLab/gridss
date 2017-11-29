@@ -15,11 +15,12 @@ public class PocTest extends IntermediateFilesTest {
 	public void circular_example() {
 		output = new File(testFolder.getRoot(), "uncompressed_string_graph.gexf");
 		Poc poc = new Poc();
-		String seq = S(RANDOM).substring(0, 1000);
-		int readLength = 100;
+		String seq = S(RANDOM).substring(0, 100);
+		String seq2 = S(RANDOM).substring(100, 200);
+		int readLength = 50;
 		List<SAMRecord> reads = new ArrayList<>();
-		for (int i = 0; i < seq.length(); i++) {
-			String perfect_read = (seq + seq).substring(i, i + readLength);
+		for (int i = 0; i < seq.length(); i += 1) {
+			String perfect_read = (seq + seq2).substring(i, i + readLength);
 			SAMRecord r = new SAMRecord(null);
 			r.setReadName(Integer.toString(i));
 			r.setReadBases(B(perfect_read));

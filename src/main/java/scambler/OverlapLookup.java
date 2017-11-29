@@ -24,16 +24,30 @@ public class OverlapLookup {
 		}
 		entry.add(r);
 	}
+	public void remove(Read r) {
+		long key = r.getSeq().getKmer(0, kmerSize);
+		List<Read> entry = lookup.get(key);
+		assert(entry != null);
+		if (entry.size() == 1) {
+			lookup.remove(key);
+		} else {
+			// TODO: make this operation more efficient
+			entry.remove(r);
+		}
+	}
 	public List<Overlap> successors(Read r) {
 		PackedSequence seq = r.getSeq();
 		List<Overlap> overlaps = new ArrayList<>();
 		for (int i = 0; i < seq.length() - kmerSize; i++) {
 			long kmer = seq.getKmer(i, kmerSize);
-			for (Read hit : lookup.get(kmer)) {
-				if (hit != r) {
-					Overlap o = new Overlap(r, hit, i);
-					if (o.matchingBases + MAX_MISMATCHES >= o.overlap && o.overlap >= minOverlap) {
-						overlaps.add(o);
+			List<Read> hits = lookup.get(kmer);
+			if (hits != null) {
+				for (Read hit : hits) {
+					if (hit != r) {
+						Overlap o = new Overlap(r, hit, i);
+						if (o.matchingBases + MAX_MISMATCHES >= o.overlap && o.overlap >= minOverlap) {
+							overlaps.add(o);
+						}
 					}
 				}
 			}

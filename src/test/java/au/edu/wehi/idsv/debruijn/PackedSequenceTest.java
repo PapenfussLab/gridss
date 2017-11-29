@@ -125,4 +125,16 @@ public class PackedSequenceTest extends TestHelper {
 		test_overlapLength("AAAT", "AA", 4, 0);
 		test_overlapLength("AAAT", "AA", 5, 0);
 	}
+	@Test
+	public void subsequence_constructor_should_return_subsequence() {
+		for (int len = 0; len < 100; len++) {
+			PackedSequence seq = new PackedSequence(B(S(RANDOM).substring(0, len)), false, false);
+			for (int i = 0; i < len; i++) {
+				for (int j = 0; i + j <= len; j++) {
+					PackedSequence subseq = new PackedSequence(seq, i, j);
+					assertEquals(seq.toString().substring(i, i + j), subseq.toString());
+				}
+			}
+		}
+	}
 }
