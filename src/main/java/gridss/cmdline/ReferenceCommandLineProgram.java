@@ -2,6 +2,7 @@ package gridss.cmdline;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.Path;
 
 import org.broadinstitute.barclay.argparser.Argument;
 
@@ -33,6 +34,16 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 				log.error(msg);
 				throw new RuntimeException(msg);
 			}
+		}
+		if (reference.getSequenceDictionary() == null) {
+			Path referenceFile = REFERENCE_SEQUENCE.toPath();
+			log.info("Attempting to create sequence dictionary for " + REFERENCE_SEQUENCE);
+			Path dictPath = referenceFile.resolveSibling(referenceFile.getFileName().toString() + htsjdk.samtools.util.IOUtil.DICT_FILE_EXTENSION);
+			picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
+			csd.instanceMain(new String[] {
+				"OUTPUT=" + dictPath.toFile(),
+				"REFERENCE_SEQUENCE=" + REFERENCE_SEQUENCE.getAbsolutePath()
+			});
 		}
 		return reference;
 	}
