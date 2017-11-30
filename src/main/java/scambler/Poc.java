@@ -12,6 +12,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 
+import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.visualisation.GexfHelper;
 import htsjdk.samtools.SAMRecord;
@@ -55,7 +56,7 @@ public class Poc {
 	/**
 	 * Load overlap string graph
 	 */
-	public void exportOverlapGraph(List<SAMRecord> reads, int minOverlap, File file) {
+	public void exportOverlapGraph(List<SAMRecord> reads, int minOverlap, File file, LinearGenomicCoordinate lgc) {
 		Gexf gexf = new GexfImpl();
 			gexf.getMetadata()
 			.setLastModified(new Date())
@@ -82,7 +83,7 @@ public class Poc {
 		HashMap<Read, Node> endLookup = Maps.newHashMap();
 		OverlapLookup ol = new OverlapLookup(minOverlap);
 		for (SAMRecord sam : reads) {
-			Read r = Read.create(sam);
+			Read r = Read.create(lgc, sam);
 			Node startnode = graph.createNode("start_" + sam.getReadName() + "/" + (SAMRecordUtil.getSegmentIndex(sam) + 1));
 			Node endnode = graph.createNode("end_" + sam.getReadName() + "/" + (SAMRecordUtil.getSegmentIndex(sam) + 1));
 			startLookup.put(r, startnode);

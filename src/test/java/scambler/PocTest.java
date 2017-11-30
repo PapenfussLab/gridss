@@ -26,7 +26,7 @@ public class PocTest extends IntermediateFilesTest {
 			r.setReadBases(B(perfect_read));
 			reads.add(r);
 		}
-		poc.exportOverlapGraph(reads, 16, output);
+		poc.exportOverlapGraph(reads, 16, output, getContext().getLinear());
 		Assert.assertTrue(output.exists());
 	}
 }

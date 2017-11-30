@@ -15,4 +15,12 @@ public class Overlap {
 	public final int read2StartRelativeToRead1;
 	public final int matchingBases;
 	public final int overlap;
+	/**
+	 * Distance (in base pairs) between the actual or expected reference genome alignment positions
+	 * and that inferred by this overlap. 
+	 */
+	public int deviationFromAlignment() {
+		// TODO: calculate
+		return 0;
+	}
 }

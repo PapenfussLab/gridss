@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import com.google.common.math.IntMath;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
+import it.unimi.dsi.fastutil.Arrays;
 
 /**
  * Compresses the given sequence by representing in 2-bit format
@@ -69,6 +70,19 @@ public class PackedSequence {
 			// bit shift is required to pack the sequence bases for the final word in the MSBs.
 			this.packed[i] = sequence.getKmer(wordOffset, wordLength) << 2 * (BASES_PER_WORD - wordLength);
 		}
+	}
+	/**
+	 * Concatenates the given sequences
+	 * @param seq
+	 * @param seq2
+	 */
+	public PackedSequence(PackedSequence seq1, PackedSequence seq2) {
+		this.baseCount = seq2.baseCount + seq2.baseCount;
+		this.packed = new long[IntMath.divide(this.baseCount, BASES_PER_WORD, RoundingMode.CEILING)];
+		System.arraycopy(seq1.packed, 0, this.packed, 0, seq1.length());
+		int offset = seq1.length();
+		// copy seq2 into packed starting at offset
+		throw new RuntimeException("NYI");
 	}
 	private void setBaseEncoded(final int offset, final long base) {
 		if (offset < 0 || offset >= baseCount) throw new IllegalArgumentException("offset must fall within sequence");
