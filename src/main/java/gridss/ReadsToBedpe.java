@@ -18,8 +18,12 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.IndelEvidence;
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
+import au.edu.wehi.idsv.SingleReadEvidence;
+import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.SplitReadEvidence;
+import au.edu.wehi.idsv.StringEvidenceIdentifierGenerator;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.MathUtil;
 import htsjdk.samtools.SAMFileHeader;
@@ -52,9 +56,18 @@ public class ReadsToBedpe extends CommandLineProgram {
     public boolean SPLIT_READS = true;
     @Argument(doc="Write indel reads", optional=true)
     public boolean INDELS = true;
-    @Argument(doc="Include a unique identifier for each breakpoint supported by each read. "
-    		+ "Note that this identified can be quite long for long read sequencing technologies.", optional=true)
-    public boolean UNIQUE_IDENTIFIER= true;
+    @Argument(doc="Value to write to the BEDPE name field. Note that the unique identifier includes the read CIGAR so can be very long for long read sequencing technologies.", optional=true)
+    public Name NAME = Name.ReadName;
+    /**
+     * Value to populate the name field
+     * @author Daniel Cameron
+     *
+     */
+    public enum Name {
+    	None,
+    	ReadName,
+    	UniqueIdentifier,
+    }
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -136,9 +149,28 @@ public class ReadsToBedpe extends CommandLineProgram {
 		sb.append('	');
 		sb.append(Integer.toString(bp.end2));
 		sb.append('	');
-		if (UNIQUE_IDENTIFIER) {
-			sb.append(e.getEvidenceID());
-		} else {
+		switch (NAME) {
+		case ReadName:
+			if (e instanceof SingleReadEvidence) {
+				sb.append(((SingleReadEvidence)e).getSAMRecord().getReadName());
+			} else {
+				sb.append('.');
+			}
+			break;
+		case UniqueIdentifier:
+			if (e instanceof NonReferenceReadPair) {
+				sb.append(new StringEvidenceIdentifierGenerator().getEvidenceID((NonReferenceReadPair)e));
+			} else if (e instanceof SoftClipEvidence) {
+				sb.append(new StringEvidenceIdentifierGenerator().getEvidenceID((SoftClipEvidence)e));
+			} else if (e instanceof SplitReadEvidence) {
+				sb.append(new StringEvidenceIdentifierGenerator().getEvidenceID((SplitReadEvidence)e));
+			} else if (e instanceof IndelEvidence) {
+				sb.append(new StringEvidenceIdentifierGenerator().getEvidenceID((IndelEvidence)e));
+			} else {
+				sb.append('.');
+			}
+			break;
+		default:
 			sb.append('.');
 		}
 		sb.append('	');
