@@ -12,7 +12,7 @@ public class DeBruijnPathNode<T> extends PathNode<T> implements DeBruijnSequence
 		for (T n : nodes) {
 			addRefCounts(n);
 		}
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			sanityCheck();
 		}
 	}

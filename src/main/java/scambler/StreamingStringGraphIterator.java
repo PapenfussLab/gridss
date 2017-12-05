@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import htsjdk.samtools.SAMRecord;
 
@@ -31,11 +32,13 @@ public class StreamingStringGraphIterator implements Iterator<SgNode> {
 		output.add(r.getStartNode());
 		output.add(r.getEndNode());
 		lookup.add(r);
-		toTransform.push(r);
-		currentPosition = lgc.getStartLinearCoordinate(record);
+		toTransform.addLast(r);
+		long nextPosition = lgc.getStartLinearCoordinate(record);
+		assert(nextPosition >= currentPosition);
+		currentPosition = nextPosition;
 		// transform records
-		while (getWindowPosition(toTransform.peek()) < currentTransformPosition()) {
-			transform(toTransform.pop());
+		while (getWindowPosition(toTransform.peekFirst()) < currentTransformPosition()) {
+			transform(toTransform.removeFirst());
 		}
 	}
 	private void transform(Read r) {
@@ -62,27 +65,42 @@ public class StreamingStringGraphIterator implements Iterator<SgNode> {
 		if (!it.hasNext()) {
 			currentPosition = Long.MAX_VALUE;
 			while (!toTransform.isEmpty()) {
-				transform(toTransform.pop());
+				transform(toTransform.removeFirst());
 			}
 		}
 	}
+	private void ensureNextNonOverlapping() {
+		ensureNext();
+		while (!output.isEmpty() && isNonoverlapping(output.peek())) {
+			output.poll();
+			ensureNext();
+		}
+	}
+	private boolean isNonoverlapping(SgNode node) {
+		return node.in.size() == 0 && node.out.size() == 0;
+	}
 	@Override
 	public boolean hasNext() {
-		ensureNext();
+		ensureNextNonOverlapping();
 		return !output.isEmpty();
 	}
 	@Override
 	public SgNode next() {
-		ensureNext();
+		ensureNextNonOverlapping();
 		if (output.isEmpty()) {
 			throw new NoSuchElementException();
 		}
 		SgNode node = output.poll();
+		assert(toTransform.isEmpty() || getWindowPosition(toTransform.peekFirst()) > node.inferredPosition + windowSize);
 		if (node.read.getEndNode() == node) {
 			// Each read creates both a start and end node.
 			// Remove the read from the lookup when we emit the
 			// end node
 			lookup.remove(node.read);
+			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
+				// make sure we never emit a node that could potentially overlap with
+				assert(toTransform.stream().allMatch(r -> getWindowPosition(r) > node.inferredPosition + windowSize));
+			}
 		}
 		return node;
 	}

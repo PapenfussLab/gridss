@@ -38,7 +38,7 @@ public class OverlapLookup {
 	public List<Overlap> successors(Read r) {
 		PackedSequence seq = r.getSeq();
 		List<Overlap> overlaps = new ArrayList<>();
-		for (int i = 0; i < seq.length() - kmerSize; i++) {
+		for (int i = 0; i <= seq.length() - kmerSize; i++) {
 			long kmer = seq.getKmer(i, kmerSize);
 			List<Read> hits = lookup.get(kmer);
 			if (hits != null) {

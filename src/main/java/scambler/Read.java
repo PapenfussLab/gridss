@@ -21,7 +21,7 @@ public class Read {
 		this.startNode = new SgNode(lgc, this, 0);
 		this.endNode = new SgNode(lgc, this, seq.length());
 	}
-	public static Read create(LinearGenomicCoordinate lgc,SAMRecord read) {
+	public static Read create(LinearGenomicCoordinate lgc, SAMRecord read) {
 		return new Read(lgc, read);
 	}
 	public static Pair<Read, Read> create(LinearGenomicCoordinate lgc,SAMRecord read1, SAMRecord read2) {

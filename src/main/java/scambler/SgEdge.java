@@ -8,6 +8,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 
 import au.edu.wehi.idsv.debruijn.PackedSequence;
+import scambler.SgNode.State;
 
 /**
  * String Graph edge
@@ -23,17 +24,26 @@ public class SgEdge {
 		to.in.add(this);
 	}
 	/**
-	 * Replaces the given compressable node with the equivalent edge
+	 * Replaces the given compressible node with the equivalent edge
 	 * @param node
 	 */
-	private SgEdge(SgNode node) {
+	public SgEdge(SgNode node) {
 		assert(node.canCompress());
 		SgEdge in = node.in.get(0);
 		SgEdge out = node.out.get(0);
 		this.from = in.from;
 		this.to = out.to;
 		this.seq = new PackedSequence(in.seq, out.seq);
-		
+		node.state = State.Removed;
+		node.in.clear();
+		node.out.clear();
+	}
+	/**
+	 * Remove the given edge due as it is redundant.
+	 */
+	public void reduce() {
+		from.out.remove(this);
+		to.in.remove(this);
 	}
 	public static List<SgEdge> create(Overlap o) {
 		if (o.read2StartRelativeToRead1 < 0) {

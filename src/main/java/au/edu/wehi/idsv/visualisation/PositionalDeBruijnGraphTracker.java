@@ -99,7 +99,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		writer.write(ContigStats.header());
 		writer.write(",");
 		writer.write(MemoizationStats.header());
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			writer.write(",aggregateKmerMaxActive,aggregateActiveNodes,pathNodeEdgeMaxActive,pathNodePathMaxActive,trackerMaxKmerSupport,assemblyMaxActive,trackerLookupSize");
 		}
 		writer.write('\n');
@@ -186,7 +186,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(assembler.tracking_lastContig().toString());
 			writer.write(',');
 			writer.write(caller.tracking_lastRemoval().toString());
-			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 				writer.write(',');
 				writer.write(Integer.toString(aggregate.tracking_aggregatorKmerMaxActiveNodeCount()));
 				writer.write(',');

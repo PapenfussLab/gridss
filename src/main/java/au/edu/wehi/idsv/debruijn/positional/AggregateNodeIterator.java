@@ -58,7 +58,7 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 			inputPosition = Integer.MAX_VALUE;
 			flush();
 		}
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			assert(sanityCheck());
 		}
 	}
