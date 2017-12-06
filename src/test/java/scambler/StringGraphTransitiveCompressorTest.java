@@ -18,7 +18,8 @@ public class StringGraphTransitiveCompressorTest extends StringGraphTestHelper {
 			StringGraphTransitiveCompressor trit = new StringGraphTransitiveCompressor(
 					new StreamingStringGraphIterator(10, 200, 30, 
 						overlapping(i, 30, 10).iterator(),
-						getContext().getLinear()));
+						getContext().getLinear()),
+					0, false);
 			ArrayList<SgNode> result = Lists.newArrayList(trit);
 			assertEquals(2 * i, result.size());
 		}
@@ -30,7 +31,7 @@ public class StringGraphTransitiveCompressorTest extends StringGraphTestHelper {
 		//   CCC
 		List<SAMRecord> reads = overlapping(3, 9, 3);
 		ArrayList<SgNode> rawGraph = Lists.newArrayList(new StreamingStringGraphIterator(3, 200, 3, reads.iterator(), getContext().getLinear()));
-		StringGraphTransitiveCompressor sit = new StringGraphTransitiveCompressor(rawGraph.iterator());
+		StringGraphTransitiveCompressor sit = new StringGraphTransitiveCompressor(rawGraph.iterator(), 0, false);
 		ArrayList<SgNode> graph = Lists.newArrayList(sit);
 		assertEquals(6, graph.size());
 		graph.sort(SgNode.ByInferredPosition);
@@ -58,7 +59,7 @@ public class StringGraphTransitiveCompressorTest extends StringGraphTestHelper {
 		// sanity check graph construction
 		assertEquals(4, rawGraph.size());
 		assertEquals(3, rawGraph.stream().mapToInt(n -> n.out.size()).sum());
-		StringGraphTransitiveCompressor tcit = new StringGraphTransitiveCompressor(rawGraph.iterator());
+		StringGraphTransitiveCompressor tcit = new StringGraphTransitiveCompressor(rawGraph.iterator(), 0, false);
 		ArrayList<SgNode> graph = Lists.newArrayList(tcit);
 		assertEquals(4, graph.size());
 		assertEquals(3, graph.stream().mapToInt(n -> n.out.size()).sum());
@@ -68,9 +69,19 @@ public class StringGraphTransitiveCompressorTest extends StringGraphTestHelper {
 		for (int i = 3; i < 100; i++) {
 			List<SAMRecord> reads = overlapping(i, 60, 20);
 			ArrayList<SgNode> rawGraph = Lists.newArrayList(new StreamingStringGraphIterator(20, 60, 60, reads.iterator(), getContext().getLinear()));
-			StringGraphTransitiveCompressor tcit = new StringGraphTransitiveCompressor(rawGraph.iterator());
+			StringGraphTransitiveCompressor tcit = new StringGraphTransitiveCompressor(rawGraph.iterator(), 0, false);
 			ArrayList<SgNode> graph = Lists.newArrayList(tcit);
 			assertEquals(graph.size() - 1, graph.stream().mapToInt(n -> n.out.size()).sum());
+		}
+	}
+	@Test
+	public void should_reduce_perfect_graph_to_single_node() {
+		for (int i = 3; i < 100; i++) {
+			List<SAMRecord> reads = overlapping(i, 60, 20);
+			ArrayList<SgNode> rawGraph = Lists.newArrayList(new StreamingStringGraphIterator(20, 60, 60, reads.iterator(), getContext().getLinear()));
+			StringGraphTransitiveCompressor tcit = new StringGraphTransitiveCompressor(rawGraph.iterator(), 0, true);
+			ArrayList<SgNode> graph = Lists.newArrayList(tcit);
+			assertEquals(0, graph.size());
 		}
 	}
 }

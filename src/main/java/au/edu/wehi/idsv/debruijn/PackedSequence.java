@@ -5,7 +5,6 @@ import java.math.RoundingMode;
 import com.google.common.math.IntMath;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
-import it.unimi.dsi.fastutil.Arrays;
 
 /**
  * Compresses the given sequence by representing in 2-bit format
@@ -77,12 +76,22 @@ public class PackedSequence {
 	 * @param seq2
 	 */
 	public PackedSequence(PackedSequence seq1, PackedSequence seq2) {
-		this.baseCount = seq2.baseCount + seq2.baseCount;
+		this.baseCount = seq1.baseCount + seq2.baseCount;
 		this.packed = new long[IntMath.divide(this.baseCount, BASES_PER_WORD, RoundingMode.CEILING)];
-		System.arraycopy(seq1.packed, 0, this.packed, 0, seq1.length());
-		int offset = seq1.length();
-		// copy seq2 into packed starting at offset
-		throw new RuntimeException("NYI");
+		System.arraycopy(seq1.packed, 0, this.packed, 0, seq1.packed.length);
+		int wordOffset = seq1.length() % BASES_PER_WORD;
+		int wordIndex = seq1.length() / BASES_PER_WORD;
+		for (int i = 0; i < IntMath.divide(seq2.length(), BASES_PER_WORD, RoundingMode.CEILING); i++) {
+			long word = seq2.packed[i];
+			int thisWordBases = BASES_PER_WORD - wordOffset;
+			int nextWordBases = wordOffset;
+			long msb = word >>> (2 * thisWordBases);
+			long lsb = word & (2 * (1L << (2 * nextWordBases)) - 1);
+			this.packed[wordIndex] |= msb;
+			if (wordIndex < this.packed.length - 1) {
+				this.packed[wordIndex + 1] |= lsb << (2 * nextWordBases);
+			}
+		}
 	}
 	private void setBaseEncoded(final int offset, final long base) {
 		if (offset < 0 || offset >= baseCount) throw new IllegalArgumentException("offset must fall within sequence");

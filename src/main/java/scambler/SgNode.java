@@ -9,24 +9,31 @@ import com.google.common.primitives.Longs;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 
 public class SgNode {
+	/**
+	 * Edges are still being added to this node
+	 */
+	public static final int EDGES_UNDER_CONSTRUCTION = 0;
+	/**
+	 * All edges have been added
+	 */
+	public static final int EDGES_CONSTRUCTED = 1;
+	/**
+	 * Node has had transitive reduction (and compression) performed
+	 */
+	public static final int EDGES_TRANSISTIVE_REDUCED = 2;
+	/**
+	 * Transitive reduction and node compression has been completed.
+	 * No further changes to this node will be made
+	 */
+	public static final int EDGES_FINALISED = 3;
 	public List<SgEdge> in = new ArrayList<>(4);
 	public List<SgEdge> out = new ArrayList<>(4);
 	public final long inferredPosition;
 	public final Read read;
-	public State state = State.UnderConstruction;
-	public TransitiveReductionMark mark = TransitiveReductionMark.Vacant; 
-	public int waitingOnReduction;
-	public int waitingOnEmission;
-	public enum State {
-		UnderConstruction,
-		AwaitingReduction,
-		Reduced,
-		EmittedFromReduction,
-		/**
-		 * This node has been removed from the graph
-		 */
-		Removed,
-	}
+	//public int waitingOnReduction;
+	//public int waitingOnEmission;
+	public int edgeState = 0;
+	public TransitiveReductionMark mark = TransitiveReductionMark.Vacant;
 	public enum TransitiveReductionMark {
 		Vacant,
 		InPlay,
@@ -40,8 +47,8 @@ public class SgNode {
 	 * Determines whether this node can be compressed into an edge
 	 * @return
 	 */
-	public boolean canCompress() {
-		return in.size() != 1 && out.size() == 1;
+	public boolean isCompressible() {
+		return in.size() == 1 && out.size() == 1;
 	}
 	
 	@Override

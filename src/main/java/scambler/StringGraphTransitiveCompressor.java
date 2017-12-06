@@ -6,9 +6,9 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.Defaults;
-import scambler.SgNode.State;
 import scambler.SgNode.TransitiveReductionMark;
 
 /**
@@ -40,7 +40,16 @@ import scambler.SgNode.TransitiveReductionMark;
  * u parent: >= loaded
  * v node: >= loaded
  * w child: >= loaded
- * x grandchild: no constraints (vw and wx exist since v,w loaded) 
+ * x grandchild: no constraints (vw and wx exist since v,w loaded)
+ * 
+ * Node compression:
+ * node: >= loaded
+ * 
+ * Emission: (no changes to edges)
+ * node: >= loaded
+ * parent: loaded <= emitted
+ * child: loaded <= emitted
+ * 
  * 
  * 
  * @author Daniel Cameron
@@ -48,9 +57,7 @@ import scambler.SgNode.TransitiveReductionMark;
  */
 public class StringGraphTransitiveCompressor implements Iterator<SgNode> {
 	private final Iterator<SgNode> it;
-	//private final LinearGenomicCoordinate lgc;
 	private final Deque<SgNode> output = new ArrayDeque<>();
-	//private final Set<SgNode> canProcess = new HashSet<>();
 	private final int fuzz;
 	private final boolean compressUnbranchingPaths;
 	public StringGraphTransitiveCompressor(Iterator<SgNode> it, int fuzz, boolean compressUnbranchingPaths) {
@@ -63,89 +70,63 @@ public class StringGraphTransitiveCompressor implements Iterator<SgNode> {
 			load(it.next());
 		}
 	}
-	/**
-	 * Transitive reduction requires that all children be fully constructed
-	 * @param node
-	 * @return
-	 */
-	private boolean isBlockingParentTransitiveReduction(SgNode node) {
-		switch (node.state) {
-		case Removed:
-		case UnderConstruction:
-			assert(node.state != State.Removed);
-			return true;
-		case AwaitingReduction:
-		case Reduced:
-		case EmittedFromReduction:
-		default:
-			return false;
-		}
+	private boolean canEmit(SgNode node) {
+		return node.edgeState >= SgNode.EDGES_TRANSISTIVE_REDUCED &&
+				node.in.stream().allMatch(n -> n.from.edgeState >= SgNode.EDGES_TRANSISTIVE_REDUCED) &&
+				node.out.stream().allMatch(n -> n.to.edgeState >= SgNode.EDGES_TRANSISTIVE_REDUCED);
 	}
-	/**
-	 * Emission can occur when no edges involving that node can change
-	 * 
-	 * This requires that
-	 * a) the node has had transitive reduction performed on it (outgoing edges)
-	 * and
-	 * b) all parents have had transitive reduction performed (incoming edges)
-	 * 
-	 */
-	private boolean isBlockingChildEmission(SgNode node) {
-		switch (node.state) {
-		case Removed:
-		case UnderConstruction:
-		case AwaitingReduction:
-			assert(node.state != State.Removed);
-			return true;
-		case Reduced:
-		case EmittedFromReduction:
-		default:
-			return false;
-		}
+	private boolean canReduce(SgNode node) {
+		return node.edgeState >= SgNode.EDGES_CONSTRUCTED && node.edgeState < SgNode.EDGES_FINALISED &&
+				node.out.stream().allMatch(n -> n.to.edgeState >= SgNode.EDGES_CONSTRUCTED && n.to.edgeState < SgNode.EDGES_FINALISED);
+	}
+	private boolean canCompress(SgNode node) {
+		return node.edgeState >= SgNode.EDGES_CONSTRUCTED && node.edgeState < SgNode.EDGES_FINALISED &&
+				node.in.stream().allMatch(n -> n.from.edgeState < SgNode.EDGES_FINALISED) &&
+				node.out.stream().allMatch(n -> n.to.edgeState < SgNode.EDGES_FINALISED);
+	}
+	private boolean shouldReduce(SgNode node) {
+		return node.edgeState == SgNode.EDGES_CONSTRUCTED && canReduce(node);
+	}
+	private boolean shouldCompress(SgNode node) {
+		return compressUnbranchingPaths && node.isCompressible() && canCompress(node) &&
+				(node.edgeState >= SgNode.EDGES_CONSTRUCTED || node.edgeState < SgNode.EDGES_FINALISED);
+	}
+	private boolean shouldEmit(SgNode node) {
+		return node.edgeState == SgNode.EDGES_TRANSISTIVE_REDUCED &&
+				canEmit(node);
 	}
 	private void load(SgNode node) {
-		// Tell all parents that they are no longer waiting on us
 		node.out.sort(SgEdge.BySequenceLength);
-		node.state = SgNode.State.AwaitingReduction;
 		node.mark = SgNode.TransitiveReductionMark.Vacant;
-		node.waitingOnReduction = (int)node.out.stream().filter(n -> isBlockingParentTransitiveReduction(n.to)).count();
-		node.waitingOnEmission = (int)node.in.stream().filter(n -> isBlockingChildEmission(n.from)).count();
-		if (compressUnbranchingPaths && node.canCompress()) {
+		node.edgeState = SgNode.EDGES_CONSTRUCTED;
+		if (shouldCompress(node)) {
 			SgEdge edge = new SgEdge(node);
 			SgNode parent = edge.from;
 			SgNode child = edge.to;
-			if (!isBlockingChildEmission(parent)) {
-				// we were blocking our child being emitted
-				assert(parent.waitingOnEmission > 0);
-				parent.waitingOnEmission--;
-				if (parent.waitingOnEmission == 0 && parent.state == State.Reduced) {
-					emit(parent);
-				}
+			assert(!shouldCompress(parent));
+			assert(!shouldCompress(child));
+			if (shouldReduce(parent)) {
+				reduce(parent);
 			}
-			if (!isBlockingParentTransitiveReduction(child)) {
-				// we were blocking TR because we we're loaded yet
-				// the replacement child for our parent is now
-				// not blocking TR
-				assert(parent.waitingOnReduction > 0);
-				parent.waitingOnReduction--;
-				if (parent.waitingOnReduction == 0) {
-					reduce(parent);
-				}
+			if (shouldEmit(child))  {
+				emit(child);
 			}
+			// Loading a node will not change the reduction status of a child
+			// since reduction of that node only depends on the node itself
+			// and its children
 			return;
 		}
 		List<SgNode> toReduce = new ArrayList<>(node.in.size());
 		for (SgEdge e : node.in) {
 			SgNode parent = e.from;
-			parent.waitingOnReduction--;
-			if (parent.waitingOnReduction == 0) {
+			if (parent.edgeState == SgNode.EDGES_CONSTRUCTED && canReduce(parent)) {
 				toReduce.add(parent);
 			}
 		}
 		for (SgNode parent : toReduce) {
 			reduce(parent);
 		}
-		if (node.waitingOnReduction == 0) {
+		if (shouldReduce(node)) {
 			reduce(node);
 		}
 	}
@@ -155,12 +136,15 @@ public class StringGraphTransitiveCompressor implements Iterator<SgNode> {
 	 * @return
 	 */
 	private void reduce(SgNode node) {
+		assert(shouldReduce(node));
+		assert(node.edgeState == SgNode.EDGES_CONSTRUCTED);
 		// perform transitive reduction
 		int longest = 0;
 		for (SgEdge vw : node.out) {
 			SgNode w = vw.to;
 			assert(vw.from == node);
-			assert(w.state != State.UnderConstruction);
+			assert(w.edgeState >= SgNode.EDGES_CONSTRUCTED);
+			assert(w.edgeState < SgNode.EDGES_FINALISED);
 			w.mark = TransitiveReductionMark.InPlay;
 			longest = Math.max(longest, vw.length());
 		}
@@ -171,6 +155,7 @@ public class StringGraphTransitiveCompressor implements Iterator<SgNode> {
 			if (w.mark == TransitiveReductionMark.InPlay) {
 				for (SgEdge wx : w.out) {
 					SgNode x = wx.to;
+					assert(x.edgeState < SgNode.EDGES_FINALISED);
 					if (wx.length() + vw.length() > longest) {
 						// too long - no need to continue further with x
 						break;
@@ -185,8 +170,8 @@ public class StringGraphTransitiveCompressor implements Iterator<SgNode> {
 			SgNode w = vw.to;
 			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH && compressUnbranchingPaths) {
 				// children we can performing transitive reduction over cannot be
-				// compressable node or else the transitive reduction can fail
-				assert(w.in.size() != 1 || w.out.size() != 1);
+				// compressible node or else the transitive reduction can fail
+				assert(!w.isCompressible());
 			}
 			for (SgEdge wx : w.out) {
 				SgNode x = wx.to;
@@ -211,36 +196,49 @@ public class StringGraphTransitiveCompressor implements Iterator<SgNode> {
 		for (SgEdge e : toReduce) {
 			e.reduce();
 		}
-		node.state = State.Reduced;
-		if (node.canCompress()) {
-			// replace the node with the given edge
-			SgEdge edge = new SgEdge(node);
-			assert(edge.to.state != State.UnderConstruction);
-			if (edge.to.state == State.AwaitingReduction) {
-				// TODO: compression issues
-				
-			}
-		} else {
+		node.edgeState = SgNode.EDGES_TRANSISTIVE_REDUCED;
+		// Compress nodes to retain invariant that
+		// all no node has in and out degrees of 1
+		if (compressUnbranchingPaths) {
 			for (SgNode child : children) {
-				child.waitingOnEmission--;
-				// Tell our children (including those we removed edges to) that we have been reduced
-				if (child.waitingOnEmission == 0 && child.state == State.Reduced) {
-					emit(child);
+				if (shouldCompress(child)) {
+					new SgEdge(child);
 				}
 			}
-			if (node.waitingOnEmission == 0) {
-				output.add(node);
-				node.state = State.EmittedFromReduction;
+		}
+		if (compressUnbranchingPaths && shouldCompress(node)) {
+			SgEdge edge = new SgEdge(node);
+			if (shouldReduce(edge.from)) {
 			}
+			if (shouldEmit(edge.to)) {
+				emit(edge.to);
+			}
+		} else {
+			// all parents might now be able to be reduced
+			List<SgNode> parents = node.in.stream().map(e -> e.from).collect(Collectors.toList());
+			for (SgNode parent : parents) {
+				if (shouldReduce(parent)) {
+					reduce(parent);
+				}
+				if (shouldEmit(parent)) {
+					emit(parent);
+				}
+			}
+			for (SgNode child : children) {
+				if (shouldEmit(child)) {
+					reduce(child);
+				}
+			}
+		}
+		if (shouldEmit(node)) {
+			emit(node);
 		}
 	}
 	private void emit(SgNode node) {
-		assert(node.state == State.Reduced);
-		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
-			assert(node.in.stream().allMatch(n -> !isBlockingChildEmission(node)));
-		}
+		assert(canEmit(node));
+		assert(node.edgeState == SgNode.EDGES_TRANSISTIVE_REDUCED);
+		node.edgeState = SgNode.EDGES_FINALISED;
 		output.add(node);
-		node.state = State.EmittedFromReduction;
 	}
 	@Override
 	public boolean hasNext() {

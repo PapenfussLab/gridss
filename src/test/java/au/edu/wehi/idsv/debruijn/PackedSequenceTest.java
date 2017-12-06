@@ -137,4 +137,17 @@ public class PackedSequenceTest extends TestHelper {
 			}
 		}
 	}
+	@Test
+	public void should_concat_sequences() {
+		for (int i =  0; i < 200; i++) {
+			for (int j =  0; j < 200; j++) {
+				String seq1 = S(RANDOM).substring(i, i + j);
+				String seq2 = S(RANDOM).substring(j, i + j);
+				PackedSequence ps1 = new PackedSequence(B(seq1), false, false);
+				PackedSequence ps2 = new PackedSequence(B(seq2), false, false);
+				PackedSequence concat = new PackedSequence(ps1, ps2);
+				assertEquals(seq1 + seq2, S(concat.getBytes(0, concat.length())));
+			}
+		}
+	}
 }

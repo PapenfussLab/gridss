@@ -3,12 +3,12 @@ package scambler;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 
 import au.edu.wehi.idsv.debruijn.PackedSequence;
-import scambler.SgNode.State;
 
 /**
  * String Graph edge
@@ -16,6 +16,7 @@ import scambler.SgNode.State;
  *
  */
 public class SgEdge {
+	private static final List<SgEdge> NO_EDGES = ImmutableList.of();
 	private SgEdge(SgNode from, SgNode to, PackedSequence seq) {
 		this.from = from;
 		this.to = to;
@@ -28,15 +29,15 @@ public class SgEdge {
 	 * @param node
 	 */
 	public SgEdge(SgNode node) {
-		assert(node.canCompress());
+		assert(node.isCompressible());
 		SgEdge in = node.in.get(0);
 		SgEdge out = node.out.get(0);
 		this.from = in.from;
 		this.to = out.to;
 		this.seq = new PackedSequence(in.seq, out.seq);
-		node.state = State.Removed;
-		node.in.clear();
-		node.out.clear();
+		node.edgeState = SgNode.EDGES_FINALISED;
+		node.in = NO_EDGES;
+		node.out = NO_EDGES;
 	}
 	/**
 	 * Remove the given edge due as it is redundant.
