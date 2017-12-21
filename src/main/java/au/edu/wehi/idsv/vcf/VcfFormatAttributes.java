@@ -25,6 +25,8 @@ public enum VcfFormatAttributes {
 
 	BREAKEND_UNMAPPEDMATE_COUNT("BUM", 1, VCFHeaderLineType.Integer, "Count of read pairs (with one read unmapped) supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_COUNT("BSC", 1, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend per category"),
+	BREAKEND_ASSEMBLY_READPAIR_COUNT("BASRP", 1, VCFHeaderLineType.Integer, "Count of read pairs incorporated into any breakend assembly"),
+	BREAKEND_ASSEMBLY_READ_COUNT("BASSR", 1, VCFHeaderLineType.Integer, "Count of split, soft clipped or indel-containing reads incorporated into any breakend assemblies"),
 	BREAKEND_ASSEMBLY_QUAL("BAQ", 1, VCFHeaderLineType.Float, "Pro-rata quality score contribution of assemblies supporting just local breakend"),
 	BREAKEND_UNMAPPEDMATE_QUAL("BUMQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs (with one read unmapped) supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_QUAL("BSCQ", 1, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend per category");

@@ -882,4 +882,45 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		VariantContextDirectedEvidence var = cb.make();
 		assertEquals(10, var.getBreakendSequence().length);
 	}
+	@Test
+	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READPAIR_COUNT() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(BP.localBreakend(), "GT").make());
+		cb.addEvidence(new dp(1, true));
+		cb.addEvidence(new dp(2, true));
+		cb.addEvidence(new dp(3, false));
+		
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				new dp(2, true),
+				new dp(4, true).asRemote()); 
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
+		cb.addEvidence(asAssemblyEvidence(ass));
+		
+		VariantContextDirectedEvidence bp = cb.make();
+		
+		assertAttr(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, VcfFormatAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, new int[] { 0, 2, }, bp);
+	}
+	@Test
+	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READ_COUNT() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(BP, "GT").make());
+		cb.addEvidence(new rsc(1, true));
+		cb.addEvidence(new rsc(2, true));
+		cb.addEvidence(new rsc(3, false));
+		cb.addEvidence(new rrsc(1, false));
+		cb.addEvidence(new rrsc(7, false));
+		
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				new rsc(4, true)); 
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
+		cb.addEvidence(asAssemblyEvidence(ass));
+		
+		VariantContextDirectedEvidence bp = cb.make();
+		
+		assertAttr(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT, VcfFormatAttributes.BREAKEND_ASSEMBLY_READ_COUNT, new int[] { 0, 1, }, bp);
+	}
 }

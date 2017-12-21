@@ -34,6 +34,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final VariantContextDirectedEvidence parent;
 	private final Set<String> encounteredEvidenceIDs;
 	private final List<DirectedBreakpoint> supportingBreakpoint = new ArrayList<>();
+	private final List<DirectedEvidence> supportingBreakend = new ArrayList<>();
 	// breakpoint support
 	private final List<List<SplitReadEvidence>> supportingSR = new ArrayList<>();
 	private final List<List<IndelEvidence>> supportingIndel = new ArrayList<>();
@@ -87,6 +88,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		if (evidence instanceof DirectedBreakpoint) {
 			supportingBreakpoint.add((DirectedBreakpoint)evidence);
+		} else {
+			supportingBreakend.add(evidence);
 		}
 		int category = ((SAMEvidenceSource)evidence.getEvidenceSource()).getSourceCategory();
 		assert(category < processContext.getCategoryCount());
@@ -188,21 +191,26 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private boolean isSupportingEvidence(DirectedEvidence evidence) {
 		BreakendSummary bs = getBreakendSummaryWithMargin(evidence);
-		return parent.getBreakendSummary().overlaps(bs);
+		return parent.getBreakendSummary().overlaps(bs) &&
+				// breakpoint evidence should not be assigned to breakend calls
+				!(isBreakend() && evidence instanceof DirectedBreakpoint);
+	}
+	private boolean isBreakend() {
+		return !(parent.getBreakendSummary() instanceof BreakpointSummary);
 	}
 	public VariantContextDirectedEvidence make() {
 		attribute(VcfInfoAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
-		attribute(VcfInfoAttributes.BREAKEND_QUAL.attribute(),
-				supportingBAS.stream().mapToDouble(e -> e.getBreakendQual()).sum() 
+		double beQual = supportingBAS.stream().mapToDouble(e -> e.getBreakendQual()).sum() 
 				+ supportingSC.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum()
-				+ supportingOEA.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum());
-		phredScore(
-				supportingAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
+				+ supportingOEA.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum();
+		double bpQual = supportingAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
 				+ supportingRAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
 				+ supportingCAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
 				+ supportingSR.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
 				+ supportingIndel.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
-				+ supportingDP.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum());
+				+ supportingDP.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum();
+		attribute(VcfInfoAttributes.BREAKEND_QUAL.attribute(), beQual);
+		phredScore(isBreakend() ? beQual : bpQual);
 		// Count
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, supportingAS.size());
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, supportingRAS.size());
@@ -229,6 +237,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		// Assembly breakdown
 		int[] asr = new int[processContext.getCategoryCount()];
 		int[] asrp = new int[processContext.getCategoryCount()];
+		int[] basr = new int[processContext.getCategoryCount()];
+		int[] basrp = new int[processContext.getCategoryCount()];
 		for (int i = 0; i < processContext.getCategoryCount(); i++) {
 			int category = i;
 			asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
@@ -239,14 +249,26 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
 					.mapToInt(aa -> aa.getAssemblySupportCountReadPair(category))
 					.sum();
+			basr[category] = supportingBAS.stream()
+					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
+					.mapToInt(aa -> aa.getAssemblySupportCountSoftClip(category))
+					.sum();
+			basrp[category] = supportingBAS.stream()
+					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
+					.mapToInt(aa -> aa.getAssemblySupportCountReadPair(category))
+					.sum();
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), asrp[category]);
+			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), basr[category]);
+			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), basrp[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_QUAL.attribute(), srq[i] + iq[i] + rpq[i] + asq[i] + rasq[i] + casq[i]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_QUAL.attribute(), scq[i] + umq[i] + basq[i]);
 		}
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(asr).sum());
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(asrp).sum());
-		List<String> breakendIds = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
+		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(basr).sum());
+		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(basrp).sum());
+		List<String> breakendIds = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
 				.map(e -> e.getSAMRecord().getReadName())
 				.distinct()
 				.sorted() // ensure deterministic output

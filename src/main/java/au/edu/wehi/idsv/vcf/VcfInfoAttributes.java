@@ -32,6 +32,10 @@ public enum VcfInfoAttributes {
 	BREAKEND_ASSEMBLY_COUNT("BA", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting just local breakend"),
 	BREAKEND_UNMAPPEDMATE_COUNT("BUM", 1, VCFHeaderLineType.Integer, "Count of read pairs (with one read unmapped) supporting just local breakend"),
 	BREAKEND_SOFTCLIP_COUNT("BSC", 1, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend"),
+	
+	BREAKEND_ASSEMBLY_READPAIR_COUNT("BASRP", 1, VCFHeaderLineType.Integer, "Count of read pairs incorporated into any breakend assembly"),
+	BREAKEND_ASSEMBLY_READ_COUNT("BASSR", 1, VCFHeaderLineType.Integer, "Count of split, soft clipped or indel-containing reads incorporated into any breakend assemblies"),
+	
 	BREAKEND_ASSEMBLY_QUAL("BAQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting just local breakend"),
 	BREAKEND_UNMAPPEDMATE_QUAL("BUMQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs (with one read unmapped) supporting just local breakend"),
 	BREAKEND_SOFTCLIP_QUAL("BSCQ", 1, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend"),
@@ -43,7 +47,7 @@ public enum VcfInfoAttributes {
 	REMOTE_SUPPORT_INTERVAL ("RSI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Support interval offsets of partner breakend."),
 	INEXACT_HOMPOS ("IHOMPOS", 2, VCFHeaderLineType.Integer, "Position of inexact homology"),
 	SUPPORT_CIGAR ("SC", 1, VCFHeaderLineType.String, "CIGAR for displaying anchoring alignment of any contributing evidence and microhomologies."),
-	BREAKEND_ASSEMBLY_ID ("BEID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Breakend assemblies contributing support to the breakpoint.");
+	BREAKEND_ASSEMBLY_ID ("BEID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Identifiers of assemblies supporting the variant.");
 	private final VCFInfoHeaderLine header;
 	private final String tag;
 	VcfInfoAttributes(String name, String samTag, int count, VCFHeaderLineType type, String description) {
