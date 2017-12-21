@@ -872,4 +872,14 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getAttribute("CASQ"), 0);
 		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getPhredScaledQual(), 0);
 	}
+	@Test
+	public void breakend_should_use_best_unanchored_sequence() {
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, FWD, 10), "GT").make());
+		SAMRecord r1 = withMapq(44, Read(0, 10, "1M10S"))[0];
+		cb.addEvidence(SCE(FWD, r1));
+		VariantContextDirectedEvidence var = cb.make();
+		assertEquals(10, var.getBreakendSequence().length);
+	}
 }

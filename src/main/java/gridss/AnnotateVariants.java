@@ -16,7 +16,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
@@ -57,7 +57,7 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		log.info("Writing breakend assembly support complete.");
 	}
 	@Override
-	public CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool) {
+	public CloseableIterator<VariantContextDirectedEvidence> iterator(CloseableIterator<VariantContextDirectedEvidence> calls, ExecutorService threadpool) {
 		AllocateEvidence ae = new AllocateEvidence();
 		AnnotateReferenceCoverage arc = new AnnotateReferenceCoverage();
 		AnnotateInexactHomology ihom = new AnnotateInexactHomology(); 

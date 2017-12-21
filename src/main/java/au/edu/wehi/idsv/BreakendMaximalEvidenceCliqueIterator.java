@@ -43,12 +43,14 @@ public class BreakendMaximalEvidenceCliqueIterator implements Iterator<VariantCo
 		LinearGenomicCoordinate lgc = context.getLinear();
 		long activeStart = lgc.getStartLinearCoordinate(it.peek().getBreakendSummary());
 		// remove evidence whose interval finishes before we start
-		while (lgc.getEndLinearCoordinate(activeByEnd.peek().getBreakendSummary()) < activeStart) {
+		while (!activeByEnd.isEmpty() && lgc.getEndLinearCoordinate(activeByEnd.peek().getBreakendSummary()) < activeStart) {
 			DirectedEvidence out = activeByEnd.poll();
 			activeScore -= ScalingHelper.toScaledWeight(out.getBreakendQual());
 		}
-		while (it.hasNext() && lgc.getStartLinearCoordinate(it.peek().getBreakendSummary()) <=
-				lgc.getEndLinearCoordinate(activeByEnd.peek().getBreakendSummary())) {
+		while (it.hasNext() &&
+				(activeByEnd.isEmpty() || 
+				lgc.getStartLinearCoordinate(it.peek().getBreakendSummary()) <=
+				lgc.getEndLinearCoordinate(activeByEnd.peek().getBreakendSummary()))) {
 			// this record can be added to our active clique without any removal
 			DirectedEvidence de = it.next();
 			BreakendSummary bs = de.getBreakendSummary();

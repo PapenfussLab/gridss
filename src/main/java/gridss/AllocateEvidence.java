@@ -17,6 +17,7 @@ import au.edu.wehi.idsv.SequentialEvidenceAllocator;
 import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
 import au.edu.wehi.idsv.StructuralVariationCallBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
@@ -60,15 +61,15 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		return evidenceIt;
 	}
 	@Override
-	public CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool) {
+	public CloseableIterator<VariantContextDirectedEvidence> iterator(CloseableIterator<VariantContextDirectedEvidence> calls, ExecutorService threadpool) {
 		log.info("Allocating evidence"); 
 		CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-allocation");
 		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
-		Iterator<VariantContextDirectedBreakpoint> it = Iterators.transform(annotator, bp -> annotate(bp));
+		Iterator<VariantContextDirectedEvidence> it = Iterators.transform(annotator, bp -> annotate(bp));
 		it = Iterators.filter(it, v -> v != null);
 		return new AutoClosingIterator<>(it, calls, evidence);
 	}
-	private VariantContextDirectedBreakpoint annotate(VariantEvidenceSupport ves) {
+	private VariantContextDirectedEvidence annotate(VariantEvidenceSupport ves) {
 		VariantCallingConfiguration vc = getContext().getConfig().getVariantCalling();
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), ves.variant);
 		for (DirectedEvidence e : ves.support) {
@@ -77,14 +78,19 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 				builder.addEvidence(e);
 			}
 		}
-		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)builder.make();
+		VariantContextDirectedEvidence be = builder.make();
 		if (!vc.writeFiltered) {
-			if (bp.getBreakpointQual() < vc.minScore) return null;
-			if (bp.getBreakpointEvidenceCount() < vc.minReads) return null;
-			if (bp.isFiltered()) return null;
+			if (be.isFiltered()) return null;
+			if (be.getPhredScaledQual() < vc.minScore) return null;
+			if (be instanceof VariantContextDirectedBreakpoint) {
+				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)be;
+				if (bp.getBreakpointEvidenceCount() < vc.minReads) return null;
+			} else {
+				if (be.getBreakendEvidenceCount() < vc.minReads) return null;
+			}
 		}
-		bp = (VariantContextDirectedBreakpoint)vc.applyConfidenceFilter(getContext(), bp);
-		return bp;
+		be = vc.applyConfidenceFilter(getContext(), be);
+		return be;
 	}
 	public static void main(String[] argv) {
         System.exit(new AllocateEvidence().instanceMain(argv));

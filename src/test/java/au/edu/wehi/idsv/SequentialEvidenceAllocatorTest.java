@@ -60,6 +60,24 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 		}
 	}
 	@Test
+	public void should_assign_breakend_evidence_to_matching_breakpoint() throws IOException, InterruptedException, ExecutionException {
+		ArrayList<VariantContextDirectedEvidence> calls = new ArrayList<>();
+		VariantContextDirectedEvidence be = (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 10), "")
+				.phredScore(10).make();
+		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)minimalBreakend()
+				.breakpoint(new BreakpointSummary(0, BWD, 10, 1, BWD, 20), "")
+				.phredScore(1).make();		
+		calls.add(be);
+		calls.add(bp);
+		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(getContext(), null, 0, 0, 100);
+		ses.evidence.add(SCE(BWD, Read(0, 10, "10S10M")));
+		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(getContext(), calls.iterator(), ses.evidence.iterator(), Integer.MAX_VALUE, true);
+		ArrayList<VariantEvidenceSupport> result = Lists.newArrayList(allocator);
+		assertEquals(0, result.get(0).support.size());
+		assertEquals(0, result.get(1).support.size());
+	}
+	@Test
 	public void RemoteOverlap_localLookup_should_split_on_referenceIndex_and_direction() {
 		final ProcessingContext pc = getContext();
 		pc.getVariantCallingParameters().writeFiltered = true;
