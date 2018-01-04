@@ -81,15 +81,19 @@ public class PackedSequence {
 		System.arraycopy(seq1.packed, 0, this.packed, 0, seq1.packed.length);
 		int wordOffset = seq1.length() % BASES_PER_WORD;
 		int wordIndex = seq1.length() / BASES_PER_WORD;
-		for (int i = 0; i < IntMath.divide(seq2.length(), BASES_PER_WORD, RoundingMode.CEILING); i++) {
+		if (wordOffset == 0) {
+			// we can just copy seq2 since it's word aligned
+			System.arraycopy(seq2.packed, 0, this.packed, wordIndex, seq2.packed.length);
+		}
+		for (int i = 0; i < seq2.packed.length; i++) {
 			long word = seq2.packed[i];
 			int thisWordBases = BASES_PER_WORD - wordOffset;
 			int nextWordBases = wordOffset;
-			long msb = word >>> (2 * thisWordBases);
-			long lsb = word & (2 * (1L << (2 * nextWordBases)) - 1);
-			this.packed[wordIndex] |= msb;
-			if (wordIndex < this.packed.length - 1) {
-				this.packed[wordIndex + 1] |= lsb << (2 * nextWordBases);
+			long msb = word >>> (2 * nextWordBases);
+			long lsb = word & ((1L << (2 * nextWordBases)) - 1);
+			this.packed[wordIndex + i] |= msb;
+			if (wordIndex + i< this.packed.length - 1) {
+				this.packed[wordIndex + i + 1] |= lsb << (2 * thisWordBases);
 			}
 		}
 	}
