@@ -121,21 +121,35 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_called_qual() {
-		assertTrue(big().hasAttribute(VcfInfoAttributes.CALLED_QUAL.attribute()));
+		assertTrue(complex_bp().hasAttribute(VcfInfoAttributes.CALLED_QUAL.attribute()));
 	}
 	@Test
 	public void should_set_breakend_qual() {
-		assertTrue(big().hasAttribute(VcfInfoAttributes.BREAKEND_QUAL.attribute()));
+		assertTrue(complex_bp().hasAttribute(VcfInfoAttributes.BREAKEND_QUAL.attribute()));
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READ() {
-		assertEquals(7, big().getReferenceReadCount(0));
-		assertEquals(8, big().getReferenceReadCount(1));
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
+		cb.referenceReads(new int[] { 7, 8} );
+		cb.referenceSpanningPairs(new int[] { 9, 10 } );
+		VariantContextDirectedEvidence e = cb.make();
+		
+		assertEquals(7, e.getReferenceReadCount(0));
+		assertEquals(8, e.getReferenceReadCount(1));
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READPAIR() {
-		assertEquals(9, big().getReferenceReadPairCount(0));
-		assertEquals(10, big().getReferenceReadPairCount(1));
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
+		cb.referenceReads(new int[] { 7, 8} );
+		cb.referenceSpanningPairs(new int[] { 9, 10 } );
+		VariantContextDirectedEvidence e = cb.make();
+		
+		assertEquals(9, e.getReferenceReadPairCount(0));
+		assertEquals(10, e.getReferenceReadPairCount(1));
 	}
 	@Test
 	public void should_set_read_pair_evidence_by_breakendpoint_tumournormal() {
@@ -888,9 +902,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		AssemblyEvidenceSource aes = AES(pc);
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(BP.localBreakend(), "GT").make());
-		cb.addEvidence(new dp(1, true));
-		cb.addEvidence(new dp(2, true));
-		cb.addEvidence(new dp(3, false));
+		cb.addEvidence(new um(1, true));
+		cb.addEvidence(new um(2, true));
+		cb.addEvidence(new um(3, false));
 		
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
 				new dp(2, true),

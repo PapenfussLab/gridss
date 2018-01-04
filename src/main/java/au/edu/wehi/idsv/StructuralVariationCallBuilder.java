@@ -67,10 +67,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) throw new NullPointerException();
 		if (!isSupportingEvidence(evidence)) {
-			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s %s does not provide support for call at %s",
-					evidence.getEvidenceID(),
-					evidence.getBreakendSummary(),
-					parent.getBreakendSummary()));
+			if (isBreakend() && evidence instanceof DirectedBreakpoint) {
+				throw new IllegalArgumentException(String.format("Sanity check failure: Breakpoint evidence %s %s should not be assigned to support breakend call at %s",
+						evidence.getEvidenceID(),
+						evidence.getBreakendSummary(),
+						parent.getBreakendSummary()));
+			} else {
+				throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s %s does not provide support for call at %s",
+						evidence.getEvidenceID(),
+						evidence.getBreakendSummary(),
+						parent.getBreakendSummary()));
+			}
 		}
 		String eid = evidence.getEvidenceID();
 		if (encounteredEvidenceIDs != null) {
@@ -281,18 +288,33 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		
 		String untemplated = parent.getBreakpointSequenceString();
 		String homo = "";
-		DirectedBreakpoint bestBreakpoint = supportingBreakpoint.stream()
-				.sorted(ByBestBreakpointDesc)
-				.findFirst().orElse(null);
 		BreakendSummary nominalPosition = parent.getBreakendSummary();
-		if (bestBreakpoint != null && bestBreakpoint.isBreakendExact()) {
-			untemplated = bestBreakpoint.getUntemplatedSequence();
-			nominalPosition = bestBreakpoint.getBreakendSummary();
-			breakpoint(bestBreakpoint.getBreakendSummary(), untemplated);
-			homo = bestBreakpoint.getHomologySequence();
-			rmAttribute(VcfSvConstants.IMPRECISE_KEY);
+		
+		if (isBreakend()) {
+			DirectedEvidence bestBreakend = supportingBreakend.stream()
+					.sorted(ByBestBreakendDesc)
+					.findFirst().orElse(null);
+			if (bestBreakend != null && bestBreakend.isBreakendExact()) {
+				untemplated = new String(bestBreakend.getBreakendSequence());
+				nominalPosition = bestBreakend.getBreakendSummary();
+				breakend(bestBreakend.getBreakendSummary(), untemplated);
+				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
+			} else {
+				attribute(VcfSvConstants.IMPRECISE_KEY, true);
+			}
 		} else {
-			attribute(VcfSvConstants.IMPRECISE_KEY, true);
+			DirectedBreakpoint bestBreakpoint = supportingBreakpoint.stream()
+					.sorted(ByBestBreakpointDesc)
+					.findFirst().orElse(null);
+			if (bestBreakpoint != null && bestBreakpoint.isBreakendExact()) {
+				untemplated = bestBreakpoint.getUntemplatedSequence();
+				nominalPosition = bestBreakpoint.getBreakendSummary();
+				breakpoint(bestBreakpoint.getBreakendSummary(), untemplated);
+				homo = bestBreakpoint.getHomologySequence();
+				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
+			} else {
+				attribute(VcfSvConstants.IMPRECISE_KEY, true);
+			}
 		}
 		if (homo.length() > 0) {
 			attribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY, homo);
@@ -387,6 +409,20 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return variant;
 		
 	}
+	private static Ordering<DirectedEvidence> ByBestBreakendDesc = new Ordering<DirectedEvidence>() {
+		@Override
+		public int compare(DirectedEvidence left, DirectedEvidence right) {
+			return ComparisonChain.start()
+					.compareTrueFirst(left.isBreakendExact(), right.isBreakendExact())
+					.compareTrueFirst(AssemblyAttributes.isAssembly(left), AssemblyAttributes.isAssembly(right))
+					.compare(right.getBreakendQual(), left.getBreakendQual()) // desc
+					.compare(
+							right.getBreakendSequence() == null ? -1 : right.getBreakendSequence().length,
+							left.getBreakendSequence() == null ? -1 : left.getBreakendSequence().length) // desc
+					.compare(left.getEvidenceID(), right.getEvidenceID())
+					.result();
+		}
+	}.nullsLast();
 	private static Ordering<DirectedBreakpoint> ByBestBreakpointDesc = new Ordering<DirectedBreakpoint>() {
 		@Override
 		public int compare(DirectedBreakpoint left, DirectedBreakpoint right) {

@@ -74,8 +74,23 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 		ses.evidence.add(SCE(BWD, Read(0, 10, "10S10M")));
 		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(getContext(), calls.iterator(), ses.evidence.iterator(), Integer.MAX_VALUE, true);
 		ArrayList<VariantEvidenceSupport> result = Lists.newArrayList(allocator);
-		assertEquals(0, result.get(0).support.size());
-		assertEquals(0, result.get(1).support.size());
+		VariantEvidenceSupport vesbp = result.stream().filter(ves -> ves.variant == bp).findFirst().orElse(null);
+		VariantEvidenceSupport vesbe = result.stream().filter(ves -> ves.variant == be).findFirst().orElse(null);
+		assertEquals(0, vesbe.support.size());
+		assertEquals(1, vesbp.support.size());
+	}
+	@Test
+	public void should_assign_breakend_evidence_to_breakend_if_no_matching_breakpoint() throws IOException, InterruptedException, ExecutionException {
+		ArrayList<VariantContextDirectedEvidence> calls = new ArrayList<>();
+		VariantContextDirectedEvidence be = (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 10), "")
+				.phredScore(10).make();
+		calls.add(be);
+		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(getContext(), null, 0, 0, 100);
+		ses.evidence.add(SCE(BWD, Read(0, 10, "10S10M")));
+		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(getContext(), calls.iterator(), ses.evidence.iterator(), Integer.MAX_VALUE, true);
+		ArrayList<VariantEvidenceSupport> result = Lists.newArrayList(allocator);
+		assertEquals(1, result.get(0).support.size());
 	}
 	@Test
 	public void RemoteOverlap_localLookup_should_split_on_referenceIndex_and_direction() {
