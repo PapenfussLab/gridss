@@ -59,10 +59,10 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		VCFFileReader vcfReader = new VCFFileReader(file, false);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
 		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext(), null, variant));
-		Iterator<VariantContextDirectedBreakpoint> bpit = Iterators.filter(idsvIt, VariantContextDirectedBreakpoint.class);
+		Iterator<VariantContextDirectedEvidence> beit = Iterators.filter(idsvIt, VariantContextDirectedEvidence.class);
 		// resort by evidence start
-		bpit = new DirectEvidenceWindowedSortingIterator<>(getContext(), SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), bpit);
-		return new AutoClosingIterator<VariantContextDirectedEvidence>(bpit, it, vcfReader);
+		beit = new DirectEvidenceWindowedSortingIterator<>(getContext(), SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), beit);
+		return new AutoClosingIterator<VariantContextDirectedEvidence>(beit, it, vcfReader);
 	}
 	public Iterator<IdsvVariantContext> getAllCalls(File file, CloseableIterator<VariantContextDirectedEvidence> breakendCalls) {
 		VCFFileReader vcfReader = new VCFFileReader(file, false);
