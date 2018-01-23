@@ -9,7 +9,9 @@ import org.broadinstitute.barclay.argparser.Argument;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
+import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import picard.cmdline.CommandLineProgram;
@@ -27,6 +29,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	public ReferenceLookup getReference() {
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		if (reference == null) {
+			ensureSequenceDictionary(REFERENCE_SEQUENCE, this);
 			try {
 				reference = new TwoBitBufferedReferenceSequenceFile(new IndexedFastaSequenceFile(REFERENCE_SEQUENCE));
 			} catch (FileNotFoundException e) {
@@ -46,6 +49,32 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 			});
 		}
 		return reference;
+	}
+	/**
+	 * Ensures that a sequence dictionary exists for the given reference
+	 * @param referenceFile reference genome fasta
+	 * @param invoking program
+	 */
+	public static void ensureSequenceDictionary(File referenceFile, CommandLineProgram program) {
+		try {
+			ReferenceSequenceFile rsf = new FastaSequenceFile(referenceFile, false);
+			Path path = referenceFile.toPath().toAbsolutePath();
+			if (rsf.getSequenceDictionary() == null) {
+				log.info("Attempting to create sequence dictionary for " + referenceFile);
+				Path dictPath = path.resolveSibling(path.getFileName().toString() + htsjdk.samtools.util.IOUtil.DICT_FILE_EXTENSION);
+				picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
+				if (program != null) {
+					CommandLineProgramHelper.copyInputs(program, csd);
+				}
+				csd.instanceMain(new String[] {
+					"OUTPUT=" + dictPath.toFile(),
+					"REFERENCE_SEQUENCE=" + referenceFile.getAbsolutePath()
+				});
+			}
+			rsf.close();
+		} catch (Exception e) {
+			log.error("Sequence dictionary creation failed. Please create using picard CreateSequenceDictionary.", e);
+		}
 	}
 	public void setReference(ReferenceLookup ref) {
 		this.reference = ref;
