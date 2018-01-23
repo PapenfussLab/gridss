@@ -26,6 +26,7 @@ package gridss.analysis;
 
 import java.io.File;
 
+import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -48,6 +49,12 @@ import picard.cmdline.programgroups.Metrics;
 public class CollectIdsvMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".idsv_metrics";
 	
+	@Argument(doc = "Include secondary alignments in read counts", optional=true)
+    public boolean COUNT_SECONDARY = false;
+	
+	@Argument(doc = "Include supplementary alignments in read counts", optional=true)
+    public boolean COUNT_SUPPLEMENTARY = false;
+	
     private IdsvMetrics idsv;    
 
     /** Required main method. */
@@ -67,44 +74,51 @@ public class CollectIdsvMetrics extends SinglePassSamProgram {
     	if (!record.getReadUnmappedFlag()) {
     		idsv.MAX_READ_MAPPED_LENGTH = Math.max(idsv.MAX_READ_MAPPED_LENGTH, record.getAlignmentEnd() - record.getAlignmentStart() + 1);
     	}
-    	if (record.getNotPrimaryAlignmentFlag()) {
+    	if (record.isSecondaryAlignment()) {
     		if (record.getAttribute(SAMTag.SA.name()) == null) {
     			idsv.SECONDARY_NOT_SPLIT++;
     		}
     	}
-    	if (record.getReadPairedFlag()) {
-    		if (record.getProperPairFlag()) {
-	    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record, PairOrientation.FR);
-	    		fragmentSize = Math.abs(fragmentSize);
-	    		if (idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH == null) {
-	    			idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = fragmentSize;
-	    		} else {
-	    			idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+    	if (shouldCount(record)) {
+	    	if (record.getReadPairedFlag()) {
+	    		if (record.getProperPairFlag()) {
+		    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record, PairOrientation.FR);
+		    		fragmentSize = Math.abs(fragmentSize);
+		    		if (idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH == null) {
+		    			idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = fragmentSize;
+		    		} else {
+		    			idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+		    		}
+		    		if (idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH == null) {
+		    			idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = fragmentSize;
+		    		} else {
+		    			idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = Math.min(idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+		    		}
 	    		}
-	    		if (idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH == null) {
-	    			idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = fragmentSize;
-	    		} else {
-	    			idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = Math.min(idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+	    		if (record.getFirstOfPairFlag()) {
+	    			idsv.READ_PAIRS++;
+	    			if (record.getReadUnmappedFlag() && record.getMateUnmappedFlag()) {
+	    				idsv.READ_PAIRS_ZERO_MAPPED++;
+	    			} else if (!record.getReadUnmappedFlag() && !record.getMateUnmappedFlag()) {
+	    				idsv.READ_PAIRS_BOTH_MAPPED++;
+	    			} else {
+	    				idsv.READ_PAIRS_ONE_MAPPED++;
+	    			}
 	    		}
-    		}
-    		if (record.getFirstOfPairFlag()) {
-    			idsv.READ_PAIRS++;
-    			if (record.getReadUnmappedFlag() && record.getMateUnmappedFlag()) {
-    				idsv.READ_PAIRS_ZERO_MAPPED++;
-    			} else if (!record.getReadUnmappedFlag() && !record.getMateUnmappedFlag()) {
-    				idsv.READ_PAIRS_BOTH_MAPPED++;
-    			} else {
-    				idsv.READ_PAIRS_ONE_MAPPED++;
-    			}
-    		}
-    	}
-    	idsv.READS++;
-    	if (!record.getReadUnmappedFlag()) {
-    		idsv.MAPPED_READS++;
+	    	}
+	    	idsv.READS++;
+	    	if (!record.getReadUnmappedFlag()) {
+	    		idsv.MAPPED_READS++;
+	    	}
     	}
     }
     
-    @Override
+    private boolean shouldCount(SAMRecord record) {
+    	return (COUNT_SECONDARY || !record.isSecondaryAlignment()) &&
+    			(COUNT_SUPPLEMENTARY || !record.getSupplementaryAlignmentFlag());
+	}
+
+	@Override
     public void finish() {
         final MetricsFile<IdsvMetrics, Integer> metricsFile = getMetricsFile();
         metricsFile.addMetric(idsv);
