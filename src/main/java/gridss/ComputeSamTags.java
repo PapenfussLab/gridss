@@ -54,7 +54,8 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 	@Argument(shortName=StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME, doc="Assume that all records with the same read name are consecutive. "
 			+ "Incorrect tags will be written if this is not the case.", optional=true)
     public boolean ASSUME_SORTED = false;
-	@Argument(doc="Convert hard clips to soft clips if the entire read sequence for the read is available in another record.", optional=true)
+	@Argument(doc="Convert hard clips to soft clips if the entire read sequence for the read is available in another record. "
+			+ "If no base information can be found, N bases with 0 base quality are substituted.", optional=true)
 	public boolean SOFTEN_HARD_CLIPS = true;
 	@Argument(doc="Fixes missing mate information. Unlike Picard tools FixMateInformation, reads for which no mate can be found"
 			+ " are converted to unpaired reads.", optional=true)

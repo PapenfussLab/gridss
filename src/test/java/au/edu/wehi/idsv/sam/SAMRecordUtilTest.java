@@ -347,6 +347,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("AACCGACGTA", read2.getReadString());
 		assertEquals("1234567890", read2.getBaseQualityString());
 	}
+
 	@Test
 	public void softenHardClips_should_consider_strand() {
 		SAMRecord read =  Read(0, 1, "5M5S");
@@ -354,11 +355,68 @@ public class SAMRecordUtilTest extends TestHelper {
 		read.setBaseQualityString("1234567890");
 		SAMRecord read3 =  Read(0, 1, "5H5M");
 		read3.setReadNegativeStrandFlag(true);
+		read3.setReadBases(B("CGGTT"));
+		read3.setBaseQualityString("54321");
+		SAMRecordUtil.softenHardClips(ImmutableList.of(read, read3));
+		assertEquals("AACCGACGTA", read.getReadString());
+		assertEquals("1234567890", read.getBaseQualityString());
+		assertEquals("TACGTCGGTT", read3.getReadString());
+		assertEquals("0987654321", read3.getBaseQualityString());
+	}
+	
+	@Test
+	public void softenHardClips_should_consider_strand_negative_first() {
+		SAMRecord read =  Read(0, 1, "5M5S");
+		read.setReadBases(B("AACCGACGTA"));
+		read.setBaseQualityString("1234567890");
+		SAMRecord read3 =  Read(0, 1, "5H5M");
+		read3.setReadNegativeStrandFlag(true);
+		read3.setReadBases(B("CGGTT"));
+		read3.setBaseQualityString("54321");
+		SAMRecordUtil.softenHardClips(ImmutableList.of(read3, read));
+		assertEquals("AACCGACGTA", read.getReadString());
+		assertEquals("1234567890", read.getBaseQualityString());
+		assertEquals("TACGTCGGTT", read3.getReadString());
+		assertEquals("0987654321", read3.getBaseQualityString());
+	}
+	
+	@Test
+	public void softenHardClips_should_merge_sequences() {
+		SAMRecord read =  Read(0, 1, "3M6H");
+		read.setReadBases(B("ACT"));
+		read.setBaseQualityString("123");
+		SAMRecord read2 =  Read(0, 1, "3H3M3H");
+		read2.setReadBases(B("CCA"));
+		read2.setBaseQualityString("456");
+		SAMRecord read3 =  Read(0, 1, "6H3M");
+		read3.setReadBases(B("TGT"));
+		read3.setBaseQualityString("789");
+		SAMRecordUtil.softenHardClips(ImmutableList.of(read, read2, read3));
+		assertEquals("ACTCCATGT", read.getReadString());
+		assertEquals("ACTCCATGT", read2.getReadString());
+		assertEquals("ACTCCATGT", read3.getReadString());
+		assertEquals("123456789", read.getBaseQualityString());
+		assertEquals("123456789", read2.getBaseQualityString());
+		assertEquals("123456789", read3.getBaseQualityString());
+		assertEquals("3M6S", read.getCigarString());
+		assertEquals("3S3M3S", read2.getCigarString());
+		assertEquals("6S3M", read3.getCigarString());
+	}
+	
+	@Test
+	public void softenHardClips_should_N_pad_if_base_cannot_be_determined() {
+		SAMRecord read =  Read(0, 1, "5H5M5S");
+		read.setReadBases(B("AACCGACGTA"));
+		read.setBaseQualityString("1234567890");
+		SAMRecord read3 =  Read(0, 1, "10H5M");
 		read3.setReadBases(B("ACGTA"));
 		read3.setBaseQualityString("67890");
 		SAMRecordUtil.softenHardClips(ImmutableList.of(read, read3));
-		assertEquals("TACGTCGGTT", read3.getReadString());
-		assertEquals("0987654321", read3.getBaseQualityString());
+		assertEquals("NNNNNAACCGACGTA", read.getReadString());
+		assertEquals("NNNNNAACCGACGTA", read3.getReadString());
+		assertEquals("!!!!!1234567890", read.getBaseQualityString());
+		assertEquals("!!!!!1234567890", read3.getBaseQualityString());
+		assertEquals("10S5M", read3.getCigarString());
 	}
 	@Test
 	public void getSegmentIndex_should_use_zero_based_FI() {
@@ -864,23 +922,10 @@ public class SAMRecordUtilTest extends TestHelper {
 	@Test
 	public void hardClipToN_should_pad_with_zero_qual_Ns() {
 		SAMRecord r = withQual(new byte[] {1, 2}, withSequence("GT", Read(0, 1, "1H2M3H")))[0];
-		SAMRecord result = SAMRecordUtil.hardClipToN(r);
-		assertEquals("1S2M3S", result.getCigarString());
-		assertEquals("NGTNNN", S(result.getReadBases()));
-		assertArrayEquals(new byte[] {0, 1, 2, 0,0,0}, result.getBaseQualities());
-	}
-	@Test
-	public void hardClipToN_should_not_change_original_record() {
-		SAMRecord r = withQual(new byte[] {1, 2}, withSequence("GT", Read(0, 1, "1H2M3H")))[0];
 		SAMRecordUtil.hardClipToN(r);
-		assertEquals("1H2M3H", r.getCigarString());
-		assertEquals("GT", S(r.getReadBases()));
-	}
-	@Test
-	public void hardClipToN_should_not_change_if_no_hard_clipping() {
-		SAMRecord r = withQual(new byte[] {1, 1, 2, 1, 1, 1}, withSequence("AGTAAA", Read(0, 1, "1S2M3S")))[0];
-		SAMRecord result = SAMRecordUtil.hardClipToN(r);
-		Assert.assertSame(result, r);
+		assertEquals("1S2M3S", r.getCigarString());
+		assertEquals("NGTNNN", S(r.getReadBases()));
+		assertArrayEquals(new byte[] {0, 1, 2, 0,0,0}, r.getBaseQualities());
 	}
 	@Test
 	public void getEffectiveMapq_should_use_mapq() {

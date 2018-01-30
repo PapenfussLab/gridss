@@ -44,7 +44,8 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 				log.warn(String.format("Read %s is hard clipped. Please run %s to soften hard clips.",
 						record.getReadName(), ComputeSamTags.class.getName()));
 			}
-			record = SAMRecordUtil.hardClipToN(record);
+			record = record.deepCopy();
+			SAMRecordUtil.hardClipToN(record);
 		}
 		List<SplitReadEvidence> list = new ArrayList<>(2);
 		ChimericAlignment chim = new ChimericAlignment(record);

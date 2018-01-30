@@ -749,26 +749,6 @@ public class SAMRecordUtil {
 				r.setAttribute(SAMTag.TC.name(), segments.size());
 			}
 		}
-		// R2
-		if (tags.contains(SAMTag.R2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] br2 = getFullSequence(segments.get((i + 1) % segments.size()));
-				String r2 = br2 != null && segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.R2.name(), r2);
-				}
-			}
-		}
-		// Q2
-		if (tags.contains(SAMTag.Q2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] bq2 = getFullBaseQualities(segments.get((i + 1) % segments.size()));
-				String q2 = bq2 != null && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.Q2.name(), q2);
-				}
-			}
-		}
 		if (restoreHardClips) {
 			for (int i = 0; i < segments.size(); i++) {
 				softenHardClips(segments.get(i));
@@ -783,6 +763,26 @@ public class SAMRecordUtil {
 		if (recalculateSupplementary) {
 			for (int i = 0; i < segments.size(); i++) {
 				recalculateSupplementaryFromSA(segments.get(i));
+			}
+		}
+		// R2
+		if (tags.contains(SAMTag.R2.name())) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] br2 = getConsensusSequence(segments.get((i + 1) % segments.size()));
+				String r2 = br2 != null && br2 != SAMRecord.NULL_SEQUENCE &&  segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.R2.name(), r2);
+				}
+			}
+		}
+		// Q2
+		if (tags.contains(SAMTag.Q2.name())) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] bq2 = getConsensusBaseQualities(segments.get((i + 1) % segments.size()));
+				String q2 = bq2 != null && bq2 != SAMRecord.NULL_QUALS && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.Q2.name(), q2);
+				}
 			}
 		}
 		if (Sets.intersection(tags,
@@ -1096,43 +1096,33 @@ public class SAMRecordUtil {
 	 * @param records
 	 */
 	public static final void softenHardClips(List<SAMRecord> records) {
-		byte[] seq = getFullSequence(records);
-		byte[] qual = getFullBaseQualities(records);
-		if (seq == null)
-			return;
+		for (SAMRecord r : records) {
+			hardClipToN(r);
+		}
+		byte[] seq = getConsensusSequence(records);
+		byte[] qual = getConsensusBaseQualities(records);
 		for (SAMRecord r : records) {
 			Cigar c = r.getCigar();
-			if (r.getReadUnmappedFlag())
-				continue;
-			if (c == null)
-				continue;
-			if (c.getCigarElements().size() <= 1)
-				continue;
-			int hardClipLength = 0;
-			List<CigarElement> list = new ArrayList<CigarElement>(c.getCigarElements());
-			if (c.getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-				int length = c.getFirstCigarElement().getLength();
-				hardClipLength += length;
-				list.set(0, new CigarElement(length, CigarOperator.SOFT_CLIP));
-			}
-			if (c.getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-				int length = c.getLastCigarElement().getLength();
-				hardClipLength += length;
-				list.set(list.size() - 1, new CigarElement(length, CigarOperator.SOFT_CLIP));
-			}
-			if (hardClipLength > 0 && r.getReadLength() + hardClipLength == seq.length) {
-				if (r.getReadNegativeStrandFlag()) {
-					SequenceUtil.reverseComplement(seq);
-					ArrayUtils.reverse(qual);
+			if (r.getReadUnmappedFlag() || c.getReadLength() == seq.length) {
+				if (seq != null && seq != SAMRecord.NULL_SEQUENCE) {
+					byte[] newseq = Arrays.copyOf(seq, seq.length);
+					if (r.getReadNegativeStrandFlag()) {
+						SequenceUtil.reverseComplement(newseq);
+					}
+					r.setReadBases(newseq);
 				}
-				r.setReadBases(seq);
-				r.setBaseQualities(qual);
-				list = CigarUtil.clean(list, false);
-				r.setCigar(new Cigar(list));
-			}
-			if (r.getCigarString().contains("H")) {
+				if (qual != null && qual != SAMRecord.NULL_QUALS) {
+					byte[] newqual = Arrays.copyOf(qual, qual.length);
+					if (r.getReadNegativeStrandFlag()) {
+						ArrayUtils.reverse(newqual);
+					}
+					r.setBaseQualities(newqual);
+				}
+			} else {
 				if (!MessageThrottler.Current.shouldSupress(log, "softening hard clips")) {
-					log.warn(String.format("Unable to soften hard clip for %s", r.getReadName()));
+					log.warn(String.format("Input sanity check failure: different alignment records imply different read lengths %s. "
+							+ "This can be cause by GATK indel realignment incorrectly removing hard clipped bases when realigning. Do not use GATK"
+							+ " indel realigned BAM files with GRIDSS.", r.getReadName()));
 				}
 			}
 		}
@@ -1143,21 +1133,20 @@ public class SAMRecordUtil {
 	 * 
 	 * @param record
 	 */
-	public static final SAMRecord hardClipToN(SAMRecord r) {
+	public static final void hardClipToN(SAMRecord r) {
 		if (r.getReadUnmappedFlag() || r.getCigar() == null)
-			return r;
+			return;
 		if (!Iterables.any(r.getCigar().getCigarElements(), ce -> ce.getOperator() == CigarOperator.HARD_CLIP))
-			return r;
-		r = r.deepCopy();
+			return;
 		List<CigarElement> list = new ArrayList<>(r.getCigar().getCigarElements());
 		int startlength = r.getCigar().getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				? r.getCigar().getFirstCigarElement().getLength() : 0;
 		int endlength = r.getCigar().getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				? r.getCigar().getLastCigarElement().getLength() : 0;
-		r.setCigar(new Cigar(list.stream()
+		r.setCigar(new Cigar(CigarUtil.clean(list.stream()
 				.map(ce -> ce.getOperator() == CigarOperator.HARD_CLIP
 						? new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP) : ce)
-				.collect(Collectors.toList())));
+				.collect(Collectors.toList()))));
 		if (r.getReadBases() != null && r.getReadBases() != SAMRecord.NULL_SEQUENCE) {
 			byte[] start = new byte[startlength];
 			byte[] end = new byte[endlength];
@@ -1172,7 +1161,6 @@ public class SAMRecordUtil {
 			Arrays.fill(end, (byte) 0);
 			r.setBaseQualities(Bytes.concat(start, r.getBaseQualities(), end));
 		}
-		return r;
 	}
 
 	/**
@@ -1181,48 +1169,52 @@ public class SAMRecordUtil {
 	 * @param records
 	 * @return
 	 */
-	private static final byte[] getFullSequence(List<SAMRecord> records) {
+	private static final byte[] getConsensusSequence(List<SAMRecord> records) {
 		if (records == null || records.size() == 0)
 			return null;
-		SAMRecord best = records.get(0);
+		byte[] cons = SAMRecord.NULL_SEQUENCE;
 		for (SAMRecord r : records) {
-			if (r.getReadBases().length > best.getReadBases().length) {
-				best = r;
+			boolean negativeStrand = r.getReadNegativeStrandFlag();
+			byte[] seq = r.getReadBases();
+			if (seq == null || seq.length == 0) continue;
+			if (seq.length > cons.length) {
+				cons = Arrays.copyOf(seq, seq.length);
+				if (negativeStrand) {
+					SequenceUtil.reverseComplement(cons);
+				}
+			} else {
+				for (int i = 0; i < seq.length; i++) {
+					if (cons[i] == 'N') {
+						int seqOffset = negativeStrand ? seq.length - 1 - i : i;
+						cons[i] = negativeStrand ? SequenceUtil.complement(seq[seqOffset]) : seq[seqOffset];
+					}
+				}
 			}
 		}
-		byte[] readBases = Arrays.copyOf(best.getReadBases(), best.getReadBases().length);
-		if (readBases == null || readBases == SAMRecord.NULL_SEQUENCE)
-			return null;
-		if (!best.getReadUnmappedFlag() && best.getReadNegativeStrandFlag()) {
-			SequenceUtil.reverseComplement(readBases);
-		}
-		return readBases;
+		return cons;
 	}
-
-	/**
-	 * Gets the full base quality scores
-	 * 
-	 * @param records
-	 * @return
-	 */
-	private static final byte[] getFullBaseQualities(List<SAMRecord> records) {
+	private static final byte[] getConsensusBaseQualities(List<SAMRecord> records) {
 		if (records == null || records.size() == 0)
 			return null;
-		SAMRecord best = records.get(0);
+		byte[] cons = SAMRecord.NULL_QUALS;
 		for (SAMRecord r : records) {
-			if (r.getBaseQualities().length > best.getBaseQualities().length) {
-				best = r;
+			boolean negativeStrand = r.getReadNegativeStrandFlag();
+			byte[] qual = r.getBaseQualities();
+			if (qual == null || qual.length == 0) continue;
+			if (qual.length > cons.length) {
+				cons = Arrays.copyOf(qual, qual.length);
+				if (negativeStrand) {
+					ArrayUtils.reverse(cons);
+				}
+			} else {
+				for (int i = 0; i < qual.length; i++) {
+					int offset = negativeStrand ? qual.length - 1 - i : i;
+					cons[i] = (byte) Math.max(cons[i], qual[offset]);
+				}
 			}
 		}
-		byte[] baseQuals = Arrays.copyOf(best.getBaseQualities(), best.getBaseQualities().length);
-		if (baseQuals == null || baseQuals == SAMRecord.NULL_QUALS)
-			return null;
-		if (!best.getReadUnmappedFlag() && best.getReadNegativeStrandFlag()) {
-			ArrayUtils.reverse(baseQuals);
-		}
-		return baseQuals;
+		return cons;
 	}
-
 	/**
 	 * The index of segment in the template
 	 * 
