@@ -242,7 +242,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 	}
 	@Override
-	public void ensureExtracted() throws IOException {
+	public synchronized void ensureExtracted() throws IOException {
 		ensureMetrics();
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
 		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.withsplitreads.");

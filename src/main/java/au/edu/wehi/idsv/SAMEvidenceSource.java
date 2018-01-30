@@ -83,7 +83,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		this.rpcConcordantPercentage = rpcConcordantPercentage;
 	}
 	public IdsvSamFileMetrics getMetrics() {
-		ensureMetrics();
+		if (metrics != null) {
+			ensureMetrics();
+		}
 		return metrics;
 	}
 	public StructuralVariantReadMetrics getSVMetrics() {
@@ -106,7 +108,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public int getSourceCategory() {
 		return sourceCategory;
 	}
-	public void ensureMetrics() {
+	public synchronized void ensureMetrics() {
 		if (metrics == null) {
 			File idsvFile = getContext().getFileSystemContext().getIdsvMetrics(getFile());
 			File cigarFile = getContext().getFileSystemContext().getCigarMetrics(getFile());
@@ -163,7 +165,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			throw new RuntimeException(msg);
 		}
 	}
-	public void ensureExtracted() throws IOException {
+	public synchronized void ensureExtracted() throws IOException {
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
 		File extractedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.extracted.");
 		File querysortedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.");
