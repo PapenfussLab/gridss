@@ -83,7 +83,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		this.rpcConcordantPercentage = rpcConcordantPercentage;
 	}
 	public IdsvSamFileMetrics getMetrics() {
-		if (metrics != null) {
+		if (metrics == null) {
 			ensureMetrics();
 		}
 		return metrics;
