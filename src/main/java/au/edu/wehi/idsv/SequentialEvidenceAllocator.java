@@ -180,7 +180,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		if (StringUtils.isNotBlank(variant.id)) {
 			bufferedVariantId.remove(variant.id);
 		}
-		if (variant.location instanceof DirectedBreakpoint) {
+		if (variant.location instanceof BreakpointSummary) {
 			breakpointLookup.remove(variant);
 		} else {
 			breakendLookup.remove(variant);
@@ -290,7 +290,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 				new NamedTrackedBuffer(trackedBufferName_bufferedVariantId, bufferedVariantId.size())
 				);
 	}
-	private abstract class OverlapLookup {
+	private static abstract class OverlapLookup {
 		public abstract void add(VariantEvidenceSupport ves);
 		public abstract void remove(VariantEvidenceSupport ves);
 		public abstract Iterator<VariantEvidenceSupport> findAllOverlapping(BreakendSummary breakend);
@@ -308,15 +308,29 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		protected void remove(IntervalTree<List<VariantEvidenceSupport>> lookup, int start, int end, VariantEvidenceSupport ves) {
 			Node<List<VariantEvidenceSupport>> node = lookup.find(start, end);
 			if (node != null) {
+				List<VariantEvidenceSupport> list = node.getValue();
+				if (!list.remove(ves)) {
+					String msg = String.format("Attempting to remove %s which does not exist on interval (%d, %d)", ves.location, start, end);
+					throw new IllegalStateException(msg);
+				}
 				node.getValue().remove(ves);
 				if (node.getValue().isEmpty()) {
 					lookup.remove(start, end);
 				}
+			} else {
+				String msg = String.format("Attempting to remove %s from non-existant interval (%d, %d)", ves.location, start, end);
+				throw new IllegalStateException(msg);
 			}
 		}
+		/**
+		 * Gets the index of the IntervalTree lookup for this reference contig and direction  
+		 */
 		protected int getIndex(int referenceIndex, BreakendDirection dir) {
 			return 2 * referenceIndex + (dir == BreakendDirection.Forward ? 0 : 1);
 		}
+		/**
+		 * Creates an IntervalTree lookup for each reference contig and direction 
+		 */
 		protected List<IntervalTree<List<VariantEvidenceSupport>>> createByReferenceIndexDirectionLookup(int referenceSequenceCount) {
 			return IntStream.range(0, referenceSequenceCount * 2)
 					.mapToObj(i -> new IntervalTree<List<VariantEvidenceSupport>>())
@@ -339,7 +353,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 	 * @author Daniel Cameron
 	 *
 	 */
-	private class LocalOverlapLookup extends OverlapLookup {
+	private static class LocalOverlapLookup extends OverlapLookup {
 		List<IntervalTree<List<VariantEvidenceSupport>>> localLookup;
 		public LocalOverlapLookup(int referenceSequenceCount) {
 			localLookup = createByReferenceIndexDirectionLookup(referenceSequenceCount);
@@ -393,7 +407,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 	 * are distributed across all repeats, but the local breakends all map to the same location
 	 * (since we are doing a sequential traversal).
 	 */
-	private class RemoteOverlapLookup extends OverlapLookup {
+	private static class RemoteOverlapLookup extends OverlapLookup {
 		List<IntervalTree<List<VariantEvidenceSupport>>> remoteLookup;
 		List<RangeMap<Integer, VariantEvidenceSupport>> bestLocal;
 		public RemoteOverlapLookup(int referenceSequenceCount) {
