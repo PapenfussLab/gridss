@@ -68,7 +68,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 				}
 				csd.instanceMain(new String[] {
 					"OUTPUT=" + dictPath.toFile(),
-					"REFERENCE_SEQUENCE=" + referenceFile.getAbsolutePath()
+					"R=" + referenceFile.getAbsolutePath()
 				});
 			}
 			rsf.close();
