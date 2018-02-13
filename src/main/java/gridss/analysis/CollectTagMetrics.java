@@ -38,13 +38,12 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.programgroups.Metrics;
 
 @CommandLineProgramProperties(
 		summary = "Reads a SAM or BAM file and writes a file containing metrics about " +
                 "the presence of SAM tags",
         oneLineSummary = "Writes SAM tag metrics for a SAM or BAM file",
-        programGroup = Metrics.class
+        programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
 )
 public class CollectTagMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".tag_metrics";

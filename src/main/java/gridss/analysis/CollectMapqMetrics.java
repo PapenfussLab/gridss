@@ -39,7 +39,7 @@ import htsjdk.samtools.util.IOUtil;
 import picard.PicardException;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.programgroups.Metrics;
+import picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup;
 import picard.util.RExecutor;
 
 /**
@@ -53,7 +53,7 @@ import picard.util.RExecutor;
                 "the statistical distribution of read mapping qualities (excluding duplicates) " +
                 "and generates a Histogram plot.",
         oneLineSummary = "Writes mapq distribution metrics for a SAM or BAM file",
-        programGroup = Metrics.class
+        programGroup = DiagnosticsAndQCProgramGroup.class
 )
 public class CollectMapqMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".mapq_metrics";

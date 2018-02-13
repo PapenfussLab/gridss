@@ -38,13 +38,12 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.programgroups.Metrics;
 
 @CommandLineProgramProperties(
 		summary = "Reads a SAM or BAM file and writes a file containing metrics " +
                 "used by idsv.",
         oneLineSummary = "Writes idsv metrics for a SAM or BAM file",
-        programGroup = Metrics.class
+        programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
 )
 public class CollectIdsvMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".idsv_metrics";

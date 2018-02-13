@@ -26,7 +26,7 @@ import picard.cmdline.StandardOptionDefinitions;
         summary = "Uses an external aligner to identify split reads by iterative alignment of soft clipped bases. "
         		+ "Existing split read alignments are left untouched.",
         oneLineSummary = "Converts soft clipped reads to split reads",
-        programGroup = picard.cmdline.programgroups.SamOrBam.class
+        programGroup = picard.cmdline.programgroups.OtherProgramGroup.class
 )
 public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);

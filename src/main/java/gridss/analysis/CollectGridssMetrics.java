@@ -27,7 +27,7 @@ import picard.analysis.SinglePassSamProgram;
         summary = "Extension of picard.CollectMultipleMetrics to include GRIDSS metrics. "
         		+ "Additional metrics are CollectCigarMetrics, CollectIdsvMetrics, CollectTagMetrics, and CollectMapqMetrics.",
         oneLineSummary = "A \"meta-metrics\" calculating program that produces multiple metrics for the provided SAM/BAM",
-        programGroup = picard.cmdline.programgroups.Metrics.class
+        programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
 )
 public class CollectGridssMetrics extends CollectMultipleMetrics {
     public static enum GridssProgram {
