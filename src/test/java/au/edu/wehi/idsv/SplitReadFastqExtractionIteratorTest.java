@@ -18,7 +18,7 @@ public class SplitReadFastqExtractionIteratorTest extends TestHelper {
 	@Test
 	public void should_filter_secondary() {
 		SAMRecord r = Read(0, 1, "10S10M");
-		r.setNotPrimaryAlignmentFlag(true);
+		r.setSecondaryAlignment(true);
 		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 0, false, getContext().getEvidenceIDGenerator())));
 		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 0, true, getContext().getEvidenceIDGenerator())));
 	}

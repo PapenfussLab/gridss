@@ -825,7 +825,7 @@ public class SAMRecordUtil {
 				// already flagged as supp is bad  
 				.compareFalseFirst(arg1.getSupplementaryAlignmentFlag(), arg2.getSupplementaryAlignmentFlag())
 				// flagged as secondary is bad due to legacy treatment of secondary alignments as supplementary (eg bwa mem -M) 
-				.compareFalseFirst(arg1.getNotPrimaryAlignmentFlag(), arg2.getNotPrimaryAlignmentFlag()) 
+				.compareFalseFirst(arg1.isSecondaryAlignment(), arg2.isSecondaryAlignment()) 
 				// the record with the shorter soft clip is a better candidate
 				.compare(SAMRecordUtil.getStartClipLength(arg1) + SAMRecordUtil.getEndClipLength(arg1), SAMRecordUtil.getStartClipLength(arg2) + SAMRecordUtil.getEndClipLength(arg2))
 				// Other options are:
@@ -878,7 +878,7 @@ public class SAMRecordUtil {
 		if (!best.isPresent()) {
 			best = options.stream()
 					.filter(r -> !r.getSupplementaryAlignmentFlag())
-					.filter(r -> r.getNotPrimaryAlignmentFlag() == rec.getNotPrimaryAlignmentFlag())
+					.filter(r -> r.isSecondaryAlignment() == rec.isSecondaryAlignment())
 					.findFirst();
 		}
 		// grab anything that's not a supplementary
@@ -901,7 +901,7 @@ public class SAMRecordUtil {
 				nextSegment = Collections.emptyList();
 			}
 			// resort so we match up the primary records last
-			currentSegment.sort(Comparator.comparing(SAMRecord::getNotPrimaryAlignmentFlag).reversed());
+			currentSegment.sort(Comparator.comparing(SAMRecord::isSecondaryAlignment).reversed());
 			for (SAMRecord r : currentSegment) {
 				if (r.getSupplementaryAlignmentFlag()) {
 					SAMRecord primary = getPrimarySplitAlignmentFor(r, currentSegment);
@@ -970,7 +970,7 @@ public class SAMRecordUtil {
 		if (best.isPresent()) return best.get();
 		// match primary with primary and secondary with secondary
 		best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
-				.filter(m -> m.getNotPrimaryAlignmentFlag() == r.getNotPrimaryAlignmentFlag())
+				.filter(m -> m.isSecondaryAlignment() == r.isSecondaryAlignment())
 				// prefer mapped reads
 				.sorted(Comparator.comparing(SAMRecord::getReadUnmappedFlag)).findFirst();
 		if (best.isPresent()) return best.get();

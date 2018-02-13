@@ -39,11 +39,11 @@ public class SplitReadFastqExtractor {
 		// Note that realignments may be split reads, but we currently only consider the primary alignment
 		if (!isSplit && r.getAttribute(SAMTag.SA.name()) != null) return list;
 		if (r.getSupplementaryAlignmentFlag()) return list;
-		if (r.getNotPrimaryAlignmentFlag() && !processSecondaryAlignments) {
+		if (r.isSecondaryAlignment() && !processSecondaryAlignments) {
 			return list;
 		}
 		for (FastqRecord fqr : SplitReadIdentificationHelper.getSplitReadRealignments(r, isSplit, eidgen)) {
-			if (fqr.length() < minSoftClipLength) continue;
+			if (fqr.getReadLength() < minSoftClipLength) continue;
 			if (averageBaseQuality(fqr) < minClipQuality) continue;
 			list.add(fqr);
 		}

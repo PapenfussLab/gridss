@@ -169,7 +169,7 @@ public class SplitReadRealigner {
 		SAMRecord supp = aligner.getAlignment();
 		String lookupkey = SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(supp);
 		SplitReadRealignmentInfo info = realignments.get(lookupkey);
-		if (supp.getSupplementaryAlignmentFlag() || supp.getNotPrimaryAlignmentFlag()) {
+		if (supp.getSupplementaryAlignmentFlag() || supp.isSecondaryAlignment()) {
 			// only consider the best mapping location reported by the aligner
 			//log.debug(String.format("%s: ignoring supp alignment", supp.getReadName()));
 		} else {

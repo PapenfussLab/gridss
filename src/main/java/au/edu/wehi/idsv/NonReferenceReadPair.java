@@ -112,7 +112,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		remote.setReadName(record.getReadName());
 		remote.setReadPairedFlag(true);
 		remote.setProperPairFlag(record.getProperPairFlag());
-		remote.setNotPrimaryAlignmentFlag(record.getNotPrimaryAlignmentFlag());
+		remote.setSecondaryAlignment(record.isSecondaryAlignment());
 		remote.setReadBases(r2);
 		remote.setBaseQualities(q2);
 		if (record.getFirstOfPairFlag()) {

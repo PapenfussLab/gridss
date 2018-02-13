@@ -135,7 +135,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		}
 		@Override
 		public void asyncAlign(FastqRecord fq) throws IOException {
-			this.alignments[in++].setReadName(fq.getReadHeader());
+			this.alignments[in++].setReadName(fq.getReadName());
 		}
 		@Override
 		public void flush() throws IOException { }

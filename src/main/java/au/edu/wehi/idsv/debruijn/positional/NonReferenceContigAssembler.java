@@ -775,7 +775,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	public boolean sanityCheck() {
-		graphByKmerNode.entrySet().stream().flatMap(e -> e.getValue().stream()).forEach(kn -> { 
+		graphByKmerNode.long2ObjectEntrySet().stream().flatMap(e -> e.getValue().stream()).forEach(kn -> { 
 			assert(kn.node().isValid());
 			assert(graphByPosition.contains(kn.node()));
 		});

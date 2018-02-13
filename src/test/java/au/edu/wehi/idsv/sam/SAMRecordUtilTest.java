@@ -612,10 +612,10 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
 		read3.setSupplementaryAlignmentFlag(true);
 		
-		read0.setNotPrimaryAlignmentFlag(true);
-		read1.setNotPrimaryAlignmentFlag(true);
-		read2.setNotPrimaryAlignmentFlag(true);
-		read3.setNotPrimaryAlignmentFlag(true);
+		read0.setSecondaryAlignment(true);
+		read1.setSecondaryAlignment(true);
+		read2.setSecondaryAlignment(true);
+		read3.setSecondaryAlignment(true);
 		
 		read0.setAttribute("NM", 0);
 		read1.setAttribute("NM", 1);
@@ -791,7 +791,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		
 		read0.setAttribute("SA", "polyA,2,+,1H1M4H,11,0");
 		read1.setAttribute("SA", "polyA,1,+,1M5H,10,0");
-		read0.setNotPrimaryAlignmentFlag(true);
+		read0.setSecondaryAlignment(true);
 		
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(), false, false, true);
 		
@@ -822,7 +822,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read0.setReadUnmappedFlag(true);
 		read1.setReadUnmappedFlag(true);
 		
-		read1.setNotPrimaryAlignmentFlag(true);
+		read1.setSecondaryAlignment(true);
 		
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(), false, false, true);
 		
@@ -855,11 +855,11 @@ public class SAMRecordUtilTest extends TestHelper {
 		read3a.setSupplementaryAlignmentFlag(false);
 		read3b.setSupplementaryAlignmentFlag(false);
 		
-		read1a.setNotPrimaryAlignmentFlag(false);
-		read1b.setNotPrimaryAlignmentFlag(false);
-		read2.setNotPrimaryAlignmentFlag(true);
-		read3a.setNotPrimaryAlignmentFlag(true);
-		read3b.setNotPrimaryAlignmentFlag(true);
+		read1a.setSecondaryAlignment(false);
+		read1b.setSecondaryAlignment(false);
+		read2.setSecondaryAlignment(true);
+		read3a.setSecondaryAlignment(true);
+		read3b.setSecondaryAlignment(true);
 		
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read1a, read1b, read2, read3a, read3b), ImmutableSet.of(), false, false, true);
 		
@@ -869,11 +869,11 @@ public class SAMRecordUtilTest extends TestHelper {
 		Assert.assertTrue(read3a.getSupplementaryAlignmentFlag());
 		Assert.assertFalse(read3b.getSupplementaryAlignmentFlag());
 		
-		Assert.assertFalse(read1a.getNotPrimaryAlignmentFlag());
-		Assert.assertFalse(read1b.getNotPrimaryAlignmentFlag());
-		Assert.assertTrue(read2.getNotPrimaryAlignmentFlag());
-		Assert.assertTrue(read3a.getNotPrimaryAlignmentFlag());
-		Assert.assertTrue(read3b.getNotPrimaryAlignmentFlag());
+		Assert.assertFalse(read1a.isSecondaryAlignment());
+		Assert.assertFalse(read1b.isSecondaryAlignment());
+		Assert.assertTrue(read2.isSecondaryAlignment());
+		Assert.assertTrue(read3a.isSecondaryAlignment());
+		Assert.assertTrue(read3b.isSecondaryAlignment());
 	}
 	@Test
 	public void unclipExactReferenceMatches_should_adjust_matches() {

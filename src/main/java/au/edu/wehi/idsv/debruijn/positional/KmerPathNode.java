@@ -287,7 +287,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		totalWeight += toMerge.totalWeight;
 		for (int i = 0; i < weight.size(); i++) {
-			weight.set(i, weight.get(i) + toMerge.weight.get(i));
+			weight.set(i, weight.getInt(i) + toMerge.weight.getInt(i));
 		}
 		replaceEdges(toMerge, this);
 		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
@@ -760,8 +760,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			this.end++;
 		}
 		totalWeight -= weight.getInt(offset);
-		weight.remove(offset);
-		kmers.remove(offset);
+		weight.removeInt(offset);
+		kmers.removeLong(offset);
 		if (additionalKmers != null) {
 			if (length() > 0) {
 				int offsetShift = offset == 0 ? 1 : 0;
@@ -769,8 +769,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 					int currentOffset = additionalKmerOffsets.getInt(i);
 					int newOffset = currentOffset - offsetShift;
 					if (newOffset < 0 || newOffset >= length()) {
-						additionalKmerOffsets.remove(i);
-						additionalKmers.remove(i);
+						additionalKmerOffsets.removeInt(i);
+						additionalKmers.removeLong(i);
 					} else if (newOffset != currentOffset) {
 						additionalKmerOffsets.set(i, newOffset);
 					}
@@ -959,7 +959,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 */
 	private static KmerPathNode removeWeight(ArrayDeque<KmerPathNode> outList, KmerPathNode node, int offset, int weightToRemove) {
 		assert(node.totalWeight >= weightToRemove);
-		int newWeight = node.weight.get(offset) - weightToRemove;
+		int newWeight = node.weight.getInt(offset) - weightToRemove;
 		if (newWeight == 0) {
 			// remove entire kmer from KmerPathNode
 			KmerPathNode split = node.removeKmer(offset);

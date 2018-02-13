@@ -23,7 +23,7 @@ import htsjdk.samtools.util.Log;
  * @author Daniel Cameron
  *
  */
-public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIterator<T> {
+public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIterator<T>, AutoCloseable {
 	private static AtomicInteger threadsCreated = new AtomicInteger(0);
 	private static final Log log = Log.getInstance(AsyncBufferedIterator.class);
     private final Thread reader;

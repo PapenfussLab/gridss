@@ -218,7 +218,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		assertTrue(supp1.getMateNegativeStrandFlag());
 		assertTrue(supp1.getFirstOfPairFlag());
 		assertTrue(supp1.getSecondOfPairFlag());
-		assertTrue(supp1.getNotPrimaryAlignmentFlag());
+		assertTrue(supp1.isSecondaryAlignment());
 		assertTrue(supp1.getReadFailsVendorQualityCheckFlag());
 		assertTrue(supp1.getDuplicateReadFlag());
 		assertTrue(supp1.getSupplementaryAlignmentFlag());

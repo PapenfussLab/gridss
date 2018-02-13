@@ -90,10 +90,10 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 		r2.setSupplementaryAlignmentFlag(true);
 		c.acceptRead(r2, null);
 		SAMRecord r3 = Read(0, 1, "1M");
-		r3.setNotPrimaryAlignmentFlag(true);
+		r3.setSecondaryAlignment(true);
 		c.acceptRead(r3, null);
 		SAMRecord r4 = Read(0, 1, "1M");
-		r4.setNotPrimaryAlignmentFlag(true);
+		r4.setSecondaryAlignment(true);
 		r4.setAttribute("SA", "chr1,5,+,1M,0,0");
 		c.acceptRead(r4, null);
 		c.finish();

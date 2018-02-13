@@ -196,7 +196,7 @@ public class SplitReadIdentificationHelper {
 			supplementary.setMateUnmappedFlag(primary.getMateUnmappedFlag());
 			supplementary.setMateNegativeStrandFlag(primary.getMateNegativeStrandFlag());
 		}
-		supplementary.setNotPrimaryAlignmentFlag(primary.getNotPrimaryAlignmentFlag());
+		supplementary.setSecondaryAlignment(primary.isSecondaryAlignment());
 		supplementary.setDuplicateReadFlag(primary.getDuplicateReadFlag());
 		supplementary.setReadFailsVendorQualityCheckFlag(primary.getReadFailsVendorQualityCheckFlag());
 		supplementary.setSupplementaryAlignmentFlag(true);

@@ -83,19 +83,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 			assertEquals("", S(asAssemblyEvidence(e).getAnchorSequence()));
 		}
 	}
-	private void assertPairing(SAMRecord assembly, SAMRecord realign) {
-		assertNotNull(assembly);
-		assertNotNull(realign);
-		assertTrue(assembly.getReadPairedFlag());
-		assertTrue(realign.getReadPairedFlag());
-		assertTrue(assembly.getFirstOfPairFlag());
-		assertFalse(realign.getFirstOfPairFlag());
-		assertFalse(assembly.getSecondOfPairFlag());
-		assertTrue(realign.getSecondOfPairFlag());
-		assertEquals(assembly.getReadName(), realign.getReadName());
-		assertMateFields(assembly, realign);
-		assertMateFields(realign, assembly);
-	}
 	private void assertMateFields(SAMRecord r, SAMRecord mate) {
 		assertEquals(r.getMateNegativeStrandFlag(), mate.getReadNegativeStrandFlag());
 		assertEquals(r.getMateUnmappedFlag(), mate.getReadUnmappedFlag());
