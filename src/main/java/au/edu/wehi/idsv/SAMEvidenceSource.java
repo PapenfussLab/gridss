@@ -239,7 +239,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval[] intervals) {
 		SamReader reader = getReader();
 		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
-		SAMRecordIterator it = tryOpenReader(reader, QueryIntervalUtil.padIntervals(getContext().getDictionary(), intervals, getMaxConcordantFragmentSize() + 1));
+		QueryInterval[] expandedIntervals = QueryIntervalUtil.padIntervals(getContext().getDictionary(), intervals, getMaxConcordantFragmentSize() + 1);
+		// ignore blacklisted regions
+		IntervalBed queryInterval = new IntervalBed(getContext().getDictionary(), getContext().getLinear(), expandedIntervals);
+		queryInterval.remove(getBlacklistedRegions());
+		SAMRecordIterator it = tryOpenReader(reader, queryInterval.asQueryInterval());
 		Iterator<DirectedEvidence> eit = asEvidence(it);
 		eit = Iterators.filter(eit, e -> QueryIntervalUtil.overlaps(intervals, e.getBreakendSummary()));
 		return new AutoClosingIterator<>(eit, reader, it);
