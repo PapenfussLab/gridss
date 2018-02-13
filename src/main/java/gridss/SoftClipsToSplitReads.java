@@ -68,7 +68,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
     	realigner.setWorkerThreads(WORKER_THREADS);
     	try {
-    		SamReaderFactory readerFactory = SamReaderFactory.make();
+    		SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
         	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
         	
         	if (ALIGNER_STREAMING) {

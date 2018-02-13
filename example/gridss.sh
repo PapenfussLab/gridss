@@ -45,7 +45,12 @@ if ! which Rscript >/dev/null 2>&1 ; then
 	exit 1
 fi
 
+# -Dreference_fasta is only required for CRAM input files
+# -Dgridss.gridss.output_to_temp_file=true allows GRIDSS to continue where it left off without data errors due to truncated files
+# -Dsamjdk.create_index=true is required for multi-threaded operation
+# -Dsamjdk.use_async_io allow for async read/write on background threads which improves BAM I/O performancce
 java -ea -Xmx31g \
+	-Dreference_fasta="$REFERENCE" \
 	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \

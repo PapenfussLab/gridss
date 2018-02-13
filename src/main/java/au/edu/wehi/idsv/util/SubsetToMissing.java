@@ -62,7 +62,8 @@ public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 		if (TMP_DIR == null || TMP_DIR.size() == 0) {
 			TMP_DIR = Lists.newArrayList(new File("."));
 		}
-		SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
+		SamReaderFactory factory = SamReaderFactory.makeDefault()
+				.validationStringency(ValidationStringency.SILENT);
 		SamReader input = factory.open(INPUT);
 		
 		

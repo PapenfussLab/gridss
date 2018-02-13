@@ -15,7 +15,6 @@ import au.edu.wehi.idsv.DirectEvidenceWindowedSortingIterator;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.VariantContextWindowedSortingIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;

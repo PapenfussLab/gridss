@@ -38,7 +38,7 @@ public class SplitReadRealigner {
 	private int minSoftClipLength = 1;
 	private float minSoftClipQuality = 0;
 	private int workerThreads = Runtime.getRuntime().availableProcessors();
-	private SamReaderFactory readerFactory = SamReaderFactory.make();
+	private SamReaderFactory readerFactory;
 	private SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
 	private FastqWriterFactory fastqWriterFactory = new FastqWriterFactory();
 	private boolean processSecondaryAlignments = false;
@@ -53,6 +53,7 @@ public class SplitReadRealigner {
 	
 	public SplitReadRealigner(GenomicProcessingContext pc) {
 		this.pc = pc;
+		this.readerFactory = SamReaderFactory.makeDefault().referenceSequence(pc.getReferenceFile());
 	}
 	public int getMinSoftClipLength() {
 		return minSoftClipLength;
@@ -279,7 +280,10 @@ public class SplitReadRealigner {
 			SAMFileUtil.sort(pc.getFileSystemContext(), suppMerged, suppMergedsorted, header.getSortOrder());
 			FileHelper.move(suppMergedsorted, suppMerged, true);
 		}
-		SAMFileUtil.merge(ImmutableList.of(tmpoutput, suppMerged), output);
+		SAMFileUtil.merge(ImmutableList.of(tmpoutput, suppMerged),
+				output,
+				pc.getSamReaderFactory(),
+				pc.getSamFileWriterFactory(header.getSortOrder() == SortOrder.coordinate));
 	}
 	private void mergeSupplementaryAlignment(Iterator<SAMRecord> it, List<PeekingIterator<SAMRecord>> alignments, SAMFileWriter out, SAMFileWriter saout) {
 		List<SAMRecord> salist = Lists.newArrayList();
@@ -290,7 +294,7 @@ public class SplitReadRealigner {
 			for (PeekingIterator<SAMRecord> sit : alignments) {
 				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
 					SAMRecord supp = sit.next();
-					if (supp.getSupplementaryAlignmentFlag() || supp.getNotPrimaryAlignmentFlag()) {
+					if (supp.getSupplementaryAlignmentFlag() || supp.isSecondaryAlignment()) {
 						// only consider the best mapping location reported by the aligner
 					} else {
 						salist.add(supp);

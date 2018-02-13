@@ -48,7 +48,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
-		try (SamReader r = SamReaderFactory.make().open(assemblyFile)) {
+		try (SamReader r = SamReaderFactory.makeDefault().open(assemblyFile)) {
 			assertEquals(SortOrder.coordinate, r.getFileHeader().getSortOrder());
 		}
 	}

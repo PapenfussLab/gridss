@@ -76,7 +76,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		log.debug("Setting language-neutral locale");
     	java.util.Locale.setDefault(Locale.ROOT);
     	validateParameters();
-    	SamReaderFactory readerFactory = SamReaderFactory.make();
+    	SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
     	try {
     		try (SamReader reader = readerFactory.open(INPUT)) {

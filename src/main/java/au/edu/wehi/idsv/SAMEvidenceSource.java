@@ -41,7 +41,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
@@ -55,7 +54,6 @@ import picard.cmdline.CommandLineProgram;
  */
 public class SAMEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(SAMEvidenceSource.class);
-	protected final SamReaderFactory factory = SamReaderFactory.makeDefault();
 	private final int sourceCategory;
 	private final ReadPairConcordanceMethod rpcMethod;
 	private final int rpcMinFragmentSize;
@@ -279,7 +277,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	private SamReader getReader() {
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
-		SamReader reader = factory.open(svFile.exists() ? svFile : getFile());
+		SamReader reader = getProcessContext().getSamReader(svFile.exists() ? svFile : getFile());
 		return reader;
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {

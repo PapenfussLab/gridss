@@ -139,6 +139,7 @@ public class GenomicProcessingContext implements Closeable {
 
 	public SamReaderFactory getSamReaderFactory() {
 		SamReaderFactory factory = SamReaderFactory.makeDefault()
+				.referenceSequence(getReferenceFile())
 				.validationStringency(ValidationStringency.LENIENT);
 				//.enable(Option.INCLUDE_SOURCE_IN_RECORDS); // don't need as we're tracking ourselves using EvidenceSource
 		return factory;
@@ -172,8 +173,8 @@ public class GenomicProcessingContext implements Closeable {
 
 	public SAMFileWriterFactory getSamFileWriterFactory(boolean sorted) {
 		return new SAMFileWriterFactory()
-			.setTempDirectory(fsContext.getTemporaryDirectory());
-			//.setCreateIndex(sorted); // covered by -Dcreate_index=true
+			.setTempDirectory(fsContext.getTemporaryDirectory())
+			.setCreateIndex(sorted); // also covered by -Dcreate_index=true
 	}
 
 	/**

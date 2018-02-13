@@ -173,7 +173,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		File ref = Hg19Tests.findHg19Reference();
 		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
 		SAMEvidenceSource ses = SES(pc);
-		SamReader sr = SamReaderFactory.make().open(sam);
+		SamReader sr = SamReaderFactory.makeDefault().open(sam);
 		List<SAMRecord> in = Lists.newArrayList(sr.iterator());
 		List<SingleReadEvidence> sreList = in.stream()
 				.flatMap(record -> SingleReadEvidence.createEvidence(ses, 0, record).stream())

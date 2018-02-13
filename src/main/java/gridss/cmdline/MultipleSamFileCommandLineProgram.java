@@ -83,7 +83,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     private String getCategoryLabelFor(File file) {
     	String label = file.getName();
     	if (file.exists() && getContext().getConfig().useReadGroupSampleNameCategoryLabel) {
-    		try (SamReader reader = SamReaderFactory.makeDefault().open(file)) {
+    		try (SamReader reader = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE).open(file)) {
     			SAMFileHeader header = reader.getFileHeader();
     			if (header.getReadGroups().size() == 1) {
     				String sampleName = header.getReadGroups().get(0).getSample();
@@ -141,7 +141,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     }
 	public void ensureDictionariesMatch() throws IOException {
 		SAMSequenceDictionary dictionary = getReference().getSequenceDictionary();
-		final SamReaderFactory samFactory = SamReaderFactory.makeDefault();
+		final SamReaderFactory samFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
 		for (File f : INPUT) {
 			SamReader reader = null;
 			try {

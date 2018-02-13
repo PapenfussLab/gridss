@@ -152,7 +152,7 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public static List<SAMRecord> getRecords(File file) {
 		assertTrue(file.exists());
-		SamReader reader = SamReaderFactory.make().open(file);
+		SamReader reader = SamReaderFactory.makeDefault().open(file);
 		List<SAMRecord> list = Lists.newArrayList();
 		for (SAMRecord r : reader) {
 			list.add(r);
