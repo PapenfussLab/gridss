@@ -57,6 +57,9 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
 	@Argument(shortName="Z", doc="If set to true include a zero length operator for each operator not included in the alignment CIGAR.")
     public boolean INCLUDE_OMITTED_OPERATORS = true;
 	
+	@Argument(doc="If true, also include reads marked as duplicates.")
+    public boolean INCLUDE_DUPLICATES = false;
+	
     private EnumMap<CigarOperator, List<CigarDetailMetrics>> cigar;    
 
     /** Required main method. */
@@ -79,6 +82,7 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
     	// Skip unwanted records
     	if (rec.getReadUnmappedFlag()) return;
     	if (rec.getCigar() == null) return;
+    	if (rec.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
     	List<CigarElement> list = rec.getCigar().getCigarElements();
     	if (list == null || list.size() == 0) return;
     	for (CigarElement ce : list) {

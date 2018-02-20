@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
 import htsjdk.samtools.SAMFileHeader;
@@ -49,6 +50,9 @@ import picard.cmdline.programgroups.Metrics;
 public class CollectTagMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".tag_metrics";
 	
+	@Argument(doc="If true, also include reads marked as duplicates.")
+	public boolean INCLUDE_DUPLICATES = false;
+	
 	private Map<String, TagSummaryMetrics> tags = new HashMap<>();
 
     /** Required main method. */
@@ -64,6 +68,7 @@ public class CollectTagMetrics extends SinglePassSamProgram {
 
     @Override
     protected void acceptRead(final SAMRecord rec, final ReferenceSequence ref) {
+    	if (rec.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
     	for (SAMTagAndValue attr : rec.getAttributes()) {
     		String tag = attr.tag;
     		TagSummaryMetrics metric = tags.get(tag);

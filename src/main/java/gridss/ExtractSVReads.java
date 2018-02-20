@@ -191,6 +191,7 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 			extract[i] = !hasConsistentReadAlignment[SAMRecordUtil.getSegmentIndex(r)] && !readfilter.filterOut(r);
 			// supp records should use the primary alignment when considering concordance
 			extract[i] |= !hasConsistentReadPair && !pairfilter.filterOut(primaryAlignmentForSupplementary(r));
+			extract[i] &= (!r.getDuplicateReadFlag() || INCLUDE_DUPLICATES);
 		}
 		return extract;
 	}

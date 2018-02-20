@@ -27,6 +27,7 @@ import picard.cmdline.programgroups.Metrics;
 )
 public class CollectStructuralVariantReadMetrics extends ProcessStructuralVariantReadsCommandLineProgram {
 	public static final String METRICS_SUFFIX = ".sv_metrics";
+	
 	//private static final Log log = Log.getInstance(CollectStructuralVariantReadMetrics.class);
 	public static void main(String[] argv) {
         System.exit(new CollectStructuralVariantReadMetrics().instanceMain(argv));
@@ -50,6 +51,13 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 	}
 	@Override
 	public void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
+		if (!INCLUDE_DUPLICATES) {
+			for (int i = records.size() - 1; i >= 0; i--) {
+				if (records.get(i).getDuplicateReadFlag()) {
+					records.remove(i);
+				}
+			}
+		}
 		boolean hasConsistentReadPair = ExtractSVReads.hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = ExtractSVReads.hasReadAlignmentConsistentWithReference(records);
 		boolean hasOeaAnchor = false;
