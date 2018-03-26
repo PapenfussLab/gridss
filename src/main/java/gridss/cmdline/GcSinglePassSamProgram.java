@@ -86,8 +86,8 @@ public abstract class GcSinglePassSamProgram extends SinglePassSamProgram {
     }
     // --------- end chunk from ProcessStructuralVariantReadsCommandLineProgram ---------
     // --------- start chunk from ReferenceCommandLineProgram ---------
-    @Argument(doc = "Ignore reads marked as duplicates.", optional = true)
-    public boolean IGNORE_DUPLICATES = true;
+    @Argument(doc="If true, also include reads marked as duplicates.")
+    public boolean INCLUDE_DUPLICATES = false;
 	private ReferenceLookup reference;
 	public ReferenceLookup getReference() {
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);

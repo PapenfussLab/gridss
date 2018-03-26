@@ -57,6 +57,13 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 	}
 	@Override
 	public void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
+		if (!INCLUDE_DUPLICATES) {
+			for (int i = records.size() - 1; i >= 0; i--) {
+				if (records.get(i).getDuplicateReadFlag()) {
+					records.remove(i);
+				}
+			}
+		}
 		boolean hasConsistentReadPair = ExtractSVReads.hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = ExtractSVReads.hasReadAlignmentConsistentWithReference(records);
 		boolean hasOeaAnchor = false;

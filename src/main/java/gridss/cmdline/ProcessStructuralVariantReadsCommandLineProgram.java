@@ -44,6 +44,8 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     public File INSERT_SIZE_METRICS = null;
     @Argument(doc="Include unmapped reads", optional=true)
     public boolean UNMAPPED_READS = true;
+    @Argument(doc="If true, also include reads marked as duplicates.")
+	public boolean INCLUDE_DUPLICATES = false;
     @Override
 	protected String[] customCommandLineValidation() {
 		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {
