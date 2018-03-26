@@ -52,7 +52,7 @@ import picard.util.RExecutor;
                 "the statistical distribution of read mapping qualities (excluding duplicates) " +
                 "and generates a Histogram plot.",
         oneLineSummary = "Writes mapq distribution metrics for a SAM or BAM file",
-        programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
+        programGroup = picard.cmdline.programgroups.Metrics.class
 )
 public class CollectFragmentGCMetrics extends GcSinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".gc_metrics";

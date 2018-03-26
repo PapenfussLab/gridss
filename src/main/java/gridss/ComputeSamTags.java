@@ -43,7 +43,7 @@ import picard.cmdline.StandardOptionDefinitions;
         		+ " This can be achieved by queryname sorting of the input file, although the raw output from most aligners"
         		+ " also fulfills this criteria.",
         oneLineSummary = "Populates computed SAM tags.",
-        programGroup = picard.cmdline.programgroups.ReadDataManipulationProgramGroup.class
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class ComputeSamTags extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(ComputeSamTags.class);

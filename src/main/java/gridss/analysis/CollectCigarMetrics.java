@@ -49,7 +49,7 @@ import picard.analysis.SinglePassSamProgram;
         summary = "Reads a SAM or BAM file and writes a file containing metrics about " +
                 "the statistical distribution of alignment CIGARs.",
         oneLineSummary = "Writes CIGAR distribution metrics for a SAM or BAM file",
-        programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
+        programGroup = picard.cmdline.programgroups.Metrics.class
 )
 public class CollectCigarMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".cigar_metrics";

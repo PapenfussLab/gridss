@@ -29,7 +29,7 @@ import picard.sam.FixMateInformation;
         		+ "All variants, including structural variations, that are not in breakend format are ignored. "
         		+ "VCF fields are not imported into the BAM",  
         oneLineSummary = "Converts VCF breakend calls to BAM format for visualisation.",
-        programGroup = picard.cmdline.programgroups.VariantManipulationProgramGroup.class
+        programGroup = picard.cmdline.programgroups.VcfOrBcf.class
 )
 public class VcfBreakendToReadPair extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(VcfBreakendToReadPair.class);

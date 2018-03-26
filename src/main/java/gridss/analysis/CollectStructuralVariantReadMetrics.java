@@ -23,7 +23,7 @@ import htsjdk.samtools.metrics.MetricsFile;
 @CommandLineProgramProperties(
 		summary = "Collects metrics regarding the structural variant reads present in the input.",
 		oneLineSummary = "Collects metrics regarding the structural variant reads present in the input.",
-        programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
+        programGroup = picard.cmdline.programgroups.Metrics.class
 )
 public class CollectStructuralVariantReadMetrics extends ProcessStructuralVariantReadsCommandLineProgram {
 	public static final String METRICS_SUFFIX = ".sv_metrics";

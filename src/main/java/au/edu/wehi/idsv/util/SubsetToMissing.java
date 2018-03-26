@@ -36,7 +36,7 @@ import picard.cmdline.StandardOptionDefinitions;
 @CommandLineProgramProperties(
         summary = "Subsets the given BAM file, returning only reads that are not found in the given data set.",  
         oneLineSummary = "Subsets on the given lookup",
-        programGroup = picard.cmdline.programgroups.ReadDataManipulationProgramGroup.class
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(SubsetToMissing.class);

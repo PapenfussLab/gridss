@@ -34,7 +34,7 @@ import picard.cmdline.StandardOptionDefinitions;
 @CommandLineProgramProperties(
 		summary = "Converts split read alignments to bed intervals",
 		oneLineSummary = "Converts split read alignments to bed intervals",
-		programGroup = picard.cmdline.programgroups.OtherProgramGroup.class)
+		programGroup = picard.cmdline.programgroups.SamOrBam.class)
 public class BamToBed extends CommandLineProgram {
     @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, optional=false)
     public File INPUT;

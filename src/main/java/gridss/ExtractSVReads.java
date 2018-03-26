@@ -41,7 +41,7 @@ import htsjdk.samtools.util.Log;
         		+ "and reads/read pairs are only extracted when all alignments are consistent with the "
         		+ "presence of of a structural variant.",
         oneLineSummary = "Extracts reads and read pairs supporting putative structural variations.",
-        programGroup = picard.cmdline.programgroups.OtherProgramGroup.class
+        programGroup = picard.cmdline.programgroups.SamOrBam.class
 )
 public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProgram {
 	private static final Log log = Log.getInstance(ExtractSVReads.class);

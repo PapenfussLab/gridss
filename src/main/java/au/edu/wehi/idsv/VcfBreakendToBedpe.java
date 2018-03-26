@@ -23,7 +23,7 @@ import picard.cmdline.StandardOptionDefinitions;
         		+ "All variants, including structural variations, that are not in breakend format are ignored. "
         		+ "Gridss breakpoint fields, if present, are stored in the optional columns. ",  
         oneLineSummary = "Converts VCF breakend calls to BEDPE format.",
-        programGroup = picard.cmdline.programgroups.VariantManipulationProgramGroup.class
+        programGroup = picard.cmdline.programgroups.VcfOrBcf.class
 )
 public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(VcfBreakendToBedpe.class);

@@ -44,7 +44,7 @@ import picard.analysis.SinglePassSamProgram;
 		summary = "Reads a SAM or BAM file and writes a file containing metrics about " +
                 "the presence of SAM tags",
         oneLineSummary = "Writes SAM tag metrics for a SAM or BAM file",
-        programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
+        programGroup = picard.cmdline.programgroups.Metrics.class
 )
 public class CollectTagMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".tag_metrics";

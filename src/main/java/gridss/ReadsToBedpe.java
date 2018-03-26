@@ -41,7 +41,7 @@ import picard.cmdline.StandardOptionDefinitions;
 @CommandLineProgramProperties(
 		summary = "Converts split reads and indel-containing reads to BEDPE notation.",
 		oneLineSummary = "Converts split reads and indel-containing reads to BEDPE notation.",
-        programGroup = picard.cmdline.programgroups.OtherProgramGroup.class)
+        programGroup = picard.cmdline.programgroups.SamOrBam.class)
 public class ReadsToBedpe extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ReadsToBedpe.class);
     @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
