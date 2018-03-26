@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -23,7 +26,10 @@ import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 1, BWD, 100);
@@ -871,5 +877,31 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(0.0, var.getAttribute("RASQ"));
 		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getAttribute("CASQ"), 0);
 		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getPhredScaledQual(), 0);
+	}
+	@Test
+	public void called_position_nominal_position_should_round_trip() throws IOException {
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, BP("test",
+				new BreakpointSummary(new BreakendSummary(0,  FWD, 1, 1, 100), new BreakendSummary(0,  BWD, 200, 200, 400))));
+		cb.addEvidence(SR(Read(0, 1, "50M50S"), Read(0, 250, "50M")));
+		BreakpointSummary expected = new BreakpointSummary(new BreakendSummary(0,  FWD, 50, 1, 100), new BreakendSummary(0,  BWD, 250, 201, 300));
+		VariantContextDirectedEvidence var = cb.make();
+		Assert.assertEquals("A[polyA:250[", var.getAlternateAllele(0).toString());
+		Assert.assertEquals(50, var.getStart());
+		Assert.assertEquals(expected, var.getBreakendSummary());
+		TemporaryFolder testFolder = new TemporaryFolder();
+		testFolder.create();
+		VariantContext vc;
+		File vcf = new File(testFolder.getRoot(), "test.vcf");
+		try (VariantContextWriter vcfWriter = pc.getVariantContextWriter(vcf, true)) {
+			vcfWriter.add(var);
+		}
+		try (VCFFileReader reader = new VCFFileReader(vcf, false)) {
+			vc = reader.iterator().next();
+		}
+		Assert.assertEquals("A[polyA:250[", vc.getAlternateAllele(0).toString());
+		Assert.assertEquals(50, vc.getStart());
+		Assert.assertEquals(expected, ((VariantContextDirectedBreakpoint)IdsvVariantContext.create(pc, SES(), vc)).getBreakendSummary());
+		testFolder.delete();
 	}
 }
