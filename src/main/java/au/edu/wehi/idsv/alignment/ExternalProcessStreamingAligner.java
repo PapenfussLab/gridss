@@ -46,7 +46,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		this.readerFactory = readerFactory;
 		this.reference = reference;
 		this.args = commandline.stream()
-				.map(s -> String.format(s, "-", reference.getAbsolutePath(), threads))
+				.map(s -> String.format(s, "-", reference.getPath(), threads))
 				.collect(Collectors.toList());
 		this.commandlinestr = args.stream().collect(Collectors.joining(" "));
 	}

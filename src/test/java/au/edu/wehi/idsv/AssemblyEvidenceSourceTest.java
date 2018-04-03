@@ -333,4 +333,22 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		Assert.assertEquals(100, aes.getMinConcordantFragmentSize());
 		Assert.assertEquals(400, aes.getMaxConcordantFragmentSize());
 	}
+	@Test
+	public void should_filter_assembly_contigs_that_do_not_overlap_source_assembly_position() {
+		SAMRecord r = Read(0, 100, "100M200S");
+		r.setAttribute("OA", "polyA,1000,-,300M,0,0");
+		createInput(r);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
+		ArrayList<DirectedEvidence> result = Lists.newArrayList(aes.iterator());
+		Assert.assertEquals(0, result.size());
+	}
+	@Test
+	public void should_not_filter_assembly_contigs_that_overlap_source_assembly_position() {
+		SAMRecord r = Read(0, 100, "100M200S");
+		r.setAttribute("OA", "polyA,150,+,200M100S,0,0");
+		createInput(r);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
+		ArrayList<DirectedEvidence> result = Lists.newArrayList(aes.iterator());
+		Assert.assertEquals(1, result.size());
+	}
 }

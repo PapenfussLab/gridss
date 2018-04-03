@@ -194,7 +194,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 									"FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize,
 									"FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE=" + rpcMaxFragmentSize,
 									"READ_PAIR_CONCORDANT_PERCENT=" + rpcConcordantPercentage,
-									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()));
+									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()),
+									// Picard tools does not mark duplicates correctly. We need to keep them so we can
+									// fix the duplicate marking in ComputeSamTags
+									"INCLUDE_DUPLICATES=true");
 							execute(new ExtractSVReads(), args);
 						}
 						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
@@ -215,7 +218,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				List<String> args = Lists.newArrayList(
 						"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
 						"INPUT=" + taggedFile.getAbsolutePath(),
-						"OUTPUT=" + withsplitreadsFile.getAbsolutePath());
+						"OUTPUT=" + withsplitreadsFile.getAbsolutePath(),
+						"REALIGN_EXISTING_SPLIT_READS=" + Boolean.toString(getContext().getConfig().getSoftClip().realignSplitReads));
 						// realignment.* not soft-clip
 						//"MIN_CLIP_LENGTH=" + getContext().getConfig().
 						//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);

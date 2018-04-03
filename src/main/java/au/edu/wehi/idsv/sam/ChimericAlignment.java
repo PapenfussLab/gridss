@@ -102,7 +102,11 @@ public class ChimericAlignment {
 	}
 	public int getLastAlignedBaseReadOffset() {
 		return cigar.getReadLength() - 1 - (isNegativeStrand ? CigarUtil.getStartClipLength(cigar.getCigarElements()) : CigarUtil.getEndClipLength(cigar.getCigarElements()));
-		
+	}
+	public int overlappingBases(SAMSequenceDictionary dict, ChimericAlignment ca) {
+		return SAMRecordUtil.overlappingBases(
+				dict.getSequenceIndex(rname), pos, isNegativeStrand, cigar,
+				dict.getSequenceIndex(ca.rname), ca.pos, ca.isNegativeStrand, ca.cigar);
 	}
 	@Override
 	public String toString() {

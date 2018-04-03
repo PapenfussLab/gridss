@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -65,6 +66,7 @@ public class StringGraphTransitiveCompressorTest extends StringGraphTestHelper {
 		assertEquals(3, graph.stream().mapToInt(n -> n.out.size()).sum());
 	}
 	@Test
+	@Ignore("NYI")
 	public void should_reduce_perfect_graph_to_single_path() {
 		for (int i = 3; i < 100; i++) {
 			List<SAMRecord> reads = overlapping(i, 60, 20);
@@ -75,6 +77,7 @@ public class StringGraphTransitiveCompressorTest extends StringGraphTestHelper {
 		}
 	}
 	@Test
+	@Ignore("NYI")
 	public void should_reduce_perfect_graph_to_single_node() {
 		for (int i = 3; i < 100; i++) {
 			List<SAMRecord> reads = overlapping(i, 60, 20);

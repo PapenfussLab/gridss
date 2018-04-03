@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
@@ -40,6 +41,21 @@ public class SplitReadIdentificationHelper {
 	 * from a previous call to getSplitReadRealignments() 
 	 * @return bases requiring alignment to identify split reads
 	 */
+	public static FastqRecord getFullRealignment(SAMRecord r, EvidenceIdentifierGenerator eidgen) {
+		String name = eidgen.getAlignmentUniqueName(r);
+		byte[] seq = r.getReadBases();
+		byte[] qual = r.getBaseQualities();
+		if (r.getReadNegativeStrandFlag()) {
+			SequenceUtil.reverseComplement(seq);
+			ArrayUtils.reverse(qual);
+		}
+		FastqRecord fastq = new FastqRecord(
+				getSplitAlignmentFastqName(name, 0),
+				new String(seq, StandardCharsets.US_ASCII),
+				"",
+				SAMUtils.phredToFastq(qual));
+		return fastq;
+	}
 	public static List<FastqRecord> getSplitReadRealignments(SAMRecord r, boolean recordIsPartialAlignment, EvidenceIdentifierGenerator eidgen) {
 		int startClipLength = SAMRecordUtil.getStartSoftClipLength(r);
 		int endClipLength = SAMRecordUtil.getEndSoftClipLength(r);
@@ -220,5 +236,51 @@ public class SplitReadIdentificationHelper {
 	public static String getSplitAlignmentFastqName(String alignmentUniqueName, int firstAlignedBaseReadOffset) {
 		String fastqid = alignmentUniqueName + SEPARATOR + Integer.toString(firstAlignedBaseReadOffset);
 		return fastqid;
+	}
+	/**
+	 * Replaces the primary alignment with one of the given alignments.
+	 * Replacement preference is given to alignments that partially overlap the originatingRecord alignment
+	 * @param originatingRecord
+	 * @param realignments
+	 * @return alignment record that the originatingRecord alignment was replaced with.
+	 */
+	public static SAMRecord replaceAlignment(SAMRecord originatingRecord, List<SAMRecord> realignments) {
+		// Find alignment that best matches the originatingRecord
+		SAMRecord newPrimary = null;
+		int maxOverlap = 0; 
+		for (SAMRecord r : realignments) {
+			int overlap = SAMRecordUtil.overlappingBases(originatingRecord, r);
+			if (overlap > maxOverlap) {
+				maxOverlap = overlap;
+				newPrimary = r;
+			}
+		}
+		// otherwise just get the first alignment returned by the aligner 
+		if (newPrimary == null && realignments.size() > 0) {
+			newPrimary = realignments.get(0);
+		}
+		replaceAlignment(originatingRecord, newPrimary);
+		return originatingRecord;
+	}
+	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary) {
+		originatingRecord.setAttribute("OA", new ChimericAlignment(originatingRecord).toString());
+		if (newPrimary == null || newPrimary.getReadUnmappedFlag()) {
+			originatingRecord.setReadUnmappedFlag(true);
+		} else {
+			unclip(originatingRecord, ImmutableList.of(newPrimary));
+			originatingRecord.setReadUnmappedFlag(newPrimary.getReadUnmappedFlag());
+			originatingRecord.setAlignmentStart(newPrimary.getAlignmentStart());
+			originatingRecord.setReferenceIndex(newPrimary.getReferenceIndex());
+			originatingRecord.setCigar(newPrimary.getCigar());
+			if (originatingRecord.getReadNegativeStrandFlag() != newPrimary.getReadNegativeStrandFlag()) {
+				byte[] b = originatingRecord.getReadBases();
+				SequenceUtil.reverseComplement(b);
+				originatingRecord.setReadBases(b);
+				byte[] q = originatingRecord.getBaseQualities();
+				ArrayUtils.reverse(q);
+				originatingRecord.setBaseQualities(q);
+			}
+			originatingRecord.setReadNegativeStrandFlag(newPrimary.getReadNegativeStrandFlag());
+		}
 	}
 }

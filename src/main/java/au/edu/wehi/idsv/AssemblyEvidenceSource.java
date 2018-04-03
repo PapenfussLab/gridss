@@ -252,10 +252,18 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			List<String> args = Lists.newArrayList(
 					"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
 					"INPUT=" + getFile().getAbsolutePath(),
-					"OUTPUT=" + svFile.getAbsolutePath());
+					"OUTPUT=" + svFile.getAbsolutePath(),
+					"REALIGN_ENTIRE_READ=" + Boolean.toString(getContext().getConfig().getAssembly().realignContigs));
 			execute(new SoftClipsToSplitReads(), args);
 		}
 		SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
+	}
+	@Override
+	public boolean shouldFilter(SAMRecord r) {
+		if (r.hasAttribute("OA") && !SAMRecordUtil.overlapsOriginalAlignment(r)) {
+			return true;
+		}
+		return super.shouldFilter(r);
 	}
 	public boolean shouldFilterAssembly(SAMRecord asm) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
@@ -311,7 +319,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			*/
 		}
 		return assembly;
-	}
+	} 
 	private Iterator<DirectedEvidence> throttled(Iterator<DirectedEvidence> it) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
 		DirectedEvidenceDensityThrottlingIterator dit = new DirectedEvidenceDensityThrottlingIterator(

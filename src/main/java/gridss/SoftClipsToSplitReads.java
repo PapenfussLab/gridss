@@ -42,6 +42,10 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     public float MIN_CLIP_QUAL = 5;
     @Argument(doc="Indicates whether to perform split read identification on secondary read alignments.", optional=true)
     public boolean PROCESS_SECONDARY_ALIGNMENTS = false;
+    @Argument(doc="Indicates whether to perform realignment on existing chimeric alignment. If true, only the primary alignment record is retained.", optional=true)
+    public boolean REALIGN_EXISTING_SPLIT_READS = false;
+    @Argument(doc="Indicates whether to realign the entire read, or just the soft clipped bases.", optional=true)
+    public boolean REALIGN_ENTIRE_READ = false;
     @Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
@@ -66,6 +70,8 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
     	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
+    	realigner.setRealignExistingSplitReads(REALIGN_EXISTING_SPLIT_READS);
+    	realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
     	realigner.setWorkerThreads(WORKER_THREADS);
     	try {
     		SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);

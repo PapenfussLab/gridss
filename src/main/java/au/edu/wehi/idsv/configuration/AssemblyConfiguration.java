@@ -18,6 +18,7 @@ public class AssemblyConfiguration {
 		anchorLength = config.getInt("anchorLength");
 		removeMisassembledPartialContigsDuringAssembly = config.getBoolean("removeMisassembledPartialContigsDuringAssembly");
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
+		realignContigs = config.getBoolean("realignContigs");
 	}
 	public ErrorCorrectionConfiguration errorCorrection;
 	public DownsamplingConfiguration downsampling;
@@ -68,4 +69,8 @@ public class AssemblyConfiguration {
 	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
 	 */
 	public float maxExpectedBreakendLengthMultiple = 3.0f;
+	/**
+	 * Realign entire contig. Contigs that do not map back to their originating location are ignored.
+	 */
+	public boolean realignContigs;
 }

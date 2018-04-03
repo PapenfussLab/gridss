@@ -20,10 +20,13 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.ImmutableRangeSet.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Booleans;
 import com.google.common.primitives.Bytes;
@@ -41,6 +44,7 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMUtils;
@@ -733,7 +737,7 @@ public class SAMRecordUtil {
 	 * @param recalculateSupplementary 
 	 */
 	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
-			boolean restoreHardClips, boolean fixMates, boolean recalculateSupplementary) {
+			boolean restoreHardClips, boolean fixMates, boolean fixDuplicates, boolean recalculateSupplementary) {
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
 		if (tags.contains(SAMTag.FI.name())) {
@@ -753,6 +757,10 @@ public class SAMRecordUtil {
 			for (int i = 0; i < segments.size(); i++) {
 				softenHardClips(segments.get(i));
 			}
+		}
+		if (fixDuplicates) {
+			boolean isDuplicate = segments.stream().flatMap(l -> l.stream()).anyMatch(r -> r.getDuplicateReadFlag());
+			segments.stream().flatMap(l -> l.stream()).forEach(r -> r.setDuplicateReadFlag(isDuplicate));
 		}
 		// SA
 		if (tags.contains(SAMTag.SA.name())) {
@@ -1428,4 +1436,64 @@ public class SAMRecordUtil {
 		}
 		return null;
 	}
+	/**
+	 * Returns the number of bases common between the given alignments
+	 * @param r1 record to compare
+	 * @param r2 record to compare
+	 * @return number of matching reference-aligned bases.
+	 */
+	public static int overlappingBases(SAMRecord r1, SAMRecord r2) {
+		if (!overlap(r1, r2)) {
+			return 0;
+		}
+		return overlappingBases(
+				r1.getReferenceIndex(), r1.getAlignmentStart(), r1.getReadNegativeStrandFlag(), r1.getCigar(),
+				r2.getReferenceIndex(), r2.getAlignmentStart(), r2.getReadNegativeStrandFlag(), r2.getCigar());
+	}
+	public static int overlappingBases(
+			int referenceIndex1, int alignmentStart1, boolean negativeStrand1, Cigar cigar1,
+			int referenceIndex2, int alignmentStart2, boolean negativeStrand2, Cigar cigar2) {
+		if (referenceIndex1 != referenceIndex2 || negativeStrand1 != negativeStrand2) {
+			return 0;
+		}
+		ImmutableRangeSet<Integer> rs1 = getMappedBases(alignmentStart1, cigar1);
+		ImmutableRangeSet<Integer> rs2 = getMappedBases(alignmentStart2, cigar2);
+		ImmutableRangeSet<Integer> overlapSet = rs1.intersection(rs2);
+		int overlapCount = 0;
+		for (Range<Integer> r : overlapSet.asRanges()) {
+			overlapCount += r.upperEndpoint() - r.lowerEndpoint();
+		}
+		return overlapCount;
+	}
+	private static ImmutableRangeSet<Integer> getMappedBases(int start, Cigar cigar) {
+		Builder<Integer> builder = ImmutableRangeSet.builder();
+		int position = start;
+		for (CigarElement op : cigar.getCigarElements()) {
+			if (op.getOperator().consumesReferenceBases()) {
+				if (op.getOperator().consumesReadBases()) {
+					builder.add(Range.closedOpen(position, position + op.getLength()));
+				}
+				position += op.getLength();
+			}
+		}
+		return builder.build();
+	}
+	/**
+	 * Determines whether any read alignments overlaps the original alignment (if any).
+	 * @param r
+	 * @return
+	 */
+	public static boolean overlapsOriginalAlignment(SAMRecord r) {
+		String oa = r.getStringAttribute("OA");
+		if (StringUtil.isBlank(oa)) return false;
+		SAMSequenceDictionary dict = r.getHeader().getSequenceDictionary();
+		ChimericAlignment originalAlignment = new ChimericAlignment(oa);
+		ChimericAlignment thisAlignment = new ChimericAlignment(r);
+		int overlapCount = originalAlignment.overlappingBases(dict, thisAlignment);
+		for (ChimericAlignment ca : ChimericAlignment.getChimericAlignments(r)) {
+			overlapCount += originalAlignment.overlappingBases(dict, ca);
+		}
+		return overlapCount > 0;
+	}
 }
+
