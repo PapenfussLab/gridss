@@ -31,7 +31,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 @CommandLineProgramProperties(
 		summary = "Computes reference genome coverage for a given BAM",
 		oneLineSummary = "Computes coverage",
-		programGroup = picard.cmdline.programgroups.Metrics.class
+		programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
 )
 public class ComputeCoverage extends GcSinglePassSamProgram {
 	private static final Log log = Log.getInstance(ComputeCoverage.class);

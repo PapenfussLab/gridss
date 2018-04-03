@@ -36,7 +36,7 @@ import picard.cmdline.StandardOptionDefinitions;
 @CommandLineProgramProperties(
         summary = "Subsets the given BAM file, returning only reads that are not found in the given data set.",  
         oneLineSummary = "Subsets on the given lookup",
-        programGroup = picard.cmdline.programgroups.SamOrBam.class
+        programGroup = gridss.cmdline.programgroups.DataCleaning.class
 )
 public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(SubsetToMissing.class);
@@ -81,7 +81,7 @@ public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 				log.info("Loading lookup hashes for " + file.getAbsolutePath());
 				SamReader lookup = factory.open(file);
 				AsyncBufferedIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(lookup.iterator(), 2, 16384);
-				File cache = new File(file.getAbsolutePath() + ".SubsetToMissing.cache");
+				File cache = new File(file.getPath() + ".SubsetToMissing.cache");
 				if (cache.exists()) {
 					log.info("Loading lookup hashes from cache");
 					long n = stop;

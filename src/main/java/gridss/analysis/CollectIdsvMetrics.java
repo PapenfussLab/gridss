@@ -19,7 +19,7 @@ import picard.analysis.SinglePassSamProgram;
 		summary = "Reads a SAM or BAM file and writes a file containing metrics " +
                 "used by idsv.",
         oneLineSummary = "Writes idsv metrics for a SAM or BAM file",
-        programGroup = picard.cmdline.programgroups.Metrics.class
+        programGroup = gridss.cmdline.programgroups.Metrics.class
 )
 public class CollectIdsvMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".idsv_metrics";

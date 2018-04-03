@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -301,5 +302,20 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		
 		assertEquals(primary.getReadName(), supp1.getReadName());
 		assertEquals(primary.getReadName(), supp2.getReadName());
+	}
+	@Test
+	public void replaceAlignment_should_favour_overlapping_alignment() {
+		SAMRecord r = Read(0, 1, "100M");
+		SAMRecord r1 = withReadName(r.getReadName() + "#50", Read(1, 1, "50M"))[0];
+		SAMRecord r2 = withReadName(r.getReadName() + "#0", Read(0, 1, "10M"))[0];
+		SAMRecord result = SplitReadIdentificationHelper.replaceAlignment(r, ImmutableList.of(r1, r2));
+		Assert.assertEquals(result, r2);
+		Assert.assertEquals("10M90S", r.getCigarString());
+	}
+	@Test
+	public void replaceAlignment_should_unmap_if_no_realignment_available() {
+		SAMRecord r = Read(0, 1, "100M");
+		SplitReadIdentificationHelper.replaceAlignment(r, ImmutableList.of());
+		Assert.assertTrue(r.getReadUnmappedFlag());
 	}
 }

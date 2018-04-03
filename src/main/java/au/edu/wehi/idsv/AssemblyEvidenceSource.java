@@ -108,9 +108,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		GatherBamFiles gather = new picard.sam.GatherBamFiles();
 		List<String> args = new ArrayList<>();
 		for (File f : deduplicatedChunks) {
-			args.add("INPUT=" + f.getAbsolutePath());
+			args.add("INPUT=" + f.getPath());
 		}
-		args.add("OUTPUT=" + tmpout.getAbsolutePath());
+		args.add("OUTPUT=" + tmpout.getPath());
 		if (getContext().getCommandLineProgram() != null) {
 			args.addAll(CommandLineProgramHelper.getCommonArgs(getContext().getCommandLineProgram()));
 		}
@@ -138,13 +138,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				FileHelper.delete(f, true);
 			}
 		}
-		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
+		File throttledFilename = new File(getFile().getPath() + ".throttled.bed");
 		try {
 			if (throttled.size() > 0) {
 				throttled.write(throttledFilename, "Regions of high coverage where only a subset of supporting reads were considered for assembly");
 			}
 		} catch (IOException e) {
-			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
+			log.warn(e, "Unable to write " + throttledFilename.getPath());
 		}
 	}
 	private void runTasks(List<Future<Void>> tasks) {
@@ -251,8 +251,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			log.info("Identifying split reads for " + getFile().getAbsolutePath());
 			List<String> args = Lists.newArrayList(
 					"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
-					"INPUT=" + getFile().getAbsolutePath(),
-					"OUTPUT=" + svFile.getAbsolutePath(),
+					"INPUT=" + getFile().getPath(),
+					"OUTPUT=" + svFile.getPath(),
 					"REALIGN_ENTIRE_READ=" + Boolean.toString(getContext().getConfig().getAssembly().realignContigs));
 			execute(new SoftClipsToSplitReads(), args);
 		}

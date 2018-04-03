@@ -260,7 +260,7 @@ public class SplitReadIdentificationHelper {
 			newPrimary = realignments.get(0);
 		}
 		replaceAlignment(originatingRecord, newPrimary);
-		return originatingRecord;
+		return newPrimary;
 	}
 	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary) {
 		originatingRecord.setAttribute("OA", new ChimericAlignment(originatingRecord).toString());

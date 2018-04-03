@@ -45,7 +45,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 			picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
 			csd.instanceMain(new String[] {
 				"OUTPUT=" + dictPath.toFile(),
-				"REFERENCE_SEQUENCE=" + REFERENCE_SEQUENCE.getAbsolutePath()
+				"REFERENCE_SEQUENCE=" + REFERENCE_SEQUENCE.getPath()
 			});
 		}
 		return reference;
@@ -68,7 +68,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 				}
 				csd.instanceMain(new String[] {
 					"OUTPUT=" + dictPath.toFile(),
-					"R=" + referenceFile.getAbsolutePath()
+					"R=" + referenceFile.getPath()
 				});
 			}
 			rsf.close();

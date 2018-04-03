@@ -114,8 +114,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!idsvFile.exists() || !cigarFile.exists() || !mapqFile.exists()) {
 				log.info("Calculating metrics for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
-						"INPUT=" + getFile().getAbsolutePath(),
-						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath(),
+						"INPUT=" + getFile().getPath(),
+						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getPath(),
 						"THRESHOLD_COVERAGE=" + getContext().getConfig().maxCoverage,
 						"FILE_EXTENSION=null",
 						"GRIDSS_PROGRAM=null",
@@ -185,8 +185,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 								in = getFile();
 							}
 							List<String> args = Lists.newArrayList(
-									"INPUT=" + in.getAbsolutePath(),
-									"OUTPUT=" + extractedFile.getAbsolutePath(),
+									"INPUT=" + in.getPath(),
+									"OUTPUT=" + extractedFile.getPath(),
 									"UNMAPPED_READS=false", // saves intermediate file space
 									"METRICS_OUTPUT=" + getContext().getFileSystemContext().getSVMetrics(getFile()),
 									"MIN_CLIP_LENGTH=" + getContext().getConfig().getSoftClip().minLength,
@@ -207,8 +207,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 					}
 					log.info("Computing SAM tags for " + svFile);
 					List<String> args = Lists.newArrayList(
-							"INPUT=" + querysortedFile.getAbsolutePath(),
-							"OUTPUT=" + taggedFile.getAbsolutePath());
+							"INPUT=" + querysortedFile.getPath(),
+							"OUTPUT=" + taggedFile.getPath());
 					execute(new ComputeSamTags(), args);
 					if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 						FileHelper.delete(querysortedFile, true);
@@ -217,8 +217,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				log.info("Identifying split reads for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
 						"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
-						"INPUT=" + taggedFile.getAbsolutePath(),
-						"OUTPUT=" + withsplitreadsFile.getAbsolutePath(),
+						"INPUT=" + taggedFile.getPath(),
+						"OUTPUT=" + withsplitreadsFile.getPath(),
 						"REALIGN_EXISTING_SPLIT_READS=" + Boolean.toString(getContext().getConfig().getSoftClip().realignSplitReads));
 						// realignment.* not soft-clip
 						//"MIN_CLIP_LENGTH=" + getContext().getConfig().

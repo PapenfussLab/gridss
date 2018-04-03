@@ -36,8 +36,8 @@ public abstract class FileHelper {
 	}
 	private static void moveIndex(File from, File to, String indexSuffix) throws IOException {
 		trymovesingle(
-				new File(from.getAbsolutePath() + indexSuffix),
-				new File(to.getAbsolutePath() + indexSuffix));
+				new File(from.getPath() + indexSuffix),
+				new File(to.getPath() + indexSuffix));
 		
 		trymovesingle(new File(from.getParentFile(), Files.getNameWithoutExtension(from.getName()) + indexSuffix),
 				new File(to.getParentFile(), Files.getNameWithoutExtension(to.getName()) + indexSuffix));
@@ -69,8 +69,8 @@ public abstract class FileHelper {
 	}
 	private static void copyIndex(File from, File to, String indexSuffix) throws IOException {
 		trycopysingle(
-				new File(from.getAbsolutePath() + indexSuffix),
-				new File(to.getAbsolutePath() + indexSuffix));
+				new File(from.getPath() + indexSuffix),
+				new File(to.getPath() + indexSuffix));
 		
 		trycopysingle(new File(from.getParentFile(), Files.getNameWithoutExtension(from.getName()) + indexSuffix),
 				new File(to.getParentFile(), Files.getNameWithoutExtension(to.getName()) + indexSuffix));

@@ -58,7 +58,7 @@ public class IntervalBed {
 	private static RangeSet<Long> toRangeSet(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, File bed) throws IOException {
 		RangeSet<Long> rs = TreeRangeSet.create();
 		BEDCodec codec = new BEDCodec();
-	    try (AbstractFeatureReader<BEDFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(bed.getAbsolutePath(), codec, false)) {
+	    try (AbstractFeatureReader<BEDFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(bed.getPath(), codec, false)) {
 			for (BEDFeature feat : reader.iterator()) {
 				String chr = feat.getContig();
 				int start = feat.getStart();

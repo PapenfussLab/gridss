@@ -99,7 +99,7 @@ public class FileSystemContext {
 		return workingDir;
 	}
 	private static File getSource(File file) {
-		String source = file.getAbsolutePath();
+		String source = file.getPath();
 		if (source.contains(INTERMEDIATE_DIR_SUFFIX)) {
 			source = source.substring(0, source.indexOf(INTERMEDIATE_DIR_SUFFIX));
 		}

@@ -4,10 +4,10 @@
 #
 INPUT=chr12.1527326.DEL1024.bam
 BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
-REFERENCE=~/reference_genomes/human/hg19.fa
+REFERENCE=../../hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.5.0-jar-with-dependencies.jar
+GRIDSS_JAR=../target/gridss-1.6.1-SNAPSHOT-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
