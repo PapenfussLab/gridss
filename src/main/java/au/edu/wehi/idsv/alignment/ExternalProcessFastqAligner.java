@@ -38,11 +38,13 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 		List<String> commandline = template.stream()
 				.map(s -> String.format(s, fastq.getPath(), reference.getPath(), threads))
 				.collect(Collectors.toList());
-		String commandlinestr = commandline.stream().collect(Collectors.joining(" "));
 		if (SystemUtils.IS_OS_WINDOWS) {
 			// WSL path conversion
-			commandlinestr = commandlinestr.replace("\\", "\\/");
+			commandline = commandline.stream()
+				.map(s -> s.replace('\\', '/'))
+				.collect(Collectors.toList());
 		}
+		String commandlinestr = commandline.stream().collect(Collectors.joining(" "));
 		log.info("Invoking external aligner");
 		log.info(commandlinestr);
 		Process aligner = new ProcessBuilder(commandline)

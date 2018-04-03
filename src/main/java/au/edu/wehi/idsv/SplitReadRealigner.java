@@ -19,6 +19,7 @@ import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -32,6 +33,7 @@ import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
+import shaded.cloud_nio.com.google.common.collect.Iterables;
 
 public class SplitReadRealigner {
 	private static final Log log = Log.getInstance(SplitReadRealigner.class);
@@ -211,7 +213,9 @@ public class SplitReadRealigner {
 						return;
 					}
 					SAMRecord newPrimary = SplitReadIdentificationHelper.replaceAlignment(info.originatingRecord, info.realignments);
-					info.realignments.remove(newPrimary);
+					if (!info.realignments.remove(newPrimary) && newPrimary != null) {
+						throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
+					}
 				} 
 				if (info.realignments.size() > 0) {
 					SplitReadIdentificationHelper.convertToSplitRead(info.originatingRecord, info.realignments);
@@ -375,6 +379,12 @@ public class SplitReadRealigner {
 	}
 	public void setRealignExistingSplitReads(boolean realignExistingSplitReads) {
 		this.realignExistingSplitReads = realignExistingSplitReads;
+	}
+	public boolean shouldRealignEntireRecord(SAMRecord r) {
+		// TODO: Don't realign unanchored XNX reads
+		return isRealignEntireRecord() && 
+		!Iterables.any(r.getCigar().getCigarElements(), ce -> ce.getOperator() == CigarOperator.X)
+		return .
 	}
 	public boolean isRealignEntireRecord() {
 		return realignEntireRecord;

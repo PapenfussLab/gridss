@@ -4,10 +4,10 @@
 #
 INPUT=chr12.1527326.DEL1024.bam
 BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
-REFERENCE=../../hg19.fa
+REFERENCE=hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=../target/gridss-1.6.1-SNAPSHOT-jar-with-dependencies.jar
+GRIDSS_JAR=../target/gridss-1.7.0-SNAPSHOT-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
@@ -56,6 +56,7 @@ java -ea -Xmx31g \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
 	-Dgridss.gridss.output_to_temp_file=true \
+	-Dgridss.keepTempFiles=true \
 	-cp $GRIDSS_JAR gridss.CallVariants \
 	TMP_DIR=. \
 	WORKING_DIR=. \
