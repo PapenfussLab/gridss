@@ -33,15 +33,8 @@ import htsjdk.samtools.util.SequenceUtil;
 public class SplitReadIdentificationHelper {
 	private static final char SEPARATOR = '#';
 	private static Comparator<SAMRecord> ByFirstAlignedBaseReadOffset = Comparator.comparing(r -> SAMRecordUtil.getFirstAlignedBaseReadOffset(r));
-	/**
-	 * Extract the unaligned portions of the read requiring realignment to identify split reads
-	 * 
-	 * @param r alignment record
-	 * @param recordIsPartialAlignment true if the record is the result of aligning FastqRecords
-	 * from a previous call to getSplitReadRealignments() 
-	 * @return bases requiring alignment to identify split reads
-	 */
 	public static FastqRecord getFullRealignment(SAMRecord r, EvidenceIdentifierGenerator eidgen) {
+		assert(!AssemblyAttributes.isUnanchored(r));
 		String name = eidgen.getAlignmentUniqueName(r);
 		byte[] seq = r.getReadBases();
 		byte[] qual = r.getBaseQualities();
@@ -56,6 +49,14 @@ public class SplitReadIdentificationHelper {
 				SAMUtils.phredToFastq(qual));
 		return fastq;
 	}
+	/**
+	 * Extract the unaligned portions of the read requiring realignment to identify split reads
+	 * 
+	 * @param r alignment record
+	 * @param recordIsPartialAlignment true if the record is the result of aligning FastqRecords
+	 * from a previous call to getSplitReadRealignments() 
+	 * @return bases requiring alignment to identify split reads
+	 */
 	public static List<FastqRecord> getSplitReadRealignments(SAMRecord r, boolean recordIsPartialAlignment, EvidenceIdentifierGenerator eidgen) {
 		int startClipLength = SAMRecordUtil.getStartSoftClipLength(r);
 		int endClipLength = SAMRecordUtil.getEndSoftClipLength(r);
@@ -263,6 +264,7 @@ public class SplitReadIdentificationHelper {
 		return newPrimary;
 	}
 	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary) {
+		assert(!AssemblyAttributes.isUnanchored(originatingRecord));
 		originatingRecord.setAttribute("OA", new ChimericAlignment(originatingRecord).toString());
 		if (newPrimary == null || newPrimary.getReadUnmappedFlag()) {
 			originatingRecord.setReadUnmappedFlag(true);

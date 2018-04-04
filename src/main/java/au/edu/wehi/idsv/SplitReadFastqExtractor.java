@@ -41,7 +41,7 @@ public class SplitReadFastqExtractor {
 		List<FastqRecord> list = new ArrayList<>(2);
 		if (r.getReadUnmappedFlag()) return list;
 		if (!SAMRecordUtil.isSoftClipLengthAtLeast(r, minSoftClipLength)) return list;
-		if (realignEntireRecord && !isSplit) {
+		if (realignEntireRecord && !isSplit && !AssemblyAttributes.isUnanchored(r)) {
 			list.add(SplitReadIdentificationHelper.getFullRealignment(r, eidgen));
 			return list;
 		}

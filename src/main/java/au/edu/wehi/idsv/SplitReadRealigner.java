@@ -19,7 +19,6 @@ import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
-import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -33,7 +32,6 @@ import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
-import shaded.cloud_nio.com.google.common.collect.Iterables;
 
 public class SplitReadRealigner {
 	private static final Log log = Log.getInstance(SplitReadRealigner.class);
@@ -207,28 +205,38 @@ public class SplitReadRealigner {
 			}
 			// all splits identified
 			if (info.outstandingRealignments == 0) {
-				if (isRealignEntireRecord()) {
-					if (info.originatingRecord.getSupplementaryAlignmentFlag()) {
-						// If we're realigning, we need to drop all existing supplementary alignments
-						return;
-					}
-					SAMRecord newPrimary = SplitReadIdentificationHelper.replaceAlignment(info.originatingRecord, info.realignments);
-					if (!info.realignments.remove(newPrimary) && newPrimary != null) {
-						throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
-					}
-				} 
-				if (info.realignments.size() > 0) {
-					SplitReadIdentificationHelper.convertToSplitRead(info.originatingRecord, info.realignments);
-				}
-				//log.debug(String.format("%s: %d supp alignments found.", info.originatingRecord.getReadName(), info.realignments.size()));
+				writeCompletedAlignment(info.originatingRecord, info.realignments, writer, writer);
 				realignments.remove(lookupkey);
-				writer.addAlignment(info.originatingRecord);
-				for (SAMRecord sar : info.realignments) {
-					writer.addAlignment(sar);
-				}
 			} else {
 				//log.debug(String.format("%s: %d outstanding alignments", info.originatingRecord.getReadName(), info.outstandingRealignments));
 			}
+		}
+	}
+	private void writeCompletedAlignment(SAMRecord record, List<SAMRecord> realignments, SAMFileWriter recordWriter, SAMFileWriter realignmentWriter) {
+		if (isRealignExistingSplitReads() || isRealignEntireRecord()) {
+			if (record.getSupplementaryAlignmentFlag()) {
+				// If we're realigning, we need to drop all existing supplementary alignments
+				return;
+			}
+			record.setAttribute(SAMTag.SA.name(), null);
+		}
+		// Only do anything to records that we actually attempted realignment for 
+		if (realignments.size() > 0) {
+			if (isRealignEntireRecord() &&
+					// special case exclusion of unanchored assemblies as
+					// we repurpose the CIGAR string to encode the breakend interval
+					// and realigning will break that
+					!AssemblyAttributes.isUnanchored(record)) {
+				SAMRecord newPrimaryAlignmentPosition = SplitReadIdentificationHelper.replaceAlignment(record, realignments);
+				if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
+					throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
+				}
+			}
+			SplitReadIdentificationHelper.convertToSplitRead(record, realignments);
+		}
+		recordWriter.addAlignment(record);
+		for (SAMRecord sar : realignments) {
+			realignmentWriter.addAlignment(sar);
 		}
 	}
 	public void createSupplementaryAlignments(FastqAligner aligner, File input, File output) throws IOException {
@@ -321,13 +329,6 @@ public class SplitReadRealigner {
 		while (it.hasNext()) {
 			salist.clear();
 			SAMRecord r = it.next();
-			if (isRealignExistingSplitReads()) {
-				if (r.getSupplementaryAlignmentFlag()) {
-					// If we're realigning, we need to drop all existing supplementary alignments
-					continue;
-				}
-				r.setAttribute(SAMTag.SA.name(), null);
-			}
 			String name = eidgen.getAlignmentUniqueName(r);
 			for (PeekingIterator<SAMRecord> sit : alignments) {
 				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
@@ -339,15 +340,7 @@ public class SplitReadRealigner {
 					}
 				}
 			}
-			if (salist.size() > 0) {
-				SplitReadIdentificationHelper.convertToSplitRead(r, salist);
-			}
-			out.addAlignment(r);
-			for (SAMRecord sar : salist) {
-				if (!sar.getReadUnmappedFlag()) {
-					saout.addAlignment(sar);
-				}
-			}
+			writeCompletedAlignment(r, salist, out, saout);
 		}
 	}
 	protected int createSupplementaryAlignmentFastq(File input, File fq, boolean isRecursive) throws IOException {
@@ -379,12 +372,6 @@ public class SplitReadRealigner {
 	}
 	public void setRealignExistingSplitReads(boolean realignExistingSplitReads) {
 		this.realignExistingSplitReads = realignExistingSplitReads;
-	}
-	public boolean shouldRealignEntireRecord(SAMRecord r) {
-		// TODO: Don't realign unanchored XNX reads
-		return isRealignEntireRecord() && 
-		!Iterables.any(r.getCigar().getCigarElements(), ce -> ce.getOperator() == CigarOperator.X)
-		return .
 	}
 	public boolean isRealignEntireRecord() {
 		return realignEntireRecord;

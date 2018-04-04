@@ -22,6 +22,10 @@ public class AssemblyAttributes {
 	public static boolean isAssembly(SAMRecord record) {
 		return record.getAttribute(SamTags.EVIDENCEID) != null;
 	}
+	public static boolean isUnanchored(SAMRecord record) {
+		return record.hasAttribute(SamTags.UNANCHORED);
+		//return Iterables.any(record.getCigar().getCigarElements(), ce -> ce.getOperator() == CigarOperator.X);
+	}
 	public static boolean isAssembly(DirectedEvidence record) {
 		if (record instanceof SingleReadEvidence) {
 			return isAssembly(((SingleReadEvidence)record).getSAMRecord());

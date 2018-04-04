@@ -142,6 +142,7 @@ public final class AssemblyFactory {
 				record.setReadBases(Bytes.concat(baseCalls, PAD_BASES[padBases]));
 				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
 			}
+			record.setAttribute(SamTags.UNANCHORED, 1);
 		} else {
 			record.setReadBases(baseCalls);
 			record.setBaseQualities(baseQuals);
