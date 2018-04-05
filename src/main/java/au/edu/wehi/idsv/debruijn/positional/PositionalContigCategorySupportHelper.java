@@ -11,7 +11,9 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.ContigCategorySupportHelper;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -31,15 +33,28 @@ public class PositionalContigCategorySupportHelper extends ContigCategorySupport
 				.limit(categories)
 				.collect(Collectors.toList());
 		for (KmerEvidence e : evidence) {
-			int category = ((SAMEvidenceSource)e.evidence().getEvidenceSource()).getSourceCategory();
-			BitSet support = supportedKmers.get(category);
-			setSupportedBits(support, e, lookup);
+			trackEvidence(lookup, supportedKmers, e);
+			
+			AssemblyConfiguration ac = e.evidence().getEvidenceSource().getContext().getConfig().getAssembly();
+			if (ac.includePairAnchors) {
+				if (e.evidence() instanceof NonReferenceReadPair) {
+					NonReferenceReadPair nrrp = (NonReferenceReadPair)e.evidence();
+					KmerEvidence e2 = KmerEvidence.createAnchor(k, nrrp, ac.pairAnchorMismatchIgnoreEndBases, nrrp.getEvidenceSource().getContext().getReference());
+					trackEvidence(lookup, supportedKmers, e2);
+				}
+			}
 		}
 		List<BitSet> supportedBases = supportedKmers.stream()
 			.map(x -> asSupportedBases(x, k))
 			.collect(Collectors.toList());
 		String cigars = asSupportCigars(kmersInPath + k - 1, supportedBases);
 		return cigars;
+	}
+	private static void trackEvidence(Long2ObjectOpenHashMap<RangeMap<Integer, Integer>> lookup,
+			List<BitSet> supportedKmers, KmerEvidence e) {
+		int category = ((SAMEvidenceSource)e.evidence().getEvidenceSource()).getSourceCategory();
+		BitSet support = supportedKmers.get(category);
+		setSupportedBits(support, e, lookup);
 	}
 	private static void setSupportedBits(BitSet bs, KmerEvidence e, Long2ObjectOpenHashMap<RangeMap<Integer, Integer>> lookup) {
 		for (int i = 0; i < e.length(); i++) {

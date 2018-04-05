@@ -418,4 +418,25 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertEquals("1X11=,1X9=2X", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
 	}
+	@Test
+	public void should_generate_rp_contig_support_CIGAR() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 30);
+		
+		// 123456789012345678901234567
+		// GGTTGCATAGACGTGGTCGACCTAGTA
+		// ==========       ==========
+		//      MMMMMSSSSSSSSSSSS
+		SAMRecord[] rp = DP(0, 1, "10M", true, 0, 1000, "10M", false);
+		rp[0].setReadBases(B("GGTTGCATAG"));
+		rp[1].setReadBases(B("CGACCTAGTA"));
+		SoftClipEvidence sce = SCE(FWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 6, "5M12S")));
+		List<SAMRecord> output = go(pc, true, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertEquals(1, output.size());
+		assertEquals(27, output.get(0).getReadLength());
+		assertEquals("GGTTGCATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
+		assertEquals("1X26=", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
+	}
 }
