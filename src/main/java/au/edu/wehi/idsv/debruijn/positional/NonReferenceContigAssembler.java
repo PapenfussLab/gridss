@@ -37,6 +37,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
@@ -551,6 +552,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		stats.endAnchorNodes = endingAnchor.size();
 		if (exportTracker != null) {
 			exportTracker.trackAssembly(bestContigCaller);
+		}
+		if (assembledContig != null) {
+			String categorySupport = PositionalContigCategorySupportHelper.getCategorySupport(fullContig, evidence, k);
+			assembledContig.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, categorySupport);
 		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {

@@ -27,6 +27,11 @@ public class SamTags {
 	 */
 	public static final String ASSEMBLY_FILTERS = "af";
 	/**
+	 * CIGAR of per category assembly coverage. = indicates coverage from that category for
+	 * a breakpoint immediately before the given base, X indicates lack of coverage.
+	 */
+	public static final String ASSEMBLY_CATEGORY_COVERAGE_CIGAR = "cc";
+	/**
 	 * EvidenceID of assembly components
 	 */
 	public static final String EVIDENCEID = "ez";
@@ -51,6 +56,7 @@ public class SamTags {
 			EVIDENCEID,
 			ASSEMBLY_DIRECTION,
 			UNANCHORED,
+			ASSEMBLY_CATEGORY_COVERAGE_CIGAR,
 			ASSEMBLY_READPAIR_COUNT,
 			ASSEMBLY_SOFTCLIP_COUNT,
 			//ASSEMBLY_SOFTCLIP_REMOTE_COUNT,

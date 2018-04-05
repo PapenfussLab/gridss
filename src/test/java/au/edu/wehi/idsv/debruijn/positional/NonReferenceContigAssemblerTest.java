@@ -29,6 +29,7 @@ import au.edu.wehi.idsv.SequentialIdGenerator;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.SAMRecord;
 
 
@@ -402,5 +403,18 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			e.add(NRRP(ses, rp));
 		}
 		go(pc, true, e.toArray(new DirectedEvidence[0]));
+	}
+	@Test
+	public void should_generate_contig_support_CIGAR() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		MockSAMEvidenceSource ses0 = SES(false);
+		MockSAMEvidenceSource ses1 = SES(true);
+		SoftClipEvidence sce1 = SCE(FWD, ses0, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")));
+		SoftClipEvidence sce2 = SCE(FWD, ses0, withSequence("ACGTGGTCGAC", Read(0, 5, "6M5S")));
+		SoftClipEvidence sce3 = SCE(FWD, ses1, withSequence("ACGTGGTCGT", Read(0, 5, "6M4S")));
+		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3);
+		assertEquals(1, output.size());
+		assertEquals("1X11=,1X8=3X", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
 	}
 }
