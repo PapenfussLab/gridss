@@ -4,10 +4,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.NotImplementedException;
+
+import com.google.common.collect.Streams;
 
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MessageThrottler;
@@ -164,8 +167,24 @@ public class AssemblyAttributes {
 		}
 		return isUnique;
 	}
-	public int getAssemblySupportCount() {
-		return getAssemblySupportCountSoftClip() + getAssemblySupportCountReadPair();
+	private int asFilteredIntSum(String attr, List<Boolean> filter) {
+		List<Integer> list = AttributeConverter.asIntList(record.getAttribute(attr));
+		return Streams.zip(
+				list.stream(),
+				filter.stream(),
+				(x, supported) -> (Integer)(((boolean) supported) ? x : 0))
+			.mapToInt(x -> x).sum();
+	}
+	private float asFilteredFloatSum(String attr, List<Boolean> filter) {
+		List<Double> list = AttributeConverter.asDoubleList(record.getAttribute(attr));
+		return (float)Streams.zip(
+				list.stream(),
+				filter.stream(),
+				(x, supported) -> (Double)(double)(((boolean) supported) ? x : 0))
+			.mapToDouble(x -> x).sum();
+	}
+	public int getAssemblySupportCount(List<Boolean> supportingCategories) {
+		return getAssemblySupportCountSoftClip(supportingCategories) + getAssemblySupportCountReadPair(supportingCategories);
 	}
 	public int getAssemblySupportCountReadPair(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_READPAIR_COUNT), category, 0);
@@ -179,14 +198,14 @@ public class AssemblyAttributes {
 	public int getAssemblyNonSupportingReadPairCount(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT), category, 0);
 	}
-	public int getAssemblyNonSupportingReadPairCount() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT)).stream().mapToInt(x -> x).sum();
+	public int getAssemblyNonSupportingReadPairCount(List<Boolean> supportingCategories) {
+		return asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT, supportingCategories);
 	}
 	public int getAssemblyNonSupportingSoftClipCount(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT), category, 0);
 	}
-	public int getAssemblyNonSupportingSoftClipCount() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT)).stream().mapToInt(x -> x).sum();
+	public int getAssemblyNonSupportingSoftClipCount(List<Boolean> supportingCategories) {
+		return asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT, supportingCategories);
 	}
 	public int getAssemblySoftClipLengthTotal(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL), category, 0);
@@ -203,23 +222,23 @@ public class AssemblyAttributes {
 	public float getAssemblyNonSupportingReadPairQualityScore(int category) {
 		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL), category, 0);
 	}
-	public float getAssemblyNonSupportingReadPairQualityScore() {
-		return (float)AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL)).stream().mapToDouble(x -> x).sum();
+	public float getAssemblyNonSupportingReadPairQualityScore(List<Boolean> supportingCategories) {
+		return asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL, supportingCategories);
 	}
 	public float getAssemblyNonSupportingSoftClipQualityScore(int category) {
 		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL), category, 0);
 	}
-	public float getAssemblyNonSupportingSoftClipQualityScore() {
-		return (float)AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL)).stream().mapToDouble(x -> x).sum();
+	public float getAssemblyNonSupportingSoftClipQualityScore(List<Boolean> supportingCategories) {
+		return asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL, supportingCategories);
 	}
-	public int getAssemblySupportCountReadPair() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_READPAIR_COUNT)).stream().mapToInt(x -> x).sum();
+	public int getAssemblySupportCountReadPair(List<Boolean> supportingCategories) {
+		return asFilteredIntSum(SamTags.ASSEMBLY_READPAIR_COUNT, supportingCategories);
 	}
 	public int getAssemblyReadPairLengthMax() {
 		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX)).stream().mapToInt(x -> x).sum();
 	}
-	public int getAssemblySupportCountSoftClip() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT)).stream().mapToInt(x -> x).sum();
+	public int getAssemblySupportCountSoftClip(List<Boolean> supportingCategories) {
+		return asFilteredIntSum(SamTags.ASSEMBLY_SOFTCLIP_COUNT, supportingCategories);
 	}
 	public int getAssemblySoftClipLengthTotal() {
 		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL)).stream().mapToInt(x -> x).sum();
@@ -227,19 +246,19 @@ public class AssemblyAttributes {
 	public int getAssemblySoftClipLengthMax() {
 		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX)).stream().mapToInt(x -> x).sum();
 	}
-	public float getAssemblySupportReadPairQualityScore() {
-		return (float)AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_READPAIR_QUAL)).stream().mapToDouble(x -> x).sum();
+	public float getAssemblySupportReadPairQualityScore(List<Boolean> supportingCategories) {
+		return asFilteredFloatSum(SamTags.ASSEMBLY_READPAIR_QUAL, supportingCategories);
 	}
-	public float getAssemblySupportSoftClipQualityScore() {
-		return (float)AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL)).stream().mapToDouble(x -> x).sum();
+	public float getAssemblySupportSoftClipQualityScore(List<Boolean> supportingCategories) {
+		return asFilteredFloatSum(SamTags.ASSEMBLY_SOFTCLIP_QUAL, supportingCategories);
 	}
-	public float getAssemblyNonSupportingQualityScore() {
-		return (float)(AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL)).stream().mapToDouble(x -> x).sum() +
-				AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL)).stream().mapToDouble(x -> x).sum());
+	public float getAssemblyNonSupportingQualityScore(List<Boolean> supportingCategories) {
+		return asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL, supportingCategories) +
+				asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL, supportingCategories);
 	}
-	public int getAssemblyNonSupportingCount() {		
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT)).stream().mapToInt(x -> x).sum() +
-				AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT)).stream().mapToInt(x -> x).sum();
+	public int getAssemblyNonSupportingCount(List<Boolean> supportingCategories) {
+		return asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT, supportingCategories) +
+				asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT, supportingCategories);
 	}
 	public BreakendDirection getAssemblyDirection() {
 		Character c = (Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION);

@@ -5,7 +5,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.google.common.collect.Streams;
+
+import au.edu.wehi.idsv.debruijn.ContigCategorySupportHelper;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
@@ -28,9 +33,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final byte[] breakendBases;
 	private final byte[] breakendQuals;
 	private final boolean isUnanchored;
+	private final List<Boolean> categorySupport;
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
-	
 	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, int minIndelSize, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
 		List<SingleReadEvidence> list = new ArrayList<>(4);
@@ -155,6 +160,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			location = location.asValidFor(source.getContext().getReference().getSequenceDictionary());
 		}
 		this.location = location;
+		this.categorySupport = getCategorySupportBreakdown(offsetLocalStart, offsetLocalEnd);
 	}
 	private BreakendSummary withExactHomology(BreakendSummary location) {
 		if (!isBreakendExact()) return location;
@@ -355,5 +361,51 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	 */
 	public boolean involvesPrimaryReadAlignment() {
 		return !getSAMRecord().getSupplementaryAlignmentFlag();
+	}
+	/**
+	 * Determines which categories 
+	 * @param offsetLocalEnd 
+	 * @param offsetLocalStart 
+	 * @return
+	 */
+	protected List<Boolean> getCategorySupportBreakdown(int offsetLocalStart, int offsetLocalEnd) {
+		if (getEvidenceSource() instanceof AssemblyEvidenceSource) {
+			if (!isUnanchored && getSAMRecord().hasAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR) && getEvidenceSource().getContext().getConfig().getVariantCalling().requireAssemblyCategorySupport) {
+				// Example: alignment is no negative strand
+				// 5S 10M 15S
+				//   ^ evaluting this breakend
+				// position = read base position immediately after breakend
+				int nominalPosition = location.direction == BreakendDirection.Backward ? offsetLocalStart : offsetLocalEnd + 1;
+				int leftPos = nominalPosition - (location.nominal - location.start);
+				int rightPos = nominalPosition + (location.end - location.nominal);
+				if (getSAMRecord().getReadNegativeStrandFlag()) {
+					// no - 1 since before position -> after position when flipping
+					leftPos = getSAMRecord().getReadLength() - leftPos;
+					rightPos = getSAMRecord().getReadLength() - rightPos;
+				}
+				String cigar = getSAMRecord().getStringAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR);
+				// needs support at both extremes of the homology
+				return Streams.zip(
+						ContigCategorySupportHelper.supportsBreakendBefore(leftPos, cigar).stream(),
+						ContigCategorySupportHelper.supportsBreakendBefore(rightPos, cigar).stream(),
+						(a, b) -> (Boolean)(a && b))
+					.collect(Collectors.toList());
+						
+			} else {
+				return Stream.generate(() -> true)
+					.limit(getEvidenceSource().getContext().getCategoryCount())
+					.collect(Collectors.toList());
+			}
+		} else {
+			if (getEvidenceSource() == null) return null;
+			List<Boolean> list = Stream.generate(() -> false)
+					.limit(Math.max(getEvidenceSource().getContext().getCategoryCount(), getEvidenceSource().getSourceCategory() + 1))
+					.collect(Collectors.toList());
+			list.set(getEvidenceSource().getSourceCategory(), true);
+			return list;
+		}
+	}
+	public List<Boolean> getCategorySupportBreakdown() {
+		return categorySupport;
 	}
 }

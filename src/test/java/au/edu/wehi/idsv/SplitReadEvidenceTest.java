@@ -23,6 +23,7 @@ import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
@@ -401,5 +402,22 @@ public class SplitReadEvidenceTest extends TestHelper {
 		Assert.assertEquals(e2.get(0).getEvidenceID(), e1.get(0).getRemoteEvidenceID());
 		Assert.assertEquals(e2.get(1).getEvidenceID(), e3.get(0).getRemoteEvidenceID());
 		Assert.assertEquals(e3.get(0).getEvidenceID(), e2.get(1).getRemoteEvidenceID());
+	}
+	@Test
+	public void should_pro_rata_assembly_suport() {
+		SAMRecord primary = Read(1, 200, "100M50S");
+		primary.setMappingQuality(100);
+		SAMRecord r = Read(1, 100, "50M100S");
+		r.setMappingQuality(100);
+		r.setReadNegativeStrandFlag(true);		
+		r.setAttribute("SA", new ChimericAlignment(primary).toString());
+		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
+		r.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, "90=60X,125=25X");
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, new int[] { 100, 2 });
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, new int[] { 1000, 50 });
+		r.setAttribute(SamTags.EVIDENCEID, "e");
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);
+		Assert.assertEquals(50, e.getBreakpointQual(), 0);
 	}
 }

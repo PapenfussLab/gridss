@@ -11,6 +11,7 @@ import java.io.File;
 public interface Hg19Tests {
 	public static File findHg19Reference(String reference) {
 		for (String path : new String[] {
+				"examples/",
 				"",
 				"../",
 				"C:/dev/",

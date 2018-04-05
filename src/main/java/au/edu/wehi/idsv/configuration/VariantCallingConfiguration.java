@@ -27,6 +27,7 @@ public class VariantCallingConfiguration {
 		lowQuality = config.getDouble("lowQuality");
 		maxBreakendHomologyLength = config.getInt("maxBreakendHomologyLength");
 		breakendHomologyAlignmentMargin = config.getInt("breakendHomologyAlignmentMargin");
+		requireAssemblyCategorySupport = config.getBoolean("requireAssemblyCategorySupport");
 //		switch (config.getString("format")) {
 //			case "vcf4.2":
 //				placeholderBreakend = false;
@@ -74,6 +75,12 @@ public class VariantCallingConfiguration {
 	 * Number of reference bases to include in alignment
 	 */
 	public int breakendHomologyAlignmentMargin;
+	/**
+	 * Require that an anchored assembly is supported on both sides for each category
+	 * Corrects for somatic calls with a flanking germline indel being called as somatic
+	 * due to the non-zero germline support of the contig. 
+	 */
+	public boolean requireAssemblyCategorySupport;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));

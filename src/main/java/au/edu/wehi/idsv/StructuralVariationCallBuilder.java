@@ -249,20 +249,16 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		for (int i = 0; i < processContext.getCategoryCount(); i++) {
 			int category = i;
 			asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
-					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
-					.mapToInt(aa -> aa.getAssemblySupportCountSoftClip(category))
+					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountSoftClip(category) : 0)
 					.sum();
 			asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
-					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
-					.mapToInt(aa -> aa.getAssemblySupportCountReadPair(category))
+					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountReadPair(category) : 0)
 					.sum();
 			basr[category] = supportingBAS.stream()
-					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
-					.mapToInt(aa -> aa.getAssemblySupportCountSoftClip(category))
+					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountSoftClip(category) : 0)
 					.sum();
 			basrp[category] = supportingBAS.stream()
-					.map(ass -> new AssemblyAttributes(ass.getSAMRecord()))
-					.mapToInt(aa -> aa.getAssemblySupportCountReadPair(category))
+					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountReadPair(category) : 0)
 					.sum();
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), asrp[category]);
@@ -349,11 +345,14 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		double totalAssQual = 0;
 		double[] prorata = new double[processContext.getCategoryCount()];
 		for (SingleReadEvidence ass : assemblies) {
+			List<Boolean> supportingCategories = ass.getCategorySupportBreakdown();
 			AssemblyAttributes aa = new AssemblyAttributes(ass.getSAMRecord());
 			double assQual = (ass instanceof DirectedBreakpoint) ? ((DirectedBreakpoint)ass).getBreakpointQual() : ass.getBreakendQual();
-			double beQual = aa.getAssemblySupportSoftClipQualityScore() + aa.getAssemblySupportReadPairQualityScore();
+			double beQual = aa.getAssemblySupportSoftClipQualityScore(supportingCategories) + aa.getAssemblySupportReadPairQualityScore(supportingCategories);
 			for (int i = 0; i < prorata.length; i++) {
-				prorata[i] += assQual * (aa.getAssemblySupportSoftClipQualityScore(i) + aa.getAssemblySupportReadPairQualityScore(i)) / beQual; 
+				if (supportingCategories.get(i)) {
+					prorata[i] += assQual * (aa.getAssemblySupportSoftClipQualityScore(i) + aa.getAssemblySupportReadPairQualityScore(i)) / beQual;
+				}
 			}
 			totalAssQual += assQual;
 		}

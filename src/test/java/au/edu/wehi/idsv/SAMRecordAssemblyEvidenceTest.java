@@ -18,6 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
@@ -126,10 +127,10 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(ea.getAssemblySoftClipLengthTotal() , ra.getAssemblySoftClipLengthTotal());
 		assertEquals(ea.getAssemblySupportCountReadPair(0) , ra.getAssemblySupportCountReadPair(0));
 		assertEquals(ea.getAssemblySupportCountReadPair(1) , ra.getAssemblySupportCountReadPair(1));
-		assertEquals(ea.getAssemblySupportCountReadPair() , ra.getAssemblySupportCountReadPair());
+		assertEquals(ea.getAssemblySupportCountReadPair(ImmutableList.of(true, true)) , ra.getAssemblySupportCountReadPair(ImmutableList.of(true, true)));
 		assertEquals(ea.getAssemblySupportCountSoftClip(0) , ra.getAssemblySupportCountSoftClip(0));
 		assertEquals(ea.getAssemblySupportCountSoftClip(1) , ra.getAssemblySupportCountSoftClip(1));
-		assertEquals(ea.getAssemblySupportCountSoftClip() , ra.getAssemblySupportCountSoftClip());
+		assertEquals(ea.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)) , ra.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)));
 		assertArrayEquals(e.getBreakendQuality() , r.getBreakendQuality());
 		assertEquals(S(e.getBreakendSequence()) , S(r.getBreakendSequence()));
 		assertEquals(e.getBreakendSummary(), r.getBreakendSummary());
@@ -162,8 +163,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssembly(e3));
 		assertFalse(e.isPartOfAssembly(b1));
 		
-		assertEquals(2, e.getAssemblySupportCountSoftClip());
-		assertEquals(1, e.getAssemblySupportCountReadPair());
+		assertEquals(2, e.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)));
+		assertEquals(1, e.getAssemblySupportCountReadPair(ImmutableList.of(true, true)));
 	}
 	@Test
 	public void getEvidenceIDs_should_return_underlying_evidence() {

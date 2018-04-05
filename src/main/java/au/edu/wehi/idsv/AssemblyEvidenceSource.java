@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
@@ -282,12 +284,15 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					breakendLength));
 			return true;
 		}
+		List<Boolean> allCategories = Stream.generate(() -> true)
+				.limit(getContext().getCategoryCount())
+				.collect(Collectors.toList());
 		// too few reads
-		if (attr.getAssemblySupportCount() < ap.minReads) {
+		if (attr.getAssemblySupportCount(allCategories) < ap.minReads) {
 			return true;
 		}
 		// unanchored assembly that not actually any longer than any of the reads that were assembled together
-		if (attr.getAssemblySupportCountSoftClip() == 0 && breakendLength <= attr.getAssemblyReadPairLengthMax()) {
+		if (attr.getAssemblySupportCountSoftClip(allCategories) == 0 && breakendLength <= attr.getAssemblyReadPairLengthMax()) {
 			// assembly length = 1 read
 			// at best, we've just error corrected a single reads with other reads.
 			// at worst, we've created a misassembly.

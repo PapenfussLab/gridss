@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
@@ -80,7 +81,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, sce);
 		AssemblyAttributes attr = new AssemblyAttributes(output.get(0));
 		assertNotNull(attr);
-		assertEquals(1, attr.getAssemblySupportCount());
+		assertEquals(1, attr.getAssemblySupportCount(ImmutableList.of(true, true)));
 	}
 	@Test
 	public void should_call_simple_bwd_SC() {
@@ -415,6 +416,6 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SoftClipEvidence sce3 = SCE(FWD, ses1, withSequence("ACGTGGTCGT", Read(0, 5, "6M4S")));
 		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3);
 		assertEquals(1, output.size());
-		assertEquals("1X11=,1X8=3X", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
+		assertEquals("1X11=,1X9=2X", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
 	}
 }

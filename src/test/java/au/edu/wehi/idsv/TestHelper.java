@@ -361,6 +361,7 @@ public class TestHelper {
 		config.getAssembly().positional.trimSelfIntersectingReads = false;
 		config.getVariantCalling().breakendMargin = 3;
 		config.getVisualisation().buffers = false;
+		config.getVariantCalling().requireAssemblyCategorySupport = true;
 		return config;
 	}
 	public static GridssConfiguration getConfig() {
@@ -899,6 +900,22 @@ public class TestHelper {
 			metrics.getInsertSizeMetrics().MEAN_INSERT_SIZE = (minFragmentSize + maxFragmentSize) / 2;
 			metrics.getInsertSizeMetrics().MEDIAN_ABSOLUTE_DEVIATION = maxFragmentSize / 10 / 1.4;
 			metrics.getInsertSizeMetrics().STANDARD_DEVIATION = maxFragmentSize / 10;
+		}
+		@Override
+		public int getSourceCategory() {
+			return category;
+		}
+		@Override
+		public IdsvSamFileMetrics getMetrics() {
+			assert(metrics != null);
+			return metrics;
+		}
+	}
+	public static class MockAssemblyEvidenceSource extends AssemblyEvidenceSource {
+		public IdsvSamFileMetrics metrics = new MockMetrics();
+		public int category = 0;
+		public MockAssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
+			super(processContext, evidence, assemblyFile);
 		}
 		@Override
 		public int getSourceCategory() {
