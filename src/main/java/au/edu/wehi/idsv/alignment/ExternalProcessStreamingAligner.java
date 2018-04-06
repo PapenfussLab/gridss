@@ -111,7 +111,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 			buffer.add(r);
 			outstandingReads.decrementAndGet();
 		}
-		log.info("Reader thread complete.");
+		log.info(String.format("Reader thread complete. %s reads in output buffer", buffer.size()));
 	}
 	/* (non-Javadoc)
 	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#close()
@@ -143,6 +143,11 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		// reader thread will have completed when it hits then end of the output stream 
 		ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference);
 		log.info("External alignments complete");
+		try {
+			reader.join();
+		} catch (InterruptedException e) {
+			log.warn(e);
+		}
 		aligner = null;
 		reader = null;
 		toExternalProgram = null;
