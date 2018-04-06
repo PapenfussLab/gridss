@@ -91,6 +91,9 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     							+ " this check can be disabled with the ASSUME_SORTED option.");
     					return -1;
     				}
+    			} else {
+    				// strip sort order header so we can use samtools sorted files
+    				header.setSortOrder(SortOrder.unsorted);
     			}
     			try (SAMRecordIterator it = reader.iterator()) {
     				File tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.") : OUTPUT;
