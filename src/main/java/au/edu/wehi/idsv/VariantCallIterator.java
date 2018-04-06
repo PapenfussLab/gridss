@@ -74,13 +74,17 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 					direction.getRight(),
 					idGenerator);
 		} else {
-			currentIterator = new BreakendMaximalEvidenceCliqueIterator(
-					processContext,
-					currentUnderlyingIterator,
-					direction.getLeft(),
-					idGenerator);
+			if (processContext.getVariantCallingParameters().callBreakends) {
+				currentIterator = new BreakendMaximalEvidenceCliqueIterator(
+						processContext,
+						currentUnderlyingIterator,
+						direction.getLeft(),
+						idGenerator);
+			} else {
+				currentIterator = null;
+			}
 		}
-		if (filterInterval != null) {
+		if (currentIterator != null && filterInterval != null) {
 			currentIterator = Iterators.filter(currentIterator, v -> {
 				if (v instanceof DirectedBreakpoint) {
 					BreakpointSummary bs = ((DirectedBreakpoint)v).getBreakendSummary();
@@ -96,12 +100,11 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	@Override
 	public boolean hasNext() {
 		if (currentDirectionOrdinal >= DIRECTION_ORDER.size()) return false;
-		if (!currentIterator.hasNext()) {
+		while (currentIterator != null && currentDirectionOrdinal < DIRECTION_ORDER.size() && !currentIterator.hasNext()) {
 			currentDirectionOrdinal++;
 			reinitialiseIterator();
-			return hasNext();
 		}
-		return true;
+		return currentIterator != null && currentIterator.hasNext();
 	}
 	@Override
 	public VariantContextDirectedEvidence next() {

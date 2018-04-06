@@ -28,6 +28,7 @@ public class VariantCallingConfiguration {
 		maxBreakendHomologyLength = config.getInt("maxBreakendHomologyLength");
 		breakendHomologyAlignmentMargin = config.getInt("breakendHomologyAlignmentMargin");
 		requireAssemblyCategorySupport = config.getBoolean("requireAssemblyCategorySupport");
+		callBreakends = config.getBoolean("callBreakends");
 //		switch (config.getString("format")) {
 //			case "vcf4.2":
 //				placeholderBreakend = false;
@@ -81,6 +82,10 @@ public class VariantCallingConfiguration {
 	 * due to the non-zero germline support of the contig. 
 	 */
 	public boolean requireAssemblyCategorySupport;
+	/**
+	 * Include unpaired breakends in variant calls
+	 */
+	public boolean callBreakends;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));

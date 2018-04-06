@@ -362,6 +362,7 @@ public class TestHelper {
 		config.getVariantCalling().breakendMargin = 3;
 		config.getVisualisation().buffers = false;
 		config.getVariantCalling().requireAssemblyCategorySupport = true;
+		config.getVariantCalling().callBreakends = true;
 		return config;
 	}
 	public static GridssConfiguration getConfig() {

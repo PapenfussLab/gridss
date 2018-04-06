@@ -385,12 +385,16 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				}
 				String cigar = getSAMRecord().getStringAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR);
 				// needs support at both extremes of the homology
-				return Streams.zip(
+				List<Boolean> categories = Streams.zip(
 						ContigCategorySupportHelper.supportsBreakendBefore(leftPos, cigar).stream(),
 						ContigCategorySupportHelper.supportsBreakendBefore(rightPos, cigar).stream(),
 						(a, b) -> (Boolean)(a && b))
 					.collect(Collectors.toList());
-						
+				// CIGAR only include categories that actually have evidence. Need to pad out to number of categories we actually have 
+				while (categories.size() < getEvidenceSource().getContext().getCategoryCount()) {
+					categories.add(false);
+				}
+				return categories;
 			} else {
 				return Stream.generate(() -> true)
 					.limit(getEvidenceSource().getContext().getCategoryCount())
