@@ -158,9 +158,14 @@ public class SplitReadRealigner {
 						aligner.flush();
 					}
 				}
+				if (realignments.size() != 0) {
+					log.error(String.format("External aligner did not return alignments for %d records including %s.", realignments.size(), realignments.values().iterator().next().originatingRecord.getReadName()));
+					for (SplitReadRealignmentInfo info : realignments.values()) {
+						writeCompletedAlignment(info.originatingRecord, info.realignments, writer, writer);
+					}
+				}
 			}
 		}
-		assert(realignments.size() == 0);
 	}
 	private void processInputRecord(StreamingAligner aligner, SplitReadFastqExtractor rootExtractor,
 			Map<String, SplitReadRealignmentInfo> realignments, SAMFileWriter writer, SAMRecord r) throws IOException {
@@ -213,6 +218,7 @@ public class SplitReadRealigner {
 		}
 	}
 	private void writeCompletedAlignment(SAMRecord record, List<SAMRecord> realignments, SAMFileWriter recordWriter, SAMFileWriter realignmentWriter) {
+		boolean primaryHasMoved = false;
 		if (isRealignExistingSplitReads() || isRealignEntireRecord()) {
 			if (record.getSupplementaryAlignmentFlag()) {
 				// If we're realigning, we need to drop all existing supplementary alignments
@@ -231,10 +237,16 @@ public class SplitReadRealigner {
 				if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
 					throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
 				}
+				primaryHasMoved = true;
 			}
 			SplitReadIdentificationHelper.convertToSplitRead(record, realignments);
 		}
-		recordWriter.addAlignment(record);
+		if (primaryHasMoved) {
+			// we'll break sort ordering if we write it back to the sorted assembly file
+			realignmentWriter.addAlignment(record);
+		} else {
+			recordWriter.addAlignment(record);
+		}
 		for (SAMRecord sar : realignments) {
 			realignmentWriter.addAlignment(sar);
 		}
