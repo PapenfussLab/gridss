@@ -44,8 +44,8 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 			Path dictPath = referenceFile.resolveSibling(referenceFile.getFileName().toString() + htsjdk.samtools.util.IOUtil.DICT_FILE_EXTENSION);
 			picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
 			csd.instanceMain(new String[] {
-				"OUTPUT=" + dictPath.toFile(),
-				"REFERENCE_SEQUENCE=" + REFERENCE_SEQUENCE.getPath()
+				"O=" + dictPath.toFile(),
+				"R=" + REFERENCE_SEQUENCE.getPath()
 			});
 		}
 		return reference;
