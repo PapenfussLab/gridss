@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -170,6 +171,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals(4, list.size());
 	}
 	@Test
+	@Category(ExternalAlignerTests.class)
 	public void should_realign_multiple_times() throws IOException {
 		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
@@ -196,6 +198,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals(4, list.size());
 	}
 	@Test
+	@Category(ExternalAlignerTests.class)
 	public void realign_full_read_should_not_repeat_primary_alignment() throws IOException {
 		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
@@ -223,6 +226,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	}
 	
 	@Test
+	@Category(ExternalAlignerTests.class)
 	public void realign_entire_read_should_drop_existing_supplementary_alignments() throws IOException {
 		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
@@ -248,6 +252,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals(0, list.size());	
 	}
 	@Test
+	@Category(ExternalAlignerTests.class)
 	public void realign_split_reads_should_drop_existing_supplementary_alignments() throws IOException {
 		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
