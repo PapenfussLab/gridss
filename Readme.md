@@ -325,7 +325,7 @@ Maven is used for build and dependency management which simplifies compile to th
 * `cd gridss`
 * `mvn clean package`
 
-If GRIDSS was built successfully, a combined jar containing GRIDSS and all required libraries located at target/GRIDSS-_VERSION_-jar-with-dependencies.jar will have been created.
+If GRIDSS was built successfully, a combined jar containing GRIDSS and all required libraries located at target/GRIDSS-_VERSION_-gridss-jar-with-dependencies.jar will have been created.
 
 
 # Multi-mapping read alignment
@@ -386,11 +386,11 @@ Can you run the bwa command exactly as it appears in the error message?
 ###  (Too many open files)
 
 GRIDSS has attempted to open too many files at once and the OS file handle limit has been reached.
-On linux 'ulimit -n' displays your current limit. This error likely to be encountered if you have specified a large number of input files or threads but can also be encountered when processing many small contigs. The following solution is recommended:
+On linux 'ulimit -n' displays your current limit. This error likely to be encountered if you have specified a large number of input files or threads. The following solution is recommended:
 * Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
 * Added `-Dgridss.defensiveGC=true` to the java command-line used for GRIDSS. Memory mapped file handles are not released to the OS until the buffer is garbage collected . This option add a request forr garbage collection whenever a file handle is no longer used.
 
-Other options that have solve this problem include:
+Other options that have solved this problem include:
 * Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
 
 ### Reference genome used by _input.bam_ does not match reference genome _reference.fa_. The reference supplied must match the reference used for every input.
