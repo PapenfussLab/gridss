@@ -1,4 +1,4 @@
-Copyright 2015,2016,2017 Daniel Cameron
+Copyright 2015,2016,2017,2018 Daniel Cameron
 
 This file is part of GRIDSS.
 
