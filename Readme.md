@@ -322,6 +322,7 @@ WORKING_DIR/*output*.gridss.working/*output*.breakpoint.vcf | Raw unannotated va
 Maven is used for build and dependency management which simplifies compile to the following steps:
 
 * `git clone https://github.com/PapenfussLab/gridss`
+* `cd gridss`
 * `mvn clean package`
 
 If GRIDSS was built successfully, a combined jar containing GRIDSS and all required libraries located at target/GRIDSS-_VERSION_-jar-with-dependencies.jar will have been created.
