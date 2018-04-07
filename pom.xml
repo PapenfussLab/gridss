@@ -69,7 +69,7 @@
 				<version>2.19.1</version>
 				<configuration>
 					<argLine>${surefireArgLine}</argLine>
-					<excludedGroups>au.edu.wehi.idsv.Hg19Tests,au.edu.wehi.idsv.Hg38Tests</excludedGroups>
+					<excludedGroups>au.edu.wehi.idsv.Hg19Tests,au.edu.wehi.idsv.Hg38Tests,au.edu.wehi.idsv.alignment.ExternalAlignerTests</excludedGroups>
 					<argLine>-Xmx2g</argLine>
 				</configuration>
 			</plugin>
