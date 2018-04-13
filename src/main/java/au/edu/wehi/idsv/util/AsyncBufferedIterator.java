@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,6 +34,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIt
 	private final BlockingQueue<List<Object>> buffer;
 	private boolean closeCalled = false;
 	private final int batchSize;
+	private final Semaphore closingCriticalSection = new Semaphore(1);
     private PeekingIterator<Object> currentBuffer = Iterators.peekingIterator(ImmutableList.<Object>of().iterator());
 	private static final Object eos = new Object(); // End of stream sentinel
 	/**
@@ -64,9 +66,45 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIt
 	}
 	@Override
 	public void close() {
+		if (closeCalled) return;
 		closeCalled = true;
 		try {
-			reader.interrupt();
+			if (closingCriticalSection.tryAcquire()) {
+				// without closingCriticalSection, raising the interrupt at the same time
+				// the background thread is closing causes the following exception:
+				//WARNING 2018-04-12 08:58:30     AutoClosingIterator     Error closing resource.
+				//java.lang.RuntimeException: Interrupted waiting for decompression thread
+				//    at htsjdk.samtools.util.AsyncBlockCompressedInputStream.flushReadAhead(AsyncBlockCompressedInputStream.java:151)
+				//    at htsjdk.samtools.util.AsyncBlockCompressedInputStream.close(AsyncBlockCompressedInputStream.java:134)
+				//    at htsjdk.samtools.BAMFileReader.close(BAMFileReader.java:417)
+				//    at htsjdk.samtools.SamReader$PrimitiveSamReaderToSamReaderAdapter.close(SamReader.java:488)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:64)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:48)
+				//    at au.edu.wehi.idsv.util.AutoClosingIterator.close(AutoClosingIterator.java:37)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:64)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:48)
+				//    at au.edu.wehi.idsv.util.AutoClosingIterator.close(AutoClosingIterator.java:35)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:64)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:48)
+				//    at au.edu.wehi.idsv.util.AutoClosingMergedIterator.tryclose(AutoClosingMergedIterator.java:87)
+				//    at au.edu.wehi.idsv.util.AutoClosingMergedIterator.close(AutoClosingMergedIterator.java:75)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:64)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:48)
+				//    at au.edu.wehi.idsv.VariantCallIterator.close(VariantCallIterator.java:117)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:64)
+				//    at htsjdk.samtools.util.CloserUtil.close(CloserUtil.java:48)
+				//    at au.edu.wehi.idsv.util.AsyncBufferedIterator.syncClose(AsyncBufferedIterator.java:75)
+				//    at au.edu.wehi.idsv.util.AsyncBufferedIterator.access$600(AsyncBufferedIterator.java:26)
+				//    at au.edu.wehi.idsv.util.AsyncBufferedIterator$ReaderRunnable.run(AsyncBufferedIterator.java:150)
+				//    at java.lang.Thread.run(Thread.java:745)
+				//Caused by: java.lang.InterruptedException
+				//    at java.util.concurrent.locks.AbstractQueuedSynchronizer.doAcquireSharedInterruptibly(AbstractQueuedSynchronizer.java:998)
+				//    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireSharedInterruptibly(AbstractQueuedSynchronizer.java:1304)
+				//    at java.util.concurrent.Semaphore.acquire(Semaphore.java:312)
+				//    at htsjdk.samtools.util.AsyncBlockCompressedInputStream.flushReadAhead(AsyncBlockCompressedInputStream.java:149)
+				reader.interrupt();
+				closingCriticalSection.release();
+			}
 			buffer.clear(); // flush buffer so EOS indicator can be written if writer is blocking
 			reader.join();
 		} catch (InterruptedException ie) { }
@@ -92,7 +130,12 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIt
 	@SuppressWarnings("unchecked")
 	@Override
 	public T next() {
-		if (hasNext()) return (T)currentBuffer.next();
+		if (hasNext()) {
+			Object result = currentBuffer.next();
+			if (result != eos) {
+				return (T)result;
+			}
+		}
 		throw new NoSuchElementException("next");
 	}
 	@SuppressWarnings("unchecked")
@@ -147,9 +190,16 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIt
         			throw new RuntimeException(t);
         		}
         	} finally {
-        		syncClose();
-        		Thread.interrupted(); // clear thread interrupt flag so we can write the eos indicator if needed
         		try {
+	        		closingCriticalSection.acquire();
+	        		Thread.interrupted(); // clear thread interrupt flag so we can close the stream
+	        		syncClose();
+	        		// don't release the semaphore since we're now closed
+        		} catch (InterruptedException e2) {
+					log.warn("Thread interrupt received whilst closing underlying iterator");
+				}
+        		try {
+	        		Thread.interrupted(); // clear thread interrupt flag again so we can write the eos indicator if needed
         			if (!eosWritten) {
         				buffer.put(ImmutableList.of(eos));
         			}
