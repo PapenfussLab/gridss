@@ -51,7 +51,6 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     public static void main(final String[] args) {
         new CollectGridssMetrics().instanceMainWithExit(args);
     }
-
     @Override
     protected String[] customCommandLineValidation() {
         if (PROGRAM.isEmpty() && GRIDSS_PROGRAM.isEmpty()) {
@@ -62,14 +61,13 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
         }
         return super.customCommandLineValidation();
     }
-    @Override
     public int doWork() {
     	List<ProgramInterface> toRun = Lists.newArrayList(Iterables.transform(GRIDSS_PROGRAM, p -> new GridssProgramProgramInterfaceFactory().create(p)));
 		toRun.addAll(PROGRAM);
     	setProgramsToRun(toRun);
     	return super.doWork();
     }
-    private class GridssProgramProgramInterfaceFactory {
+    protected class GridssProgramProgramInterfaceFactory {
     	public ProgramInterface create(GridssProgram program) {
     		switch (program) {
     			case CollectCigarMetrics:

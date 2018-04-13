@@ -47,7 +47,7 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     @Argument(doc="If true, also include reads marked as duplicates.")
 	public boolean INCLUDE_DUPLICATES = false;
     @Override
-	protected String[] customCommandLineValidation() {
+	public String[] customCommandLineValidation() {
 		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {
 			return new String[] { "INSERT_SIZE_METRICS is required when using percentage based read pair concordance" };
 		}

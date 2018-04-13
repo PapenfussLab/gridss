@@ -89,6 +89,14 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 	public boolean hasAlignmentRecord() {
 		return buffer.size() > 0;
 	}
+	@Override
+	public int processedAlignmentRecords() {
+		return buffer.size();
+	}
+	@Override
+	public int outstandingAlignmentRecord() {
+		return outstandingReads.get();
+	}
 	/* (non-Javadoc)
 	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#getAlignment()
 	 */

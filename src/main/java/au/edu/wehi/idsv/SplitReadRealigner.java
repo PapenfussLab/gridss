@@ -118,7 +118,7 @@ public class SplitReadRealigner {
 		public List<SAMRecord> realignments = new ArrayList<>(2);
 		public int outstandingRealignments = 0;
 	}
-	public void createSupplementaryAlignments(StreamingAligner aligner, File input, File output) throws IOException {
+	public void createSupplementaryAlignments(final StreamingAligner aligner, final File input, final File output, final int maxBufferedRecords) throws IOException {
 		SplitReadFastqExtractor rootExtractor = new SplitReadFastqExtractor(false,
 				minSoftClipLength,
 				minSoftClipQuality,
@@ -135,7 +135,7 @@ public class SplitReadRealigner {
 				eidgen);
 		
 		Map<String, SplitReadRealignmentInfo> realignments = new HashMap<>();
-		
+		int recordNumber = 0;
 		try (SamReader reader = readerFactory.open(input)) {
 			SAMFileHeader header = reader.getFileHeader().clone();
 			header.setSortOrder(SortOrder.unsorted);
@@ -144,8 +144,19 @@ public class SplitReadRealigner {
 					while (bufferedIt.hasNext()) {
 						SAMRecord r = bufferedIt.next();
 						processInputRecord(aligner, rootExtractor, realignments, writer, r);
+						if (aligner.outstandingAlignmentRecord() >= maxBufferedRecords) {
+							log.info(String.format("%d records awaiting alignment by external aligner. Flushing.", maxBufferedRecords));
+							aligner.flush();
+						}
 						while (aligner.hasAlignmentRecord()) {
 							processAlignmentRecord(aligner, recursiveExtractor, realignments, writer);
+						}
+						if (++recordNumber % 1000 == 0) {
+							String msg = String.format("Processed %d records. %d in aligner input buffer. %d in aligner output buffer. %s records in lookup", recordNumber, aligner.outstandingAlignmentRecord(), aligner.processedAlignmentRecords(), realignments.size());
+							log.debug(msg);
+							if (recordNumber % 1000000 == 0) {
+								log.info(msg);
+							}
 						}
 					}
 					// flush out all realignments

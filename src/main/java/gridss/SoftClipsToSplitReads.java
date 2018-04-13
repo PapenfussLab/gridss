@@ -79,7 +79,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
         	
         	if (ALIGNER_STREAMING) {
         		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, MAX_RECORDS_IN_RAM);
         	} else {
         		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
         		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
