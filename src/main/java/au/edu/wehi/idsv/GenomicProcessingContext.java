@@ -24,7 +24,6 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FailsVendorReadQualityFilter;
@@ -201,11 +200,6 @@ public class GenomicProcessingContext implements Closeable {
 			filters.add(new DuplicateReadFilter());
 		}
 		return new AutoClosingIterator<SAMRecord>(new FilteringSamIterator(iterator, new AggregateFilter(filters)), iterator);
-	}
-
-	public FastqWriterFactory getFastqWriterFactory() {
-		FastqWriterFactory factory = new FastqWriterFactory();
-		return factory;
 	}
 
 	public VariantContextWriterBuilder getVariantContextWriterBuilder(File output, boolean createIndex) {

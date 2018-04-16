@@ -27,9 +27,11 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.fastq.AsyncFastqWriter;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
+import htsjdk.samtools.fastq.NonFlushingBasicFastqWriter;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
@@ -370,7 +372,7 @@ public class SplitReadRealigner {
 		int recordsWritten = 0;
 		try (SamReader reader = readerFactory.open(input)) {
 			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
-				try (FastqWriter writer = fastqWriterFactory.newWriter(fq)) {
+				try (FastqWriter writer = new AsyncFastqWriter(new NonFlushingBasicFastqWriter(fq), AsyncFastqWriter.DEFAULT_QUEUE_SIZE)) {
 					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(
 							bufferedIt,
 							isRecursive,

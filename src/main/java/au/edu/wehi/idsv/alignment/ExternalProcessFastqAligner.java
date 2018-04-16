@@ -52,7 +52,7 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 				.start();
 		final SamReader reader = readerFactory.open(SamInputResource.of(aligner.getInputStream()));
 		final SAMFileHeader header = reader.getFileHeader();
-		try (final SAMFileWriter writer = writerFactory.makeWriter(header, false, output, reference)) {
+		try (final SAMFileWriter writer = writerFactory.clone().setCompressionLevel(0).makeWriter(header, false, output, reference)) {
 			final SAMRecordIterator it = reader.iterator();
 			while (it.hasNext()) {
 				writer.addAlignment(it.next());

@@ -5,7 +5,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -18,8 +17,8 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamInputResource;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.fastq.BasicFastqWriter;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.fastq.NonFlushingBasicFastqWriter;
 import htsjdk.samtools.util.Log;
 
 /**
@@ -37,7 +36,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 	private final List<String> args;
 	private final SamReaderFactory readerFactory;
 	private Process aligner = null;
-	private BasicFastqWriter toExternalProgram = null;
+	private NonFlushingBasicFastqWriter toExternalProgram = null;
 	private Thread reader = null;
 	// The following are only needed for pretty error messages
 	private final String commandlinestr;
@@ -69,7 +68,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 					.redirectOutput(Redirect.PIPE)
 					.redirectError(Redirect.INHERIT)
 					.start();
-			toExternalProgram = new BasicFastqWriter(new PrintStream(new BufferedOutputStream(aligner.getOutputStream())));
+			toExternalProgram = new NonFlushingBasicFastqWriter(new BufferedOutputStream(aligner.getOutputStream()));
 			reader = new Thread(() -> readAllAlignments(readerFactory));
 			reader.setName("ExternalProcessStreamingAligner");
 			reader.start();
