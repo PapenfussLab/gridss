@@ -1,6 +1,7 @@
 package gridss.analysis;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.broadinstitute.barclay.argparser.Argument;
@@ -58,6 +59,7 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 	@Override
 	public void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
 		if (!INCLUDE_DUPLICATES) {
+			records = new ArrayList<>(records);
 			for (int i = records.size() - 1; i >= 0; i--) {
 				if (records.get(i).getDuplicateReadFlag()) {
 					records.remove(i);
