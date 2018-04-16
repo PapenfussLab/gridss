@@ -10,6 +10,8 @@ import java.util.Locale;
 
 import org.broadinstitute.barclay.argparser.Argument;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -20,6 +22,7 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
@@ -27,11 +30,10 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SequenceUtil;
 import picard.PicardException;
+import picard.analysis.SinglePassSamProgram;
 import picard.cmdline.StandardOptionDefinitions;
 
 /**
- * Base class used to transform a VCF breakpoint call set given the full evidence available.
- * 
  * 
  * @author Daniel Cameron
  *
@@ -158,5 +160,25 @@ public abstract class ByReadNameSinglePassSamProgram extends ReferenceCommandLin
     	to.OUTPUT = OUTPUT;
     	to.ASSUME_SORTED = ASSUME_SORTED;
     	to.STOP_AFTER = STOP_AFTER;
+    }
+    public SinglePassSamProgram asSinglePassSamProgram() {
+    	return new WrappedSinglePassSamProgram();
+    }
+    private class WrappedSinglePassSamProgram extends SinglePassSamProgram {
+
+		@Override
+		protected void setup(SAMFileHeader header, File samFile) {
+			ByReadNameSinglePassSamProgram.this.setup(header, samFile);
+		}
+
+		@Override
+		protected void acceptRead(SAMRecord rec, ReferenceSequence ref) {
+			ByReadNameSinglePassSamProgram.this.acceptFragment(ImmutableList.of(rec), ref == null ? null : ByReadNameSinglePassSamProgram.this.getReference());
+		}
+
+		@Override
+		protected void finish() {
+			ByReadNameSinglePassSamProgram.this.finish();
+		}
     }
 }
