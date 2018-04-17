@@ -268,9 +268,11 @@ public class SplitReadIdentificationHelper {
 		originatingRecord.setAttribute("OA", new ChimericAlignment(originatingRecord).toString());
 		if (newPrimary == null || newPrimary.getReadUnmappedFlag()) {
 			originatingRecord.setReadUnmappedFlag(true);
+			originatingRecord.setMappingQuality(0);
 		} else {
 			unclip(originatingRecord, ImmutableList.of(newPrimary));
 			originatingRecord.setReadUnmappedFlag(newPrimary.getReadUnmappedFlag());
+			originatingRecord.setMappingQuality(newPrimary.getMappingQuality());
 			originatingRecord.setAlignmentStart(newPrimary.getAlignmentStart());
 			originatingRecord.setReferenceIndex(newPrimary.getReferenceIndex());
 			originatingRecord.setCigar(newPrimary.getCigar());
