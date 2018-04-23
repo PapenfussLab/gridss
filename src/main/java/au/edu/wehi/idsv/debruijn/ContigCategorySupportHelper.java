@@ -70,7 +70,7 @@ public class ContigCategorySupportHelper {
 				&& coverage.get(start, end + 1).cardinality() > 0;
 	}
 	public static boolean supportsBreakendBefore(int position, BitSet coverage) {
-		return coverage != null
+		return coverage != null && position >= 0
 				&& coverage.get(0, position).cardinality() > 0
 				&& coverage.get(position, coverage.size()).cardinality() > 0;
 	}

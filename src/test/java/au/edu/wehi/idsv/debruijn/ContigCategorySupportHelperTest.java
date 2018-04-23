@@ -44,4 +44,10 @@ public class ContigCategorySupportHelperTest extends TestHelper {
 		Assert.assertEquals(ImmutableList.of(false, false), ContigCategorySupportHelper.supportsBreakendBefore(1, "4X,1X1=2X"));
 		Assert.assertEquals(ImmutableList.of(false, true), ContigCategorySupportHelper.supportsBreakendBefore(1, "4X,2=2X"));
 	}
+	@Test
+	public void supportsBreakendBefore_should_not_support_out_of_bounds_positions() {
+		Assert.assertEquals(ImmutableList.of(false), ContigCategorySupportHelper.supportsBreakendBefore(0, "4X"));
+		Assert.assertEquals(ImmutableList.of(false), ContigCategorySupportHelper.supportsBreakendBefore(-1, "4X"));
+		Assert.assertEquals(ImmutableList.of(false), ContigCategorySupportHelper.supportsBreakendBefore(100, "4X"));
+	}
 }
