@@ -15,13 +15,13 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
 
-public class SplitReadIdentificationHelperTest extends TestHelper {
+public class SplitReadHelperTest extends TestHelper {
 	@Test
 	public void getSplitReadRealignments_should_split_start() {
 		SAMRecord r = Read(0, 1, "2S4M");
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
-		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
 		
 		assertEquals(1, result.size());
 		assertEquals("AC", result.get(0).getReadString());
@@ -32,7 +32,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "3M3S");
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
-		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
 		
 		assertEquals(1, result.size());
 		assertEquals("TTC", result.get(0).getReadString());
@@ -43,7 +43,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "2S1M3S");
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
-		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
 		
 		assertEquals(2, result.size());
 		assertEquals("AC", result.get(0).getReadString());
@@ -58,7 +58,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
 		r.setReadName("r");
-		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
 		assertEquals(2, result.size());
 		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#0", result.get(0).getReadName());
 		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#3", result.get(1).getReadName());
@@ -70,7 +70,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		r.setBaseQualities(B("123456"));
 		r.setReadName("r");
 		r.setReadNegativeStrandFlag(true);
-		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
 		assertEquals(2, result.size());
 		// SSSMSS cigar
 		// GAACGT read
@@ -94,7 +94,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		r.setReadName("unique#3");
 		r.setReadBases(B("CGT"));
 		r.setBaseQualities(B("321"));
-		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, true, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, true, getContext().getEvidenceIDGenerator());
 		assertEquals(1, result.size());
 		assertEquals("unique#4", result.get(0).getReadName());
 		assertEquals("GT", result.get(0).getReadString());
@@ -102,11 +102,11 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 	}
 	@Test
 	public void should_encode_alignment_unique_name_offset() {
-		String encodedName = SplitReadIdentificationHelper.getSplitAlignmentFastqName("r", 3);
+		String encodedName = SplitReadHelper.getSplitAlignmentFastqName("r", 3);
 		SAMRecord r2 = Read(0, 1, "3H2M2S");
 		r2.setReadName(encodedName);
-		assertEquals(3, SplitReadIdentificationHelper.getRealignmentFirstAlignedBaseReadOffset(r2));
-		assertEquals("r", SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(r2));
+		assertEquals(3, SplitReadHelper.getRealignmentFirstAlignedBaseReadOffset(r2));
+		assertEquals("r", SplitReadHelper.getOriginatingAlignmentUniqueName(r2));
 	}
 	@Test
 	public void convertToSplitRead_should_expand_clipping() {
@@ -118,7 +118,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
 		
 		assertEquals("CGTA", S(supp1.getReadBases()));
 		assertEquals("1234", S(supp1.getBaseQualities()));
@@ -144,7 +144,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#2");
 		supp1.setReadBases(B("C"));
 		supp1.setBaseQualities(B("2"));
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
 		
 		assertEquals("TACG", S(supp1.getReadBases()));
 		assertEquals("4321", S(supp1.getBaseQualities()));
@@ -172,7 +172,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp1.setReadBases(B("CG"));
 		supp1.setBaseQualities(B("21"));
 		supp1.setReadNegativeStrandFlag(true);
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
 		
 		assertEquals("TACG", S(supp1.getReadBases()));
 		assertEquals("4321", S(supp1.getBaseQualities()));
@@ -189,7 +189,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
 		
 		assertEquals("value", supp1.getStringAttribute("xx"));
 	}
@@ -208,7 +208,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
 		
 		assertEquals("value", supp1.getStringAttribute("xx"));
 		assertTrue(supp1.getReadPairedFlag());
@@ -237,7 +237,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		supp1.setMappingQuality(17);
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
 		
 		assertEquals("r", supp1.getReadName());
 		assertEquals(2, (int)supp1.getMateReferenceIndex());
@@ -268,7 +268,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp2.setBaseQualities(B("1"));
 		supp2.setMappingQuality(19);
 		supp2.setAttribute("NM", 10);
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2), null);
 		
 		assertEquals("polyA,20,+,1M3S,19,10;polyA,10,+,1S1M2S,17,9", primary.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,3S1M,15,8;polyA,20,+,1M3S,19,10", supp1.getStringAttribute("SA"));
@@ -298,7 +298,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		supp2.setBaseQualities(B("1"));
 		supp2.setMappingQuality(19);
 		supp2.setAttribute("NM", 10);
-		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2));
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2), null);
 		
 		assertEquals(primary.getReadName(), supp1.getReadName());
 		assertEquals(primary.getReadName(), supp2.getReadName());
@@ -308,14 +308,75 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "100M");
 		SAMRecord r1 = withReadName(r.getReadName() + "#50", Read(1, 1, "50M"))[0];
 		SAMRecord r2 = withReadName(r.getReadName() + "#0", Read(0, 1, "10M"))[0];
-		SAMRecord result = SplitReadIdentificationHelper.replaceAlignment(r, ImmutableList.of(r1, r2));
+		SAMRecord result = SplitReadHelper.replaceAlignment(r, ImmutableList.of(r1, r2));
 		Assert.assertEquals(result, r2);
 		Assert.assertEquals("10M90S", r.getCigarString());
 	}
 	@Test
 	public void replaceAlignment_should_unmap_if_no_realignment_available() {
 		SAMRecord r = Read(0, 1, "100M");
-		SplitReadIdentificationHelper.replaceAlignment(r, ImmutableList.of());
+		SplitReadHelper.replaceAlignment(r, ImmutableList.of());
 		Assert.assertTrue(r.getReadUnmappedFlag());
+	}
+	@Test
+	public void getEditDistanceDelta_should_compare_cigar_to_read() {
+		Assert.assertArrayEquals(new int[] { 0, 1, 0, 1, 0, 0}, SplitReadHelper.getEditDistanceDelta(withSequence("ATATAA", Read(0, 100, "2S4M"))[0], getContext().getReference(), true));
+		Assert.assertArrayEquals(new int[] { 0, 1, 1, 1, 0}, SplitReadHelper.getEditDistanceDelta(Read(0, 100, "1M3I1M"), getContext().getReference(), true));
+	}
+	@Test
+	public void getEditDistanceDelta_should_include_hard_clipping() {
+		Assert.assertArrayEquals(new int[] { 1,  1, 1, 0, 0, 0, 0, 1, 1}, SplitReadHelper.getEditDistanceDelta(Read(0, 100, "3H4M2H"), getContext().getReference(), true));
+	}
+	@Test
+	public void getEditDistanceDelta_should_allocate_deletion_to_outermost_base() {
+		Assert.assertArrayEquals(new int[] { 0, 2, 0}, SplitReadHelper.getEditDistanceDelta(Read(0, 100, "1M2D2M"), getContext().getReference(), true));
+		Assert.assertArrayEquals(new int[] { 3, 1, 1}, SplitReadHelper.getEditDistanceDelta(withSequence("TTT", Read(0, 100, "1M2D2M"))[0], getContext().getReference(), false));
+	}
+	@Test
+	public void getEditDistanceDelta_should_use_read_base_offsets() {
+		Assert.assertArrayEquals(new int[] { 0, 2, 0}, SplitReadHelper.getEditDistanceDelta(onNegative(Read(0, 100, "1M2D2M"))[0], getContext().getReference(), false));
+		Assert.assertArrayEquals(new int[] { 1, 1, 3}, SplitReadHelper.getEditDistanceDelta(onNegative(withSequence("TTT", Read(0, 100, "1M2D2M")))[0], getContext().getReference(), true));
+	}
+	@Test
+	public void adjustSplitLocationToMinimiseEditDistance_should_handle_overlapping_alignments() {
+		// S====X=SSS
+		// SSS=====SS
+		SAMRecord left = withSequence("AAAAATAAAT", Read(0, 100, "1S6M3S"))[0];
+		SAMRecord right = withSequence("TTAAAAAAAA", Read(0, 200, "3S5M2S"))[0];
+		SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(left, right, getContext().getReference());
+		Assert.assertEquals("1S4M5S", left.getCigarString());
+		Assert.assertEquals(100, left.getAlignmentStart());
+		Assert.assertEquals("5S3M2S", right.getCigarString());
+		Assert.assertEquals(202, right.getAlignmentStart());
+	}
+	@Test
+	public void adjustSplitLocationToMinimiseEditDistance_should_shift_right_to_best_position() {
+		// S====X=SSS
+		// SSS=====SS
+		SAMRecord left = withSequence("AAATTT", Read(0, 100, "2M4S"))[0];
+		SAMRecord right = withSequence("TTTAAA", Read(0, 200, "2S4M"))[0];
+		SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(left, right, getContext().getReference());
+		Assert.assertEquals("3M3S", left.getCigarString());
+		Assert.assertEquals(100, left.getAlignmentStart());
+		Assert.assertEquals("3S3M", right.getCigarString());
+		Assert.assertEquals(201, right.getAlignmentStart());
+	}
+	@Test
+	public void adjustSplitLocationToMinimiseEditDistance_should_shift_left_to_best_position() {
+		// S====X=SSS
+		// SSS=====SS
+		SAMRecord left = withSequence("AAATTT", Read(0, 100, "5M1S"))[0];
+		SAMRecord right = withSequence("TTTAAA", Read(0, 200, "1S5M"))[0];
+		SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(left, right, getContext().getReference());
+		Assert.assertEquals("3M3S", left.getCigarString());
+		Assert.assertEquals("3S3M", right.getCigarString());
+	}
+	@Test
+	public void should_adjustSplitLocationToMinimiseEditDistance_should_handle_negative_strand_alignment() {
+		SAMRecord left = onNegative(withSequence("TTTAAA", Read(0, 100, "1S5M")))[0];
+		SAMRecord right = withSequence("TTTAAA", Read(0, 200, "1S5M"))[0];
+		SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(left, right, getContext().getReference());
+		Assert.assertEquals("3S3M", left.getCigarString());
+		Assert.assertEquals("3S3M", right.getCigarString());
 	}
 }

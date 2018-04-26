@@ -42,7 +42,7 @@ public class SplitReadFastqExtractor {
 		if (r.getReadUnmappedFlag()) return list;
 		if (!SAMRecordUtil.isSoftClipLengthAtLeast(r, minSoftClipLength)) return list;
 		if (realignEntireRecord && !isSplit && !AssemblyAttributes.isUnanchored(r)) {
-			list.add(SplitReadIdentificationHelper.getFullRealignment(r, eidgen));
+			list.add(SplitReadHelper.getFullRealignment(r, eidgen));
 			return list;
 		}
 		// Logic for extending an existing SA alignment not yet complete. Need to:
@@ -52,7 +52,7 @@ public class SplitReadFastqExtractor {
 		if (!realignExistingSplitReads && !isSplit && r.getAttribute(SAMTag.SA.name()) != null) return list;
 		if (r.getSupplementaryAlignmentFlag()) return list;
 		if (r.isSecondaryAlignment() && !processSecondaryAlignments) return list;
-		for (FastqRecord fqr : SplitReadIdentificationHelper.getSplitReadRealignments(r, isSplit, eidgen)) {
+		for (FastqRecord fqr : SplitReadHelper.getSplitReadRealignments(r, isSplit, eidgen)) {
 			if (fqr.getReadLength() < minSoftClipLength) continue;
 			if (averageBaseQuality(fqr) < minClipQuality) continue;
 			list.add(fqr);

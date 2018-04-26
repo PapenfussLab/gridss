@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,11 +24,13 @@ import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.alignment.SmithWatermanFastqAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 
 public class SplitReadRealignerTest extends IntermediateFilesTest {
@@ -319,6 +322,38 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		createBAM(input, header, r);
 		srr.createSupplementaryAlignments(aligner, input, output, 100);
 		List<SAMRecord> list = getRecords(output);
-		assertEquals(0, list.size());	
+		assertEquals(0, list.size());
+	}
+	/**
+	 * bwa mem primary alignment record over-aligns across apparent SNVs and an indels which should just be placed on the other side  
+	 * @throws IOException
+	 */
+	@Test
+	@Category({Hg19Tests.class, ExternalAlignerTests.class})
+	public void realign_should_not_overalign_one_side() throws IOException {
+		File hg19 = Hg19Tests.findHg19Reference();
+		SynchronousReferenceLookupAdapter ref = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(hg19));
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, hg19, 4);
+		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), hg19, ref, Lists.newArrayList(), getConfig(testFolder.getRoot()));
+		SplitReadRealigner srr = new SplitReadRealigner(pc);
+		srr.setRealignEntireRecord(true);
+		srr.setReference(ref);
+		SAMFileHeader header = new SAMFileHeader();
+		header.setSequenceDictionary(ref.getSequenceDictionary());
+		header.setSortOrder(SortOrder.coordinate);
+		
+		SAMRecord r = new SAMRecord(header);
+		r.setReferenceIndex(0);
+		r.setAlignmentStart(1);
+		r.setCigarString("800S100M");
+		r.setReadBases(    B("TTGTTATTTGTAATAGCATCTAACTGAAATCTAGCATTTAGAAATCTCTCTATCTTTCTTTCTTTCTTTCTTTCTTTCTTTCTTTCTTTCTTTCTTTCCTTCTTTCTTTCTTTCTTCTCTCTCTCTCTCTCTTTCTTTTGATGGAATTTTGCTCTTGTCGCCCAGACTGGAGTGCAATGGTGCGATCTTGGCTCACAGCAACCTCTGCCTCCCAGGTTCAAGCAATTCTTCTGTCTCAGCCTCCCAAGGAGCTGGGATTACAGGCACATGCCACCATGCCAGGCTAATTTTTGTATTTTTAGTAGAGACGGGGTTTCACCATGTTGGCCAAGCTGGTCTTGAACTCAAGCTCATGTTCCACCTGCCTTGGCCTCTCTACGTGCTGGGATTACAGGCATGAGCTACAGCGCTCAGCCGAAAGATTAATTTTTTAAAAATGCCTCCTGTGACCTCCATTTCTCTTCTACTTAGAGTCAGAGAGTGTTAAAACTTACAGACCAACTTAATCCAAGCCCTCCATTGGGCAGATTGGGATGCTGAGGAGAAGATGGAGGGGGATTTGTTTTTGGTAGCCTAGGGGTCCCACAGGAGAAAAGAAAGGAGGCAGTAGGACAGGAAAGGAAAAATTTGGAGGCAGGTTTGGAGGGTAAGGGGTGAAATAGCTGGCTTGGGCTACCAGAGGATCTGGAGCAGGCACCCTTGGCCTTTATAGTTGCAGGGACCCATTTGGCAGGCTGGTGAAGTCTATGAATCCCTTCTCAGGAAGTGTTTTAAATGCATGAAATAAAATGAAAGACATTGGATTCTAAAGAAAACCAAATATATTGAAATATAGTTACCAAAATATTTTAAAAACAAATGTGTGATTTAGTAATACAAGTACTTCTTTATTAATGCATT"));
+		r.setBaseQualities(B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+		r.setReadName("read");
+		
+		createBAM(input, header, r);
+		srr.createSupplementaryAlignments(aligner, input, output, 1);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(2, list.size());
+		Assert.assertEquals("282S618M", list.get(0).getCigarString());
 	}
 }

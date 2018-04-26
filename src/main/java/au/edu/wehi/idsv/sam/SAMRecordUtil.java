@@ -1370,13 +1370,26 @@ public class SAMRecordUtil {
 				}
 			}
 		}
-		read.setCigar(softClipToAligned(read.getCigar(), startunclip, endunclip));
-		read.setAlignmentStart(read.getAlignmentStart() - startunclip);
+		adjustAlignmentBounds(read, startunclip, endunclip);
 	}
-
+	/**
+	 * Adjusts the start/end alignment bounds of the given alignment. Expanded alignments are converted
+	 * @param r
+	 * @param expandStartBy
+	 * @param expandEndBy
+	 * @return record passed in
+	 */
+	public static SAMRecord adjustAlignmentBounds(SAMRecord r, int expandStartBy, int expandEndBy) {
+		Cigar newCigar = softClipToAligned(r.getCigar(), expandStartBy, 0);
+		r.setAlignmentStart(r.getAlignmentStart() + r.getCigar().getReferenceLength() - newCigar.getReferenceLength());
+		newCigar = softClipToAligned(newCigar, 0, expandEndBy);
+		r.setCigar(newCigar);
+		return r;
+	}
 	private static Cigar softClipToAligned(Cigar cigar, int startunclip, int endunclip) {
-		if (startunclip == 0 && endunclip == 0)
+		if (startunclip == 0 && endunclip == 0) {
 			return cigar;
+		}
 		List<CigarElement> list = cigar.getCigarElements();
 		list = CigarUtil.clean(list, true);
 		if (startunclip > 0) {
@@ -1390,17 +1403,73 @@ public class SAMRecordUtil {
 			list.set(i, new CigarElement(list.get(i).getLength() - startunclip, CigarOperator.SOFT_CLIP));
 			list.add(i + 1, new CigarElement(startunclip, CigarOperator.MATCH_OR_MISMATCH));
 			CigarUtil.clean(list, false);
+		} else if (startunclip < 0) {
+			int i = 0;
+			int alignedBasesLeftToRemove = -startunclip;
+			while (!list.get(i).getOperator().consumesReferenceBases()) {
+				i++;
+			}
+			while (alignedBasesLeftToRemove > 0 && i >= 0 && i < list.size()) {
+				CigarElement ce = list.get(i);
+				if (ce.getOperator().consumesReadBases()) {
+					if (ce.getLength() >= alignedBasesLeftToRemove) {
+						list.remove(i);
+						if (ce.getLength() != alignedBasesLeftToRemove) {
+							list.add(i, new CigarElement(ce.getLength() - alignedBasesLeftToRemove, ce.getOperator()));
+						}
+						list.add(i, new CigarElement(alignedBasesLeftToRemove, CigarOperator.SOFT_CLIP));
+						alignedBasesLeftToRemove = 0;
+					} else {
+						list.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+						alignedBasesLeftToRemove -= ce.getLength();
+						i++;
+					}
+				} else {
+					// D and N operators do not consume read bases - throw them out
+					list.remove(i);
+				}
+			}
+			CigarUtil.clean(list, false);
 		}
 		if (endunclip > 0) {
 			int i = list.size() - 1;
-			while (i > 0 && list.get(i).getOperator() != CigarOperator.SOFT_CLIP)
+			while (i > 0 && list.get(i).getOperator() != CigarOperator.SOFT_CLIP) {
 				i--;
+			}
 			if (i < 0 || list.get(i).getLength() < endunclip) {
 				throw new IllegalArgumentException(
 						String.format("Unable to unclip %d clipped bases from end of %s", endunclip, cigar));
 			}
 			list.set(i, new CigarElement(list.get(i).getLength() - endunclip, CigarOperator.SOFT_CLIP));
 			list.add(i - 1, new CigarElement(endunclip, CigarOperator.MATCH_OR_MISMATCH));
+			CigarUtil.clean(list, false);
+		} else if (endunclip < 0) {
+			int i = list.size() - 1;
+			while (i > 0 && !list.get(i).getOperator().consumesReferenceBases()) {
+				i--;
+			}
+			int alignedBasesLeftToRemove = -endunclip;
+			while (alignedBasesLeftToRemove > 0 && i >= 0 && i < list.size()) {
+				CigarElement ce = list.get(i);
+				if (ce.getOperator().consumesReadBases()) {
+					if (ce.getLength() >= alignedBasesLeftToRemove) {
+						list.remove(i);
+						list.add(i, new CigarElement(alignedBasesLeftToRemove, CigarOperator.SOFT_CLIP));
+						if (ce.getLength() != alignedBasesLeftToRemove) {
+							list.add(i, new CigarElement(ce.getLength() - alignedBasesLeftToRemove, ce.getOperator()));
+						}
+						alignedBasesLeftToRemove = 0;
+					} else {
+						alignedBasesLeftToRemove -= ce.getLength();
+						list.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+						i--;
+					}
+				} else {
+					// D and N operators do not consume read bases - throw them out
+					list.remove(i);
+				}
+				i--;
+			}
 			CigarUtil.clean(list, false);
 		}
 		return new Cigar(list);
@@ -1494,6 +1563,12 @@ public class SAMRecordUtil {
 			overlapCount += originalAlignment.overlappingBases(dict, ca);
 		}
 		return overlapCount > 0;
+	}
+	public static int getReadLengthIncludingHardClipping(SAMRecord r) {
+		final int lengthWithHardClipping = r.getReadLength() + r.getCigar().getCigarElements().stream()
+			.filter(ce -> ce.getOperator() == CigarOperator.HARD_CLIP)
+			.mapToInt(ce -> ce.getLength()).sum();
+		return lengthWithHardClipping;
 	}
 }
 

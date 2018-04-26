@@ -981,4 +981,14 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void should_not_overlap_on_opposite_strand() {
 		Assert.assertEquals(0, SAMRecordUtil.overlappingBases(Read(0, 1, "10M"), onNegative(Read(1, 1, "10M"))[0]));
 	}
+	@Test
+	public void getReadLengthIncludingHardClipping() {
+		Assert.assertEquals(6, SAMRecordUtil.getReadLengthIncludingHardClipping(Read(0, 1, "1H2M3H")));
+	}
+	@Test
+	public void adjustAlignmentBounds_should_adjust_bounds() {
+		Assert.assertEquals("1S7M2S", SAMRecordUtil.adjustAlignmentBounds(Read(0, 1, "10M"), -1, -2).getCigarString());
+		Assert.assertEquals("1H8S2M", SAMRecordUtil.adjustAlignmentBounds(Read(0, 1, "1H2S3M4D5M"), -6, 0).getCigarString());
+		Assert.assertEquals("2M8S1H", SAMRecordUtil.adjustAlignmentBounds(Read(0, 1, "5M4D3M2S1H"), 0, -6).getCigarString());
+	}
 }

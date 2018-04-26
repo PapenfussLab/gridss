@@ -15,6 +15,7 @@ import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -47,6 +48,7 @@ public class SplitReadRealigner {
 	private boolean processSecondaryAlignments = false;
 	private boolean realignExistingSplitReads = false;
 	private boolean realignEntireRecord = false;
+	private ReferenceLookup reference = null;
 	/**
 	 * Alignment-unique read identifier must be hashed to ensure that the read names
 	 * written to the fastq files do not exceed the BAM limit of 254 even when the
@@ -204,7 +206,7 @@ public class SplitReadRealigner {
 			SplitReadFastqExtractor recursiveExtractor, Map<String, SplitReadRealignmentInfo> realignments,
 			SAMFileWriter writer) throws IOException {
 		SAMRecord supp = aligner.getAlignment();
-		String lookupkey = SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(supp);
+		String lookupkey = SplitReadHelper.getOriginatingAlignmentUniqueName(supp);
 		SplitReadRealignmentInfo info = realignments.get(lookupkey);
 		if (supp.getSupplementaryAlignmentFlag() || supp.isSecondaryAlignment()) {
 			// only consider the best mapping location reported by the aligner
@@ -246,13 +248,13 @@ public class SplitReadRealigner {
 					// we repurpose the CIGAR string to encode the breakend interval
 					// and realigning will break that
 					!AssemblyAttributes.isUnanchored(record)) {
-				SAMRecord newPrimaryAlignmentPosition = SplitReadIdentificationHelper.replaceAlignment(record, realignments);
+				SAMRecord newPrimaryAlignmentPosition = SplitReadHelper.replaceAlignment(record, realignments);
 				if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
 					throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
 				}
 				primaryHasMoved = true;
 			}
-			SplitReadIdentificationHelper.convertToSplitRead(record, realignments);
+			SplitReadHelper.convertToSplitRead(record, realignments, reference);
 		}
 		if (primaryHasMoved) {
 			// we'll break sort ordering if we write it back to the sorted assembly file
@@ -356,7 +358,7 @@ public class SplitReadRealigner {
 			SAMRecord r = it.next();
 			String name = eidgen.getAlignmentUniqueName(r);
 			for (PeekingIterator<SAMRecord> sit : alignments) {
-				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
+				while (sit.hasNext() && SplitReadHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
 					SAMRecord supp = sit.next();
 					if (supp.getSupplementaryAlignmentFlag() || supp.isSecondaryAlignment()) {
 						// only consider the best mapping location reported by the aligner
@@ -403,5 +405,11 @@ public class SplitReadRealigner {
 	}
 	public void setRealignEntireRecord(boolean realignEntireRecord) {
 		this.realignEntireRecord = realignEntireRecord;
+	}
+	public ReferenceLookup getReference() {
+		return reference;
+	}
+	public void setReference(ReferenceLookup reference) {
+		this.reference = reference;
 	}
 }

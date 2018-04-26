@@ -73,6 +73,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	realigner.setRealignExistingSplitReads(REALIGN_EXISTING_SPLIT_READS);
     	realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
     	realigner.setWorkerThreads(WORKER_THREADS);
+    	realigner.setReference(getReference());
     	try {
     		SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
         	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();

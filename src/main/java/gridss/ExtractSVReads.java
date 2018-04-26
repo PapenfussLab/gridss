@@ -182,9 +182,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 	public boolean[] shouldExtract(List<SAMRecord> records, ReferenceLookup lookup) {
 		boolean hasConsistentReadPair = hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = hasReadAlignmentConsistentWithReference(records);
-		if (metricsCollector != null) {
-			metricsCollector.acceptFragment(records, lookup);
-		}
 		boolean[] extract = new boolean[records.size()];
 		for (int i = 0; i < records.size(); i++) {
 			SAMRecord r = records.get(i);
@@ -207,7 +204,9 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 				// ignore remaining reads
 			}
 		}
-		metricsCollector.acceptFragment(records, lookup);
+		if (metricsCollector != null) {
+			metricsCollector.acceptFragment(records, lookup);
+		}
 	}
 	@Override
 	protected void finish() {

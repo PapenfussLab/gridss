@@ -175,8 +175,8 @@ public class SoftClipEvidenceTest extends TestHelper {
 	public void GetBreakendSummary_should_get_location_with_unmapped_realigned() {
 		SAMRecord r = Read(0, 10, "10M5S");
 		SAMRecord realigned = Unmapped(15);
-		realigned.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator()).get(0).getReadString());
-		SplitReadIdentificationHelper.convertToSplitRead(r, ImmutableList.of(realigned));
+		realigned.setReadName(SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator()).get(0).getReadString());
+		SplitReadHelper.convertToSplitRead(r, ImmutableList.of(realigned), null);
 		assertNull(r.getAttribute("SA"));
 	}
 	@Test
