@@ -47,7 +47,8 @@ public enum VcfInfoAttributes {
 	REMOTE_SUPPORT_INTERVAL ("RSI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Support interval offsets of partner breakend."),
 	INEXACT_HOMPOS ("IHOMPOS", 2, VCFHeaderLineType.Integer, "Position of inexact homology"),
 	SUPPORT_CIGAR ("SC", 1, VCFHeaderLineType.String, "CIGAR for displaying anchoring alignment of any contributing evidence and microhomologies."),
-	BREAKEND_ASSEMBLY_ID ("BEID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Identifiers of assemblies supporting the variant.");
+	BREAKEND_ASSEMBLY_ID ("BEID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Identifiers of assemblies supporting the variant."),
+	BREAKEND_ALIGNMENTS ("BEALN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Potential alignment locations of breakend sequence in the format chr:start|strand|cigar|mapq. Depending on the alignment information available, strand and mapq may be empty.");
 	private final VCFInfoHeaderLine header;
 	private final String tag;
 	VcfInfoAttributes(String name, String samTag, int count, VCFHeaderLineType type, String description) {

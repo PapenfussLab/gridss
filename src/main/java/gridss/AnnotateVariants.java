@@ -60,7 +60,7 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 	public CloseableIterator<VariantContextDirectedEvidence> iterator(CloseableIterator<VariantContextDirectedEvidence> calls, ExecutorService threadpool) {
 		AllocateEvidence ae = new AllocateEvidence();
 		AnnotateReferenceCoverage arc = new AnnotateReferenceCoverage();
-		AnnotateInexactHomology ihom = new AnnotateInexactHomology(); 
+		AnnotateInexactHomology ihom = new AnnotateInexactHomology();
 		copyInputs(ae);
 		copyInputs(arc);
 		copyInputs(ihom);

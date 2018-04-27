@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -28,7 +29,7 @@ import htsjdk.samtools.util.Log;
  * @author Daniel Cameron
  *
  */
-public class ExternalProcessStreamingAligner implements Closeable, Flushable, StreamingAligner {
+public class ExternalProcessStreamingAligner implements Closeable, Flushable, StreamingAligner, Iterator<SAMRecord> {
 	private static final int POLL_INTERVAL = 1000;
 	private static final Log log = Log.getInstance(ExternalProcessStreamingAligner.class);	
 	private final AtomicInteger outstandingReads = new AtomicInteger(0);
@@ -158,5 +159,13 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		aligner = null;
 		reader = null;
 		toExternalProgram = null;
+	}
+	@Override
+	public boolean hasNext() {
+		return hasAlignmentRecord();
+	}
+	@Override
+	public SAMRecord next() {
+		return getAlignment();
 	}
 }
