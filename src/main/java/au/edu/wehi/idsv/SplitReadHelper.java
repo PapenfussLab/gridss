@@ -133,7 +133,7 @@ public class SplitReadHelper {
 			convertToSupplementaryAlignmentRecord(record, r);
 		}
 		if (reference != null) {
-			adjustSplitLocationsToMinimiseEditDistance(record, salist, reference);
+			adjustSplitLocationsToMinimiseEditDistance(record, alignments, reference);
 		}
 		writeSA(record, alignments);
 	}
