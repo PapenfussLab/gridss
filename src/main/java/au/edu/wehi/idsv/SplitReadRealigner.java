@@ -233,7 +233,8 @@ public class SplitReadRealigner {
 		}
 	}
 	private void writeCompletedAlignment(SAMRecord record, List<SAMRecord> realignments, SAMFileWriter recordWriter, SAMFileWriter realignmentWriter) {
-		boolean primaryHasMoved = false;
+		int primaryReferenceIndex = record.getReadUnmappedFlag() ? -1 : record.getReferenceIndex();
+		int primaryAlignmentStart = record.getReadUnmappedFlag() ? -1 : record.getAlignmentStart();
 		if (isRealignExistingSplitReads() || isRealignEntireRecord()) {
 			if (record.getSupplementaryAlignmentFlag()) {
 				// If we're realigning, we need to drop all existing supplementary alignments
@@ -252,12 +253,11 @@ public class SplitReadRealigner {
 				if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
 					throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
 				}
-				primaryHasMoved = true;
 			}
 			SplitReadHelper.convertToSplitRead(record, realignments, reference);
 		}
-		if (primaryHasMoved) {
-			// we'll break sort ordering if we write it back to the sorted assembly file
+		if (record.getReadUnmappedFlag() || record.getReferenceIndex() != primaryReferenceIndex || record.getAlignmentStart() != primaryAlignmentStart) {
+			// we'll break sort ordering if we write it back to the input file
 			realignmentWriter.addAlignment(record);
 		} else {
 			recordWriter.addAlignment(record);

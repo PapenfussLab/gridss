@@ -132,7 +132,7 @@ public class SplitReadHelper {
 		for (SAMRecord r : alignments) {
 			convertToSupplementaryAlignmentRecord(record, r);
 		}
-		if (reference != null) {
+		if (reference != null && !AssemblyAttributes.isUnanchored(record)) {
 			adjustSplitLocationsToMinimiseEditDistance(record, alignments, reference);
 		}
 		writeSA(record, alignments);
