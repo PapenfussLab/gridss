@@ -29,10 +29,10 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-	@Argument(shortName="VCF", doc="VCF file to annotate")
-    public File INPUT_VCF;
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="VCF file to annotate")
+    public File INPUT;
 	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated VCF file")
-    public File OUTPUT_VCF;
+    public File OUTPUT;
 	@Argument(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files."
 			+ " The aligner must support using \"-\" as the input filename when reading from stdin."
 			+ " The sort order of the input file will not be retained.", optional=true)
@@ -42,13 +42,13 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
     }
 	@Override
 	public int doWork() {
-		IOUtil.assertFileIsReadable(INPUT_VCF);
-		IOUtil.assertFileIsWritable(OUTPUT_VCF);
-		log.info("Annotating variant untemplated sequence in " + INPUT_VCF);
+		IOUtil.assertFileIsReadable(INPUT);
+		IOUtil.assertFileIsWritable(OUTPUT);
+		log.info("Annotating variant untemplated sequence in " + INPUT);
 		GenomicProcessingContext context = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
-		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(context, INPUT_VCF, ALIGNER_COMMAND_LINE, WORKER_THREADS)) {
-			saveVcf(context, INPUT_VCF, OUTPUT_VCF, ann);
-			log.info("Annotated variants written to " + OUTPUT_VCF);
+		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(context, INPUT, ALIGNER_COMMAND_LINE, WORKER_THREADS)) {
+			saveVcf(context, INPUT, OUTPUT, ann);
+			log.info("Annotated variants written to " + OUTPUT);
 		} catch (IOException e) {
 			log.error(e);
 			throw new RuntimeException(e);

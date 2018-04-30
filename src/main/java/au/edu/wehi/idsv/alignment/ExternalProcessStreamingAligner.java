@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -24,7 +26,10 @@ import htsjdk.samtools.util.Log;
 
 /**
  * Performs alignment of the given records using an external alignment tools.
- * stdin and stdout of the alignment tool are hooked up 
+ * stdin and stdout of the alignment tool are hooked up.
+ * 
+ * Iterator methods block until an input record has been aligned. The StreamingAligner
+ * interface allows for more fine-grain control over record processing.
  * 
  * @author Daniel Cameron
  *
@@ -42,6 +47,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 	// The following are only needed for pretty error messages
 	private final String commandlinestr;
 	private final File reference;
+	private final AtomicBoolean isClosed = new AtomicBoolean(false);
 	public ExternalProcessStreamingAligner(final SamReaderFactory readerFactory, final List<String> commandline, final File reference, final int threads) {
 		this.readerFactory = readerFactory;
 		this.reference = reference;
@@ -121,8 +127,9 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		}
 		log.info(String.format("Reader thread complete. %s reads in output buffer", buffer.size()));
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#close()
+	/**
+	 * Flushes outstanding alignments and closes the pipe to the external aligner.
+	 * Alignment records returned by the aligner are still available after closing.
 	 */
 	@Override
 	public synchronized void close() throws IOException {
@@ -159,13 +166,38 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		aligner = null;
 		reader = null;
 		toExternalProgram = null;
+		isClosed.set(true);
 	}
+	private void syncEnsureNext() {
+		while (!isClosed.get() && buffer.isEmpty()) {
+			try {
+				log.debug(String.format("%d alignments outstanding", outstandingReads.get()));
+				Thread.sleep(POLL_INTERVAL);
+			} catch (InterruptedException e) {
+				log.warn(e);
+				return;
+			}
+		}
+	}
+	/**
+	 * Blocks until it the next alignment record is available. 
+	 */
 	@Override
 	public boolean hasNext() {
-		return hasAlignmentRecord();
+		syncEnsureNext();
+		return buffer.size() > 0;
 	}
+	/**
+	 * Blocks until the aligner returns the next alignment.
+	 */
 	@Override
 	public SAMRecord next() {
-		return getAlignment();
+		if (!hasNext()) throw new NoSuchElementException();
+		try {
+			return buffer.take();
+		} catch (InterruptedException e) {
+			log.warn(e);
+			throw new RuntimeException(e);
+		}
 	}
 }

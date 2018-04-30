@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -75,9 +76,15 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 					}
 				}
 			}
-		}catch (IOException e) {
+		} catch (IOException e) {
 			log.warn(e);
-		} 
+		} finally {
+			try {
+				aligner.close();
+			} catch (IOException e) {
+				log.warn(e);
+			}
+		}
 	}
 	@Override
 	public boolean hasNext() {
@@ -87,6 +94,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 	@Override
 	public IdsvVariantContext next() {
 		ensureNext();
+		if (!hasNext()) throw new NoSuchElementException();
 		IdsvVariantContext result = nextRecord;
 		nextRecord = null;
 		return result;
@@ -103,6 +111,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 					// consume the aligner output so everything closes gracefully
 				}
 			}
+			return;
 		}
 		nextRecord = vcfStream.next();
 		annotateNextRecord();
@@ -136,17 +145,18 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 			sb.append('|');
 			sb.append(r.getMappingQuality());
 			aln.add(sb.toString());
-			// TODO: bwa XA tag
+			// TODO: better bwa XA tag validation
 			if (r.hasAttribute("XA")) {
-				// (chr,pos,CIGAR,NM;)*
+				// (chr,STRANDpos,CIGAR,NM;)*
 				for (String xs : r.getAttribute("XA").toString().split(";")) {
 					String[] fields = xs.split(",");
-					if(fields.length == 4) {
+					if(fields.length == 4 && fields[1].length() > 1) {
 						StringBuilder xasb = new StringBuilder();
 						xasb.append(fields[0]);
 						xasb.append(':');
-						xasb.append(fields[1]);
+						xasb.append(fields[1].substring(1));
 						xasb.append('|');
+						xasb.append(fields[1].charAt(0));
 						xasb.append('|');
 						xasb.append(fields[2]);
 						xasb.append('|');
