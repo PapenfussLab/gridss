@@ -78,19 +78,14 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		}
 		return rp;
 	}
-	private static void assertAttribute(SAMRecord record, SAMTag tag) {
-		Object attr = record.getAttribute(tag.name());
-		if (attr == null) {
-			String msg = String.format("Read %s at %s:%d is missing the %s attribute containing mate information required by GRIDSS. Please run ComputeSamTags to populate this tag",
-					record.getReadName(), record.getReferenceName(), record.getAlignmentStart(), tag.name());
-			log.error(msg);
-			throw new IllegalArgumentException(msg);
-		}
-	}
 	public static NonReferenceReadPair create(SAMEvidenceSource source, SAMRecord record) {
 		if (!record.getReadPairedFlag()) return null;
-		assertAttribute(record, SAMTag.R2);
-		assertAttribute(record, SAMTag.Q2);
+		if (record.getAttribute(SAMTag.R2.name()) == null || record.getAttribute(SAMTag.Q2.name()) == null) {
+			String msg = String.format("Read %s at %s:%d is missing R2/Q2 attribute containing mate information required by GRIDSS. Ignoring read",
+					record.getReadName(), record.getReferenceName(), record.getAlignmentStart());
+			log.error(msg);
+			return null;
+		}
 		SAMRecord remote = new SAMRecord(record.getHeader());
 		remote.setReadUnmappedFlag(record.getMateUnmappedFlag());
 		byte[] r2 = record.getStringAttribute(SAMTag.R2.name()).getBytes(StandardCharsets.US_ASCII);
