@@ -348,7 +348,10 @@ public class SplitReadHelper {
 			case S:
 			default:
 				for (int i = 0; i < ce.getLength(); i++) {
-					editDistance[fullReadOffset] += SequenceUtil.basesEqual(readBases[readOffset], reference.getBase(referenceIndex, position)) ? 0 : 1;
+					if (position <= 0 || position >= reference.getSequenceDictionary().getSequence(referenceIndex).getSequenceLength() ||
+							!SequenceUtil.basesEqual(readBases[readOffset], reference.getBase(referenceIndex, position))) {
+						editDistance[fullReadOffset] += 1;
+					}
 					readOffset++;
 					fullReadOffset++;
 					position++;

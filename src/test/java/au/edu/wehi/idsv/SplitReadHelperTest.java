@@ -338,6 +338,10 @@ public class SplitReadHelperTest extends TestHelper {
 		Assert.assertArrayEquals(new int[] { 1, 1, 3}, SplitReadHelper.getEditDistanceDelta(onNegative(withSequence("TTT", Read(0, 100, "1M2D2M")))[0], getContext().getReference(), true));
 	}
 	@Test
+	public void getEditDistanceDelta_should_consider_off_contig_as_mismatch() {
+		Assert.assertArrayEquals(new int[] { 1, 1, 0}, SplitReadHelper.getEditDistanceDelta(Read(0, 1, "2S1M"), getContext().getReference(), false));
+	}
+	@Test
 	public void adjustSplitLocationToMinimiseEditDistance_should_handle_overlapping_alignments() {
 		// S====X=SSS
 		// SSS=====SS
