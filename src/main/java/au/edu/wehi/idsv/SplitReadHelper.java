@@ -118,7 +118,7 @@ public class SplitReadHelper {
 	 * @param record initial read alignment
 	 * @param salist realignments created from recursive alignment of the output of getSplitReadRealignments()
 	 */
-	public static void convertToSplitRead(SAMRecord record, List<SAMRecord> salist, ReferenceLookup reference) {
+	public static void convertToSplitRead(SAMRecord record, List<SAMRecord> salist, ReferenceLookup reference, boolean adjustPrimaryAlignment) {
 		if (salist.size() == 0) return;
 		List<SAMRecord> alignments = new ArrayList<>(1 + salist.size());
 		for (SAMRecord r : salist) {
@@ -133,7 +133,7 @@ public class SplitReadHelper {
 			convertToSupplementaryAlignmentRecord(record, r);
 		}
 		if (reference != null && !AssemblyAttributes.isUnanchored(record)) {
-			adjustSplitLocationsToMinimiseEditDistance(record, alignments, reference);
+			adjustSplitLocationsToMinimiseEditDistance(record, alignments, reference, adjustPrimaryAlignment);
 		}
 		writeSA(record, alignments);
 	}
@@ -269,6 +269,9 @@ public class SplitReadHelper {
 		return newPrimary;
 	}
 	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary) {
+		if (originatingRecord == null) {
+			return;
+		}
 		assert(!AssemblyAttributes.isUnanchored(originatingRecord));
 		originatingRecord.setAttribute("OA", new ChimericAlignment(originatingRecord).toString());
 		if (newPrimary == null || newPrimary.getReadUnmappedFlag()) {
@@ -292,13 +295,20 @@ public class SplitReadHelper {
 			originatingRecord.setReadNegativeStrandFlag(newPrimary.getReadNegativeStrandFlag());
 		}
 	}
-	public static void adjustSplitLocationsToMinimiseEditDistance(SAMRecord primary, List<SAMRecord> salist, ReferenceLookup reference) {
+	public static SAMRecord adjustSplitLocationsToMinimiseEditDistance(SAMRecord primary, List<SAMRecord> salist, ReferenceLookup reference, boolean adjustPrimaryAlignment) {
 		ArrayList<SAMRecord> records = new ArrayList<>(salist);
 		records.add(primary);
-		records.sort(ByFirstAlignedBaseReadOffset);
-		for (int i = 0; i < records.size() - 1; i++) {
-			adjustSplitLocationToMinimiseEditDistance(records.get(i), records.get(i + 1), reference);
+		for (int j = 0, nmdelta = -1; j < 4 && nmdelta != 0; j++) {
+			nmdelta = 0;
+			records.sort(ByFirstAlignedBaseReadOffset);
+			for (int i = 0; i < records.size() - 1; i++) {
+				if (adjustPrimaryAlignment || (records.get(i).isSecondaryOrSupplementary() && records.get(i + 1).isSecondaryOrSupplementary())) {
+					nmdelta += adjustSplitLocationToMinimiseEditDistance(records.get(i), records.get(i + 1), reference);
+				}
+			}
+			// TODO: remove contained reads, unmapped reads, and reads with 0 overlap
 		}
+		return primary;
 	}
 	/**
 	 * Gets the change in edit distance caused by alignment of the given read base
@@ -365,7 +375,7 @@ public class SplitReadHelper {
 		}
 		return editDistance;
 	}
-	public static void adjustSplitLocationToMinimiseEditDistance(SAMRecord left, SAMRecord right, ReferenceLookup reference) {
+	public static int adjustSplitLocationToMinimiseEditDistance(SAMRecord left, SAMRecord right, ReferenceLookup reference) {
 		final int leftStart = SAMRecordUtil.getFirstAlignedBaseReadOffset(left);
 		final int leftEnd = SAMRecordUtil.getLastAlignedBaseReadOffset(left);
 		final int rightStart = SAMRecordUtil.getFirstAlignedBaseReadOffset(right);
@@ -374,7 +384,7 @@ public class SplitReadHelper {
 		if (leftEnd < rightStart - 1) {
 			// we have a gap
 			// TODO see if we can allocate any of the gap bases to either side
-			return;
+			return 0;
 		}
 		final int[] leftDistance = getEditDistanceDelta(left, reference, true);
 		final int[] rightDistance = getEditDistanceDelta(right, reference, false);
@@ -394,7 +404,7 @@ public class SplitReadHelper {
 		}
 		// try adjusting left
 		currentScore = 0;
-		for (int i = leftEnd - 1; i > leftStart; i--) {
+		for (int i = leftEnd - 1; i >= leftStart; i--) {
 			currentScore -= leftDistance[i + 1] - rightDistance[i + 1];
 			if (currentScore < bestScore) {
 				bestPosition = i;
@@ -413,5 +423,6 @@ public class SplitReadHelper {
 		} else {
 			SAMRecordUtil.adjustAlignmentBounds(right, rightExtend, 0);
 		}
+		return bestScore;
 	}
 }

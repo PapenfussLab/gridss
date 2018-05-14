@@ -126,6 +126,12 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 				getBreakpointEvidenceCountAssemblyReadPair(category) > 0 ||
 				getBreakpointEvidenceCountAssemblySoftClip(category) > 0;
 	}
+	public int getBreakpointReadCount() {
+		return getBreakpointEvidenceCountReadPair() +
+				getBreakpointEvidenceCountSoftClip() +
+				getBreakpointEvidenceCountAssemblyReadPair() + 
+				getBreakpointEvidenceCountAssemblySoftClip();
+	}
 	public int getBreakpointEvidenceCount() { return getBreakpointEvidenceCountAssembly() + getBreakpointEvidenceCountReadPair() + getBreakpointEvidenceCountSoftClip(); }
 	public int getBreakpointEvidenceCountAssembly() { return getBreakpointEvidenceCountLocalAssembly() + getBreakpointEvidenceCountRemoteAssembly(); }
 	public int getBreakpointEvidenceCountLocalAssembly() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, 0); }

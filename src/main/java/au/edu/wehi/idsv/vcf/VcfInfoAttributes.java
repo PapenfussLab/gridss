@@ -7,6 +7,7 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 public enum VcfInfoAttributes {
 	REFERENCE_READ_COUNT ("REF", 1, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend"),
 	REFERENCE_READPAIR_COUNT ("REFPAIR", 1, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele"),
+	REFERENCE_FRAGMENTS ("RF", 1, VCFHeaderLineType.Integer, "Reference fragments. Count of fragments suspporting the reference allele and not the variant allele."),
 	CALLED_QUAL ("CQ", 1, VCFHeaderLineType.Float, "Breakpoint quality score before evidence reallocation"),
 	BREAKEND_QUAL ("BQ", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence"),
 	
@@ -28,6 +29,7 @@ public enum VcfInfoAttributes {
 	BREAKPOINT_READPAIR_QUAL("RPQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint"),
 	BREAKPOINT_SPLITREAD_QUAL("SRQ", 1, VCFHeaderLineType.Float, "Quality score of split reads supporting breakpoint"),
 	BREAKPOINT_INDEL_QUAL("IQ", 1, VCFHeaderLineType.Float, "Quality score of read indels supporting breakpoint"),
+	BREAKPOINT_VARIANT_FRAGMENTS ("VF", 1, VCFHeaderLineType.Integer, "Count of fragments suspporting the variant breakpoint allele and not the reference allele."),
 
 	BREAKEND_ASSEMBLY_COUNT("BA", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting just local breakend"),
 	BREAKEND_UNMAPPEDMATE_COUNT("BUM", 1, VCFHeaderLineType.Integer, "Count of read pairs (with one read unmapped) supporting just local breakend"),
@@ -39,6 +41,7 @@ public enum VcfInfoAttributes {
 	BREAKEND_ASSEMBLY_QUAL("BAQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting just local breakend"),
 	BREAKEND_UNMAPPEDMATE_QUAL("BUMQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs (with one read unmapped) supporting just local breakend"),
 	BREAKEND_SOFTCLIP_QUAL("BSCQ", 1, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend"),
+	BREAKEND_VARIANT_FRAGMENTS ("BVF", 1, VCFHeaderLineType.Integer, "Count of fragments providing breakend for the variant allele."),
 
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
 	

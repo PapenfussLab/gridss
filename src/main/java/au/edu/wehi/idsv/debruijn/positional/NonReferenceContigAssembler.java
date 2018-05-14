@@ -430,7 +430,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (containsKmerRepeat(contig)) {
 			// recalculate the called contig, this may break the contig at the repeated kmer
 			MisassemblyFixer fixed = new MisassemblyFixer(contig);
-			contig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidenceTracker.support(contig)));
+			ArrayDeque<KmerPathSubnode> newContig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidenceTracker.support(contig)));
+			contig = newContig;
 		}
 		if (contig.isEmpty()) return null;
 		

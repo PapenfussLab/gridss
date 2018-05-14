@@ -253,7 +253,7 @@ public class TestHelper {
 		if (bs.direction == bs.direction2) {
 			ra.setReadNegativeStrandFlag(true);
 		}
-		SplitReadHelper.convertToSplitRead(r, ImmutableList.of(r), null);
+		SplitReadHelper.convertToSplitRead(r, ImmutableList.of(r), null, false);
 		return SplitReadEvidence.create(AES(), r).get(0);
 	}
 
@@ -547,7 +547,7 @@ public class TestHelper {
 		if (ralist.size() == 1) {
 			realigned.setReadName(ralist.get(0).getReadName());
 		}
-		SplitReadHelper.convertToSplitRead(read, ImmutableList.of(realigned), null);
+		SplitReadHelper.convertToSplitRead(read, ImmutableList.of(realigned), null, false);
 		return SplitReadEvidence.create(source, read).get(0);
 	}
 	public static SplitReadEvidence SR(SAMEvidenceSource source, BreakendDirection dir, SAMRecord read, SAMRecord realigned) {
@@ -555,7 +555,7 @@ public class TestHelper {
 		if (ralist.size() == 1) {
 			realigned.setReadName(ralist.get(0).getReadName());
 		}
-		SplitReadHelper.convertToSplitRead(read, ImmutableList.of(realigned), null);
+		SplitReadHelper.convertToSplitRead(read, ImmutableList.of(realigned), null, false);
 		return SplitReadEvidence.create(SES(), read).stream()
 				.filter(e -> e.getBreakendSummary().direction == dir)
 				.findFirst()
@@ -1259,7 +1259,7 @@ public class TestHelper {
 	public static SingleReadEvidence incorporateRealignment(SAMEvidenceSource aes, SAMRecord assembly, List<SAMRecord> realignments) {
 		SAMRecord out = assembly.deepCopy();
 		realignments.stream().forEach(r -> r.setReadName(SplitReadHelper.getSplitReadRealignments(assembly, false, aes.getContext().getEvidenceIDGenerator()).get(0).getReadName()));
-		SplitReadHelper.convertToSplitRead(out, realignments, null);
+		SplitReadHelper.convertToSplitRead(out, realignments, null, false);
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, 0, out);
 		return list.get(0);
 	}

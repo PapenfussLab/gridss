@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
 
@@ -165,6 +166,23 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		
 		assertEquals(2, e.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)));
 		assertEquals(1, e.getAssemblySupportCountReadPair(ImmutableList.of(true, true)));
+	}
+	@Test
+	public void should_track_read_name() {
+		DirectedEvidence e1 = SCE(BWD, withReadName("r1", Read(0, 1, "5S5M")));
+		DirectedEvidence e2 = SCE(BWD, withReadName("r2", Read(0, 1, "6S5M")));
+		DirectedEvidence e3 = NRRP(withReadName("r3", OEA(0, 1, "1M", false)));
+		MockSAMEvidenceSource cat2 = SES();
+		cat2.category = 1;
+		DirectedEvidence b1 = SCE(BWD, cat2, withReadName("r4", Read(0, 1, "7S5M")));
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3, b1),
+			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
+		AssemblyAttributes e = new AssemblyAttributes(r);
+		assertEquals("r1 r2 r3  r4", r.getStringAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS));
+		assertEquals("r1", e.getOriginatingFragmentID(0).get(0));
+		assertEquals("r2", e.getOriginatingFragmentID(0).get(1));
+		assertEquals("r3", e.getOriginatingFragmentID(0).get(2));
+		assertEquals("r4", e.getOriginatingFragmentID(1).get(0));
 	}
 	@Test
 	public void getEvidenceIDs_should_return_underlying_evidence() {

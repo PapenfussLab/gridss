@@ -176,7 +176,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		SAMRecord r = Read(0, 10, "10M5S");
 		SAMRecord realigned = Unmapped(15);
 		realigned.setReadName(SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator()).get(0).getReadString());
-		SplitReadHelper.convertToSplitRead(r, ImmutableList.of(realigned), null);
+		SplitReadHelper.convertToSplitRead(r, ImmutableList.of(realigned), null, false);
 		assertNull(r.getAttribute("SA"));
 	}
 	@Test

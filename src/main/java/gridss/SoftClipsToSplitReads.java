@@ -46,6 +46,9 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     public boolean REALIGN_EXISTING_SPLIT_READS = false;
     @Argument(doc="Indicates whether to realign the entire read, or just the soft clipped bases.", optional=true)
     public boolean REALIGN_ENTIRE_READ = false;
+    @Argument(doc="Indicates whether to adjust the primary alignment position if the total edit distance can be reduced by extending or contracting the primary alignment. "
+    		+ "ComputeSamTags should be rerun to correct any changes in primary alignment position if this operation is performed.", optional=true)
+    public boolean READJUST_PRIMARY_ALIGNMENT_POSITON = false;
     @Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
@@ -74,6 +77,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
     	realigner.setWorkerThreads(WORKER_THREADS);
     	realigner.setReference(getReference());
+    	realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITON);
     	try {
     		SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
         	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();

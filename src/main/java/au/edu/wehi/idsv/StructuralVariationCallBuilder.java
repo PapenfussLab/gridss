@@ -246,6 +246,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		int[] asrp = new int[processContext.getCategoryCount()];
 		int[] basr = new int[processContext.getCategoryCount()];
 		int[] basrp = new int[processContext.getCategoryCount()];
+		int[] supportingBreakpointFragments = new int[processContext.getCategoryCount()];
+		int[] supportingBreakendFragments = new int[processContext.getCategoryCount()];
 		for (int i = 0; i < processContext.getCategoryCount(); i++) {
 			int category = i;
 			asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
@@ -260,17 +262,33 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			basrp[category] = supportingBAS.stream()
 					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountReadPair(category) : 0)
 					.sum();
+			Set<String> bpfrags = supportingBreakpoint.stream()
+					.map(e -> e.getOriginatingFragmentID(category))
+					.flatMap(x -> x.stream())
+					.collect(Collectors.toSet());
+			supportingBreakpointFragments[category] = bpfrags.size();
+			Set<String> befrags = supportingBreakend.stream()
+					.map(e -> e.getOriginatingFragmentID(category))
+					.flatMap(x -> x.stream())
+					.collect(Collectors.toSet());
+			befrags.removeAll(bpfrags);
+			supportingBreakendFragments[category] = befrags.size(); 
+					
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), asrp[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), basr[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), basrp[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_QUAL.attribute(), srq[i] + iq[i] + rpq[i] + asq[i] + rasq[i] + casq[i]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_QUAL.attribute(), scq[i] + umq[i] + basq[i]);
+			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), supportingBreakpointFragments[category]);
+			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), supportingBreakendFragments[category]);
 		}
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(asr).sum());
 		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(asrp).sum());
 		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(basr).sum());
 		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(basrp).sum());
+		attribute(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakpointFragments).sum());
+		attribute(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakendFragments).sum());
 		List<String> breakendIds = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
 				.map(e -> e.getSAMRecord().getReadName())
 				.distinct()

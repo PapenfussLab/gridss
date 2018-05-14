@@ -35,6 +35,12 @@ public class SamTags {
 	 * EvidenceID of assembly components
 	 */
 	public static final String EVIDENCEID = "ez";
+	/**
+	 * Read names of supporting fragments.
+	 * 
+	 * Per-category encoding is achieved via consecutive separators
+	 */
+	public static final String ASSEMBLY_SUPPORTING_FRAGMENTS = "sf";
 	public static final String ASSEMBLY_DIRECTION = "ad";
 	public static final String UNANCHORED = "ua";
 	// Per category aggregations

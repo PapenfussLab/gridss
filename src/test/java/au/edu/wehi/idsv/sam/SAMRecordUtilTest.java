@@ -93,6 +93,10 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("", S(SAMRecordUtil.getEndSoftClipBases(withSequence("ATGC", Read(0, 1, "3S1M"))[0])));
 	}
 	@Test
+	public void getEndSoftClipLength_should_not_die_on_fully_SC_reads() {
+		assertEquals(100, SAMRecordUtil.getEndSoftClipLength(Read(0, 1, "100S")));
+	}
+	@Test
 	public void getStartSoftClipBaseQualities() {
 		assertArrayEquals(new byte[] {}, SAMRecordUtil.getStartSoftClipBaseQualities(withQual(new byte[] {1,2,3,4}, Read(0, 1, "1H1M3S1H"))[0]));
 		assertArrayEquals(new byte[] {1}, SAMRecordUtil.getStartSoftClipBaseQualities(withQual(new byte[] {1,2,3,4}, Read(0, 1, "1S1M2S"))[0]));
@@ -990,5 +994,13 @@ public class SAMRecordUtilTest extends TestHelper {
 		Assert.assertEquals("1S7M2S", SAMRecordUtil.adjustAlignmentBounds(Read(0, 1, "10M"), -1, -2).getCigarString());
 		Assert.assertEquals("1H8S2M", SAMRecordUtil.adjustAlignmentBounds(Read(0, 1, "1H2S3M4D5M"), -6, 0).getCigarString());
 		Assert.assertEquals("2M8S1H", SAMRecordUtil.adjustAlignmentBounds(Read(0, 1, "5M4D3M2S1H"), 0, -6).getCigarString());
+	}
+	@Test
+	public void adjustAlignmentBounds_should_convert_negative_to_soft_clip() {
+		Assert.assertEquals("1X1=1X1=1X5S", SAMRecordUtil.adjustAlignmentBounds(Read(0, 1, "1X1=1X1=1X1=1X1=1X1="), 0, -5).getCigarString());
+	}
+	@Test
+	public void getEndClipLength_should_consider_end_clipped_if_no_reads_mapped() {
+		Assert.assertEquals(5, SAMRecordUtil.getEndClipLength(Read(0, 1, "5S")));
 	}
 }

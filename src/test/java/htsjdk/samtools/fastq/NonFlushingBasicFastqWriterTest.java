@@ -33,6 +33,8 @@ public class NonFlushingBasicFastqWriterTest extends TestHelper {
 		}
 		bfw.close();
 		fw.close();
+		// BasicFastqWriter writes incorrect newlines on Windows so technically we don't actually
+		// want to match the output exactly.
 		Assert.assertArrayEquals(Files.readAllBytes(bfq.toPath()), Files.readAllBytes(ufq.toPath()));
 		testFolder.delete();
 	}

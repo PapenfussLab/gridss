@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.util.List;
+
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 
@@ -38,6 +40,11 @@ public interface DirectedEvidence {
 	 * @return Unique breakpoint identifier string
 	 */
 	String getEvidenceID();
+	/**
+	 * Unique identifier for the source DNA fragments.
+	 * @return distinct read names of supporting reads
+	 */
+	List<String> getOriginatingFragmentID(int category);
 	/**
 	 * Source of this evidence
 	 * @return Source providing this evidence

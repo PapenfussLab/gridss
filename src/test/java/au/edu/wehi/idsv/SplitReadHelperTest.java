@@ -118,7 +118,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null, true);
 		
 		assertEquals("CGTA", S(supp1.getReadBases()));
 		assertEquals("1234", S(supp1.getBaseQualities()));
@@ -144,7 +144,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#2");
 		supp1.setReadBases(B("C"));
 		supp1.setBaseQualities(B("2"));
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null, true);
 		
 		assertEquals("TACG", S(supp1.getReadBases()));
 		assertEquals("4321", S(supp1.getBaseQualities()));
@@ -172,7 +172,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp1.setReadBases(B("CG"));
 		supp1.setBaseQualities(B("21"));
 		supp1.setReadNegativeStrandFlag(true);
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null, true);
 		
 		assertEquals("TACG", S(supp1.getReadBases()));
 		assertEquals("4321", S(supp1.getBaseQualities()));
@@ -189,7 +189,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null, true);
 		
 		assertEquals("value", supp1.getStringAttribute("xx"));
 	}
@@ -208,7 +208,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp1.setReadName(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null, true);
 		
 		assertEquals("value", supp1.getStringAttribute("xx"));
 		assertTrue(supp1.getReadPairedFlag());
@@ -237,7 +237,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		supp1.setMappingQuality(17);
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1), null, true);
 		
 		assertEquals("r", supp1.getReadName());
 		assertEquals(2, (int)supp1.getMateReferenceIndex());
@@ -268,7 +268,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp2.setBaseQualities(B("1"));
 		supp2.setMappingQuality(19);
 		supp2.setAttribute("NM", 10);
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2), null, true);
 		
 		assertEquals("polyA,20,+,1M3S,19,10;polyA,10,+,1S1M2S,17,9", primary.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,3S1M,15,8;polyA,20,+,1M3S,19,10", supp1.getStringAttribute("SA"));
@@ -298,7 +298,7 @@ public class SplitReadHelperTest extends TestHelper {
 		supp2.setBaseQualities(B("1"));
 		supp2.setMappingQuality(19);
 		supp2.setAttribute("NM", 10);
-		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2), null);
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2), null, true);
 		
 		assertEquals(primary.getReadName(), supp1.getReadName());
 		assertEquals(primary.getReadName(), supp2.getReadName());
@@ -382,5 +382,13 @@ public class SplitReadHelperTest extends TestHelper {
 		SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(left, right, getContext().getReference());
 		Assert.assertEquals("3S3M", left.getCigarString());
 		Assert.assertEquals("3S3M", right.getCigarString());
+	}
+	@Test
+	public void should_adjustSplitLocationToMinimiseEditDistance_should_not_unmap_read() {
+		SAMRecord left = withSequence("CCCGGGCCC", Read(0, 100, "3S3M3S"))[0];
+		SAMRecord right = withSequence("AAAAAAAAA", Read(0, 200, "3S6M"))[0];
+		SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(left, right, getContext().getReference());
+		Assert.assertEquals("3S1M5S", left.getCigarString());
+		Assert.assertEquals("4S5M", right.getCigarString());
 	}
 }

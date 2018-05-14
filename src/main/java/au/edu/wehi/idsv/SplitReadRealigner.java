@@ -18,6 +18,7 @@ import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
@@ -48,6 +49,7 @@ public class SplitReadRealigner {
 	private boolean processSecondaryAlignments = false;
 	private boolean realignExistingSplitReads = false;
 	private boolean realignEntireRecord = false;
+	private boolean adjustPrimary = false;
 	private ReferenceLookup reference = null;
 	/**
 	 * Alignment-unique read identifier must be hashed to ensure that the read names
@@ -232,39 +234,54 @@ public class SplitReadRealigner {
 			}
 		}
 	}
-	private void writeCompletedAlignment(SAMRecord record, List<SAMRecord> realignments, SAMFileWriter recordWriter, SAMFileWriter realignmentWriter) {
-		int primaryReferenceIndex = record.getReadUnmappedFlag() ? -1 : record.getReferenceIndex();
-		int primaryAlignmentStart = record.getReadUnmappedFlag() ? -1 : record.getAlignmentStart();
+	private void writeCompletedAlignment(SAMRecord primary, List<SAMRecord> realignments, SAMFileWriter recordWriter, SAMFileWriter realignmentWriter) {
 		if (isRealignExistingSplitReads() || isRealignEntireRecord()) {
-			if (record.getSupplementaryAlignmentFlag()) {
+			if (primary.getSupplementaryAlignmentFlag()) {
 				// If we're realigning, we need to drop all existing supplementary alignments
 				return;
 			}
-			record.setAttribute(SAMTag.SA.name(), null);
+			primary.setAttribute(SAMTag.SA.name(), null);
 		}
+		boolean primaryHasMoved = prepareRecordsForWriting(primary, realignments);
+		if (primary.getReadUnmappedFlag() || primaryHasMoved) {
+			// we'll break sort ordering if we write it back to the input file
+			realignmentWriter.addAlignment(primary);
+		} else {
+			recordWriter.addAlignment(primary);
+		}
+		for (SAMRecord sar : realignments) {
+			realignmentWriter.addAlignment(sar);
+		}
+	}
+	private boolean prepareRecordsForWriting(SAMRecord primary, List<SAMRecord> realignments) {
+		int primaryReferenceIndex = primary.getReadUnmappedFlag() ? -1 : primary.getReferenceIndex();
+		int primaryAlignmentStart = primary.getReadUnmappedFlag() ? -1 : primary.getAlignmentStart();
 		// Only do anything to records that we actually attempted realignment for 
 		if (realignments.size() > 0) {
 			if (isRealignEntireRecord() &&
 					// special case exclusion of unanchored assemblies as
 					// we repurpose the CIGAR string to encode the breakend interval
 					// and realigning will break that
-					!AssemblyAttributes.isUnanchored(record)) {
-				SAMRecord newPrimaryAlignmentPosition = SplitReadHelper.replaceAlignment(record, realignments);
+					!AssemblyAttributes.isUnanchored(primary)) {
+				SAMRecord newPrimaryAlignmentPosition = SplitReadHelper.replaceAlignment(primary, realignments);
 				if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
 					throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
 				}
 			}
-			SplitReadHelper.convertToSplitRead(record, realignments, reference);
+			SplitReadHelper.convertToSplitRead(primary, realignments, reference, isAdjustPrimaryAlignment() || isRealignEntireRecord());
+			for (int i = 0; i < realignments.size(); i++) {
+				SAMRecord r = realignments.get(i);
+				if (r.getReadUnmappedFlag() || SAMRecordUtil.getStartClipLength(r) == SAMRecordUtil.getReadLengthIncludingHardClipping(r)) {
+					realignments.remove(i);
+					i--;
+				}
+			}
+			// TODO: remove alignments which are contained by another alignment
+			if (primary.getReadUnmappedFlag() || SAMRecordUtil.getStartClipLength(primary) == SAMRecordUtil.getReadLengthIncludingHardClipping(primary)) {
+				SplitReadHelper.replaceAlignment(primary, realignments);
+			}
 		}
-		if (record.getReadUnmappedFlag() || record.getReferenceIndex() != primaryReferenceIndex || record.getAlignmentStart() != primaryAlignmentStart) {
-			// we'll break sort ordering if we write it back to the input file
-			realignmentWriter.addAlignment(record);
-		} else {
-			recordWriter.addAlignment(record);
-		}
-		for (SAMRecord sar : realignments) {
-			realignmentWriter.addAlignment(sar);
-		}
+		return primary.getReadUnmappedFlag() || primary.getReferenceIndex() != primaryReferenceIndex || primary.getAlignmentStart() != primaryAlignmentStart;
 	}
 	public void createSupplementaryAlignments(FastqAligner aligner, File input, File output) throws IOException {
 		try {
@@ -411,5 +428,11 @@ public class SplitReadRealigner {
 	}
 	public void setReference(ReferenceLookup reference) {
 		this.reference = reference;
+	}
+	public void setAdjustPrimaryAlignment(boolean adjustPrimary) {
+		this.adjustPrimary = adjustPrimary;
+	}
+	public boolean isAdjustPrimaryAlignment() {
+		return adjustPrimary;
 	}
 }

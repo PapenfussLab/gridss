@@ -435,5 +435,5 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 * Assembly contigs are not paired
 	 */
 	@Override
-	public boolean knownSingleEnded() { return true; } 
+	public boolean knownSingleEnded() { return true; }
 }

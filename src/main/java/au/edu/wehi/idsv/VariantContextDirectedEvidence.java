@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -144,8 +145,17 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		}
 		return r;
 	}
+	public int getBreakendReadCount() {
+		return getBreakendEvidenceCountReadPair() +
+				getBreakendEvidenceCountSoftClip() +
+				getBreakendEvidenceCountAssemblyReadPair() + 
+				getBreakendEvidenceCountAssemblySoftClip();
+	}
 	public int getBreakendEvidenceCount() { return getBreakendEvidenceCountAssembly() + getBreakendEvidenceCountReadPair() + getBreakendEvidenceCountSoftClip(); }
 	public int getBreakendEvidenceCountAssembly() { return getInt(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT, 0); }
+	public int getBreakendEvidenceCountAssemblyReadPair() { return getInt(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, 0); }
+	public int getBreakendEvidenceCountAssemblySoftClip() { return getInt(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT, 0); }
+	
 	public int getBreakendEvidenceCountReadPair() { return getInt(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, 0); }
 	public int getBreakendEvidenceCountReadPair(int category) { return getInt(category, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_COUNT, 0); } 
 	public int getBreakendEvidenceCountSoftClip() { return getInt(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, 0); }
@@ -165,5 +175,9 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	@Override
 	public boolean isFromMultimappingFragment() {
 		throw new UnsupportedOperationException();
+	}
+	@Override
+	public List<String> getOriginatingFragmentID(int category) {
+		return null;
 	}
 }

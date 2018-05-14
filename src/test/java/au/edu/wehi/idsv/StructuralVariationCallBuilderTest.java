@@ -35,7 +35,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 1, BWD, 100);
 	public static class sc extends SoftClipEvidence {
 		protected sc(int offset, boolean tumour) {
-			super(SES(tumour), withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))[0],
+			super(SES(tumour), withSequence("NNNNNNNNNN", withReadName(String.format("sc%d",offset), Read(0, 10, "5S5M")))[0],
 				new BreakendSummary(0, BWD, 10, 10, 10),
 				0, 5, 5, 10, 0);
 			this.offset = offset;
@@ -49,7 +49,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rsc extends SplitReadEvidence {
 		int offset;
 		protected rsc(int offset, boolean tumour) {
-			super(SES(tumour), withAttr("SA", "polyACGT,100,5M,-,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M")))[0],
+			super(SES(tumour), withAttr("SA", "polyACGT,100,5M,-,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rsc%d",offset), Read(0, 10, "5S5M"))))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
 					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
 			this.offset = offset;
@@ -69,7 +69,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rsc_not_supporting_breakpoint extends SplitReadEvidence {
 		int offset;
 		protected rsc_not_supporting_breakpoint(int offset, boolean tumour) {
-			super(SES(tumour), withAttr("SA", "random,100,5M,-,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M")))[0],
+			super(SES(tumour), withAttr("SA", "random,100,5M,-,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rsc_ns%d",offset), Read(0, 10, "5S5M"))))[0],
 					new BreakpointSummary(0, BWD, 10, 2, BWD, 100),
 					0, 5, 5, 5, 5, 10, new ChimericAlignment("random,100,-,5M,0,0"),0, 0);
 		}
@@ -82,7 +82,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rrsc extends SplitReadEvidence {
 		int offset;
 		protected rrsc(int offset, boolean tumour) {
-			super(SES(tumour), asSupplementary(withAttr("SA", "polyACGT,100,-,5M,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))))[0],
+			super(SES(tumour), asSupplementary(withAttr("SA", "polyACGT,100,-,5M,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rrsc%d",offset), Read(0, 10, "5S5M")))))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
 					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
 			this.offset = offset;
@@ -96,8 +96,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class um extends UnmappedMateReadPair {
 		int offset;
 		protected um(int offset, boolean tumour) {
-			super(OEA(0, 15, "5M", false)[0],
-				OEA(0, 15, "5M", false)[1],
+			super(withReadName(String.format("um%d",offset), OEA(0, 15, "5M", false))[0],
+					withReadName(String.format("um%d",offset), OEA(0, 15, "5M", false))[1],
 				SES(tumour));
 			this.offset = offset;
 		}
@@ -108,8 +108,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class dp extends DiscordantReadPair {
 		int offset;
 		protected dp(int offset, boolean tumour) {
-			super(DP(0, 12, "6M", false, 1, 102, "7M", false)[0],
-					DP(0, 12, "6M", false, 1, 102, "7M", false)[1],
+			super(withReadName(String.format("dp%d",offset), DP(0, 12, "6M", false, 1, 102, "7M", false))[0],
+					withReadName(String.format("dp%d",offset), DP(0, 12, "6M", false, 1, 102, "7M", false))[1],
 					SES(tumour));
 				this.offset = offset;
 			}
@@ -949,24 +949,34 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertAttr(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, VcfFormatAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, new int[] { 0, 2, }, bp);
 	}
 	@Test
-	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READ_COUNT() {
+	public void should_count_unique_supporting_fragments() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(new rsc(1, true));
-		cb.addEvidence(new rsc(2, true));
+		cb.addEvidence(new rsc(2, false));
 		cb.addEvidence(new rsc(3, false));
-		cb.addEvidence(new rrsc(1, false));
-		cb.addEvidence(new rrsc(7, false));
+		cb.addEvidence(new um(0, false));
 		
-		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
-				new rsc(4, true));
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(new rsc(1, true)); 
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
+		cb.addEvidence(incorporateRealignment(AES(), ass, ImmutableList.of(withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0])));
+		
+		support = Lists.<DirectedEvidence>newArrayList(new rsc(1, true), new um(0, false)); 
+		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm2"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
 		cb.addEvidence(asAssemblyEvidence(ass));
 		
 		VariantContextDirectedEvidence bp = cb.make();
 		
-		assertAttr(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT, VcfFormatAttributes.BREAKEND_ASSEMBLY_READ_COUNT, new int[] { 0, 1, }, bp);
+		// rsc1 shouldn't be double-counted due to being in an assembly
+		assertAttr(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS , VcfFormatAttributes.BREAKPOINT_VARIANT_FRAGMENTS, new int[] { 2, 1, }, bp);
+		// rsc1 shouldn't count to breakend as it supports a breakpoint
+		// um0 should only be counted once
+		assertAttr(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS , VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS, new int[] { 1, 0, }, bp);
+	}
+	@Test
+	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READ_COUNT() {
+		assertAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, VcfFormatAttributes.BREAKEND_SOFTCLIP_COUNT, new int[] { 2,  1, }, complex_bp());
 	}
 }

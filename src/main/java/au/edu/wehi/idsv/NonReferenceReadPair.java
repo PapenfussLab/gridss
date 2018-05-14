@@ -1,9 +1,12 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.collect.ImmutableList;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
@@ -92,8 +95,6 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		byte[] q2 = record.getStringAttribute(SAMTag.Q2.name()).getBytes(StandardCharsets.US_ASCII); 
 		SAMUtils.fastqToPhred(q2);
 		if (!remote.getReadUnmappedFlag()) {
-			assertAttribute(record, SAMTag.MC);
-			assertAttribute(record, SAMTag.MQ);
 			remote.setReferenceIndex(record.getMateReferenceIndex());
 			remote.setAlignmentStart(record.getMateAlignmentStart());
 			remote.setCigarString(record.getStringAttribute(SAMTag.MC.name()));
@@ -310,5 +311,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	@Override
 	public boolean isFromMultimappingFragment() {
 		return local.getAttribute(SamTags.MULTIMAPPING_FRAGMENT) != null;
+	}
+	@Override
+	public List<String> getOriginatingFragmentID(int category) {
+		return source.getSourceCategory() == category ? ImmutableList.of(local.getReadName()) : ImmutableList.of();
 	}
 }

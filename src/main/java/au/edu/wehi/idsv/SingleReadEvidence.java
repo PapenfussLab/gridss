@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 
 import au.edu.wehi.idsv.debruijn.ContigCategorySupportHelper;
@@ -411,5 +412,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	public List<Boolean> getCategorySupportBreakdown() {
 		return categorySupport;
+	}
+	@Override
+	public List<String> getOriginatingFragmentID(int category) {
+		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
+			return new AssemblyAttributes(record).getOriginatingFragmentID(category);
+		}
+		return source.getSourceCategory() == category ? ImmutableList.of(record.getReadName()) : ImmutableList.of();
 	}
 }

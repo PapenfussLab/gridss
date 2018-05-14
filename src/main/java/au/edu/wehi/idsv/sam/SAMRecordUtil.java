@@ -104,8 +104,9 @@ public class SAMRecordUtil {
 	}
 
 	public static int getStartClipLength(List<CigarElement> elements) {
-		if (elements == null)
+		if (elements == null) {
 			return 0;
+		}
 		int clipLength = 0;
 		for (int i = 0; i < elements.size() && elements.get(i).getOperator().isClipping(); i++) {
 			clipLength += elements.get(i).getLength();
@@ -114,13 +115,14 @@ public class SAMRecordUtil {
 	}
 
 	public static int getStartSoftClipLength(List<CigarElement> elements) {
-		if (elements == null)
+		if (elements == null) {
 			return 0;
+		}
 		int i = 0;
-		while (i < elements.size() && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP
-				|| elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
-			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)
+		while (i < elements.size() && elements.get(i).getOperator().isClipping()) {
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) {
 				return elements.get(i).getLength();
+			}
 			i++;
 		}
 		return 0;
@@ -128,19 +130,19 @@ public class SAMRecordUtil {
 
 	public static int getEndSoftClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();
-		if (cigar == null)
+		if (cigar == null) {
 			return 0;
+		}
 		return getEndSoftClipLength(cigar.getCigarElements());
 	}
 
 	public static int getEndSoftClipLength(List<CigarElement> elements) {
-		if (elements == null)
-			return 0;
+		if (elements == null) return 0;
 		int i = elements.size() - 1;
-		while (i > 0 && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP
-				|| elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
-			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)
+		while (i >= 0 && elements.get(i).getOperator().isClipping()) {
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) {
 				return elements.get(i).getLength();
+			}
 			i--;
 		}
 		return 0;
@@ -148,16 +150,18 @@ public class SAMRecordUtil {
 
 	public static int getEndClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();
-		if (cigar == null)
+		if (cigar == null) {
 			return 0;
+		}
 		return getEndClipLength(cigar.getCigarElements());
 	}
 
 	public static int getEndClipLength(List<CigarElement> elements) {
-		if (elements == null)
+		if (elements == null) {
 			return 0;
+		}
 		int clipLength = 0;
-		for (int i = elements.size() - 1; i < elements.size() && elements.get(i).getOperator().isClipping(); i--) {
+		for (int i = elements.size() - 1; i >= 0 && elements.get(i).getOperator().isClipping(); i--) {
 			clipLength += elements.get(i).getLength();
 		}
 		return clipLength;
@@ -181,55 +185,54 @@ public class SAMRecordUtil {
 
 	public static byte[] getStartSoftClipBases(SAMRecord record) {
 		byte[] seq = record.getReadBases();
-		if (seq == null)
+		if (seq == null) {
 			return null;
-		if (seq == SAMRecord.NULL_SEQUENCE)
+		}
+		if (seq == SAMRecord.NULL_SEQUENCE) {
 			return null;
+		}
 		seq = Arrays.copyOfRange(seq, 0, getStartSoftClipLength(record));
 		return seq;
 	}
 
 	public static byte[] getEndSoftClipBases(SAMRecord record) {
 		byte[] seq = record.getReadBases();
-		if (seq == null)
+		if (seq == null) {
 			return null;
-		if (seq == SAMRecord.NULL_SEQUENCE)
+		}
+		if (seq == SAMRecord.NULL_SEQUENCE) {
 			return null;
+		}
 		seq = Arrays.copyOfRange(seq, record.getReadLength() - getEndSoftClipLength(record), record.getReadLength());
 		return seq;
 	}
 
 	public static byte[] getStartSoftClipBaseQualities(SAMRecord record) {
 		byte[] seq = record.getBaseQualities();
-		if (seq == null)
+		if (seq == null) {
 			return null;
-		if (seq == SAMRecord.NULL_QUALS)
+		}
+		if (seq == SAMRecord.NULL_QUALS) {
 			return null;
+		}
 		seq = Arrays.copyOfRange(seq, 0, getStartSoftClipLength(record));
 		return seq;
 	}
 
 	public static byte[] getEndSoftClipBaseQualities(SAMRecord record) {
 		byte[] seq = record.getBaseQualities();
-		if (seq == null)
-			return null;
-		if (seq == SAMRecord.NULL_QUALS)
-			return null;
+		if (seq == null)  return null;
+		if (seq == SAMRecord.NULL_QUALS) return null;
 		seq = Arrays.copyOfRange(seq, record.getReadLength() - getEndSoftClipLength(record), record.getReadLength());
 		return seq;
 	}
 
 	public static SAMRecord ensureNmTag(ReferenceSequenceFile ref, SAMRecord record) {
-		if (record == null)
-			return record;
-		if (record.getReadBases() == null)
-			return record;
-		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE)
-			return record;
-		if (record.getIntegerAttribute(SAMTag.NM.name()) != null)
-			return record;
-		if (record.getReadUnmappedFlag())
-			return record;
+		if (record == null) return record;
+		if (record.getReadBases() == null) return record;
+		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE) return record;
+		if (record.getIntegerAttribute(SAMTag.NM.name()) != null) return record;
+		if (record.getReadUnmappedFlag()) return record;
 		byte[] refSeq = ref
 				.getSubsequenceAt(record.getReferenceName(), record.getAlignmentStart(), record.getAlignmentEnd())
 				.getBases();
@@ -252,8 +255,7 @@ public class SAMRecordUtil {
 	 */
 	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation,
 			int margin) {
-		if (record1.getReadUnmappedFlag() || record2.getReadUnmappedFlag())
-			return false;
+		if (record1.getReadUnmappedFlag() || record2.getReadUnmappedFlag()) return false;
 		return isDovetailing(record1.getReferenceIndex(), record1.getAlignmentStart(),
 				record1.getReadNegativeStrandFlag(), record1.getCigar(), record2.getReferenceIndex(),
 				record2.getAlignmentStart(), record2.getReadNegativeStrandFlag(), record2.getCigar(),
@@ -261,12 +263,9 @@ public class SAMRecordUtil {
 	}
 
 	public static boolean isDovetailing(SAMRecord record, PairOrientation expectedOrientation, int margin) {
-		if (record.getReadUnmappedFlag())
-			return false;
-		if (!record.getReadPairedFlag())
-			return false;
-		if (record.getMateUnmappedFlag())
-			return false;
+		if (record.getReadUnmappedFlag()) return false;
+		if (!record.getReadPairedFlag()) return false;
+		if (record.getMateUnmappedFlag()) return false;
 		Cigar cigar2 = null;
 		String mc = record.getStringAttribute(SAMTag.MC.name());
 		if (mc != null) {
@@ -280,21 +279,15 @@ public class SAMRecordUtil {
 	private static boolean isDovetailing(int reference1, int start1, boolean isNegativeStrand1, Cigar cigar1,
 			int reference2, int start2, boolean isNegativeStrand2, Cigar cigar2, PairOrientation expectedOrientation,
 			int margin) {
-		if (expectedOrientation != PairOrientation.FR)
-			throw new RuntimeException("NYI");
-		if (reference1 != reference2)
-			return false;
-		if (Math.abs(start1 - start2) > margin)
-			return false;
-		if (isNegativeStrand1 == isNegativeStrand2)
-			return false; // FR
+		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
+		if (reference1 != reference2) return false;
+		if (Math.abs(start1 - start2) > margin) return false;
+		if (isNegativeStrand1 == isNegativeStrand2) return false; // FR
 		if (cigar2 != null) {
 			int end1 = start1 + CigarUtil.referenceLength(cigar1.getCigarElements()) - 1;
 			int end2 = start2 + CigarUtil.referenceLength(cigar2.getCigarElements()) - 1;
-			if (Math.abs(end1 - end2) > margin)
-				return false;
-			if (!IntervalUtil.overlapsClosed(start1, end1, start2, end2))
-				return false;
+			if (Math.abs(end1 - end2) > margin) return false;
+			if (!IntervalUtil.overlapsClosed(start1, end1, start2, end2)) return false;
 		}
 		// expect dovetail to look like
 		// >>>SSS
@@ -308,8 +301,7 @@ public class SAMRecordUtil {
 			unexpectedClipLength += isNegativeStrand2 ? getEndSoftClipLength(cigar2.getCigarElements())
 					: getStartSoftClipLength(cigar2.getCigarElements());
 		}
-		if (unexpectedClipLength > margin)
-			return false;
+		if (unexpectedClipLength > margin) return false;
 		return true;
 	}
 
@@ -1433,7 +1425,7 @@ public class SAMRecordUtil {
 		}
 		if (endunclip > 0) {
 			int i = list.size() - 1;
-			while (i > 0 && list.get(i).getOperator() != CigarOperator.SOFT_CLIP) {
+			while (i >= 0 && list.get(i).getOperator() != CigarOperator.SOFT_CLIP) {
 				i--;
 			}
 			if (i < 0 || list.get(i).getLength() < endunclip) {
@@ -1445,7 +1437,7 @@ public class SAMRecordUtil {
 			CigarUtil.clean(list, false);
 		} else if (endunclip < 0) {
 			int i = list.size() - 1;
-			while (i > 0 && !list.get(i).getOperator().consumesReferenceBases()) {
+			while (i >= 0 && !list.get(i).getOperator().consumesReferenceBases()) {
 				i--;
 			}
 			int alignedBasesLeftToRemove = -endunclip;
@@ -1462,7 +1454,6 @@ public class SAMRecordUtil {
 					} else {
 						alignedBasesLeftToRemove -= ce.getLength();
 						list.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
-						i--;
 					}
 				} else {
 					// D and N operators do not consume read bases - throw them out

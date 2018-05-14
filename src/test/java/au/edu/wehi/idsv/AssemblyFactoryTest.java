@@ -179,7 +179,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		ra.setMappingQuality(17);
 		ra.setBaseQualities(new byte[] { 0,1,2,3,4,5,6,7 });
 		ra.setReadName(SplitReadHelper.getSplitReadRealignments(r, false, AES().getContext().getEvidenceIDGenerator()).get(0).getReadName());
-		SplitReadHelper.convertToSplitRead(r, ImmutableList.of(ra), null);
+		SplitReadHelper.convertToSplitRead(r, ImmutableList.of(ra), null, false);
 		return SplitReadEvidence.create(AES(), r).get(0);
 	}
 	@Test

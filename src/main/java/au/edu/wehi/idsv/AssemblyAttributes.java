@@ -5,11 +5,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 
 import au.edu.wehi.idsv.sam.SamTags;
@@ -19,7 +23,7 @@ import htsjdk.samtools.util.Log;
 
 public class AssemblyAttributes {
 	private static final Log log = Log.getInstance(AssemblyAttributes.class);
-	private static final String COMPONENT_EVIDENCEID_SEPARATOR = " ";
+	private static final String ID_COMPONENT_SEPARATOR = " ";
 	private final SAMRecord record;
 	private HashSet<String> evidenceIDs = null;
 	public static boolean isAssembly(SAMRecord record) {
@@ -59,11 +63,41 @@ public class AssemblyAttributes {
 			if (encoded == null) {
 				throw new IllegalStateException("Unable to get constituent evidenceIDs from assembly with evidence tracking disabled");
 			}
-			String[] ids = encoded.split(COMPONENT_EVIDENCEID_SEPARATOR);
+			String[] ids = encoded.split(ID_COMPONENT_SEPARATOR);
 			evidenceIDs = new HashSet<String>(Arrays.asList(ids));
 			evidenceIDs.remove("");
 		}
 		return evidenceIDs;
+	}
+	public List<String> getOriginatingFragmentID() {
+		String encoded = record.getStringAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS);
+		if (encoded == null) {
+			return ImmutableList.of();
+		}
+		return toList(encoded, ID_COMPONENT_SEPARATOR);
+	}
+	private static final List<String> toList(String str, String separator) {
+		return Arrays.stream(str.split(ID_COMPONENT_SEPARATOR))
+				.filter(s -> StringUtils.isNotEmpty(s))
+				.collect(Collectors.toList());
+	}
+	/**
+	 * Breakdown of DNA fragment support by category
+	 * @param category
+	 * @return
+	 */
+	public List<String> getOriginatingFragmentID(int category) {
+		String encoded = record.getStringAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS);
+		if (encoded == null) {
+			return ImmutableList.of();
+		}
+		String[] categoryString = encoded.split(ID_COMPONENT_SEPARATOR + ID_COMPONENT_SEPARATOR);
+		if (categoryString.length <= category) {
+			return ImmutableList.of();
+		}
+		return Arrays.stream(categoryString[category].split(ID_COMPONENT_SEPARATOR))
+				.filter(s -> StringUtils.isNotEmpty(s))
+				.collect(Collectors.toList());
 	}
 	public static void annotateNonSupporting(ProcessingContext context, BreakpointSummary assemblyBreakpoint, SAMRecord record, Collection<DirectedEvidence> support) {
 		int n = context.getCategoryCount();
@@ -133,11 +167,25 @@ public class AssemblyAttributes {
 			}
 		}
 		ensureUniqueEvidenceID(record.getReadName(), support);
-		String evidenceString = support.stream()
-				.map(e -> e.getEvidenceID())
-				.sorted()
-				.collect(Collectors.joining(COMPONENT_EVIDENCEID_SEPARATOR));
+		
+		Map<Integer, List<DirectedEvidence>> evidenceByCategory = support.stream()
+				.collect(Collectors.groupingBy(e -> ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory()));
+		String evidenceString = IntStream.range(0, evidenceByCategory.keySet().stream().mapToInt(x -> x).max().orElse(0) + 1)
+			.mapToObj(i -> evidenceByCategory.get(i) == null ? "" : evidenceByCategory.get(i).stream()
+					.map(e -> e.getEvidenceID())
+					.distinct()
+					.sorted()
+					.collect(Collectors.joining(ID_COMPONENT_SEPARATOR)))
+			.collect(Collectors.joining(ID_COMPONENT_SEPARATOR + ID_COMPONENT_SEPARATOR));
+		String fragmentString = IntStream.range(0, evidenceByCategory.keySet().stream().mapToInt(x -> x).max().orElse(0) + 1)
+			.mapToObj(i -> evidenceByCategory.get(i) == null ? "" : evidenceByCategory.get(i).stream()
+					.flatMap(x -> x.getOriginatingFragmentID(i).stream())
+					.distinct()
+					.sorted()
+					.collect(Collectors.joining(ID_COMPONENT_SEPARATOR)))
+			.collect(Collectors.joining(ID_COMPONENT_SEPARATOR + ID_COMPONENT_SEPARATOR));
 		record.setAttribute(SamTags.EVIDENCEID, evidenceString);
+		record.setAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS, fragmentString);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
