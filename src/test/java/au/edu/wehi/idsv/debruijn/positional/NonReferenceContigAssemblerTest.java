@@ -21,6 +21,7 @@ import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.AssemblyAttributes;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.NonReferenceReadPair;
@@ -58,7 +59,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test");
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test", BreakendDirection.Forward);
 		return caller;
 	}
 	@Test
@@ -438,5 +439,24 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(27, output.get(0).getReadLength());
 		assertEquals("GGTTGCATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
 		assertEquals("1X26=", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
+	}
+	@Test
+	public void should_not_write_inconsistent_anchors() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 100);
+		SAMRecord[] rp = DP(0, 1, "10M", true, 0, 1000, "10M", false);
+		rp[0].setReadBases(B("NNNNNNNNNN"));
+		rp[1].setReadBases(B("ACGTTGGCCA"));
+		rp[1].setReadUnmappedFlag(true);
+		rp[0].setMateUnmappedFlag(true);
+		SoftClipEvidence sce1 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 20, "4M4S")));
+		SoftClipEvidence sce2 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 21, "4M4S")));
+		SoftClipEvidence sce3 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 22, "4M4S")));
+		SoftClipEvidence sce4 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 23, "4M4S")));
+		SoftClipEvidence sce5 = SCE(FWD, ses, withSequence("GCCAAAAA", Read(0, 40, "4M4S")));
+		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3, sce4, sce5, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertFalse(output.get(0).getCigarString().contains("I"));
+		assertFalse(output.get(0).getCigarString().contains("D"));
 	}
 }
