@@ -164,6 +164,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getReferenceReadCount(int category) { return getInt(category, VcfFormatAttributes.REFERENCE_READ_COUNT, 0); }
 	public int getReferenceReadPairCount() { return getInt(VcfInfoAttributes.REFERENCE_READPAIR_COUNT, 0); }
 	public int getReferenceReadPairCount(int category)  { return getInt(category, VcfFormatAttributes.REFERENCE_READPAIR_COUNT, 0); }
+	
+	public int getBreakendSupportingFragmentCount() { return getInt(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS, 0); }
 	/**
 	 * Assembled breakend sequence. 
 	 * @return Breakend assembly sequence, null if no assembly was found

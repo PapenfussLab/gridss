@@ -156,6 +156,8 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	public double getBreakpointEvidenceQualReadPair() { return getDouble(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, 0); }
 	public double getBreakpointEvidenceQualSoftClip() { return getDouble(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, 0); }
 	
+	public int getBreakpointSupportingFragmentCount() { return getInt(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS, 0); }
+	
 	@Override
 	public DirectedBreakpoint asRemote() {
 		throw new NotImplementedException("Not required by GRIDSS");
