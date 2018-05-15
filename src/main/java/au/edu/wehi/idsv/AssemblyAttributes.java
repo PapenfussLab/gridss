@@ -193,6 +193,7 @@ public class AssemblyAttributes {
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
+		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, (float)(support.size() == 0 ? 0.0 : (support.stream().mapToDouble(de -> de.getStrandBias()).sum() / support.size())));
 		// TODO: proper mapq model
 		record.setMappingQuality(maxLocalMapq);
 		if (record.getMappingQuality() < context.getConfig().minMapq) {
@@ -230,6 +231,13 @@ public class AssemblyAttributes {
 				filter.stream(),
 				(x, supported) -> (Double)(double)(((boolean) supported) ? x : 0))
 			.mapToDouble(x -> x).sum();
+	}
+	public int getAssemblyTotalReadSupportCount() {
+		return Streams.concat(
+			AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT)).stream(),
+			AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_READPAIR_COUNT)).stream())
+		.mapToInt(x -> x)
+		.sum();
 	}
 	public int getAssemblySupportCount(List<Boolean> supportingCategories) {
 		return getAssemblySupportCountSoftClip(supportingCategories) + getAssemblySupportCountReadPair(supportingCategories);
@@ -312,5 +320,8 @@ public class AssemblyAttributes {
 		Character c = (Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION);
 		if (c == null) return null;
 		return BreakendDirection.fromChar((char)c);
+	}
+	public double getStrandBias() {
+		return AttributeConverter.asDouble(record.getAttribute(SamTags.ASSEMBLY_STRAND_BIAS), 0);
 	}
 }

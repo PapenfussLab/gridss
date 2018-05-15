@@ -219,4 +219,9 @@ public class SingleReadEvidenceTest extends TestHelper {
 		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(SES(), 0, r);
 		assertEquals(0,  e.size());
 	}
+	@Test
+	public void strandBias_should_match_read_strand() {
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, Read(0, 1, "50M50S")).get(0).getStrandBias(), 0);
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, onNegative(Read(0, 1, "50M50S"))[0]).get(0).getStrandBias(), 0);
+	}
 }

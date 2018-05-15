@@ -46,6 +46,7 @@ public class SamTags {
 	// Per category aggregations
 	public static final String ASSEMBLY_READPAIR_COUNT = "dc";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
+	public static final String ASSEMBLY_STRAND_BIAS = "sb";
 	//public static final String ASSEMBLY_SOFTCLIP_REMOTE_COUNT = "rc";
 	public static final String ASSEMBLY_NONSUPPORTING_READPAIR_COUNT = "ec";
 	public static final String ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT = "tc";
@@ -74,6 +75,7 @@ public class SamTags {
 			ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL,
 			ASSEMBLY_READPAIR_LENGTH_MAX,
 			ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX,
-			ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL
+			ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL,
+			ASSEMBLY_STRAND_BIAS
 			);
 }

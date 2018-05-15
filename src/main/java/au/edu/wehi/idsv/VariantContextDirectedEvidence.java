@@ -182,4 +182,12 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public List<String> getOriginatingFragmentID(int category) {
 		return null;
 	}
+	@Override
+	public double getStrandBias() {
+		throw new RuntimeException("NYI");
+	}
+	@Override
+	public int constituentReads() {
+		throw new RuntimeException("NYI"); 
+	}
 }

@@ -44,7 +44,14 @@ public enum VcfInfoAttributes {
 	BREAKEND_VARIANT_FRAGMENTS ("BVF", 1, VCFHeaderLineType.Integer, "Count of fragments providing breakend for the variant allele."),
 
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
-	
+	STRAND_BIAS ("SB", 1, VCFHeaderLineType.Float, "Strand bias of reads supporting the variant."
+			+ "1 indicates that breakend bases would be aligned to the positive strand if the reference was changed to the variant allele. "
+			+ "0 indicates that breakend bases would be aligned to the negative strand if the reference was changed to the variant allele. "
+			+ "For read alignments, this corresponds the strand of the read alignment. "
+			+ "A SR that is aligned to the positive strand will have a strand bias of 1. "
+			+ "For read pairs in FR orientation, this is the opposite strand to the local anchoring read alignment. "
+			+ "A RP that is aligned to the positive strand will have a strand bias of 0 because the mate is providing the support and is expected to align to the negative strand. "
+			+ "Note that reads both directly supporting the variant, and supporting via assembly will be double-counted"),
 	SELF_INTERSECTING ("SELF", 1, VCFHeaderLineType.Flag, "Indicates a breakpoint is self-intersecting"),
 	SUPPORT_INTERVAL ("SI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Support interval offsets from breakend position in which at least one supporting read/read pair/assembly is mapped."),
 	REMOTE_SUPPORT_INTERVAL ("RSI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Support interval offsets of partner breakend."),

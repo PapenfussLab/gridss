@@ -316,4 +316,12 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public List<String> getOriginatingFragmentID(int category) {
 		return source.getSourceCategory() == category ? ImmutableList.of(local.getReadName()) : ImmutableList.of();
 	}
+	@Override
+	public double getStrandBias() {
+		return local.getReadNegativeStrandFlag() ? 1 : 0;
+	}
+	@Override
+	public int constituentReads() {
+		return 1;
+	}
 }

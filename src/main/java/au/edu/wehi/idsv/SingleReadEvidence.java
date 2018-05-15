@@ -420,4 +420,21 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		}
 		return source.getSourceCategory() == category ? ImmutableList.of(record.getReadName()) : ImmutableList.of();
 	}
+	@Override
+	public double getStrandBias() {
+		double bias = 1;
+		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
+			bias = new AssemblyAttributes(record).getStrandBias();
+		}
+		if (record.getReadNegativeStrandFlag()) {
+			bias = 1 - bias;
+		}
+		return bias;
+	}
+	public int constituentReads() {
+		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
+			return new AssemblyAttributes(record).getAssemblyTotalReadSupportCount();
+		}
+		return 1;
+	}
 }
