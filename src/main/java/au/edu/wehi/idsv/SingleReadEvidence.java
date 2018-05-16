@@ -37,6 +37,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final List<Boolean> categorySupport;
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
+	private String associatedAssemblyName;
 	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, int minIndelSize, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
 		List<SingleReadEvidence> list = new ArrayList<>(4);
@@ -436,5 +437,15 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			return new AssemblyAttributes(record).getAssemblyTotalReadSupportCount();
 		}
 		return 1;
+	}
+	@Override
+	public String getAssociatedAssemblyName() {
+		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
+			return getSAMRecord().getReadName();
+		}
+		return associatedAssemblyName;
+	}
+	public void setAssociatedAssemblyName(String associatedAssemblyName) {
+		this.associatedAssemblyName = associatedAssemblyName; 
 	}
 }

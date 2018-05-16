@@ -23,6 +23,10 @@ public enum VcfFormatAttributes {
 	BREAKPOINT_SPLITREAD_QUAL("SRQ", 1, VCFHeaderLineType.Float, "Quality score of split reads supporting breakpoint per category"),
 	BREAKPOINT_INDEL_QUAL("IQ", 1, VCFHeaderLineType.Float, "Quality score of read indels supporting breakpoint per category"),
 	BREAKPOINT_VARIANT_FRAGMENTS ("VF", 1, VCFHeaderLineType.Integer, "Count of fragments suspporting the variant breakpoint allele and not the reference allele."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT("BANRP", 1, VCFHeaderLineType.Integer, "Count of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT("BANSR", 1, VCFHeaderLineType.Integer, "Count of split reads at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL("BANRPQ", 1, VCFHeaderLineType.Integer, "Quality score of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL("BANSRQ", 1, VCFHeaderLineType.Integer, "Quality score of split reads at this breakend assembled into a contig that does not support the breakpoint."),
 
 	BREAKEND_UNMAPPEDMATE_COUNT("BUM", 1, VCFHeaderLineType.Integer, "Count of read pairs (with one read unmapped) supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_COUNT("BSC", 1, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend per category"),

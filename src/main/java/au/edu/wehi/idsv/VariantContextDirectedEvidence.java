@@ -190,4 +190,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int constituentReads() {
 		throw new RuntimeException("NYI"); 
 	}
+	@Override
+	public String getAssociatedAssemblyName() {
+		throw new RuntimeException("NYI"); 
+	}
 }

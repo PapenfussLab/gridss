@@ -32,6 +32,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	private final BreakendSummary location;
 	private final SAMEvidenceSource source;
 	private String evidenceID = null;
+	private String associatedAssemblyName;
 	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
@@ -323,5 +324,12 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	@Override
 	public int constituentReads() {
 		return 1;
+	}
+	@Override
+	public String getAssociatedAssemblyName() {
+		return associatedAssemblyName;
+	}
+	public void setAssociatedAssemblyName(String associatedAssemblyName) {
+		this.associatedAssemblyName = associatedAssemblyName; 
 	}
 }

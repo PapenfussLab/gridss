@@ -81,6 +81,12 @@ public interface DirectedEvidence {
 	 * @return
 	 */
 	int constituentReads();
+	/**
+	 * Name of assembly that this read is associated with.
+	 * For assembly evidence, this is the name of the assembly itself.
+	 * @return Name of associated assembly.
+	 */
+	String getAssociatedAssemblyName();
 	static final Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
