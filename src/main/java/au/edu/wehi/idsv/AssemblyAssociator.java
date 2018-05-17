@@ -41,6 +41,9 @@ public class AssemblyAssociator implements CloseableIterator<DirectedEvidence> {
 		return e;
 	}
 	private DirectedEvidence associate(DirectedEvidence e) {
+		if (e == null || e.getBreakendSummary() == null) {
+			return e;
+		}
 		ensureAssembliesLoadedUntil(e.getBreakendSummary());
 		setAssociatedAssembly(e, evidenceToAssemblyName.remove(e.getEvidenceID()));
 		flushBefore(e.getBreakendSummary());
@@ -50,6 +53,7 @@ public class AssemblyAssociator implements CloseableIterator<DirectedEvidence> {
 		// See class description. No flushing is required if all evidence is passed in.
 	}
 	private void ensureAssembliesLoadedUntil(BreakendSummary breakendSummary) {
+		assert(breakendSummary != null);
 		while (assit.hasNext() && (lastAssembly == null || !isAfter(breakendSummary, lastAssembly))) {
 			lastAssembly = assit.next();
 			load(lastAssembly);
