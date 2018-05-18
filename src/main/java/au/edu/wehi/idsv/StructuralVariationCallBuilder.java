@@ -250,11 +250,11 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		sumIntAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT,
 				supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? 1 : 0);
 		sumIntAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT,
-				supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? 1 : 0);
+				supportingSR, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? 1 : 0);
 		sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL,
 				supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? e.getBreakpointQual() : 0);
 		sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL,
-				supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? e.getBreakpointQual() : 0);
+				supportingSR, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? e.getBreakpointQual() : 0);
 		// Assembly breakdown
 		int[] asr = new int[processContext.getCategoryCount()];
 		int[] asrp = new int[processContext.getCategoryCount()];
