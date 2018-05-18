@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,6 +29,7 @@ import au.edu.wehi.idsv.util.RangeUtil;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.CollectionUtil.MultiMap;
 import htsjdk.samtools.util.IntervalTree;
 import htsjdk.samtools.util.IntervalTree.Node;
 import htsjdk.samtools.util.Log;
@@ -46,12 +48,15 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 	private final ProcessingContext context;
 	private final int maxCallRange;
 	private final boolean assignEvidenceToSingleBreakpoint;
-	private final PeekingIterator<? extends DirectedEvidence> evidenceIt;
+	private final boolean preferToAssignBreakendReadsToVariantContainingAssembly = true;
+	private final PeekingIterator<? extends DirectedEvidence> readIt;
+	private final PeekingIterator<? extends DirectedEvidence> assemblyIt;
 	private final Iterator<? extends VariantContextDirectedEvidence> callIt;
 	private final OverlapLookup breakpointLookup;
 	private final OverlapLookup breakendLookup;
 	private final ArrayDeque<VariantEvidenceSupport> variantBuffer = new ArrayDeque<VariantEvidenceSupport>();
 	private final Map<String, VariantEvidenceSupport> bufferedVariantId = new HashMap<String, VariantEvidenceSupport>();
+	private final MultiMap<String, VariantEvidenceSupport> assemblyAllocationLookup = new MultiMap<String, SequentialEvidenceAllocator.VariantEvidenceSupport>();
 	public class VariantEvidenceSupport {
 		private final String id;
 		private final String parid;
@@ -124,13 +129,15 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 	public SequentialEvidenceAllocator(
 			ProcessingContext context,
 			Iterator<? extends VariantContextDirectedEvidence> calls,
-			Iterator<? extends DirectedEvidence> evidence,
+			Iterator<? extends DirectedEvidence> reads,
+			Iterator<? extends DirectedEvidence> assemblies,
 			int maxCallWindowSize,
 			boolean assignEvidenceToSingleBreakpoint) {
 		this.context = context;
 		this.maxCallRange = maxCallWindowSize;
 		this.callIt = calls;
-		this.evidenceIt = Iterators.peekingIterator(evidence);
+		this.readIt = Iterators.peekingIterator(reads);
+		this.assemblyIt = Iterators.peekingIterator(assemblies);
 		this.assignEvidenceToSingleBreakpoint = assignEvidenceToSingleBreakpoint;
 		if (assignEvidenceToSingleBreakpoint) {
 			// RemoteOverlapLookup only tracks the best local breakend so we can't use it if we want to assign to all matching breakpoints
@@ -160,8 +167,11 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			if (Defaults.SANITY_CHECK_ITERATORS) {
 				// we have no more calls to make so this doesn't actually need to be done
 				// unless we're sanity checking
-				while (evidenceIt.hasNext()) {
-					assignEvidence(evidenceIt.next());
+				while (assemblyIt.hasNext()) {
+					assignEvidence(assemblyIt.next());
+				}
+				while (readIt.hasNext()) {
+					assignEvidence(readIt.next());
 				}
 			}
 		}
@@ -174,8 +184,16 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			buffer(callIt.next());
 		}
 		VariantEvidenceSupport variant = variantBuffer.peek();
-		bufferVariantsBefore(variant.startLocation + 2 * (maxCallRange + 1));
-		processEvidenceBefore(variant.startLocation + maxCallRange + 1);
+		// load all variant calls that could overlap an assembly
+		bufferVariantsBefore(variant.startLocation + 3 * (maxCallRange + 1));
+		// load all assemblies that could overlap the reads
+		processEvidenceBefore(assemblyIt, variant.startLocation + 2 * (maxCallRange + 1));
+		// load all reads that could overlap the variant call we're about to emit
+		processEvidenceBefore(readIt, variant.startLocation + maxCallRange + 1);
+		// Why do the above? 
+		// We want to preferentially assign breakend reads to the variant
+		// that they got assembled into. This means we need to load our
+		// assemblies before our reads
 		variant = variantBuffer.poll();
 		if (StringUtils.isNotBlank(variant.id)) {
 			bufferedVariantId.remove(variant.id);
@@ -185,11 +203,16 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		} else {
 			breakendLookup.remove(variant);
 		}
+		for (DirectedEvidence ass : variant.support) {
+			if (AssemblyAttributes.isAssembly(ass)) {
+				assemblyAllocationLookup.remove(ass.getAssociatedAssemblyName(), variant);
+			}
+		}
 		return variant;
 	}
-	private void processEvidenceBefore(long position) {
-		while (evidenceIt.hasNext() && context.getLinear().getStartLinearCoordinate(evidenceIt.peek().getBreakendSummary()) - context.getVariantCallingParameters().breakendMargin <= position) {
-			assignEvidence(evidenceIt.next());
+	private void processEvidenceBefore(PeekingIterator<? extends DirectedEvidence> it, long position) {
+		while (it.hasNext() && context.getLinear().getStartLinearCoordinate(it.peek().getBreakendSummary()) - context.getVariantCallingParameters().breakendMargin <= position) {
+			assignEvidence(it.next());
 		}
 	}
 	/**
@@ -200,43 +223,85 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		BreakendSummary bs = evidence.getBreakendSummary();
 		bs = context.getVariantCallingParameters().withMargin(bs);
 		if (assignEvidenceToSingleBreakpoint) {
-			VariantEvidenceSupport best = breakpointLookup.findBestOverlapping(bs);
-			if (best != null) {
-				VariantEvidenceSupport mate = bufferedVariantId.get(best.parid);
-				if (mate != null && mate.location.overlaps(bs) && allocateToHighBreakend(evidence)) {
-					// special case: matches both sides of the breakpoint 
-					mate.attributeEvidence(evidence);
-				} else {
-					best.attributeEvidence(evidence);
-				}
-				//evidenceCalled = true;
-			} else if (!(evidence instanceof DirectedBreakpoint)) {
-				// Only allocate to breakend if we can't match a breakpoint
-				best = breakendLookup.findBestOverlapping(bs);
-				if (best != null) {
-					best.attributeEvidence(evidence);
-				}
-			}
+			assignToBest(bs, evidence);
 		} else {
-			Iterator<VariantEvidenceSupport> it = breakpointLookup.findAllOverlapping(bs);
-			if (!(evidence instanceof DirectedBreakpoint)) {
-				it = Iterators.concat(it, breakendLookup.findAllOverlapping(bs));
-			}
-			while (it.hasNext()) {
-				VariantEvidenceSupport v = it.next();
-				assert(v.location.overlaps(bs));
-				v.attributeEvidence(evidence);
-			}
+			assignToAll(bs, evidence);
 		}
-		//if (!evidenceCalled && dump != null) {
-			// evidence does not provide support for any call
-			// write out now before we drop it
-		//	dump.writeEvidence(evidence, null);
-		//}
 		if (evidence instanceof NonReferenceReadPair) {
 			progressLogger.record(((NonReferenceReadPair)evidence).getLocalledMappedRead());
 		} else if (evidence instanceof SingleReadEvidence) {
 			progressLogger.record(((SingleReadEvidence)evidence).getSAMRecord());
+		}
+	}
+	private void assignToBest(BreakendSummary bs, DirectedEvidence evidence) {
+		VariantEvidenceSupport assignedTo;
+		if (AssemblyAttributes.isAssembly(evidence)) {
+			// breakend assemblies never get assigned to a breakpoint
+			if (evidence instanceof DirectedBreakpoint) {
+				assignedTo = assignToBestBreakpoint(bs, evidence);
+			} else {
+				assignedTo = assignToBestBreakend(bs, evidence);
+			}
+			if (assignedTo != null) {
+				assemblyAllocationLookup.append(evidence.getAssociatedAssemblyName(), assignedTo);
+			}
+		} else {
+			if (evidence instanceof DirectedBreakpoint) {
+				// breakpoint evidence goes to the best breakpoint
+				assignToBestBreakpoint(bs, evidence);
+				// TODO should we attempt to fall back to breakend assignment?
+			} else {
+				// breakend evidence follows the assembly (if possible)
+				VariantEvidenceSupport bestAssTo = null;
+				if (preferToAssignBreakendReadsToVariantContainingAssembly && evidence.getAssociatedAssemblyName() != null) {
+					Collection<VariantEvidenceSupport> hits = assemblyAllocationLookup.get(evidence.getAssociatedAssemblyName());
+					if (hits != null) {
+						for (VariantEvidenceSupport ves : hits) {
+							if (ves.location.overlaps(bs) && (bestAssTo == null || bestAssTo.score < ves.score)) {
+								bestAssTo = ves;
+							}
+						}
+					}
+				}
+				if (bestAssTo != null) {
+					bestAssTo.attributeEvidence(evidence);
+				} else {
+					if (assignToBestBreakpoint(bs, evidence) == null) {
+						assignToBestBreakend(bs, evidence);
+					}
+				}
+			}
+		}
+	}
+	private VariantEvidenceSupport assignToBestBreakpoint(BreakendSummary bs, DirectedEvidence evidence) {
+		VariantEvidenceSupport best = breakpointLookup.findBestOverlapping(bs);
+		if (best != null) {
+			VariantEvidenceSupport mate = bufferedVariantId.get(best.parid);
+			if (mate != null && mate.location.overlaps(bs) && allocateToHighBreakend(evidence)) {
+				// special case: matches both sides of the breakpoint 
+				mate.attributeEvidence(evidence);
+			} else {
+				best.attributeEvidence(evidence);
+			}
+		}
+		return best;
+	}
+	private VariantEvidenceSupport assignToBestBreakend(BreakendSummary bs, DirectedEvidence evidence) {
+		VariantEvidenceSupport best = breakendLookup.findBestOverlapping(bs);
+		if (best != null) {
+			best.attributeEvidence(evidence);
+		}
+		return best;
+	}
+	private void assignToAll(BreakendSummary bs, DirectedEvidence evidence) {
+		Iterator<VariantEvidenceSupport> it = breakpointLookup.findAllOverlapping(bs);
+		if (!(evidence instanceof DirectedBreakpoint)) {
+			it = Iterators.concat(it, breakendLookup.findAllOverlapping(bs));
+		}
+		while (it.hasNext()) {
+			VariantEvidenceSupport v = it.next();
+			assert(v.location.overlaps(bs));
+			v.attributeEvidence(evidence);
 		}
 	}
 	/**

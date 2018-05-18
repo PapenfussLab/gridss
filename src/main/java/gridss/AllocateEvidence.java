@@ -49,17 +49,27 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	public static enum EvidenceAllocationStrategy {
 		GREEDY,
 	}
-	public CloseableIterator<DirectedEvidence> getEvidenceIterator() {
+	public CloseableIterator<DirectedEvidence> getReadIterator() {
 		CloseableIterator<DirectedEvidence> evidenceIt;
-		boolean assemblyOnly = getContext().getVariantCallingParameters().callOnlyAssemblies;
-		if (assemblyOnly) {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(getAssemblySource()), true);
+		if (getContext().getVariantCallingParameters().callOnlyAssemblies) {
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(), false);
 		} else {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(getSamEvidenceSources()).add(getAssemblySource()).build(), true);
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(getSamEvidenceSources()).build(), true);
 		}
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(
-					new PairedEvidenceTracker<>("Evidence",
+					new PairedEvidenceTracker<>("Reads",
+							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)),
+					evidenceIt);
+		}
+		return evidenceIt;
+	}
+	public CloseableIterator<DirectedEvidence> getAssemblyIterator() {
+		CloseableIterator<DirectedEvidence> evidenceIt;
+		evidenceIt = getAssemblySource().iterator();
+		if (Defaults.SANITY_CHECK_ITERATORS) {
+			evidenceIt = new AutoClosingIterator<>(
+					new PairedEvidenceTracker<>("Assemblies",
 							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)),
 					evidenceIt);
 		}
@@ -68,12 +78,14 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	@Override
 	public CloseableIterator<VariantContextDirectedEvidence> iterator(CloseableIterator<VariantContextDirectedEvidence> calls, ExecutorService threadpool) {
 		log.info("Allocating evidence"); 
-		CloseableIterator<DirectedEvidence> rawEvidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-allocation");
-		CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(annotateAssembly(rawEvidence), "annotate-associated-assembly");
-		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
-		Iterator<VariantContextDirectedEvidence> it = Iterators.transform(annotator, bp -> annotate(bp));
+		CloseableIterator<DirectedEvidence> rawReads = new AsyncBufferedIterator<>(getReadIterator(), "mergedReads-allocation");
+		CloseableIterator<DirectedEvidence> reads = new AsyncBufferedIterator<>(annotateAssembly(rawReads), "annotate-associated-assembly");
+		CloseableIterator<DirectedEvidence> assemblies = new AsyncBufferedIterator<>(getAssemblyIterator(), "assembly-allocation");
+		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, reads, assemblies, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
+		CloseableIterator<VariantEvidenceSupport> bufferedAnnotator = new AsyncBufferedIterator<>(annotator, "annotator", 2, 8);
+		Iterator<VariantContextDirectedEvidence> it = Iterators.transform(bufferedAnnotator, bp -> annotate(bp));
 		it = Iterators.filter(it, v -> v != null);
-		return new AutoClosingIterator<>(it, calls, rawEvidence, evidence);
+		return new AutoClosingIterator<>(it, calls, rawReads, reads, assemblies, bufferedAnnotator);
 	}
 	private CloseableIterator<DirectedEvidence> annotateAssembly(CloseableIterator<DirectedEvidence> it) {
 		AssemblyEvidenceSource aes = getAssemblySource();

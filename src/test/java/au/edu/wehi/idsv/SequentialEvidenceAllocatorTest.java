@@ -43,7 +43,7 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 		ArrayList<VariantContextDirectedEvidence> calls = Lists.newArrayList(processor);
 		calls.sort(VariantContextDirectedEvidence.ByBreakendStartEnd);
 		
-		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(pc, calls.iterator(), ses.evidence.iterator(), 4, true);
+		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(pc, calls.iterator(), ses.evidence.iterator(), ImmutableList.<DirectedEvidence>of().iterator(), 4, true);
 		ArrayList<VariantEvidenceSupport> result = Lists.newArrayList(allocator);
 		
 		assertEquals(ses.evidence.size(), result.stream().mapToInt(ves -> ves.support.size()).sum());
@@ -60,7 +60,7 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 		}
 	}
 	@Test
-	public void should_assign_breakend_evidence_to_matching_breakpoint() throws IOException, InterruptedException, ExecutionException {
+	public void should_assign_breakend_evidence_to_both_matching_breakpoint_and_matching_breakend() throws IOException, InterruptedException, ExecutionException {
 		ArrayList<VariantContextDirectedEvidence> calls = new ArrayList<>();
 		VariantContextDirectedEvidence be = (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 10), "")
@@ -72,7 +72,7 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 		calls.add(bp);
 		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(getContext(), null, 0, 0, 100);
 		ses.evidence.add(SCE(BWD, Read(0, 10, "10S10M")));
-		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(getContext(), calls.iterator(), ses.evidence.iterator(), Integer.MAX_VALUE, true);
+		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(getContext(), calls.iterator(), ses.evidence.iterator(), ImmutableList.<DirectedEvidence>of().iterator(), 1000000, true);
 		ArrayList<VariantEvidenceSupport> result = Lists.newArrayList(allocator);
 		VariantEvidenceSupport vesbp = result.stream().filter(ves -> ves.variant == bp).findFirst().orElse(null);
 		VariantEvidenceSupport vesbe = result.stream().filter(ves -> ves.variant == be).findFirst().orElse(null);
@@ -88,7 +88,7 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 		calls.add(be);
 		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(getContext(), null, 0, 0, 100);
 		ses.evidence.add(SCE(BWD, Read(0, 10, "10S10M")));
-		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(getContext(), calls.iterator(), ses.evidence.iterator(), Integer.MAX_VALUE, true);
+		SequentialEvidenceAllocator allocator = new SequentialEvidenceAllocator(getContext(), calls.iterator(), ses.evidence.iterator(), ImmutableList.<DirectedEvidence>of().iterator(), 1000000, true);
 		ArrayList<VariantEvidenceSupport> result = Lists.newArrayList(allocator);
 		assertEquals(1, result.get(0).support.size());
 	}
@@ -109,7 +109,9 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 						.phredScore(1)
 						.id("call")
 						.make()).iterator(),
-				ses.evidence.iterator(), Integer.MAX_VALUE, true);
+				ses.evidence.iterator(),
+				ImmutableList.<DirectedEvidence>of().iterator(),
+				Integer.MAX_VALUE, true);
 		// shouldn't crash
 		VariantEvidenceSupport ves = allocator.next();
 		Assert.assertTrue(ves.support.stream().allMatch(e -> ves.variant.getBreakendSummary().overlaps(e.getBreakendSummary())));

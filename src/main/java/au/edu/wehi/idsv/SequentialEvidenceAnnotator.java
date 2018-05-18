@@ -30,12 +30,13 @@ public class SequentialEvidenceAnnotator extends ParallelTransformIterator<Varia
 	public SequentialEvidenceAnnotator(
 			ProcessingContext context,
 			Iterator<? extends VariantContextDirectedEvidence> calls,
-			Iterator<? extends DirectedEvidence> evidence,
+			Iterator<? extends DirectedEvidence> reads,
+			Iterator<? extends DirectedEvidence> assemblies,
 			int maxCallWindowSize,
 			boolean assignEvidenceToSingleBreakpoint,
 			int lookahead,
 			Executor threadpool) {
-		super(new SequentialEvidenceAllocator(context, calls, evidence, maxCallWindowSize, assignEvidenceToSingleBreakpoint),
+		super(new SequentialEvidenceAllocator(context, calls, reads, assemblies, maxCallWindowSize, assignEvidenceToSingleBreakpoint),
 			call -> make(context, call), lookahead, threadpool);
 	}
 	private static VariantContextDirectedEvidence make(ProcessingContext context, VariantEvidenceSupport ves) {
