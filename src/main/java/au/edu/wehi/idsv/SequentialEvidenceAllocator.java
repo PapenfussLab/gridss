@@ -17,19 +17,20 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.TreeRangeMap;
 
 import au.edu.wehi.idsv.util.RangeUtil;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.CollectionUtil.MultiMap;
 import htsjdk.samtools.util.IntervalTree;
 import htsjdk.samtools.util.IntervalTree.Node;
 import htsjdk.samtools.util.Log;
@@ -56,7 +57,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 	private final OverlapLookup breakendLookup;
 	private final ArrayDeque<VariantEvidenceSupport> variantBuffer = new ArrayDeque<VariantEvidenceSupport>();
 	private final Map<String, VariantEvidenceSupport> bufferedVariantId = new HashMap<String, VariantEvidenceSupport>();
-	private final MultiMap<String, VariantEvidenceSupport> assemblyAllocationLookup = new MultiMap<String, SequentialEvidenceAllocator.VariantEvidenceSupport>();
+	private final SetMultimap<String, VariantEvidenceSupport> assemblyAllocationLookup = HashMultimap.create();
 	public class VariantEvidenceSupport {
 		private final String id;
 		private final String parid;
@@ -90,6 +91,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		}
 		@Override
 		public boolean equals(Object obj) {
+			if (this == obj) return true;
 			if (obj == null) return false;
 			if (!(obj instanceof VariantEvidenceSupport)) return false;
 			VariantEvidenceSupport ves = (VariantEvidenceSupport)obj;
@@ -205,7 +207,9 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		}
 		for (DirectedEvidence ass : variant.support) {
 			if (AssemblyAttributes.isAssembly(ass)) {
-				assemblyAllocationLookup.remove(ass.getAssociatedAssemblyName(), variant);
+				if (!assemblyAllocationLookup.remove(ass.getAssociatedAssemblyName(), variant) && assignEvidenceToSingleBreakpoint) {
+					log.error("Sanity failure: failed to remove assembly from lookup");
+				}
 			}
 		}
 		return variant;
@@ -243,7 +247,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 				assignedTo = assignToBestBreakend(bs, evidence);
 			}
 			if (assignedTo != null) {
-				assemblyAllocationLookup.append(evidence.getAssociatedAssemblyName(), assignedTo);
+				assemblyAllocationLookup.put(evidence.getAssociatedAssemblyName(), assignedTo);
 			}
 		} else {
 			if (evidence instanceof DirectedBreakpoint) {
