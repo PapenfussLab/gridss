@@ -208,7 +208,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		for (DirectedEvidence ass : variant.support) {
 			if (AssemblyAttributes.isAssembly(ass)) {
 				if (!assemblyAllocationLookup.remove(ass.getAssociatedAssemblyName(), variant) && assignEvidenceToSingleBreakpoint) {
-					log.error("Sanity failure: failed to remove assembly from lookup");
+					log.debug("Sanity failure: failed to remove assembly from lookup. Multiple evidence from single assembly assigned to this variant?");
 				}
 			}
 		}
