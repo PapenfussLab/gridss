@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -277,17 +278,29 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountReadPair(category) : 0)
 					.sum();
 			Set<String> bpfrags = supportingBreakpoint.stream()
-					.map(e -> e.getOriginatingFragmentID(category))
+					.map(e -> {
+						if (AssemblyAttributes.isAssembly(e)) {
+							SingleReadEvidence ass = (SingleReadEvidence)e; 
+							return ass.getCategorySupportBreakdown().get(category) ? e.getOriginatingFragmentID(category) : ImmutableList.<String>of();
+						}
+						return e.getOriginatingFragmentID(category); 
+					})
 					.flatMap(x -> x.stream())
 					.collect(Collectors.toSet());
 			supportingBreakpointFragments[category] = bpfrags.size();
 			Set<String> befrags = supportingBreakend.stream()
-					.map(e -> e.getOriginatingFragmentID(category))
+					.map(e -> {
+						if (AssemblyAttributes.isAssembly(e)) {
+							SingleReadEvidence ass = (SingleReadEvidence)e; 
+							return ass.getCategorySupportBreakdown().get(category) ? e.getOriginatingFragmentID(category) : ImmutableList.<String>of();
+						}
+						return e.getOriginatingFragmentID(category); 
+					})
 					.flatMap(x -> x.stream())
 					.collect(Collectors.toSet());
 			befrags.removeAll(bpfrags);
 			supportingBreakendFragments[category] = befrags.size();
-					
+			
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), asrp[category]);
 			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), basr[category]);
