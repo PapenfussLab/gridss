@@ -2,6 +2,7 @@ package gridss;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.broadinstitute.barclay.argparser.Argument;
@@ -54,7 +55,9 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		if (getContext().getVariantCallingParameters().callOnlyAssemblies) {
 			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(), false);
 		} else {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(getSamEvidenceSources()).build(), true);
+			List<SAMEvidenceSource> sources = getSamEvidenceSources();
+			sources.stream().forEach(ses -> ses.assertPreprocessingComplete());
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(sources).build(), true);
 		}
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(

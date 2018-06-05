@@ -36,6 +36,7 @@ import au.edu.wehi.idsv.VariantCaller;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 
@@ -60,6 +61,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 				DP(0, 2, "5M5S", true, 1, 10, "5M", true));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, null, 0);
 		ses.ensureMetrics();
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
@@ -92,6 +94,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 				DP(0, 1, "5M5S", true, 1, 10, "5M", true));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, null, 0);
 		ses.ensureMetrics();
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
@@ -184,6 +187,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 				DP(0, 1, "5M5S", true, 1, 10, "5M", true));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, null, 0);
 		ses.ensureMetrics();
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
@@ -215,6 +219,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 				withReadName("read", DP(0, 1, "6M4S", true, 1, 10, "5M", true)));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, null, 0);
 		ses.ensureMetrics();
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
@@ -243,6 +248,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 				DP(0, 1, "5M5S", true, 1, 10, "5M", true));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, null, 0);
 		ses.ensureMetrics();
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);

@@ -284,9 +284,21 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	private SamReader getReader() {
-		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
+		File svFile = getSVFile();
 		SamReader reader = getProcessContext().getSamReader(svFile.exists() ? svFile : getFile());
 		return reader;
+	}
+	public File getSVFile() {
+		if (getFile() == null) {
+			return null;
+		}
+		return getContext().getFileSystemContext().getSVBam(getFile());
+	}
+	public void assertPreprocessingComplete() {
+		File svFile = getSVFile();
+		if (svFile != null && !svFile.exists()) {
+			throw new IllegalStateException(String.format("Missing required file %s. See GRIDSS pipeline examples and documentation.", svFile));
+		}
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {
 		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved 

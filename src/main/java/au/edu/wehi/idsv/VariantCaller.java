@@ -35,6 +35,8 @@ public class VariantCaller {
 		this.assemblyEvidence = assemblyEvidence;
 	}
 	public void callBreakends(File vcf, ExecutorService threadpool) throws IOException {
+		samEvidence.stream().forEach(ses -> ses.assertPreprocessingComplete());
+		assemblyEvidence.assertPreprocessingComplete();
 		log.info("Identifying Breakpoints");
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();

@@ -985,6 +985,9 @@ public class TestHelper {
 						QueryIntervalUtil.overlaps(qi, de.getBreakendSummary()))
 					);
 		}
+		@Override
+		public void assertPreprocessingComplete() {
+		}
 	}
 	public static class StubAssemblyEvidenceSource extends AssemblyEvidenceSource {
 		public int assemblyWindowSize = 10;

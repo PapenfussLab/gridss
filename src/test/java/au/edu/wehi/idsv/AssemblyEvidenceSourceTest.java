@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
@@ -38,6 +39,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_write_breakend_bam() throws IOException {
 		createInput(RP(0, 1, 2, 1));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		assertTrue(assemblyFile.exists());
@@ -46,6 +48,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	public void breakend_bam_should_be_coordinate_sorted() throws IOException {
 		createInput(RP(0, 1, 2, 1));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		try (SamReader r = SamReaderFactory.makeDefault().open(assemblyFile)) {
@@ -61,6 +64,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getConfig().getAssembly().minReads = 1;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		
@@ -83,6 +87,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().getAssembly().minReads = 1;
 		//pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
@@ -99,6 +104,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().writeFiltered = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		List<DirectedEvidence> contigs = Lists.newArrayList(aes.iterator());
@@ -229,6 +235,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				Read(0, 5, "5M7S")
 				);
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		List<SAMRecord> assemblies = getRecords(assemblyFile);
@@ -268,6 +275,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().getAssembly().minReads = 1;
 		pc.getConfig().chunkSize = 100;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
@@ -284,6 +292,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().getAssembly().minReads = 1;
 		pc.getConfig().chunkSize = 100;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		ExecutorService threadpool = Executors.newFixedThreadPool(8);
 		aes.assembleBreakends(threadpool);
@@ -307,6 +316,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().getSoftClip().minAnchorIdentity = 0;
 		pc.getConfig().getSoftClip().minAverageQual = 0;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		getRecords(assemblyFile);

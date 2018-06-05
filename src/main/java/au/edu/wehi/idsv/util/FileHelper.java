@@ -56,12 +56,12 @@ public abstract class FileHelper {
 	 * @param to
 	 * @throws IOException 
 	 */
-	public static void copy(File from, File to, boolean moveIndexes) throws IOException {
+	public static void copy(File from, File to, boolean copyIndexes) throws IOException {
 		if (!from.exists()) {
 			throw new IllegalArgumentException("Cannot copy nonexist file" + from.getAbsolutePath());
 		}
 		if (to.exists()) {
-			FileHelper.delete(to, moveIndexes);
+			FileHelper.delete(to, copyIndexes);
 		}
 		Files.copy(from, to);
 		copyIndex(from, to, ".bai");

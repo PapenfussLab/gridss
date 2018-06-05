@@ -72,6 +72,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 * @throws IOException 
 	 */
 	public void assembleBreakends(ExecutorService threadpool) throws IOException {
+		source.stream().forEach(ses -> ses.assertPreprocessingComplete());
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}
