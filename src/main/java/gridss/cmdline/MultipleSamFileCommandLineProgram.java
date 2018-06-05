@@ -127,6 +127,9 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			WORKING_DIR = new File(".");
 		}
 		IOUtil.assertDirectoryIsWritable(WORKING_DIR);
+		if (CONFIGURATION_FILE != null) {
+			IOUtil.assertFileIsReadable(CONFIGURATION_FILE);
+		}
 	}
     public static void ensureIndexed(File fa) throws IOException {
     	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
