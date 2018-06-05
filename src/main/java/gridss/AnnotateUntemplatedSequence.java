@@ -61,12 +61,11 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 			header = vcfReader.getFileHeader();
 		}
 		header.addMetaDataLine(VcfInfoAttributes.BREAKEND_ALIGNMENTS.infoHeader());
-		VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
-				.setOutputFile(output)
-				.setReferenceDictionary(getReference().getSequenceDictionary());
-				//.setOption(Options.INDEX_ON_THE_FLY) // don't know if we're sorted or no so we can't index
-		
 		File tmp = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output) : output;
+		VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+				.setOutputFile(tmp)
+				.setReferenceDictionary(getReference().getSequenceDictionary());
+				//.setOption(Options.INDEX_ON_THE_FLY) // don't know if we're sorted or not so we can't index
 		final ProgressLogger writeProgress = new ProgressLogger(log);
 		try (VariantContextWriter vcfWriter = builder.build()) {
 			vcfWriter.writeHeader(header);
