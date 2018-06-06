@@ -97,7 +97,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 			sb.append(new String(seq, 0, genomicPosition));
 			sb.append("\n");
 		}
-		Files.write(sb.toString(), fasta, StandardCharsets.US_ASCII);
+		Files.asCharSink(fasta, StandardCharsets.US_ASCII).write(sb.toString());
 		writeVcf(vcf, list);
 	}
 	private int homLenBefore(SvType t, int size, int genomicPosition) {

@@ -21,7 +21,6 @@ import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
@@ -33,7 +32,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
-import picard.sam.CreateSequenceDictionary;
 
 public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(MultipleSamFileCommandLineProgram.class);
@@ -85,7 +83,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     private String getCategoryLabelFor(File file) {
     	String label = file.getName();
     	if (file.exists() && getContext().getConfig().useReadGroupSampleNameCategoryLabel) {
-    		try (SamReader reader = SamReaderFactory.makeDefault().open(file)) {
+    		try (SamReader reader = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE).open(file)) {
     			SAMFileHeader header = reader.getFileHeader();
     			if (header.getReadGroups().size() == 1) {
     				String sampleName = header.getReadGroups().get(0).getSample();
@@ -129,6 +127,9 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			WORKING_DIR = new File(".");
 		}
 		IOUtil.assertDirectoryIsWritable(WORKING_DIR);
+		if (CONFIGURATION_FILE != null) {
+			IOUtil.assertFileIsReadable(CONFIGURATION_FILE);
+		}
 	}
     public static void ensureIndexed(File fa) throws IOException {
     	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
@@ -141,50 +142,28 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     		}
     	}
     }
-    public static void ensureSequenceDictionary(File fa) throws IOException {
-    	File output = new File(fa.getAbsolutePath() + ".dict");
-    	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
-	    	SAMSequenceDictionary dictionary = reference.getSequenceDictionary();
-	    	if (dictionary == null) {
-	    		log.info("Attempting to generate missing sequence dictionary for ", fa);
-	    		try {
-		    		final SAMSequenceDictionary sequences = new CreateSequenceDictionary().makeSequenceDictionary(fa);
-		            final SAMFileHeader samHeader = new SAMFileHeader();
-		            samHeader.setSequenceDictionary(sequences);
-		            try (SAMFileWriter samWriter = new SAMFileWriterFactory().makeSAMWriter(samHeader, false, output)) {
-		            }
-	    		} catch (Exception e) {
-	    			log.error("Missing sequence dictionary for ", fa, " and creation of sequencing dictionary failed.",
-	    					"Please run the Picard tools CreateSequenceDictionary utility to create", output);
-	    			throw e;
-	    		}
-	    		log.info("Created sequence dictionary ", output);
-	    	} else {
-	    		log.debug("Found sequence dictionary for ", fa);
-	    	}
-    	}
-    }
 	public void ensureDictionariesMatch() throws IOException {
-		ReferenceSequenceFile ref = null;
-		try {
-			ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE_SEQUENCE);
-			SAMSequenceDictionary dictionary = ref.getSequenceDictionary();
-			final SamReaderFactory samFactory = SamReaderFactory.makeDefault();
-			for (File f : INPUT) {
-				SamReader reader = null;
-				try {
-					reader = samFactory.open(f);
-					SequenceUtil.assertSequenceDictionariesEqual(reader.getFileHeader().getSequenceDictionary(), dictionary, f, REFERENCE_SEQUENCE);
-				} catch (htsjdk.samtools.util.SequenceUtil.SequenceListsDifferException e) {
-					log.error("Reference genome used by ", f, " does not match reference genome ", REFERENCE_SEQUENCE, ". ",
-							"The reference supplied must match the reference used for every input.");
-					throw e;
-				} finally {
-					if (reader != null) reader.close();
+		SAMSequenceDictionary dictionary = getReference().getSequenceDictionary();
+		final SamReaderFactory samFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
+		for (File f : INPUT) {
+			SamReader reader = null;
+			try {
+				reader = samFactory.open(f);
+				final SAMSequenceDictionary samDictionary = reader.getFileHeader().getSequenceDictionary();
+				if (samDictionary == null || samDictionary.isEmpty()) {
+					String message = String.format("Missing @SQ sequencing dictionary header lines in %s. "
+							+ " Are you sure this is a SAM/BAM/CRAM file? If so, make sure the @SQ headers are correct.", f);
+					log.error(message);
+					throw new RuntimeException(message);
 				}
+				SequenceUtil.assertSequenceDictionariesEqual(samDictionary, dictionary, f, REFERENCE_SEQUENCE);
+			} catch (htsjdk.samtools.util.SequenceUtil.SequenceListsDifferException e) {
+				log.error("Reference genome used by ", f, " does not match reference genome ", REFERENCE_SEQUENCE, ". ",
+						"The reference supplied must match the reference used for every input.");
+				throw e;
+			} finally {
+				if (reader != null) reader.close();
 			}
-		} finally {
-			if (ref != null) ref.close();
 		}
 	}
     @Override
@@ -209,7 +188,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	ExecutorService threadpool = null;
     	try {
     		ensureIndexed(REFERENCE_SEQUENCE);
-    		ensureSequenceDictionary(REFERENCE_SEQUENCE);
+    		ensureSequenceDictionary(REFERENCE_SEQUENCE, this);
     		ensureDictionariesMatch();
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
     		threadpool = Executors.newFixedThreadPool(getContext().getWorkerThreadCount(), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());

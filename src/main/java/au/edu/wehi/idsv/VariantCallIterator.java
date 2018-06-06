@@ -18,17 +18,19 @@ import htsjdk.samtools.util.CloserUtil;
  * 
  * @author Daniel Cameron
  */
-public class VariantCallIterator implements CloseableIterator<VariantContextDirectedBreakpoint> {
+public class VariantCallIterator implements CloseableIterator<VariantContextDirectedEvidence> {
 	private static final List<Pair<BreakendDirection, BreakendDirection>> DIRECTION_ORDER = ImmutableList.of(
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Forward),
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Backward),
 			Pair.of(BreakendDirection.Backward, BreakendDirection.Forward),
-			Pair.of(BreakendDirection.Backward, BreakendDirection.Backward));
+			Pair.of(BreakendDirection.Backward, BreakendDirection.Backward),
+			Pair.of(BreakendDirection.Forward, null),
+			Pair.of(BreakendDirection.Backward, null));
 	private final ProcessingContext processContext;
 	private final VariantIdGenerator idGenerator;
 	private final Supplier<Iterator<DirectedEvidence>> iteratorGenerator;
 	private final QueryInterval[] filterInterval;
-	private Iterator<VariantContextDirectedBreakpoint> currentIterator;
+	private Iterator<? extends VariantContextDirectedEvidence> currentIterator;
 	private Iterator<DirectedEvidence> currentUnderlyingIterator;
 	private int currentDirectionOrdinal;
 	public VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence) throws InterruptedException {
@@ -57,38 +59,55 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 		this.currentDirectionOrdinal = 0;
 		reinitialiseIterator();
 	}
-	private void reinitialiseIterator() {
+	private void reinitialiseIterator() {	
 		assert(currentIterator == null || !currentIterator.hasNext());
 		CloserUtil.close(currentIterator);
 		CloserUtil.close(currentUnderlyingIterator);
 		if (currentDirectionOrdinal >= DIRECTION_ORDER.size()) return;
 		currentUnderlyingIterator = iteratorGenerator.get();
-		currentIterator = new MaximalEvidenceCliqueIterator(
-				processContext,
-				currentUnderlyingIterator,
-				DIRECTION_ORDER.get(currentDirectionOrdinal).getLeft(),
-				DIRECTION_ORDER.get(currentDirectionOrdinal).getRight(),
-				idGenerator);
-		if (filterInterval != null) {
+		Pair<BreakendDirection, BreakendDirection> direction = DIRECTION_ORDER.get(currentDirectionOrdinal);
+		if (direction.getRight() != null) {
+			currentIterator = new MaximalEvidenceCliqueIterator(
+					processContext,
+					currentUnderlyingIterator,
+					direction.getLeft(),
+					direction.getRight(),
+					idGenerator);
+		} else {
+			if (processContext.getVariantCallingParameters().callBreakends) {
+				currentIterator = new BreakendMaximalEvidenceCliqueIterator(
+						processContext,
+						currentUnderlyingIterator,
+						direction.getLeft(),
+						idGenerator);
+			} else {
+				currentIterator = null;
+			}
+		}
+		if (currentIterator != null && filterInterval != null) {
 			currentIterator = Iterators.filter(currentIterator, v -> {
-				BreakpointSummary bs = v.getBreakendSummary();
-				return QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex, bs.start) || 
-						QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex2, bs.start2);
+				if (v instanceof DirectedBreakpoint) {
+					BreakpointSummary bs = ((DirectedBreakpoint)v).getBreakendSummary();
+					return QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex, bs.start) || 
+							QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex2, bs.start2);
+				} else {
+					BreakendSummary be = v.getBreakendSummary();
+					return QueryIntervalUtil.overlaps(filterInterval, be.referenceIndex, be.start);
+				}
 			});
 		}
 	}
 	@Override
 	public boolean hasNext() {
 		if (currentDirectionOrdinal >= DIRECTION_ORDER.size()) return false;
-		if (!currentIterator.hasNext()) {
+		while (currentIterator != null && currentDirectionOrdinal < DIRECTION_ORDER.size() && !currentIterator.hasNext()) {
 			currentDirectionOrdinal++;
 			reinitialiseIterator();
-			return hasNext();
 		}
-		return true;
+		return currentIterator != null && currentIterator.hasNext();
 	}
 	@Override
-	public VariantContextDirectedBreakpoint next() {
+	public VariantContextDirectedEvidence next() {
 		if (!hasNext()) throw new NoSuchElementException();
 		return currentIterator.next();
 	}

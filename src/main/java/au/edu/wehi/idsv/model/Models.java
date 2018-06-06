@@ -91,15 +91,4 @@ public class Models {
 		if (nodes.size() == 0) return null;
 		return calc.calculateMaximumClique(nodes);
 	}
-//	public static VariantContextDirectedEvidence calculateSomatic(VariantContextDirectedEvidence variant) {
-//		if (variant instanceof VariantContextDirectedBreakpoint) {
-//			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)variant;
-//			if (!bp.hasBreakpointSupport(EvidenceSubset.NORMAL) && bp.hasBreakpointSupport(EvidenceSubset.TUMOUR)) {
-//				IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(variant.processContext, variant);
-//				builder.attribute(VCFConstants.SOMATIC_KEY, true);
-//				variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(variant.processContext, variant.source, builder.make());
-//			}
-//		}
-//		return variant;
-//	}
 }

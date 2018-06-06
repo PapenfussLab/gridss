@@ -18,10 +18,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
 
@@ -83,19 +85,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 			assertEquals("", S(asAssemblyEvidence(e).getAnchorSequence()));
 		}
 	}
-	private void assertPairing(SAMRecord assembly, SAMRecord realign) {
-		assertNotNull(assembly);
-		assertNotNull(realign);
-		assertTrue(assembly.getReadPairedFlag());
-		assertTrue(realign.getReadPairedFlag());
-		assertTrue(assembly.getFirstOfPairFlag());
-		assertFalse(realign.getFirstOfPairFlag());
-		assertFalse(assembly.getSecondOfPairFlag());
-		assertTrue(realign.getSecondOfPairFlag());
-		assertEquals(assembly.getReadName(), realign.getReadName());
-		assertMateFields(assembly, realign);
-		assertMateFields(realign, assembly);
-	}
 	private void assertMateFields(SAMRecord r, SAMRecord mate) {
 		assertEquals(r.getMateNegativeStrandFlag(), mate.getReadNegativeStrandFlag());
 		assertEquals(r.getMateUnmappedFlag(), mate.getReadUnmappedFlag());
@@ -139,10 +128,10 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(ea.getAssemblySoftClipLengthTotal() , ra.getAssemblySoftClipLengthTotal());
 		assertEquals(ea.getAssemblySupportCountReadPair(0) , ra.getAssemblySupportCountReadPair(0));
 		assertEquals(ea.getAssemblySupportCountReadPair(1) , ra.getAssemblySupportCountReadPair(1));
-		assertEquals(ea.getAssemblySupportCountReadPair() , ra.getAssemblySupportCountReadPair());
+		assertEquals(ea.getAssemblySupportCountReadPair(ImmutableList.of(true, true)) , ra.getAssemblySupportCountReadPair(ImmutableList.of(true, true)));
 		assertEquals(ea.getAssemblySupportCountSoftClip(0) , ra.getAssemblySupportCountSoftClip(0));
 		assertEquals(ea.getAssemblySupportCountSoftClip(1) , ra.getAssemblySupportCountSoftClip(1));
-		assertEquals(ea.getAssemblySupportCountSoftClip() , ra.getAssemblySupportCountSoftClip());
+		assertEquals(ea.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)) , ra.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)));
 		assertArrayEquals(e.getBreakendQuality() , r.getBreakendQuality());
 		assertEquals(S(e.getBreakendSequence()) , S(r.getBreakendSequence()));
 		assertEquals(e.getBreakendSummary(), r.getBreakendSummary());
@@ -175,8 +164,25 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssembly(e3));
 		assertFalse(e.isPartOfAssembly(b1));
 		
-		assertEquals(2, e.getAssemblySupportCountSoftClip());
-		assertEquals(1, e.getAssemblySupportCountReadPair());
+		assertEquals(2, e.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)));
+		assertEquals(1, e.getAssemblySupportCountReadPair(ImmutableList.of(true, true)));
+	}
+	@Test
+	public void should_track_read_name() {
+		DirectedEvidence e1 = SCE(BWD, withReadName("r1", Read(0, 1, "5S5M")));
+		DirectedEvidence e2 = SCE(BWD, withReadName("r2", Read(0, 1, "6S5M")));
+		DirectedEvidence e3 = NRRP(withReadName("r3", OEA(0, 1, "1M", false)));
+		MockSAMEvidenceSource cat2 = SES();
+		cat2.category = 1;
+		DirectedEvidence b1 = SCE(BWD, cat2, withReadName("r4", Read(0, 1, "7S5M")));
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3, b1),
+			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
+		AssemblyAttributes e = new AssemblyAttributes(r);
+		assertEquals("r1 r2 r3  r4", r.getStringAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS));
+		assertEquals("r1", e.getOriginatingFragmentID(0).get(0));
+		assertEquals("r2", e.getOriginatingFragmentID(0).get(1));
+		assertEquals("r3", e.getOriginatingFragmentID(0).get(2));
+		assertEquals("r4", e.getOriginatingFragmentID(1).get(0));
 	}
 	@Test
 	public void getEvidenceIDs_should_return_underlying_evidence() {

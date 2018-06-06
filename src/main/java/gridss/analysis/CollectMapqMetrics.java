@@ -1,27 +1,3 @@
-/*
- * The MIT License
- *
- * Copyright (c) 2016 Daniel Cameron
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 package gridss.analysis;
 
 import java.io.File;
@@ -39,7 +15,6 @@ import htsjdk.samtools.util.IOUtil;
 import picard.PicardException;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.programgroups.Metrics;
 import picard.util.RExecutor;
 
 /**
@@ -53,12 +28,15 @@ import picard.util.RExecutor;
                 "the statistical distribution of read mapping qualities (excluding duplicates) " +
                 "and generates a Histogram plot.",
         oneLineSummary = "Writes mapq distribution metrics for a SAM or BAM file",
-        programGroup = Metrics.class
+        programGroup = gridss.cmdline.programgroups.Metrics.class
 )
 public class CollectMapqMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".mapq_metrics";
 	public static final String HISTOGRAM_SUFFIX = ".mapq_histogram.pdf";
     private static final String Histogram_R_SCRIPT = "gridss/analysis/mapqHistogram.R";
+    
+    @Argument(doc="If true, also include reads marked as duplicates.")
+    public boolean INCLUDE_DUPLICATES = false;
 
     @Argument(shortName="H", doc="File to write insert size Histogram chart to.")
     public File Histogram_FILE = null;
@@ -98,6 +76,7 @@ public class CollectMapqMetrics extends SinglePassSamProgram {
     }
 
     @Override protected void acceptRead(final SAMRecord record, final ReferenceSequence ref) {
+    	if (record.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
         multiCollector.acceptRecord(record, ref);
     }
 

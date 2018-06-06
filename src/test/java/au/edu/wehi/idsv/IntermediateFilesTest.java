@@ -123,7 +123,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public void createBAM(File file, SAMFileHeader header, SAMRecord... data) {
 		SAMFileWriter writer =  new SAMFileWriterFactory().setCreateIndex(true).makeSAMOrBAMWriter(header, true, file);
 		if (header.getSortOrder() == SortOrder.coordinate) {
-			SortingCollection<SAMRecord> presort = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(header), new SAMRecordCoordinateComparator(), 100000000, testFolder.getRoot());
+			SortingCollection<SAMRecord> presort = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(header), new SAMRecordCoordinateComparator(), 100000000, testFolder.getRoot().toPath());
 			for (SAMRecord r : data) {
 				presort.add(r);
 			}
@@ -152,7 +152,7 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public static List<SAMRecord> getRecords(File file) {
 		assertTrue(file.exists());
-		SamReader reader = SamReaderFactory.make().open(file);
+		SamReader reader = SamReaderFactory.makeDefault().open(file);
 		List<SAMRecord> list = Lists.newArrayList();
 		for (SAMRecord r : reader) {
 			list.add(r);

@@ -22,8 +22,17 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 			int minSoftClipLength,
 			float minClipQuality,
 			boolean processSecondaryAlignments,
+			boolean realignExistingSplitReads,
+			boolean realignEntireRecord,
 			EvidenceIdentifierGenerator eidgen) {
-		this(it, new SplitReadFastqExtractor(isSplit, minSoftClipLength, minClipQuality, processSecondaryAlignments, eidgen));
+		this(it, new SplitReadFastqExtractor(
+				isSplit,
+				minSoftClipLength,
+				minClipQuality,
+				processSecondaryAlignments,
+				realignExistingSplitReads,
+				realignEntireRecord,
+				eidgen));
 	}
 	
 	public SplitReadFastqExtractionIterator(

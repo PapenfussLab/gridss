@@ -337,4 +337,9 @@ public class KmerEvidenceTest extends TestHelper {
 			assertNull(e.node(i));
 		}
 	}
+	@Test
+	public void read_pair_createAnchor_should_place_read_at_mapped_position() {
+		assertEquals(100, KmerEvidence.createAnchor(1, NRRP(SES(2, 10), OEA(0, 100, "1M", false)), 0, null).startPosition());
+		assertEquals(100, KmerEvidence.createAnchor(1, NRRP(SES(2, 10), OEA(0, 100, "1M", false)), 0, null).endPosition());
+	}
 }

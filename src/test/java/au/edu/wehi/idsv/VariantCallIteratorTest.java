@@ -86,4 +86,13 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(2, result.size());
 	}
+	@Test
+	public void should_call_breakends() throws InterruptedException {
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		list.add(SCE(FWD, Read(0, 1, "10M10S")));
+		list.add(SCE(BWD, Read(0, 100, "10S10M")));
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
+		assertEquals(2, result.size());
+	}
 }

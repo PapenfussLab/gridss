@@ -9,6 +9,7 @@ public class SoftClipConfiguration {
 		minAverageQual = config.getFloat("minAverageQual");
 		minLength = config.getInt("minLength");
 		minAnchorIdentity = config.getFloat("minAnchorIdentity");
+		realignSplitReads = config.getBoolean("realignSplitReads");
 	}
 	/**
 	 * Minimum average breakend quality score to be considered a valid soft clip
@@ -23,4 +24,8 @@ public class SoftClipConfiguration {
 	 * Minimum anchor identity to considered evidence
 	 */
 	public float minAnchorIdentity;
+	/**
+	 * Discard existing supplementary alignments and realign from the primary
+	 */
+	public boolean realignSplitReads;
 }

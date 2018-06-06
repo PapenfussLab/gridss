@@ -6,6 +6,8 @@ import java.util.Iterator;
 
 import com.google.common.collect.RangeSet;
 
+import au.edu.wehi.idsv.util.IntervalUtil;
+
 
 public class KmerPathNodePath extends KmerPathNodeBasePath {
 	private ArrayDeque<TraversalNode> nodepath = new ArrayDeque<TraversalNode>();
@@ -105,6 +107,25 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 				push(best);
 			}
 		} while (best != null);
+	}
+	public void push(Iterator<KmerPathSubnode> pathIt) {
+		while (pathIt.hasNext()) {
+			KmerPathSubnode sn = pathIt.next();
+			push(sn);
+		}
+	}
+	public void push(KmerPathSubnode toNode) {
+		Iterator<TraversalNode> it = headNext();
+		while (it.hasNext()) {
+			TraversalNode tn = it.next();
+			if (tn.node().node() == toNode.node()) {
+				if (IntervalUtil.overlapsClosed(tn.node().firstStart(), tn.node().firstEnd(), toNode.firstStart(), toNode.firstEnd())) {
+					push(tn);
+					return;
+				}
+			}
+		}
+		throw new IllegalStateException("Illegal traversal");
 	}
 	public String toString() {
 		return headNode().asSubnodes().toString().replace(",", "\n");

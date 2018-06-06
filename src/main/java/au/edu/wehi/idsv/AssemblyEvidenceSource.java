@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
@@ -70,6 +72,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 * @throws IOException 
 	 */
 	public void assembleBreakends(ExecutorService threadpool) throws IOException {
+		source.stream().forEach(ses -> ses.assertPreprocessingComplete());
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}
@@ -108,9 +111,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		GatherBamFiles gather = new picard.sam.GatherBamFiles();
 		List<String> args = new ArrayList<>();
 		for (File f : deduplicatedChunks) {
-			args.add("INPUT=" + f.getAbsolutePath());
+			args.add("INPUT=" + f.getPath());
 		}
-		args.add("OUTPUT=" + tmpout.getAbsolutePath());
+		args.add("OUTPUT=" + tmpout.getPath());
 		if (getContext().getCommandLineProgram() != null) {
 			args.addAll(CommandLineProgramHelper.getCommonArgs(getContext().getCommandLineProgram()));
 		}
@@ -138,13 +141,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				FileHelper.delete(f, true);
 			}
 		}
-		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
+		File throttledFilename = new File(getFile().getPath() + ".throttled.bed");
 		try {
 			if (throttled.size() > 0) {
 				throttled.write(throttledFilename, "Regions of high coverage where only a subset of supporting reads were considered for assembly");
 			}
 		} catch (IOException e) {
-			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
+			log.warn(e, "Unable to write " + throttledFilename.getPath());
 		}
 	}
 	private void runTasks(List<Future<Void>> tasks) {
@@ -242,7 +245,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 	}
 	@Override
-	public void ensureExtracted() throws IOException {
+	public synchronized void ensureExtracted() throws IOException {
 		ensureMetrics();
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
 		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.withsplitreads.");
@@ -251,11 +254,19 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			log.info("Identifying split reads for " + getFile().getAbsolutePath());
 			List<String> args = Lists.newArrayList(
 					"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
-					"INPUT=" + getFile().getAbsolutePath(),
-					"OUTPUT=" + svFile.getAbsolutePath());
+					"INPUT=" + getFile().getPath(),
+					"OUTPUT=" + svFile.getPath(),
+					"REALIGN_ENTIRE_READ=" + Boolean.toString(getContext().getConfig().getAssembly().realignContigs));
 			execute(new SoftClipsToSplitReads(), args);
 		}
 		SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
+	}
+	@Override
+	public boolean shouldFilter(SAMRecord r) {
+		if (r.hasAttribute("OA") && !SAMRecordUtil.overlapsOriginalAlignment(r)) {
+			return true;
+		}
+		return super.shouldFilter(r);
 	}
 	public boolean shouldFilterAssembly(SAMRecord asm) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
@@ -274,12 +285,15 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					breakendLength));
 			return true;
 		}
+		List<Boolean> allCategories = Stream.generate(() -> true)
+				.limit(getContext().getCategoryCount())
+				.collect(Collectors.toList());
 		// too few reads
-		if (attr.getAssemblySupportCount() < ap.minReads) {
+		if (attr.getAssemblySupportCount(allCategories) < ap.minReads) {
 			return true;
 		}
 		// unanchored assembly that not actually any longer than any of the reads that were assembled together
-		if (attr.getAssemblySupportCountSoftClip() == 0 && breakendLength <= attr.getAssemblyReadPairLengthMax()) {
+		if (attr.getAssemblySupportCountSoftClip(allCategories) == 0 && breakendLength <= attr.getAssemblyReadPairLengthMax()) {
 			// assembly length = 1 read
 			// at best, we've just error corrected a single reads with other reads.
 			// at worst, we've created a misassembly.
@@ -311,7 +325,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			*/
 		}
 		return assembly;
-	}
+	} 
 	private Iterator<DirectedEvidence> throttled(Iterator<DirectedEvidence> it) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
 		DirectedEvidenceDensityThrottlingIterator dit = new DirectedEvidenceDensityThrottlingIterator(
@@ -422,5 +436,5 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 * Assembly contigs are not paired
 	 */
 	@Override
-	public boolean knownSingleEnded() { return true; } 
+	public boolean knownSingleEnded() { return true; }
 }

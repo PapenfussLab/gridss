@@ -94,7 +94,7 @@ public class VcfFileUtil {
 								new VCFRecordCodec(header),
 								sortComparator,
 								processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
-								processContext.getFileSystemContext().getTemporaryDirectory());
+								processContext.getFileSystemContext().getTemporaryDirectory().toPath());
 						while (rit.hasNext()) {
 							collection.add(rit.next());
 						}

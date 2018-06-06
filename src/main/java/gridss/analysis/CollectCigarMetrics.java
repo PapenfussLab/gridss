@@ -49,13 +49,16 @@ import picard.analysis.SinglePassSamProgram;
         summary = "Reads a SAM or BAM file and writes a file containing metrics about " +
                 "the statistical distribution of alignment CIGARs.",
         oneLineSummary = "Writes CIGAR distribution metrics for a SAM or BAM file",
-        programGroup = picard.cmdline.programgroups.Metrics.class
+        programGroup = gridss.cmdline.programgroups.Metrics.class
 )
 public class CollectCigarMetrics extends SinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".cigar_metrics";
 	
 	@Argument(shortName="Z", doc="If set to true include a zero length operator for each operator not included in the alignment CIGAR.")
     public boolean INCLUDE_OMITTED_OPERATORS = true;
+	
+	@Argument(doc="If true, also include reads marked as duplicates.")
+    public boolean INCLUDE_DUPLICATES = false;
 	
     private EnumMap<CigarOperator, List<CigarDetailMetrics>> cigar;    
 
@@ -79,6 +82,7 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
     	// Skip unwanted records
     	if (rec.getReadUnmappedFlag()) return;
     	if (rec.getCigar() == null) return;
+    	if (rec.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
     	List<CigarElement> list = rec.getCigar().getCigarElements();
     	if (list == null || list.size() == 0) return;
     	for (CigarElement ce : list) {

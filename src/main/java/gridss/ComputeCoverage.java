@@ -31,7 +31,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 @CommandLineProgramProperties(
 		summary = "Computes reference genome coverage for a given BAM",
 		oneLineSummary = "Computes coverage",
-		programGroup = picard.cmdline.programgroups.SamOrBam.class
+		programGroup = picard.cmdline.programgroups.DiagnosticsAndQCProgramGroup.class
 )
 public class ComputeCoverage extends GcSinglePassSamProgram {
 	private static final Log log = Log.getInstance(ComputeCoverage.class);
@@ -93,6 +93,7 @@ public class ComputeCoverage extends GcSinglePassSamProgram {
 	}
 	@Override
 	protected void acceptRead(SAMRecord record, ReferenceSequence refSeq) {
+		if (record.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
 		ReadGcSummary gc = new ReadGcSummary(record, refSeq, UNPAIRED_FRAGMENT_SIZE, getReadPairConcordanceCalculator());
 		if (ica_gc != null) {
 			ica_gc.add(record, gc, gcAdjust.adjustmentMultiplier((int)gc.gcPercentage));

@@ -6,6 +6,8 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -34,18 +36,23 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 	@Override
 	public void align(final File fastq, final File output, final File reference, final int threads) throws IOException {
 		List<String> commandline = template.stream()
-				.map(s -> String.format(s, fastq.getAbsolutePath(), reference.getAbsolutePath(), threads))
+				.map(s -> String.format(s, fastq.getPath(), reference.getPath(), threads))
 				.collect(Collectors.toList());
+		if (SystemUtils.IS_OS_WINDOWS) {
+			// WSL path conversion
+			commandline = commandline.stream()
+				.map(s -> s.replace('\\', '/'))
+				.collect(Collectors.toList());
+		}
 		String commandlinestr = commandline.stream().collect(Collectors.joining(" "));
 		log.info("Invoking external aligner");
 		log.info(commandlinestr);
 		Process aligner = new ProcessBuilder(commandline)
 				.redirectError(Redirect.INHERIT)
-				.directory(output.getParentFile())
 				.start();
 		final SamReader reader = readerFactory.open(SamInputResource.of(aligner.getInputStream()));
 		final SAMFileHeader header = reader.getFileHeader();
-		try (final SAMFileWriter writer = writerFactory.makeWriter(header, false, output, reference)) {
+		try (final SAMFileWriter writer = writerFactory.clone().setCompressionLevel(0).makeWriter(header, false, output, reference)) {
 			final SAMRecordIterator it = reader.iterator();
 			while (it.hasNext()) {
 				writer.addAlignment(it.next());

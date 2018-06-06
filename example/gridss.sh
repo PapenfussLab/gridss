@@ -4,10 +4,10 @@
 #
 INPUT=chr12.1527326.DEL1024.bam
 BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
-REFERENCE=~/reference_genomes/human/hg19.fa
+REFERENCE=hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.5.0-jar-with-dependencies.jar
+GRIDSS_JAR=../target/gridss-1.7.0-SNAPSHOT-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
@@ -45,12 +45,18 @@ if ! which Rscript >/dev/null 2>&1 ; then
 	exit 1
 fi
 
+# -Dreference_fasta is only required for CRAM input files
+# -Dgridss.gridss.output_to_temp_file=true allows GRIDSS to continue where it left off without data errors due to truncated files
+# -Dsamjdk.create_index=true is required for multi-threaded operation
+# -Dsamjdk.use_async_io allow for async read/write on background threads which improves BAM I/O performancce
 java -ea -Xmx31g \
+	-Dreference_fasta="$REFERENCE" \
 	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
 	-Dgridss.gridss.output_to_temp_file=true \
+	-Dgridss.keepTempFiles=true \
 	-cp $GRIDSS_JAR gridss.CallVariants \
 	TMP_DIR=. \
 	WORKING_DIR=. \

@@ -90,14 +90,49 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 		r2.setSupplementaryAlignmentFlag(true);
 		c.acceptRead(r2, null);
 		SAMRecord r3 = Read(0, 1, "1M");
-		r3.setNotPrimaryAlignmentFlag(true);
+		r3.setSecondaryAlignment(true);
 		c.acceptRead(r3, null);
 		SAMRecord r4 = Read(0, 1, "1M");
-		r4.setNotPrimaryAlignmentFlag(true);
+		r4.setSecondaryAlignment(true);
 		r4.setAttribute("SA", "chr1,5,+,1M,0,0");
 		c.acceptRead(r4, null);
 		c.finish();
 		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics();
 		assertEquals(1, metrics.SECONDARY_NOT_SPLIT);
+	}
+	@Test
+	public void should_not_count_secondary() {
+		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
+		CollectIdsvMetrics c = new CollectIdsvMetrics();
+		c.OUTPUT = metricFiles;
+		c.setup(null, null);
+		SAMRecord r1 = Read(0, 1, "1M");
+		r1.setSecondaryAlignment(true);
+		c.acceptRead(r1, null);
+		c.finish();
+		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics();
+		assertEquals(0, metrics.READS);
+		
+		c = new CollectIdsvMetrics();
+		c.OUTPUT = metricFiles;
+		c.COUNT_SECONDARY = true;
+		c.setup(null, null);
+		c.acceptRead(r1, null);
+		c.finish();
+		IdsvMetrics metrics_counting = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics();
+		assertEquals(1, metrics_counting.READS);
+	}
+	@Test
+	public void should_not_count_supplementary() {
+		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
+		CollectIdsvMetrics c = new CollectIdsvMetrics();
+		c.OUTPUT = metricFiles;
+		c.setup(null, null);
+		SAMRecord r1 = Read(0, 1, "1M");
+		r1.setSupplementaryAlignmentFlag(true);
+		c.acceptRead(r1, null);
+		c.finish();
+		IdsvMetrics metrics = new IdsvSamFileMetrics(null, metricFiles, null, null, false).getIdsvMetrics();
+		assertEquals(0, metrics.READS);
 	}
 }

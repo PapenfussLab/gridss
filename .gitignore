@@ -1,4 +1,6 @@
 /target
-test.bam.idsv.working
+*.gridss.working
 .Rproj.user
 bin
+/chr12.*
+/hg19.*

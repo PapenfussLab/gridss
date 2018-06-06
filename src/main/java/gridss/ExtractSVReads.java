@@ -41,7 +41,7 @@ import htsjdk.samtools.util.Log;
         		+ "and reads/read pairs are only extracted when all alignments are consistent with the "
         		+ "presence of of a structural variant.",
         oneLineSummary = "Extracts reads and read pairs supporting putative structural variations.",
-        programGroup = picard.cmdline.programgroups.SamOrBam.class
+        programGroup = picard.cmdline.programgroups.ReadDataManipulationProgramGroup.class
 )
 public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProgram {
 	private static final Log log = Log.getInstance(ExtractSVReads.class);
@@ -182,15 +182,13 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 	public boolean[] shouldExtract(List<SAMRecord> records, ReferenceLookup lookup) {
 		boolean hasConsistentReadPair = hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = hasReadAlignmentConsistentWithReference(records);
-		if (metricsCollector != null) {
-			metricsCollector.acceptFragment(records, lookup);
-		}
 		boolean[] extract = new boolean[records.size()];
 		for (int i = 0; i < records.size(); i++) {
 			SAMRecord r = records.get(i);
 			extract[i] = !hasConsistentReadAlignment[SAMRecordUtil.getSegmentIndex(r)] && !readfilter.filterOut(r);
 			// supp records should use the primary alignment when considering concordance
 			extract[i] |= !hasConsistentReadPair && !pairfilter.filterOut(primaryAlignmentForSupplementary(r));
+			extract[i] &= (!r.getDuplicateReadFlag() || INCLUDE_DUPLICATES);
 		}
 		return extract;
 	}
@@ -205,6 +203,9 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 			} else {
 				// ignore remaining reads
 			}
+		}
+		if (metricsCollector != null) {
+			metricsCollector.acceptFragment(records, lookup);
 		}
 	}
 	@Override

@@ -180,7 +180,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.PERCENTAGE;
 		extract.OUTPUT = output;
 		extract.INPUT = input;
-		try (SamReader reader = SamReaderFactory.make().open(input)) {
+		try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {
 			extract.setup(reader.getFileHeader(), input);
 		}
 		List<SAMRecord> records = getRecords(input);
@@ -214,7 +214,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.PERCENTAGE;
 		extract.OUTPUT = output;
 		extract.INPUT = input;
-		try (SamReader reader = SamReaderFactory.make().open(input)) {
+		try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {
 			extract.setup(reader.getFileHeader(), input);
 		}
 		List<SAMRecord> records = getRecords(input);

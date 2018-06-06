@@ -131,12 +131,12 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			knIt = evidenceTracker.new AggregateNodeAssertionInterceptor(knIt);
 		}
 		PathNodeIterator pathNodeIt = new PathNodeIterator(knIt, maxPathLength, k); 
 		Iterator<KmerPathNode> pnIt = pathNodeIt;
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
 		}
 		CollapseIterator collapseIt = null;
@@ -149,16 +149,16 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse);
 			}
 			pnIt = collapseIt;
-			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
 			}
 			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxKmerSupportIntervalWidth);
 			pnIt = simplifyIt;
-			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s_%d-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), firstPosition, direction);

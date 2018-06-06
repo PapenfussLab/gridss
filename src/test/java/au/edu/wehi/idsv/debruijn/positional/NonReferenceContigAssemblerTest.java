@@ -15,11 +15,13 @@ import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.AssemblyAttributes;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.NonReferenceReadPair;
@@ -29,6 +31,7 @@ import au.edu.wehi.idsv.SequentialIdGenerator;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.SAMRecord;
 
 
@@ -56,7 +59,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test");
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test", BreakendDirection.Forward);
 		return caller;
 	}
 	@Test
@@ -79,7 +82,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, sce);
 		AssemblyAttributes attr = new AssemblyAttributes(output.get(0));
 		assertNotNull(attr);
-		assertEquals(1, attr.getAssemblySupportCount());
+		assertEquals(1, attr.getAssemblySupportCount(ImmutableList.of(true, true)));
 	}
 	@Test
 	public void should_call_simple_bwd_SC() {
@@ -402,5 +405,58 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			e.add(NRRP(ses, rp));
 		}
 		go(pc, true, e.toArray(new DirectedEvidence[0]));
+	}
+	@Test
+	public void should_generate_contig_support_CIGAR() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		MockSAMEvidenceSource ses0 = SES(false);
+		MockSAMEvidenceSource ses1 = SES(true);
+		SoftClipEvidence sce1 = SCE(FWD, ses0, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")));
+		SoftClipEvidence sce2 = SCE(FWD, ses0, withSequence("ACGTGGTCGAC", Read(0, 5, "6M5S")));
+		SoftClipEvidence sce3 = SCE(FWD, ses1, withSequence("ACGTGGTCGT", Read(0, 5, "6M4S")));
+		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3);
+		assertEquals(1, output.size());
+		assertEquals("1X11=,1X9=2X", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
+	}
+	@Test
+	public void should_generate_rp_contig_support_CIGAR() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 30);
+		
+		// 123456789012345678901234567
+		// GGTTGCATAGACGTGGTCGACCTAGTA
+		// ==========       ==========
+		//      MMMMMSSSSSSSSSSSS
+		SAMRecord[] rp = DP(0, 1, "10M", true, 0, 1000, "10M", false);
+		rp[0].setReadBases(B("GGTTGCATAG"));
+		rp[1].setReadBases(B("CGACCTAGTA"));
+		SoftClipEvidence sce = SCE(FWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 6, "5M12S")));
+		List<SAMRecord> output = go(pc, true, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertEquals(1, output.size());
+		assertEquals(27, output.get(0).getReadLength());
+		assertEquals("GGTTGCATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
+		assertEquals("1X26=", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
+	}
+	@Test
+	public void should_not_write_inconsistent_anchors() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 100);
+		SAMRecord[] rp = DP(0, 1, "10M", true, 0, 1000, "10M", false);
+		rp[0].setReadBases(B("NNNNNNNNNN"));
+		rp[1].setReadBases(B("ACGTTGGCCA"));
+		rp[1].setReadUnmappedFlag(true);
+		rp[0].setMateUnmappedFlag(true);
+		SoftClipEvidence sce1 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 20, "4M4S")));
+		SoftClipEvidence sce2 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 21, "4M4S")));
+		SoftClipEvidence sce3 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 22, "4M4S")));
+		SoftClipEvidence sce4 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 23, "4M4S")));
+		SoftClipEvidence sce5 = SCE(FWD, ses, withSequence("GCCAAAAA", Read(0, 40, "4M4S")));
+		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3, sce4, sce5, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertFalse(output.get(0).getCigarString().contains("I"));
+		assertFalse(output.get(0).getCigarString().contains("D"));
 	}
 }

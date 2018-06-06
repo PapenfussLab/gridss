@@ -289,7 +289,7 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 			split(n, lengths);
 			referencePathsSplit += lengths.size() - 1;
 		}
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			assert(assertReferenceKmersSplit());
 		}
 	}

@@ -26,7 +26,7 @@ import picard.cmdline.StandardOptionDefinitions;
         summary = "Uses an external aligner to identify split reads by iterative alignment of soft clipped bases. "
         		+ "Existing split read alignments are left untouched.",
         oneLineSummary = "Converts soft clipped reads to split reads",
-        programGroup = picard.cmdline.programgroups.SamOrBam.class
+        programGroup = gridss.cmdline.programgroups.DataCleaning.class
 )
 public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);
@@ -42,6 +42,13 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     public float MIN_CLIP_QUAL = 5;
     @Argument(doc="Indicates whether to perform split read identification on secondary read alignments.", optional=true)
     public boolean PROCESS_SECONDARY_ALIGNMENTS = false;
+    @Argument(doc="Indicates whether to perform realignment on existing chimeric alignment. If true, only the primary alignment record is retained.", optional=true)
+    public boolean REALIGN_EXISTING_SPLIT_READS = false;
+    @Argument(doc="Indicates whether to realign the entire read, or just the soft clipped bases.", optional=true)
+    public boolean REALIGN_ENTIRE_READ = false;
+    @Argument(doc="Indicates whether to adjust the primary alignment position if the total edit distance can be reduced by extending or contracting the primary alignment. "
+    		+ "ComputeSamTags should be rerun to correct any changes in primary alignment position if this operation is performed.", optional=true)
+    public boolean READJUST_PRIMARY_ALIGNMENT_POSITON = false;
     @Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
@@ -66,14 +73,18 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
     	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
+    	realigner.setRealignExistingSplitReads(REALIGN_EXISTING_SPLIT_READS);
+    	realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
     	realigner.setWorkerThreads(WORKER_THREADS);
+    	realigner.setReference(getReference());
+    	realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITON);
     	try {
-    		SamReaderFactory readerFactory = SamReaderFactory.make();
+    		SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
         	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
         	
         	if (ALIGNER_STREAMING) {
         		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, MAX_RECORDS_IN_RAM);
         	} else {
         		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
         		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);

@@ -151,7 +151,7 @@ public class SAMFileUtil {
 								new BAMRecordCodec(header),
 								sortComparator,
 								fsc.getMaxBufferedRecordsPerFile(),
-								fsc.getTemporaryDirectory());
+								fsc.getTemporaryDirectory().toPath());
 						while (rit.hasNext()) {
 							collection.add(rit.next());
 						}

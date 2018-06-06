@@ -41,7 +41,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
@@ -55,7 +54,6 @@ import picard.cmdline.CommandLineProgram;
  */
 public class SAMEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(SAMEvidenceSource.class);
-	protected final SamReaderFactory factory = SamReaderFactory.makeDefault();
 	private final int sourceCategory;
 	private final ReadPairConcordanceMethod rpcMethod;
 	private final int rpcMinFragmentSize;
@@ -83,7 +81,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		this.rpcConcordantPercentage = rpcConcordantPercentage;
 	}
 	public IdsvSamFileMetrics getMetrics() {
-		ensureMetrics();
+		if (metrics == null) {
+			ensureMetrics();
+		}
 		return metrics;
 	}
 	public StructuralVariantReadMetrics getSVMetrics() {
@@ -106,7 +106,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public int getSourceCategory() {
 		return sourceCategory;
 	}
-	public void ensureMetrics() {
+	public synchronized void ensureMetrics() {
 		if (metrics == null) {
 			File idsvFile = getContext().getFileSystemContext().getIdsvMetrics(getFile());
 			File cigarFile = getContext().getFileSystemContext().getCigarMetrics(getFile());
@@ -114,8 +114,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!idsvFile.exists() || !cigarFile.exists() || !mapqFile.exists()) {
 				log.info("Calculating metrics for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
-						"INPUT=" + getFile().getAbsolutePath(),
-						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath(),
+						"INPUT=" + getFile().getPath(),
+						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getPath(),
 						"THRESHOLD_COVERAGE=" + getContext().getConfig().maxCoverage,
 						"FILE_EXTENSION=null",
 						"GRIDSS_PROGRAM=null",
@@ -163,7 +163,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			throw new RuntimeException(msg);
 		}
 	}
-	public void ensureExtracted() throws IOException {
+	public synchronized void ensureExtracted() throws IOException {
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
 		File extractedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.extracted.");
 		File querysortedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.");
@@ -185,8 +185,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 								in = getFile();
 							}
 							List<String> args = Lists.newArrayList(
-									"INPUT=" + in.getAbsolutePath(),
-									"OUTPUT=" + extractedFile.getAbsolutePath(),
+									"INPUT=" + in.getPath(),
+									"OUTPUT=" + extractedFile.getPath(),
 									"UNMAPPED_READS=false", // saves intermediate file space
 									"METRICS_OUTPUT=" + getContext().getFileSystemContext().getSVMetrics(getFile()),
 									"MIN_CLIP_LENGTH=" + getContext().getConfig().getSoftClip().minLength,
@@ -194,7 +194,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 									"FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize,
 									"FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE=" + rpcMaxFragmentSize,
 									"READ_PAIR_CONCORDANT_PERCENT=" + rpcConcordantPercentage,
-									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()));
+									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()),
+									// Picard tools does not mark duplicates correctly. We need to keep them so we can
+									// fix the duplicate marking in ComputeSamTags
+									"INCLUDE_DUPLICATES=true");
 							execute(new ExtractSVReads(), args);
 						}
 						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
@@ -204,8 +207,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 					}
 					log.info("Computing SAM tags for " + svFile);
 					List<String> args = Lists.newArrayList(
-							"INPUT=" + querysortedFile.getAbsolutePath(),
-							"OUTPUT=" + taggedFile.getAbsolutePath());
+							"INPUT=" + querysortedFile.getPath(),
+							"OUTPUT=" + taggedFile.getPath());
 					execute(new ComputeSamTags(), args);
 					if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 						FileHelper.delete(querysortedFile, true);
@@ -214,8 +217,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 				log.info("Identifying split reads for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
 						"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
-						"INPUT=" + taggedFile.getAbsolutePath(),
-						"OUTPUT=" + withsplitreadsFile.getAbsolutePath());
+						"INPUT=" + taggedFile.getPath(),
+						"OUTPUT=" + withsplitreadsFile.getPath(),
+						"REALIGN_EXISTING_SPLIT_READS=" + Boolean.toString(getContext().getConfig().getSoftClip().realignSplitReads));
 						// realignment.* not soft-clip
 						//"MIN_CLIP_LENGTH=" + getContext().getConfig().
 						//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
@@ -239,7 +243,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval[] intervals) {
 		SamReader reader = getReader();
 		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
-		SAMRecordIterator it = tryOpenReader(reader, QueryIntervalUtil.padIntervals(getContext().getDictionary(), intervals, getMaxConcordantFragmentSize() + 1));
+		QueryInterval[] expandedIntervals = QueryIntervalUtil.padIntervals(getContext().getDictionary(), intervals, getMaxConcordantFragmentSize() + 1);
+		// ignore blacklisted regions
+		IntervalBed queryInterval = new IntervalBed(getContext().getDictionary(), getContext().getLinear(), expandedIntervals);
+		queryInterval.remove(getBlacklistedRegions());
+		SAMRecordIterator it = tryOpenReader(reader, queryInterval.asQueryInterval());
 		Iterator<DirectedEvidence> eit = asEvidence(it);
 		eit = Iterators.filter(eit, e -> QueryIntervalUtil.overlaps(intervals, e.getBreakendSummary()));
 		return new AutoClosingIterator<>(eit, reader, it);
@@ -276,9 +284,21 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	private SamReader getReader() {
-		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
-		SamReader reader = factory.open(svFile.exists() ? svFile : getFile());
+		File svFile = getSVFile();
+		SamReader reader = getProcessContext().getSamReader(svFile.exists() ? svFile : getFile());
 		return reader;
+	}
+	public File getSVFile() {
+		if (getFile() == null) {
+			return null;
+		}
+		return getContext().getFileSystemContext().getSVBam(getFile());
+	}
+	public void assertPreprocessingComplete() {
+		File svFile = getSVFile();
+		if (svFile != null && !svFile.exists()) {
+			throw new IllegalStateException(String.format("Missing required file %s. See GRIDSS pipeline examples and documentation.", svFile));
+		}
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {
 		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved 

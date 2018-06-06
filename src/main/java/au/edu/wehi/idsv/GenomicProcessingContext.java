@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -14,7 +13,7 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.GridssVcfConstants;
-import gridss.cmdline.CommandLineProgramHelper;
+import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -25,14 +24,12 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FailsVendorReadQualityFilter;
 import htsjdk.samtools.filter.FilteringSamIterator;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
-import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
@@ -71,6 +68,9 @@ public class GenomicProcessingContext implements Closeable {
 	public GenomicProcessingContext(FileSystemContext fileSystemContext, File referenceFile, ReferenceLookup reference) {
 		this.fsContext = fileSystemContext;
 		this.referenceFile = referenceFile;
+		if (this.referenceFile != null) {
+			ReferenceCommandLineProgram.ensureSequenceDictionary(referenceFile, program);
+		}
 		if (reference == null) {
 			this.reference = LoadSynchronizedReference(referenceFile);
 			if (Defaults.ASYNC_CACHE_REFERENCE) {
@@ -89,38 +89,12 @@ public class GenomicProcessingContext implements Closeable {
 		this.blacklist = new IntervalBed(this.dictionary, this.linear);
 	}
 	/**
-	 * Ensures that a sequence dictionary exists for the given reference
-	 * @param referenceFile reference genome fasta
-	 */
-	protected void ensureSeqeunceDictionary(File referenceFile) {
-		try {
-			ReferenceSequenceFile rsf = new FastaSequenceFile(referenceFile, false);
-			Path path = referenceFile.toPath().toAbsolutePath();
-			if (rsf.getSequenceDictionary() == null) {
-				log.info("Attempting to create sequence dictionary for " + referenceFile);
-				Path dictPath = path.resolveSibling(path.getFileName().toString() + htsjdk.samtools.util.IOUtil.DICT_FILE_EXTENSION);
-				picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
-				if (program != null) {
-					CommandLineProgramHelper.copyInputs(program, csd);
-				}
-				csd.instanceMain(new String[] {
-					"OUTPUT=" + dictPath.toFile(),
-					"REFERENCE_SEQUENCE=" + referenceFile.getAbsolutePath()
-				});
-			}
-			rsf.close();
-		} catch (Exception e) {
-			log.error("Sequence dictionary creation failed. Please create using picard CreateSequenceDictionary.", e);
-		}
-	}
-	/**
 	 * Load a reference genome with synchronized access to prevent threading issues
 	 * @param referenceFile reference genome fasta
 	 * @return reference genome 
 	 */
 	@SuppressWarnings("resource")
 	protected ReferenceLookup LoadSynchronizedReference(File referenceFile) {
-		ensureSeqeunceDictionary(referenceFile);
 		try {
 			ReferenceSequenceFile underlying = new IndexedFastaSequenceFile(referenceFile);
 			if (referenceFile.length() > Runtime.getRuntime().maxMemory()) {
@@ -164,6 +138,7 @@ public class GenomicProcessingContext implements Closeable {
 
 	public SamReaderFactory getSamReaderFactory() {
 		SamReaderFactory factory = SamReaderFactory.makeDefault()
+				.referenceSequence(getReferenceFile())
 				.validationStringency(ValidationStringency.LENIENT);
 				//.enable(Option.INCLUDE_SOURCE_IN_RECORDS); // don't need as we're tracking ourselves using EvidenceSource
 		return factory;
@@ -197,8 +172,8 @@ public class GenomicProcessingContext implements Closeable {
 
 	public SAMFileWriterFactory getSamFileWriterFactory(boolean sorted) {
 		return new SAMFileWriterFactory()
-			.setTempDirectory(fsContext.getTemporaryDirectory());
-			//.setCreateIndex(sorted); // covered by -Dcreate_index=true
+			.setTempDirectory(fsContext.getTemporaryDirectory())
+			.setCreateIndex(sorted); // also covered by -Dcreate_index=true
 	}
 
 	/**
@@ -225,11 +200,6 @@ public class GenomicProcessingContext implements Closeable {
 			filters.add(new DuplicateReadFilter());
 		}
 		return new AutoClosingIterator<SAMRecord>(new FilteringSamIterator(iterator, new AggregateFilter(filters)), iterator);
-	}
-
-	public FastqWriterFactory getFastqWriterFactory() {
-		FastqWriterFactory factory = new FastqWriterFactory();
-		return factory;
 	}
 
 	public VariantContextWriterBuilder getVariantContextWriterBuilder(File output, boolean createIndex) {

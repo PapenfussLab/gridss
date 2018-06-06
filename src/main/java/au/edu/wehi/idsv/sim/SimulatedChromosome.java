@@ -108,7 +108,7 @@ public class SimulatedChromosome {
 			last = f;
 		}
 		Collections.sort(calls, IdsvVariantContext.ByLocationStart);
-		Files.write(sb.toString(), fasta, StandardCharsets.US_ASCII);
+		Files.asCharSink(fasta, StandardCharsets.US_ASCII).write(sb.toString());
 		VariantContextWriter writer = context.getVariantContextWriter(vcf, true);
 		for (VariantContext vc : calls) {
 			writer.add(vc);

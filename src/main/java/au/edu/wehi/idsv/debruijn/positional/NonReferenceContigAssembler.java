@@ -37,6 +37,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
@@ -99,6 +100,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private final ContigStats stats = new ContigStats();
 	private final PeekingIterator<KmerPathNode> underlying;
 	private final String contigName;
+	private final BreakendDirection preferredContigDirection;
 	private final Queue<SAMRecord> called = new ArrayDeque<>();
 	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
 	private int lastNextPosition = Integer.MIN_VALUE;
@@ -141,14 +143,15 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * Creates a new structural variant positional de Bruijn graph contig assembly for the given chromosome
 	 * @param it reads
 	 * @param referenceIndex evidence source
-	 * @param maxEvidenceDistance maximum distance from the first position of the first kmer of a read,
-	 *  to the last position of the last kmer of a read. This should be set to read length plus
-	 *  the max-min concordant fragment size
 	 * @param maxAnchorLength maximum number of reference-supporting anchor bases to assemble
 	 * @param k
 	 * @param source assembly source
 	 * @param assemblyNameGenerator 
 	 * @param tracker evidence lookup
+	 * @param preferredContigDirection preferred direction of contig for anchoring purposes
+	 * @param maxEvidenceDistance maximum distance from the first position of the first kmer of a read,
+	 *  to the last position of the last kmer of a read. This should be set to read length plus
+	 *  the max-min concordant fragment size
 	 */
 	public NonReferenceContigAssembler(
 			Iterator<KmerPathNode> it,
@@ -159,7 +162,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			AssemblyEvidenceSource source,
 			AssemblyIdGenerator assemblyNameGenerator,
 			EvidenceTracker tracker,
-			String contigName) {
+			String contigName, BreakendDirection preferredContigDirection) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
 		this.maxAnchorLength = maxAnchorLength;
@@ -169,6 +172,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		this.assemblyNameGenerator = assemblyNameGenerator;
 		this.evidenceTracker = tracker;
 		this.contigName = contigName;
+		this.preferredContigDirection = preferredContigDirection;
 		initialiseBestCaller();
 	}
 	private void initialiseBestCaller() {
@@ -376,7 +380,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			KmerPathNode node = underlying.next();
 			assert(lastUnderlyingStartPosition <= node.firstStart());
 			lastUnderlyingStartPosition = node.firstStart();
-			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
 			}
 			addToGraph(node);
@@ -429,29 +433,38 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (containsKmerRepeat(contig)) {
 			// recalculate the called contig, this may break the contig at the repeated kmer
 			MisassemblyFixer fixed = new MisassemblyFixer(contig);
-			contig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidenceTracker.support(contig)));
+			ArrayDeque<KmerPathSubnode> newContig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidenceTracker.support(contig)));
+			contig = newContig;
 		}
 		if (contig.isEmpty()) return null;
 		
 		int contigLength = contig.stream().mapToInt(sn -> sn.length()).sum();
 		int targetAnchorLength = Math.max(Math.min(contigLength, maxExpectedBreakendLength()), maxAnchorLength);
-		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getFirst().length());
-		startAnchorPath.greedyTraverse(true, false);
-		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
-		startingAnchor.removeLast();
+		ArrayDeque<KmerPathSubnode> fullContig = contig;
 		// make sure we have enough of the graph loaded so that when
 		// we traverse forward, our anchor sequence will be fully defined
-		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + minDistanceFromNextPositionForEvidenceToBeFullyLoaded()); 
-		
-		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getLast().length());
-		endAnchorPath.greedyTraverse(true, false);
-		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
-		endingAnchor.removeFirst();
-		
-		List<KmerPathSubnode> fullContig = new ArrayList<KmerPathSubnode>(contig.size() + startingAnchor.size() + endingAnchor.size());
-		fullContig.addAll(startingAnchor);
-		fullContig.addAll(contig);
-		fullContig.addAll(endingAnchor);
+		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + minDistanceFromNextPositionForEvidenceToBeFullyLoaded());
+		// when we extend the anchor sequence of a contig that can take multiple positions
+		// the starting and ending anchors do not necessarily traverse the same sub-intervals.
+		// E.g. a single kmer contig called in the interval [100, 200] could have
+		// the best starting anchor at [99,110], and the best ending anchor at [150,160].
+		if (preferredContigDirection == BreakendDirection.Forward) {
+			fullContig = extendStartingAnchor(fullContig, targetAnchorLength);
+			fullContig = extendEndingAnchor(fullContig, targetAnchorLength);
+		} else {
+			fullContig = extendEndingAnchor(fullContig, targetAnchorLength);
+			fullContig = extendStartingAnchor(fullContig, targetAnchorLength);
+		}
+		ArrayDeque<KmerPathSubnode> startingAnchor = new ArrayDeque<>();
+		PeekingIterator<KmerPathSubnode> startIt = Iterators.peekingIterator(fullContig.iterator());
+		while (startIt.hasNext() && startIt.peek().isReference()) {
+			startingAnchor.addLast(startIt.next());
+		}
+		ArrayDeque<KmerPathSubnode> endingAnchor = new ArrayDeque<>();
+		PeekingIterator<KmerPathSubnode> endIt = Iterators.peekingIterator(fullContig.descendingIterator());
+		while (endIt.hasNext() && endIt.peek().isReference()) {
+			endingAnchor.addFirst(endIt.next());
+		}
 		
 		byte[] bases = KmerEncodingHelper.baseCalls(fullContig.stream().flatMap(sn -> sn.node().pathKmers().stream()).collect(Collectors.toList()), k);
 		byte[] quals = DeBruijnGraphBase.kmerWeightsToBaseQuals(k, fullContig.stream().flatMapToInt(sn -> sn.node().pathWeights().stream().mapToInt(Integer::intValue)).toArray());
@@ -552,6 +565,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (exportTracker != null) {
 			exportTracker.trackAssembly(bestContigCaller);
 		}
+		if (assembledContig != null) {
+			String categorySupport = PositionalContigCategorySupportHelper.getCategorySupport(fullContig, evidence, k);
+			assembledContig.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, categorySupport);
+		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
 			removeFromGraph(evidence);
@@ -571,6 +588,23 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			called.add(assembledContig);
 		}
 		return assembledContig;
+	}
+	private ArrayDeque<KmerPathSubnode> extendEndingAnchor(ArrayDeque<KmerPathSubnode> contig, int targetAnchorLength) {
+		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getFirst(), true, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.stream().mapToInt(sn -> sn.length()).sum());
+		Iterator<KmerPathSubnode> it = contig.iterator();
+		it.next();
+		endAnchorPath.push(it);
+		endAnchorPath.greedyTraverse(true, false);
+		endAnchorPath.headNext();
+		return endAnchorPath.headNode().asSubnodes();
+	}
+	private ArrayDeque<KmerPathSubnode> extendStartingAnchor(ArrayDeque<KmerPathSubnode> contig, int targetAnchorLength) {
+		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getLast(), false, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.stream().mapToInt(sn -> sn.length()).sum());
+		Iterator<KmerPathSubnode> it = contig.descendingIterator();
+		it.next();
+		startAnchorPath.push(it);
+		startAnchorPath.greedyTraverse(true, false);
+		return startAnchorPath.headNode().asSubnodes();
 	}
 	private boolean containsKmerRepeat(Collection<KmerPathSubnode> contig) {
 		LongSet existing = new LongOpenHashSet();
@@ -618,7 +652,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (SIMPLIFY_AFTER_REMOVAL) {
 			simplify(simplifyCandidates);
 		}
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			assert(sanityCheck());
 			assert(sanityCheckDisjointNodeIntervals());
 		}
@@ -717,7 +751,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
 		for (KmerPathNode split : replacementNodes) {
-			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
 			}
 			addToGraph(split);
@@ -775,7 +809,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	public boolean sanityCheck() {
-		graphByKmerNode.entrySet().stream().flatMap(e -> e.getValue().stream()).forEach(kn -> { 
+		graphByKmerNode.long2ObjectEntrySet().stream().flatMap(e -> e.getValue().stream()).forEach(kn -> { 
 			assert(kn.node().isValid());
 			assert(graphByPosition.contains(kn.node()));
 		});

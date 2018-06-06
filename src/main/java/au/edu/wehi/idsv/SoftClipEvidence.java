@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.util.List;
+
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
@@ -46,15 +48,16 @@ public class SoftClipEvidence extends SingleReadEvidence {
 	private float scoreAssembly() {
 		if (getBreakendSequence().length == 0) return 0;
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
-		int rp = attr.getAssemblySupportCountReadPair();
-		double rpq = attr.getAssemblySupportReadPairQualityScore();
-		int sc = attr.getAssemblySupportCountSoftClip();
-		double scq =  attr.getAssemblySupportSoftClipQualityScore();
+		List<Boolean> support = getCategorySupportBreakdown();
+		int rp = attr.getAssemblySupportCountReadPair(support);
+		double rpq = attr.getAssemblySupportReadPairQualityScore(support);
+		int sc = attr.getAssemblySupportCountSoftClip(support);
+		double scq =  attr.getAssemblySupportSoftClipQualityScore(support);
 		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
-			rp -= attr.getAssemblyNonSupportingReadPairCount();
-			rpq -= attr.getAssemblyNonSupportingReadPairQualityScore();
-			sc -= attr.getAssemblyNonSupportingSoftClipCount();
-			scq -= attr.getAssemblyNonSupportingSoftClipQualityScore();
+			rp -= attr.getAssemblyNonSupportingReadPairCount(support);
+			rpq -= attr.getAssemblyNonSupportingReadPairQualityScore(support);
+			sc -= attr.getAssemblyNonSupportingSoftClipCount(support);
+			scq -= attr.getAssemblyNonSupportingSoftClipQualityScore(support);
 		}
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreBreakendAssembly(
 				rp, rpq,

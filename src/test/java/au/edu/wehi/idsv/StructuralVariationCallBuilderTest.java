@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -23,13 +26,16 @@ import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 1, BWD, 100);
 	public static class sc extends SoftClipEvidence {
 		protected sc(int offset, boolean tumour) {
-			super(SES(tumour), withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))[0],
+			super(SES(tumour), withSequence("NNNNNNNNNN", withReadName(String.format("sc%d",offset), Read(0, 10, "5S5M")))[0],
 				new BreakendSummary(0, BWD, 10, 10, 10),
 				0, 5, 5, 10, 0);
 			this.offset = offset;
@@ -43,7 +49,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rsc extends SplitReadEvidence {
 		int offset;
 		protected rsc(int offset, boolean tumour) {
-			super(SES(tumour), withAttr("SA", "polyACGT,100,5M,-,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M")))[0],
+			super(SES(tumour), withAttr("SA", "polyACGT,100,5M,-,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rsc%d",offset), Read(0, 10, "5S5M"))))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
 					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
 			this.offset = offset;
@@ -63,7 +69,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rsc_not_supporting_breakpoint extends SplitReadEvidence {
 		int offset;
 		protected rsc_not_supporting_breakpoint(int offset, boolean tumour) {
-			super(SES(tumour), withAttr("SA", "random,100,5M,-,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M")))[0],
+			super(SES(tumour), withAttr("SA", "random,100,5M,-,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rsc_ns%d",offset), Read(0, 10, "5S5M"))))[0],
 					new BreakpointSummary(0, BWD, 10, 2, BWD, 100),
 					0, 5, 5, 5, 5, 10, new ChimericAlignment("random,100,-,5M,0,0"),0, 0);
 		}
@@ -76,7 +82,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rrsc extends SplitReadEvidence {
 		int offset;
 		protected rrsc(int offset, boolean tumour) {
-			super(SES(tumour), asSupplementary(withAttr("SA", "polyACGT,100,-,5M,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))))[0],
+			super(SES(tumour), asSupplementary(withAttr("SA", "polyACGT,100,-,5M,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rrsc%d",offset), Read(0, 10, "5S5M")))))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
 					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
 			this.offset = offset;
@@ -90,8 +96,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class um extends UnmappedMateReadPair {
 		int offset;
 		protected um(int offset, boolean tumour) {
-			super(OEA(0, 15, "5M", false)[0],
-				OEA(0, 15, "5M", false)[1],
+			super(withReadName(String.format("um%d",offset), OEA(0, 15, "5M", false))[0],
+					withReadName(String.format("um%d",offset), OEA(0, 15, "5M", false))[1],
 				SES(tumour));
 			this.offset = offset;
 		}
@@ -102,8 +108,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class dp extends DiscordantReadPair {
 		int offset;
 		protected dp(int offset, boolean tumour) {
-			super(DP(0, 12, "6M", false, 1, 102, "7M", false)[0],
-					DP(0, 12, "6M", false, 1, 102, "7M", false)[1],
+			super(withReadName(String.format("dp%d",offset), DP(0, 12, "6M", false, 1, 102, "7M", false))[0],
+					withReadName(String.format("dp%d",offset), DP(0, 12, "6M", false, 1, 102, "7M", false))[1],
 					SES(tumour));
 				this.offset = offset;
 			}
@@ -121,21 +127,35 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_called_qual() {
-		assertTrue(big().hasAttribute(VcfInfoAttributes.CALLED_QUAL.attribute()));
+		assertTrue(complex_bp().hasAttribute(VcfInfoAttributes.CALLED_QUAL.attribute()));
 	}
 	@Test
 	public void should_set_breakend_qual() {
-		assertTrue(big().hasAttribute(VcfInfoAttributes.BREAKEND_QUAL.attribute()));
+		assertTrue(complex_bp().hasAttribute(VcfInfoAttributes.BREAKEND_QUAL.attribute()));
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READ() {
-		assertEquals(7, big().getReferenceReadCount(0));
-		assertEquals(8, big().getReferenceReadCount(1));
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
+		cb.referenceReads(new int[] { 7, 8} );
+		cb.referenceSpanningPairs(new int[] { 9, 10 } );
+		VariantContextDirectedEvidence e = cb.make();
+		
+		assertEquals(7, e.getReferenceReadCount(0));
+		assertEquals(8, e.getReferenceReadCount(1));
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READPAIR() {
-		assertEquals(9, big().getReferenceReadPairCount(0));
-		assertEquals(10, big().getReferenceReadPairCount(1));
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
+		cb.referenceReads(new int[] { 7, 8} );
+		cb.referenceSpanningPairs(new int[] { 9, 10 } );
+		VariantContextDirectedEvidence e = cb.make();
+		
+		assertEquals(9, e.getReferenceReadPairCount(0));
+		assertEquals(10, e.getReferenceReadPairCount(1));
 	}
 	@Test
 	public void should_set_read_pair_evidence_by_breakendpoint_tumournormal() {
@@ -871,5 +891,92 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(0.0, var.getAttribute("RASQ"));
 		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getAttribute("CASQ"), 0);
 		Assert.assertEquals((double)ae.getBreakpointQual(), (double)var.getPhredScaledQual(), 0);
+	}
+	@Test
+	public void called_position_nominal_position_should_round_trip() throws IOException {
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, BP("test",
+				new BreakpointSummary(new BreakendSummary(0,  FWD, 1, 1, 100), new BreakendSummary(0,  BWD, 200, 200, 400))));
+		cb.addEvidence(SR(Read(0, 1, "50M50S"), Read(0, 250, "50M")));
+		BreakpointSummary expected = new BreakpointSummary(new BreakendSummary(0,  FWD, 50, 1, 100), new BreakendSummary(0,  BWD, 250, 201, 300));
+		VariantContextDirectedEvidence var = cb.make();
+		Assert.assertEquals("A[polyA:250[", var.getAlternateAllele(0).toString());
+		Assert.assertEquals(50, var.getStart());
+		Assert.assertEquals(expected, var.getBreakendSummary());
+		TemporaryFolder testFolder = new TemporaryFolder();
+		testFolder.create();
+		VariantContext vc;
+		File vcf = new File(testFolder.getRoot(), "test.vcf");
+		try (VariantContextWriter vcfWriter = pc.getVariantContextWriter(vcf, true)) {
+			vcfWriter.add(var);
+		}
+		try (VCFFileReader reader = new VCFFileReader(vcf, false)) {
+			vc = reader.iterator().next();
+		}
+		Assert.assertEquals("A[polyA:250[", vc.getAlternateAllele(0).toString());
+		Assert.assertEquals(50, vc.getStart());
+		Assert.assertEquals(expected, ((VariantContextDirectedBreakpoint)IdsvVariantContext.create(pc, SES(), vc)).getBreakendSummary());
+		testFolder.delete();
+	}
+	@Test
+	public void breakend_should_use_best_unanchored_sequence() {
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, FWD, 10), "GT").make());
+		SAMRecord r1 = withMapq(44, Read(0, 10, "1M10S"))[0];
+		cb.addEvidence(SCE(FWD, r1));
+		VariantContextDirectedEvidence var = cb.make();
+		assertEquals(10, var.getBreakendSequence().length);
+	}
+	@Test
+	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READPAIR_COUNT() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(BP.localBreakend(), "GT").make());
+		cb.addEvidence(new um(1, true));
+		cb.addEvidence(new um(2, true));
+		cb.addEvidence(new um(3, false));
+		
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				new dp(2, true),
+				new dp(4, true).asRemote()); 
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
+		cb.addEvidence(asAssemblyEvidence(ass));
+		
+		VariantContextDirectedEvidence bp = cb.make();
+		
+		assertAttr(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, VcfFormatAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, new int[] { 0, 2, }, bp);
+	}
+	@Test
+	public void should_count_unique_supporting_fragments() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(BP, "GT").make());
+		cb.addEvidence(new rsc(1, true));
+		cb.addEvidence(new rsc(2, false));
+		cb.addEvidence(new rsc(3, false));
+		cb.addEvidence(new um(0, false));
+		
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(new rsc(1, true)); 
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
+		cb.addEvidence(incorporateRealignment(AES(), ass, ImmutableList.of(withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0])));
+		
+		support = Lists.<DirectedEvidence>newArrayList(new rsc(1, true), new um(0, false)); 
+		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm2"), BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
+		cb.addEvidence(asAssemblyEvidence(ass));
+		
+		VariantContextDirectedEvidence bp = cb.make();
+		
+		// rsc1 shouldn't be double-counted due to being in an assembly
+		assertAttr(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS , VcfFormatAttributes.BREAKPOINT_VARIANT_FRAGMENTS, new int[] { 2, 1, }, bp);
+		// rsc1 shouldn't count to breakend as it supports a breakpoint
+		// um0 should only be counted once
+		assertAttr(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS , VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS, new int[] { 1, 0, }, bp);
+	}
+	@Test
+	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READ_COUNT() {
+		assertAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, VcfFormatAttributes.BREAKEND_SOFTCLIP_COUNT, new int[] { 2,  1, }, complex_bp());
 	}
 }

@@ -44,7 +44,7 @@ import picard.analysis.SinglePassSamProgram;
 @CommandLineProgramProperties(
         summary = "Reads a SAM or BAM file and writes a BED file containing the regions in which coverage equals or exceeds the given threshold",
         oneLineSummary = "Reports regions at least threshold coverage.",
-        programGroup = picard.cmdline.programgroups.SamOrBam.class
+        programGroup = gridss.cmdline.programgroups.Metrics.class
 )
 public class ReportThresholdCoverage extends SinglePassSamProgram {
 	public static final String SUFFIX = ".coverage.blacklist.bed";

@@ -44,7 +44,8 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 				log.warn(String.format("Read %s is hard clipped. Please run %s to soften hard clips.",
 						record.getReadName(), ComputeSamTags.class.getName()));
 			}
-			record = SAMRecordUtil.hardClipToN(record);
+			record = record.deepCopy();
+			SAMRecordUtil.hardClipToN(record);
 		}
 		List<SplitReadEvidence> list = new ArrayList<>(2);
 		ChimericAlignment chim = new ChimericAlignment(record);
@@ -149,15 +150,16 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	}
 	private float scoreAssembly() {
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
-		int rp = attr.getAssemblySupportCountReadPair();
-		double rpq = attr.getAssemblySupportReadPairQualityScore();
-		int sc = attr.getAssemblySupportCountSoftClip();
-		double scq =  attr.getAssemblySupportSoftClipQualityScore();
+		List<Boolean> support = getCategorySupportBreakdown();
+		int rp = attr.getAssemblySupportCountReadPair(support);
+		double rpq = attr.getAssemblySupportReadPairQualityScore(support);
+		int sc = attr.getAssemblySupportCountSoftClip(support);
+		double scq =  attr.getAssemblySupportSoftClipQualityScore(support);
 		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
-			rp -= attr.getAssemblyNonSupportingReadPairCount();
-			rpq -= attr.getAssemblyNonSupportingReadPairQualityScore();
-			sc -= attr.getAssemblyNonSupportingSoftClipCount();
-			scq -= attr.getAssemblyNonSupportingSoftClipQualityScore();
+			rp -= attr.getAssemblyNonSupportingReadPairCount(support);
+			rpq -= attr.getAssemblyNonSupportingReadPairQualityScore(support);
+			sc -= attr.getAssemblyNonSupportingSoftClipCount(support);
+			scq -= attr.getAssemblyNonSupportingSoftClipQualityScore(support);
 		}
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(
 				rp, rpq,

@@ -1,8 +1,10 @@
 package gridss.analysis;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -18,15 +20,21 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.metrics.MetricsFile;
-import picard.cmdline.programgroups.Metrics;
 
 @CommandLineProgramProperties(
 		summary = "Collects metrics regarding the structural variant reads present in the input.",
 		oneLineSummary = "Collects metrics regarding the structural variant reads present in the input.",
-        programGroup = Metrics.class
+        programGroup = gridss.cmdline.programgroups.Metrics.class
 )
 public class CollectStructuralVariantReadMetrics extends ProcessStructuralVariantReadsCommandLineProgram {
 	public static final String METRICS_SUFFIX = ".sv_metrics";
+	
+	@Argument(doc = "Include secondary alignments in read counts", optional=true)
+    public boolean COUNT_SECONDARY = false;
+	
+	@Argument(doc = "Include supplementary alignments in read counts", optional=true)
+    public boolean COUNT_SUPPLEMENTARY = false;
+	
 	//private static final Log log = Log.getInstance(CollectStructuralVariantReadMetrics.class);
 	public static void main(String[] argv) {
         System.exit(new CollectStructuralVariantReadMetrics().instanceMain(argv));
@@ -50,6 +58,14 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 	}
 	@Override
 	public void acceptFragment(List<SAMRecord> records, ReferenceLookup lookup) {
+		if (!INCLUDE_DUPLICATES) {
+			records = new ArrayList<>(records);
+			for (int i = records.size() - 1; i >= 0; i--) {
+				if (records.get(i).getDuplicateReadFlag()) {
+					records.remove(i);
+				}
+			}
+		}
 		boolean hasConsistentReadPair = ExtractSVReads.hasReadPairingConsistentWithReference(getReadPairConcordanceCalculator(), records);
 		boolean[] hasConsistentReadAlignment = ExtractSVReads.hasReadAlignmentConsistentWithReference(records);
 		boolean hasOeaAnchor = false;
@@ -61,8 +77,10 @@ public class CollectStructuralVariantReadMetrics extends ProcessStructuralVarian
 		boolean[] hasUnmapped = new boolean[hasConsistentReadAlignment.length];
 		boolean[] hasSV = new boolean[hasConsistentReadAlignment.length];
 		for (SAMRecord r : records) {
-			// only count split reads once
-			if (r.getSupplementaryAlignmentFlag()) { 
+			if (r.isSecondaryAlignment() && !COUNT_SECONDARY) { 
+				continue;
+			}
+			if (r.getSupplementaryAlignmentFlag() && !COUNT_SUPPLEMENTARY) { 
 				continue;
 			}
 			// Read pairing

@@ -47,7 +47,7 @@ public class SequentialCoverageAnnotator<T extends VariantContextDirectedEvidenc
 			assert(ses.getSourceCategory() >= 0);
 			assert(ses.getSourceCategory() < context.getCategoryCount());
 			// one read-ahead thread per input file
-			SamReader reader = SamReaderFactory.makeDefault().open(ses.getFile());
+			SamReader reader = SamReaderFactory.makeDefault().referenceSequence(context.getReferenceFile()).open(ses.getFile());
 			SAMRecordIterator rawIterator = reader.iterator();
 			rawIterator.assertSorted(SortOrder.coordinate);
 			CloseableIterator<SAMRecord> sit = new AsyncBufferedIterator<SAMRecord>(rawIterator, ses.getFile().getName() + "-Coverage");

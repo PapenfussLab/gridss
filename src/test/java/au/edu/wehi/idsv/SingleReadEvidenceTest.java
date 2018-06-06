@@ -173,7 +173,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		File ref = Hg19Tests.findHg19Reference();
 		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
 		SAMEvidenceSource ses = SES(pc);
-		SamReader sr = SamReaderFactory.make().open(sam);
+		SamReader sr = SamReaderFactory.makeDefault().open(sam);
 		List<SAMRecord> in = Lists.newArrayList(sr.iterator());
 		List<SingleReadEvidence> sreList = in.stream()
 				.flatMap(record -> SingleReadEvidence.createEvidence(ses, 0, record).stream())
@@ -218,5 +218,10 @@ public class SingleReadEvidenceTest extends TestHelper {
 		SAMRecord r = withAttr("SA", "polyA,100,-,108S40M,29,1;polyA,200,-,35M113S,13,1", Read(1, 5, "36M2I10M"))[0];
 		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(SES(), 0, r);
 		assertEquals(0,  e.size());
+	}
+	@Test
+	public void strandBias_should_match_read_strand() {
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, Read(0, 1, "50M50S")).get(0).getStrandBias(), 0);
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, onNegative(Read(0, 1, "50M50S"))[0]).get(0).getStrandBias(), 0);
 	}
 }

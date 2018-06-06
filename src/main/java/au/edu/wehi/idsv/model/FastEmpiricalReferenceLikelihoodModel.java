@@ -47,7 +47,7 @@ public class FastEmpiricalReferenceLikelihoodModel implements VariantScoringMode
 	public double scoreUnmappedMate(IdsvSamFileMetrics metrics, int mapq) {
 		IdsvMetrics im = metrics.getIdsvMetrics();
 		// completely unmapped read pairs are excluded for consistency with sc and dp calculation
-		double score = MathUtil.prToPhred((double)im.READ_PAIRS_ONE_MAPPED / (double)(im.READ_PAIRS - im.READ_PAIRS_ZERO_MAPPED));
+		double score = MathUtil.prToPhred((double)im.READ_PAIRS_ONE_MAPPED / (double)(im.MAPPED_READS));
 		score = Math.min(score, mapq);
 		return score;
 	}

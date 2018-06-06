@@ -32,7 +32,7 @@ public class AnnotateInexactHomologyTest extends TestHelper {
 		AnnotateInexactHomology aih = new AnnotateInexactHomology();
 		aih.setContext(pc);
 		ExecutorService threadpool = Executors.newSingleThreadExecutor();
-		e = aih.iterator(new AutoClosingIterator<>(ImmutableList.of(e).iterator()), threadpool).next();
+		e = (VariantContextDirectedBreakpoint) aih.iterator(new AutoClosingIterator<>(ImmutableList.of(e).iterator()), threadpool).next();
 		assertEquals(-78, ((int[])e.getAttribute(VcfInfoAttributes.INEXACT_HOMPOS.attribute()))[0]);
 		assertEquals(300, ((int[])e.getAttribute(VcfInfoAttributes.INEXACT_HOMPOS.attribute()))[1]);
 		threadpool.shutdown();

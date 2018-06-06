@@ -102,4 +102,52 @@ public class PackedSequenceTest extends TestHelper {
 		assertEquals(seq1.length(), PackedSequence.overlapMatches(seq1, seq1, 0));
 		assertEquals(seq1.length() - 4, PackedSequence.overlapMatches(seq1, seq2, 0));
 	}
+	@Test
+	public void overlapMatches_should_match_offset_reads() {
+		PackedSequence seq1 = new PackedSequence(B("TTATTTGAGTTAGAGAGCTTCGGGGATACTTATTCAGGTACGGTCTGTCTTCGGGAGTGTGACAGTACATGAATTAGCCTTGGTAGCAAGACAATTTTGT"), false, false);
+		PackedSequence seq2 = new PackedSequence(B( "TATTTGAGTTAGAGAGCTTCGGGGATACTTATTCAGGTACGGTCTGTCTTCGGGAGTGTGACAGTACATGAATTAGCCTTGGTAGCAAGACAATTTTGTG"), false, false);
+		assertEquals(99, PackedSequence.overlapMatches(seq1, seq2, 1));
+	}
+	private void test_overlapLength(String s1, String s2, int offset, int expectedOverlap) {
+		PackedSequence seq1 = new PackedSequence(B(s1), false, false);
+		PackedSequence seq2 = new PackedSequence(B(s2), false, false);
+		assertEquals(expectedOverlap, PackedSequence.overlapLength(seq1, seq2, offset));
+	}
+	@Test
+	public void overlapLength_should_return_common_base_count() {
+		test_overlapLength("AAAT", "AA", -3, 0);
+		test_overlapLength("AAAT", "AA", -2, 0);
+		test_overlapLength("AAAT", "AA", -1, 1);
+		test_overlapLength("AAAT", "AA", 0, 2);
+		test_overlapLength("AAAT", "AA", 1, 2);
+		test_overlapLength("AAAT", "AA", 2, 2);
+		test_overlapLength("AAAT", "AA", 3, 1);
+		test_overlapLength("AAAT", "AA", 4, 0);
+		test_overlapLength("AAAT", "AA", 5, 0);
+	}
+	@Test
+	public void subsequence_constructor_should_return_subsequence() {
+		for (int len = 0; len < 100; len++) {
+			PackedSequence seq = new PackedSequence(B(S(RANDOM).substring(0, len)), false, false);
+			for (int i = 0; i < len; i++) {
+				for (int j = 0; i + j <= len; j++) {
+					PackedSequence subseq = new PackedSequence(seq, i, j);
+					assertEquals(seq.toString().substring(i, i + j), subseq.toString());
+				}
+			}
+		}
+	}
+	@Test
+	public void should_concat_sequences() {
+		for (int i =  0; i < 200; i++) {
+			for (int j =  0; j < 200; j++) {
+				String seq1 = S(RANDOM).substring(i, i + j);
+				String seq2 = S(RANDOM).substring(j, i + j);
+				PackedSequence ps1 = new PackedSequence(B(seq1), false, false);
+				PackedSequence ps2 = new PackedSequence(B(seq2), false, false);
+				PackedSequence concat = new PackedSequence(ps1, ps2);
+				assertEquals(seq1 + seq2, S(concat.getBytes(0, concat.length())));
+			}
+		}
+	}
 }

@@ -25,6 +25,18 @@ public interface StreamingAligner {
 	 * @return
 	 */
 	boolean hasAlignmentRecord();
+	
+	/**
+	 * Number of fastq records that have been aligned but not yet returned by getAlignment()
+	 * @return
+	 */
+	int processedAlignmentRecords();
+	
+	/**
+	 * Number of fastq records sent to the aligner for which no response has yet been received
+	 * @return
+	 */
+	int outstandingAlignmentRecord();
 
 	/**
 	 * Gets an alignment completed by the caller.
@@ -35,5 +47,4 @@ public interface StreamingAligner {
 	SAMRecord getAlignment();
 
 	void close() throws IOException;
-
 }

@@ -99,7 +99,10 @@ public class FileSystemContext {
 		return workingDir;
 	}
 	private static File getSource(File file) {
-		String source = file.getAbsolutePath();
+		if (file == null) {
+			return null;
+		}
+		String source = file.getPath();
 		if (source.contains(INTERMEDIATE_DIR_SUFFIX)) {
 			source = source.substring(0, source.indexOf(INTERMEDIATE_DIR_SUFFIX));
 		}
@@ -107,6 +110,9 @@ public class FileSystemContext {
 		return result;
 	}
 	private synchronized File getFile(String path) {
+		if (path == null) {
+			return null;
+		}
 		File file = new File(path);
 		file.getParentFile().mkdirs();
 		return file;

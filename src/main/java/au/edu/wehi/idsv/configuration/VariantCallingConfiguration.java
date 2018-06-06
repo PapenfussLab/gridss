@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.configuration;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
@@ -27,6 +29,8 @@ public class VariantCallingConfiguration {
 		lowQuality = config.getDouble("lowQuality");
 		maxBreakendHomologyLength = config.getInt("maxBreakendHomologyLength");
 		breakendHomologyAlignmentMargin = config.getInt("breakendHomologyAlignmentMargin");
+		requireAssemblyCategorySupport = config.getBoolean("requireAssemblyCategorySupport");
+		callBreakends = config.getBoolean("callBreakends");
 //		switch (config.getString("format")) {
 //			case "vcf4.2":
 //				placeholderBreakend = false;
@@ -74,6 +78,16 @@ public class VariantCallingConfiguration {
 	 * Number of reference bases to include in alignment
 	 */
 	public int breakendHomologyAlignmentMargin;
+	/**
+	 * Require that an anchored assembly is supported on both sides for each category
+	 * Corrects for somatic calls with a flanking germline indel being called as somatic
+	 * due to the non-zero germline support of the contig. 
+	 */
+	public boolean requireAssemblyCategorySupport;
+	/**
+	 * Include unpaired breakends in variant calls
+	 */
+	public boolean callBreakends;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));
@@ -121,25 +135,26 @@ public class VariantCallingConfiguration {
 		return filters;
 	}
 	public VariantContextDirectedEvidence applyConfidenceFilter(ProcessingContext processContext, final VariantContextDirectedEvidence variant) {
-		VariantContextDirectedEvidence filteredVariant = variant;
+		Collection<String> filters = new HashSet<>(variant.getFilters());
 		if (variant instanceof VariantContextDirectedBreakpoint) {
-			VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)filteredVariant;
-			if (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) { 
-				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
+			VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)variant;
+			if (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
+				filters.add(VcfFilter.NO_ASSEMBLY.filter());
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
-				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
+				filters.add(VcfFilter.SINGLE_ASSEMBLY.filter());
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() + v.getBreakpointEvidenceCountRemoteAssembly() > 0 &&
 					v.getBreakpointEvidenceCountReadPair() + v.getBreakpointEvidenceCountSoftClip() == 0) {
-				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.ASSEMBLY_ONLY.filter()).make();
+				filters.add(VcfFilter.ASSEMBLY_ONLY.filter());
 			}
 		} else {
-			if (filteredVariant.getBreakendEvidenceCountAssembly() == 0) {
-				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
+			if (variant.getBreakendEvidenceCountAssembly() == 0) {
+				filters.add(VcfFilter.NO_ASSEMBLY.filter());
 			}
 		}
-		if (filteredVariant.getPhredScaledQual() < processContext.getVariantCallingParameters().lowQuality) {
-			filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.LOW_QUAL.filter()).make();
+		if (variant.getPhredScaledQual() < processContext.getVariantCallingParameters().lowQuality) {
+			filters.add(VcfFilter.LOW_QUAL.filter());
 		}
+		VariantContextDirectedEvidence filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, variant).filters(filters.toArray(new String[0])).make();
 		return filteredVariant;
 	}
 }

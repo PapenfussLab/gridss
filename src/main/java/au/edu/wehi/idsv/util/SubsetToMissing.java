@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,7 +36,7 @@ import picard.cmdline.StandardOptionDefinitions;
 @CommandLineProgramProperties(
         summary = "Subsets the given BAM file, returning only reads that are not found in the given data set.",  
         oneLineSummary = "Subsets on the given lookup",
-        programGroup = picard.cmdline.programgroups.SamOrBam.class
+        programGroup = gridss.cmdline.programgroups.DataCleaning.class
 )
 public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(SubsetToMissing.class);
@@ -62,83 +61,85 @@ public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 		if (TMP_DIR == null || TMP_DIR.size() == 0) {
 			TMP_DIR = Lists.newArrayList(new File("."));
 		}
-		SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
+		SamReaderFactory factory = SamReaderFactory.makeDefault()
+				.validationStringency(ValidationStringency.SILENT);
 		SamReader input = factory.open(INPUT);
 		
 		
-		Iterator<SAMRecord> intputit = new AsyncBufferedIterator<SAMRecord>(input.iterator(), 2, 16384);
-		
-		SAMFileWriter out = new SAMFileWriterFactory().makeSAMOrBAMWriter(input.getFileHeader(), true, OUTPUT);
-		
-		LongSet hashtable;
-		if (PREALLOCATE != null) {
-			log.info("Preallocating hash table");
-			hashtable = new LongOpenHashBigSet(PREALLOCATE);
-		} else {
-			hashtable = new LongOpenHashBigSet();
-		}
-		for (File file : LOOKUP) {
-			log.info("Loading lookup hashes for " + file.getAbsolutePath());
-			SamReader lookup = factory.open(file);
-			AsyncBufferedIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(lookup.iterator(), 2, 16384);
-			File cache = new File(file.getAbsolutePath() + ".SubsetToMissing.cache");
-			if (cache.exists()) {
-				log.info("Loading lookup hashes from cache");
-				long n = stop;
-				DataInputStream dis = null;
-				try {
-					long loadCount = 0;
-					dis = new DataInputStream(new BufferedInputStream(new FileInputStream(cache)));
-					while (n-- > 0) {
-						hashtable.add(dis.readLong());
-						if (loadCount % 10000000 == 0) {
-							log.info(String.format("Loaded %d from cache", loadCount));
-						}
-					}
-				} catch (EOFException e) {
+		try (AsyncBufferedIterator<SAMRecord> intputit = new AsyncBufferedIterator<SAMRecord>(input.iterator(), 2, 16384)) {
+			
+			SAMFileWriter out = new SAMFileWriterFactory().makeSAMOrBAMWriter(input.getFileHeader(), true, OUTPUT);
+			
+			LongSet hashtable;
+			if (PREALLOCATE != null) {
+				log.info("Preallocating hash table");
+				hashtable = new LongOpenHashBigSet(PREALLOCATE);
+			} else {
+				hashtable = new LongOpenHashBigSet();
+			}
+			for (File file : LOOKUP) {
+				log.info("Loading lookup hashes for " + file.getAbsolutePath());
+				SamReader lookup = factory.open(file);
+				AsyncBufferedIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(lookup.iterator(), 2, 16384);
+				File cache = new File(file.getPath() + ".SubsetToMissing.cache");
+				if (cache.exists()) {
+					log.info("Loading lookup hashes from cache");
+					long n = stop;
+					DataInputStream dis = null;
 					try {
-						if (dis != null) dis.close();
-					} catch (IOException e1) {
-						log.error(e1);
+						long loadCount = 0;
+						dis = new DataInputStream(new BufferedInputStream(new FileInputStream(cache)));
+						while (n-- > 0) {
+							hashtable.add(dis.readLong());
+							if (loadCount % 10000000 == 0) {
+								log.info(String.format("Loaded %d from cache", loadCount));
+							}
+						}
+					} catch (EOFException e) {
+						try {
+							if (dis != null) dis.close();
+						} catch (IOException e1) {
+							log.error(e1);
+						}
+					} catch (IOException e) {
+						log.error(e);
 					}
-				} catch (IOException e) {
-					log.error(e);
-				}
-			} else {
-				long n = stop;
-				ProgressLoggingSAMRecordIterator loggedit = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
-				try {
-					DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(cache)));
-					while (loggedit.hasNext() && n-- > 0) {
-						long recordhash = hash(loggedit.next());
-						hashtable.add(recordhash);
-						dos.writeLong(recordhash);
+				} else {
+					long n = stop;
+					ProgressLoggingSAMRecordIterator loggedit = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
+					try {
+						DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(cache)));
+						while (loggedit.hasNext() && n-- > 0) {
+							long recordhash = hash(loggedit.next());
+							hashtable.add(recordhash);
+							dos.writeLong(recordhash);
+						}
+						dos.close();
+					} catch (Exception e) {
+						log.error(e, "Failed to load lookup. Running with partial results");
 					}
-					dos.close();
-				} catch (Exception e) {
-					log.error(e, "Failed to load lookup. Running with partial results");
+					loggedit.close();
 				}
-				loggedit.close();
+				it.close();
 			}
-			it.close();
-		}
-		long filtered = 0;
-		log.info("Processing input");
-		intputit = new ProgressLoggingSAMRecordIterator(intputit, new ProgressLogger(log));
-		long n = stop;
-		while (intputit.hasNext() && n-- > 0) {
-			SAMRecord r = intputit.next();
-			if (!hashtable.contains(hash(r))) {
-				out.addAlignment(r);
-			} else {
-				filtered++;
-				if (filtered % 1000000 == 0) {
-					log.info(String.format("Filtered %d reads", filtered));
+			long filtered = 0;
+			log.info("Processing input");
+			ProgressLoggingSAMRecordIterator it = new ProgressLoggingSAMRecordIterator(intputit, new ProgressLogger(log));
+			long n = stop;
+			while (it.hasNext() && n-- > 0) {
+				SAMRecord r = it.next();
+				if (!hashtable.contains(hash(r))) {
+					out.addAlignment(r);
+				} else {
+					filtered++;
+					if (filtered % 1000000 == 0) {
+						log.info(String.format("Filtered %d reads", filtered));
+					}
 				}
 			}
+			log.info("Closing output");
+			out.close();
 		}
-		log.info("Closing output");
-		out.close();
 		return 0;
 	}
 	private HashFunction hf = Hashing.murmur3_128();

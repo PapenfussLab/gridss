@@ -14,4 +14,5 @@ public interface VariantIdGenerator {
 	 * @return unique variant identifier
 	 */
 	String generate(BreakpointSummary breakpoint);
+	String generate(BreakendSummary breakend);
 }

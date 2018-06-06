@@ -52,7 +52,7 @@ import picard.util.RExecutor;
                 "the statistical distribution of read mapping qualities (excluding duplicates) " +
                 "and generates a Histogram plot.",
         oneLineSummary = "Writes mapq distribution metrics for a SAM or BAM file",
-        programGroup = picard.cmdline.programgroups.Metrics.class
+        programGroup = gridss.cmdline.programgroups.Metrics.class
 )
 public class CollectFragmentGCMetrics extends GcSinglePassSamProgram {
 	public static final String METRICS_SUFFIX = ".gc_metrics";
@@ -78,11 +78,8 @@ public class CollectFragmentGCMetrics extends GcSinglePassSamProgram {
     }
 
     @Override protected void acceptRead(final SAMRecord record, final ReferenceSequence ref) {
-    	if (record.getDuplicateReadFlag() && IGNORE_DUPLICATES) {
-    		// ignore duplicates
-    	} else {
-    		multiCollector.acceptRecord(record, ref);
-    	}
+    	if (record.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
+    	multiCollector.acceptRecord(record, ref);
     }
 
     @Override protected void finish() {

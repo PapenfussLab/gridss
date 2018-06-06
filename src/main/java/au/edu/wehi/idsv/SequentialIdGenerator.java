@@ -16,11 +16,16 @@ public class SequentialIdGenerator implements VariantIdGenerator, AssemblyIdGene
 	public String generate() {
 		return String.format("%s%d%s", prefix, id.incrementAndGet(), suffix);
 	}
+	@Override
+	public String generate(BreakendSummary breakpoint, byte[] baseCalls, int startAnchoredBaseCount, int endAnchoredBaseCount) {
+		return generate();
+	}
+	@Override
 	public String generate(BreakpointSummary breakpoint) {
 		return generate();
 	}
 	@Override
-	public String generate(BreakendSummary breakpoint, byte[] baseCalls, int startAnchoredBaseCount, int endAnchoredBaseCount) {
+	public String generate(BreakendSummary breakend) {
 		return generate();
 	}
 }

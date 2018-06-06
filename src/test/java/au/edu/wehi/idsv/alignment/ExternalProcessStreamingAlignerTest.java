@@ -16,7 +16,7 @@ public class ExternalProcessStreamingAlignerTest {
 	@Category(ExternalAlignerTests.class)
 	public void basic_pipes_test() throws IOException, InterruptedException {
 		int COUNT = 1024;
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.make(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
 		for (int i = 0; i < COUNT; i++) {
 			aligner.asyncAlign(new FastqRecord(
 					Integer.toString(i),
@@ -35,7 +35,7 @@ public class ExternalProcessStreamingAlignerTest {
 	@Category(ExternalAlignerTests.class)
 	public void ping_pong_pipes_test() throws IOException, InterruptedException {
 		int COUNT = 8;
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.make(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
 		for (int i = 0; i < COUNT; i++) {
 			aligner.asyncAlign(new FastqRecord(
 					Integer.toString(i),

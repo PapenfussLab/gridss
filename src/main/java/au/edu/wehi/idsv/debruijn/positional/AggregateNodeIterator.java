@@ -58,7 +58,7 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 			inputPosition = Integer.MAX_VALUE;
 			flush();
 		}
-		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			assert(sanityCheck());
 		}
 	}
@@ -203,7 +203,7 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 	}
 	private boolean sanityCheck() {
 		// kmer lookup is correct
-		assert(byKmer.entrySet().stream().allMatch(kvp -> kvp.getKey() == kvp.getValue().kmer));
+		assert(byKmer.long2ObjectEntrySet().stream().allMatch(kvp -> kvp.getLongKey() == kvp.getValue().kmer));
 		// empty aggregators have been removed
 		assert(byKmer.values().stream().allMatch(ag -> !ag.active.isEmpty()));
 		// could have many start position entries, but only one position is valid (and even that could have duplicate entries)

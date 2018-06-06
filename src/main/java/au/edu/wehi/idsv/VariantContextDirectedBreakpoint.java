@@ -126,6 +126,12 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 				getBreakpointEvidenceCountAssemblyReadPair(category) > 0 ||
 				getBreakpointEvidenceCountAssemblySoftClip(category) > 0;
 	}
+	public int getBreakpointReadCount() {
+		return getBreakpointEvidenceCountReadPair() +
+				getBreakpointEvidenceCountSoftClip() +
+				getBreakpointEvidenceCountAssemblyReadPair() + 
+				getBreakpointEvidenceCountAssemblySoftClip();
+	}
 	public int getBreakpointEvidenceCount() { return getBreakpointEvidenceCountAssembly() + getBreakpointEvidenceCountReadPair() + getBreakpointEvidenceCountSoftClip(); }
 	public int getBreakpointEvidenceCountAssembly() { return getBreakpointEvidenceCountLocalAssembly() + getBreakpointEvidenceCountRemoteAssembly(); }
 	public int getBreakpointEvidenceCountLocalAssembly() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, 0); }
@@ -149,6 +155,8 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	
 	public double getBreakpointEvidenceQualReadPair() { return getDouble(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, 0); }
 	public double getBreakpointEvidenceQualSoftClip() { return getDouble(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, 0); }
+	
+	public int getBreakpointSupportingFragmentCount() { return getInt(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS, 0); }
 	
 	@Override
 	public DirectedBreakpoint asRemote() {

@@ -32,7 +32,7 @@ public class CommandLineProgramHelper {
 		args.add("MAX_RECORDS_IN_RAM=" + (program.MAX_RECORDS_IN_RAM == null ? "null" : program.MAX_RECORDS_IN_RAM.toString()));
 		args.add("QUIET=" + (program.QUIET == null ? "null" : Boolean.toString(program.QUIET)));
 		if (program.referenceSequence.getReferenceFile() != null) {
-			args.add("REFERENCE_SEQUENCE=" + program.referenceSequence.getReferenceFile().getAbsolutePath());	
+			args.add("REFERENCE_SEQUENCE=" + program.referenceSequence.getReferenceFile().getPath());	
 		}
 		args.add("VALIDATION_STRINGENCY=" + (program.VALIDATION_STRINGENCY == null ? "null" : program.VALIDATION_STRINGENCY.toString()));
 		args.add("VERBOSITY=" + (program.VERBOSITY == null ? "null" : program.VERBOSITY.toString()));
@@ -40,7 +40,7 @@ public class CommandLineProgramHelper {
 			args.add("TMP_DIR=null");
 		} else {
 			for (File tmp : program.TMP_DIR) {
-				args.add("TMP_DIR=" + tmp.getAbsolutePath());
+				args.add("TMP_DIR=" + tmp.getPath());
 			}
 		}
 		return args;

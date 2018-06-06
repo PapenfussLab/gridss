@@ -142,6 +142,7 @@ public final class AssemblyFactory {
 				record.setReadBases(Bytes.concat(baseCalls, PAD_BASES[padBases]));
 				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
 			}
+			record.setAttribute(SamTags.UNANCHORED, 1);
 		} else {
 			record.setReadBases(baseCalls);
 			record.setBaseQualities(baseQuals);
@@ -162,8 +163,8 @@ public final class AssemblyFactory {
 				if (delSize != 0) {
 					if (delSize < 0) {
 						if (!MessageThrottler.Current.shouldSupress(log, "negative deletion")) {
-							log.warn("Negative deletions not supported by SAM specs. Breakpoint assembly has been converted to breakend. "
-									+ "Sanity check failure: this should not be possible for positional assembly. ");
+							log.warn(String.format("Negative deletions not supported by SAM specs. Breakpoint assembly has been converted to breakend. "
+									+ "Sanity check failure: this should not be possible for positional assembly. Breakpoint is: %s Indel is: %dI%dD", bp, insSize, delSize));
 						}
 						return createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, samFileHeader, source, bp.localBreakend(), startAnchoredBaseCount, 0, baseCalls, baseQuals);
 					}

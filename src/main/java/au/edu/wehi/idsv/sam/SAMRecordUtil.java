@@ -20,10 +20,13 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableRangeSet;
+import com.google.common.collect.ImmutableRangeSet.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Booleans;
 import com.google.common.primitives.Bytes;
@@ -41,6 +44,7 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMUtils;
@@ -100,8 +104,9 @@ public class SAMRecordUtil {
 	}
 
 	public static int getStartClipLength(List<CigarElement> elements) {
-		if (elements == null)
+		if (elements == null) {
 			return 0;
+		}
 		int clipLength = 0;
 		for (int i = 0; i < elements.size() && elements.get(i).getOperator().isClipping(); i++) {
 			clipLength += elements.get(i).getLength();
@@ -110,13 +115,14 @@ public class SAMRecordUtil {
 	}
 
 	public static int getStartSoftClipLength(List<CigarElement> elements) {
-		if (elements == null)
+		if (elements == null) {
 			return 0;
+		}
 		int i = 0;
-		while (i < elements.size() && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP
-				|| elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
-			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)
+		while (i < elements.size() && elements.get(i).getOperator().isClipping()) {
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) {
 				return elements.get(i).getLength();
+			}
 			i++;
 		}
 		return 0;
@@ -124,19 +130,19 @@ public class SAMRecordUtil {
 
 	public static int getEndSoftClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();
-		if (cigar == null)
+		if (cigar == null) {
 			return 0;
+		}
 		return getEndSoftClipLength(cigar.getCigarElements());
 	}
 
 	public static int getEndSoftClipLength(List<CigarElement> elements) {
-		if (elements == null)
-			return 0;
+		if (elements == null) return 0;
 		int i = elements.size() - 1;
-		while (i > 0 && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP
-				|| elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
-			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)
+		while (i >= 0 && elements.get(i).getOperator().isClipping()) {
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) {
 				return elements.get(i).getLength();
+			}
 			i--;
 		}
 		return 0;
@@ -144,16 +150,18 @@ public class SAMRecordUtil {
 
 	public static int getEndClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();
-		if (cigar == null)
+		if (cigar == null) {
 			return 0;
+		}
 		return getEndClipLength(cigar.getCigarElements());
 	}
 
 	public static int getEndClipLength(List<CigarElement> elements) {
-		if (elements == null)
+		if (elements == null) {
 			return 0;
+		}
 		int clipLength = 0;
-		for (int i = elements.size() - 1; i < elements.size() && elements.get(i).getOperator().isClipping(); i--) {
+		for (int i = elements.size() - 1; i >= 0 && elements.get(i).getOperator().isClipping(); i--) {
 			clipLength += elements.get(i).getLength();
 		}
 		return clipLength;
@@ -177,55 +185,54 @@ public class SAMRecordUtil {
 
 	public static byte[] getStartSoftClipBases(SAMRecord record) {
 		byte[] seq = record.getReadBases();
-		if (seq == null)
+		if (seq == null) {
 			return null;
-		if (seq == SAMRecord.NULL_SEQUENCE)
+		}
+		if (seq == SAMRecord.NULL_SEQUENCE) {
 			return null;
+		}
 		seq = Arrays.copyOfRange(seq, 0, getStartSoftClipLength(record));
 		return seq;
 	}
 
 	public static byte[] getEndSoftClipBases(SAMRecord record) {
 		byte[] seq = record.getReadBases();
-		if (seq == null)
+		if (seq == null) {
 			return null;
-		if (seq == SAMRecord.NULL_SEQUENCE)
+		}
+		if (seq == SAMRecord.NULL_SEQUENCE) {
 			return null;
+		}
 		seq = Arrays.copyOfRange(seq, record.getReadLength() - getEndSoftClipLength(record), record.getReadLength());
 		return seq;
 	}
 
 	public static byte[] getStartSoftClipBaseQualities(SAMRecord record) {
 		byte[] seq = record.getBaseQualities();
-		if (seq == null)
+		if (seq == null) {
 			return null;
-		if (seq == SAMRecord.NULL_QUALS)
+		}
+		if (seq == SAMRecord.NULL_QUALS) {
 			return null;
+		}
 		seq = Arrays.copyOfRange(seq, 0, getStartSoftClipLength(record));
 		return seq;
 	}
 
 	public static byte[] getEndSoftClipBaseQualities(SAMRecord record) {
 		byte[] seq = record.getBaseQualities();
-		if (seq == null)
-			return null;
-		if (seq == SAMRecord.NULL_QUALS)
-			return null;
+		if (seq == null)  return null;
+		if (seq == SAMRecord.NULL_QUALS) return null;
 		seq = Arrays.copyOfRange(seq, record.getReadLength() - getEndSoftClipLength(record), record.getReadLength());
 		return seq;
 	}
 
 	public static SAMRecord ensureNmTag(ReferenceSequenceFile ref, SAMRecord record) {
-		if (record == null)
-			return record;
-		if (record.getReadBases() == null)
-			return record;
-		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE)
-			return record;
-		if (record.getIntegerAttribute(SAMTag.NM.name()) != null)
-			return record;
-		if (record.getReadUnmappedFlag())
-			return record;
+		if (record == null) return record;
+		if (record.getReadBases() == null) return record;
+		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE) return record;
+		if (record.getIntegerAttribute(SAMTag.NM.name()) != null) return record;
+		if (record.getReadUnmappedFlag()) return record;
 		byte[] refSeq = ref
 				.getSubsequenceAt(record.getReferenceName(), record.getAlignmentStart(), record.getAlignmentEnd())
 				.getBases();
@@ -248,8 +255,7 @@ public class SAMRecordUtil {
 	 */
 	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation,
 			int margin) {
-		if (record1.getReadUnmappedFlag() || record2.getReadUnmappedFlag())
-			return false;
+		if (record1.getReadUnmappedFlag() || record2.getReadUnmappedFlag()) return false;
 		return isDovetailing(record1.getReferenceIndex(), record1.getAlignmentStart(),
 				record1.getReadNegativeStrandFlag(), record1.getCigar(), record2.getReferenceIndex(),
 				record2.getAlignmentStart(), record2.getReadNegativeStrandFlag(), record2.getCigar(),
@@ -257,12 +263,9 @@ public class SAMRecordUtil {
 	}
 
 	public static boolean isDovetailing(SAMRecord record, PairOrientation expectedOrientation, int margin) {
-		if (record.getReadUnmappedFlag())
-			return false;
-		if (!record.getReadPairedFlag())
-			return false;
-		if (record.getMateUnmappedFlag())
-			return false;
+		if (record.getReadUnmappedFlag()) return false;
+		if (!record.getReadPairedFlag()) return false;
+		if (record.getMateUnmappedFlag()) return false;
 		Cigar cigar2 = null;
 		String mc = record.getStringAttribute(SAMTag.MC.name());
 		if (mc != null) {
@@ -276,21 +279,15 @@ public class SAMRecordUtil {
 	private static boolean isDovetailing(int reference1, int start1, boolean isNegativeStrand1, Cigar cigar1,
 			int reference2, int start2, boolean isNegativeStrand2, Cigar cigar2, PairOrientation expectedOrientation,
 			int margin) {
-		if (expectedOrientation != PairOrientation.FR)
-			throw new RuntimeException("NYI");
-		if (reference1 != reference2)
-			return false;
-		if (Math.abs(start1 - start2) > margin)
-			return false;
-		if (isNegativeStrand1 == isNegativeStrand2)
-			return false; // FR
+		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
+		if (reference1 != reference2) return false;
+		if (Math.abs(start1 - start2) > margin) return false;
+		if (isNegativeStrand1 == isNegativeStrand2) return false; // FR
 		if (cigar2 != null) {
 			int end1 = start1 + CigarUtil.referenceLength(cigar1.getCigarElements()) - 1;
 			int end2 = start2 + CigarUtil.referenceLength(cigar2.getCigarElements()) - 1;
-			if (Math.abs(end1 - end2) > margin)
-				return false;
-			if (!IntervalUtil.overlapsClosed(start1, end1, start2, end2))
-				return false;
+			if (Math.abs(end1 - end2) > margin) return false;
+			if (!IntervalUtil.overlapsClosed(start1, end1, start2, end2)) return false;
 		}
 		// expect dovetail to look like
 		// >>>SSS
@@ -304,8 +301,7 @@ public class SAMRecordUtil {
 			unexpectedClipLength += isNegativeStrand2 ? getEndSoftClipLength(cigar2.getCigarElements())
 					: getStartSoftClipLength(cigar2.getCigarElements());
 		}
-		if (unexpectedClipLength > margin)
-			return false;
+		if (unexpectedClipLength > margin) return false;
 		return true;
 	}
 
@@ -733,7 +729,7 @@ public class SAMRecordUtil {
 	 * @param recalculateSupplementary 
 	 */
 	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
-			boolean restoreHardClips, boolean fixMates, boolean recalculateSupplementary) {
+			boolean restoreHardClips, boolean fixMates, boolean fixDuplicates, boolean recalculateSupplementary) {
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
 		if (tags.contains(SAMTag.FI.name())) {
@@ -749,30 +745,14 @@ public class SAMRecordUtil {
 				r.setAttribute(SAMTag.TC.name(), segments.size());
 			}
 		}
-		// R2
-		if (tags.contains(SAMTag.R2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] br2 = getFullSequence(segments.get((i + 1) % segments.size()));
-				String r2 = br2 != null && segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.R2.name(), r2);
-				}
-			}
-		}
-		// Q2
-		if (tags.contains(SAMTag.Q2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] bq2 = getFullBaseQualities(segments.get((i + 1) % segments.size()));
-				String q2 = bq2 != null && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.Q2.name(), q2);
-				}
-			}
-		}
 		if (restoreHardClips) {
 			for (int i = 0; i < segments.size(); i++) {
 				softenHardClips(segments.get(i));
 			}
+		}
+		if (fixDuplicates) {
+			boolean isDuplicate = segments.stream().flatMap(l -> l.stream()).anyMatch(r -> r.getDuplicateReadFlag());
+			segments.stream().flatMap(l -> l.stream()).forEach(r -> r.setDuplicateReadFlag(isDuplicate));
 		}
 		// SA
 		if (tags.contains(SAMTag.SA.name())) {
@@ -783,6 +763,26 @@ public class SAMRecordUtil {
 		if (recalculateSupplementary) {
 			for (int i = 0; i < segments.size(); i++) {
 				recalculateSupplementaryFromSA(segments.get(i));
+			}
+		}
+		// R2
+		if (tags.contains(SAMTag.R2.name())) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] br2 = getConsensusSequence(segments.get((i + 1) % segments.size()));
+				String r2 = br2 != null && br2 != SAMRecord.NULL_SEQUENCE &&  segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.R2.name(), r2);
+				}
+			}
+		}
+		// Q2
+		if (tags.contains(SAMTag.Q2.name())) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] bq2 = getConsensusBaseQualities(segments.get((i + 1) % segments.size()));
+				String q2 = bq2 != null && bq2 != SAMRecord.NULL_QUALS && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.Q2.name(), q2);
+				}
 			}
 		}
 		if (Sets.intersection(tags,
@@ -825,7 +825,7 @@ public class SAMRecordUtil {
 				// already flagged as supp is bad  
 				.compareFalseFirst(arg1.getSupplementaryAlignmentFlag(), arg2.getSupplementaryAlignmentFlag())
 				// flagged as secondary is bad due to legacy treatment of secondary alignments as supplementary (eg bwa mem -M) 
-				.compareFalseFirst(arg1.getNotPrimaryAlignmentFlag(), arg2.getNotPrimaryAlignmentFlag()) 
+				.compareFalseFirst(arg1.isSecondaryAlignment(), arg2.isSecondaryAlignment()) 
 				// the record with the shorter soft clip is a better candidate
 				.compare(SAMRecordUtil.getStartClipLength(arg1) + SAMRecordUtil.getEndClipLength(arg1), SAMRecordUtil.getStartClipLength(arg2) + SAMRecordUtil.getEndClipLength(arg2))
 				// Other options are:
@@ -878,7 +878,7 @@ public class SAMRecordUtil {
 		if (!best.isPresent()) {
 			best = options.stream()
 					.filter(r -> !r.getSupplementaryAlignmentFlag())
-					.filter(r -> r.getNotPrimaryAlignmentFlag() == rec.getNotPrimaryAlignmentFlag())
+					.filter(r -> r.isSecondaryAlignment() == rec.isSecondaryAlignment())
 					.findFirst();
 		}
 		// grab anything that's not a supplementary
@@ -901,7 +901,7 @@ public class SAMRecordUtil {
 				nextSegment = Collections.emptyList();
 			}
 			// resort so we match up the primary records last
-			currentSegment.sort(Comparator.comparing(SAMRecord::getNotPrimaryAlignmentFlag).reversed());
+			currentSegment.sort(Comparator.comparing(SAMRecord::isSecondaryAlignment).reversed());
 			for (SAMRecord r : currentSegment) {
 				if (r.getSupplementaryAlignmentFlag()) {
 					SAMRecord primary = getPrimarySplitAlignmentFor(r, currentSegment);
@@ -970,7 +970,7 @@ public class SAMRecordUtil {
 		if (best.isPresent()) return best.get();
 		// match primary with primary and secondary with secondary
 		best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
-				.filter(m -> m.getNotPrimaryAlignmentFlag() == r.getNotPrimaryAlignmentFlag())
+				.filter(m -> m.isSecondaryAlignment() == r.isSecondaryAlignment())
 				// prefer mapped reads
 				.sorted(Comparator.comparing(SAMRecord::getReadUnmappedFlag)).findFirst();
 		if (best.isPresent()) return best.get();
@@ -1096,43 +1096,33 @@ public class SAMRecordUtil {
 	 * @param records
 	 */
 	public static final void softenHardClips(List<SAMRecord> records) {
-		byte[] seq = getFullSequence(records);
-		byte[] qual = getFullBaseQualities(records);
-		if (seq == null)
-			return;
+		for (SAMRecord r : records) {
+			hardClipToN(r);
+		}
+		byte[] seq = getConsensusSequence(records);
+		byte[] qual = getConsensusBaseQualities(records);
 		for (SAMRecord r : records) {
 			Cigar c = r.getCigar();
-			if (r.getReadUnmappedFlag())
-				continue;
-			if (c == null)
-				continue;
-			if (c.getCigarElements().size() <= 1)
-				continue;
-			int hardClipLength = 0;
-			List<CigarElement> list = new ArrayList<CigarElement>(c.getCigarElements());
-			if (c.getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-				int length = c.getFirstCigarElement().getLength();
-				hardClipLength += length;
-				list.set(0, new CigarElement(length, CigarOperator.SOFT_CLIP));
-			}
-			if (c.getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-				int length = c.getLastCigarElement().getLength();
-				hardClipLength += length;
-				list.set(list.size() - 1, new CigarElement(length, CigarOperator.SOFT_CLIP));
-			}
-			if (hardClipLength > 0 && r.getReadLength() + hardClipLength == seq.length) {
-				if (r.getReadNegativeStrandFlag()) {
-					SequenceUtil.reverseComplement(seq);
-					ArrayUtils.reverse(qual);
+			if (r.getReadUnmappedFlag() || c.getReadLength() == seq.length) {
+				if (seq != null && seq != SAMRecord.NULL_SEQUENCE) {
+					byte[] newseq = Arrays.copyOf(seq, seq.length);
+					if (r.getReadNegativeStrandFlag()) {
+						SequenceUtil.reverseComplement(newseq);
+					}
+					r.setReadBases(newseq);
 				}
-				r.setReadBases(seq);
-				r.setBaseQualities(qual);
-				list = CigarUtil.clean(list, false);
-				r.setCigar(new Cigar(list));
-			}
-			if (r.getCigarString().contains("H")) {
+				if (qual != null && qual != SAMRecord.NULL_QUALS) {
+					byte[] newqual = Arrays.copyOf(qual, qual.length);
+					if (r.getReadNegativeStrandFlag()) {
+						ArrayUtils.reverse(newqual);
+					}
+					r.setBaseQualities(newqual);
+				}
+			} else {
 				if (!MessageThrottler.Current.shouldSupress(log, "softening hard clips")) {
-					log.warn(String.format("Unable to soften hard clip for %s", r.getReadName()));
+					log.warn(String.format("Input sanity check failure: different alignment records imply different read lengths %s. "
+							+ "This can be cause by GATK indel realignment incorrectly removing hard clipped bases when realigning. Do not use GATK"
+							+ " indel realigned BAM files with GRIDSS.", r.getReadName()));
 				}
 			}
 		}
@@ -1143,21 +1133,20 @@ public class SAMRecordUtil {
 	 * 
 	 * @param record
 	 */
-	public static final SAMRecord hardClipToN(SAMRecord r) {
+	public static final void hardClipToN(SAMRecord r) {
 		if (r.getReadUnmappedFlag() || r.getCigar() == null)
-			return r;
+			return;
 		if (!Iterables.any(r.getCigar().getCigarElements(), ce -> ce.getOperator() == CigarOperator.HARD_CLIP))
-			return r;
-		r = r.deepCopy();
+			return;
 		List<CigarElement> list = new ArrayList<>(r.getCigar().getCigarElements());
 		int startlength = r.getCigar().getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				? r.getCigar().getFirstCigarElement().getLength() : 0;
 		int endlength = r.getCigar().getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				? r.getCigar().getLastCigarElement().getLength() : 0;
-		r.setCigar(new Cigar(list.stream()
+		r.setCigar(new Cigar(CigarUtil.clean(list.stream()
 				.map(ce -> ce.getOperator() == CigarOperator.HARD_CLIP
 						? new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP) : ce)
-				.collect(Collectors.toList())));
+				.collect(Collectors.toList()))));
 		if (r.getReadBases() != null && r.getReadBases() != SAMRecord.NULL_SEQUENCE) {
 			byte[] start = new byte[startlength];
 			byte[] end = new byte[endlength];
@@ -1172,7 +1161,6 @@ public class SAMRecordUtil {
 			Arrays.fill(end, (byte) 0);
 			r.setBaseQualities(Bytes.concat(start, r.getBaseQualities(), end));
 		}
-		return r;
 	}
 
 	/**
@@ -1181,48 +1169,52 @@ public class SAMRecordUtil {
 	 * @param records
 	 * @return
 	 */
-	private static final byte[] getFullSequence(List<SAMRecord> records) {
+	private static final byte[] getConsensusSequence(List<SAMRecord> records) {
 		if (records == null || records.size() == 0)
 			return null;
-		SAMRecord best = records.get(0);
+		byte[] cons = SAMRecord.NULL_SEQUENCE;
 		for (SAMRecord r : records) {
-			if (r.getReadBases().length > best.getReadBases().length) {
-				best = r;
+			boolean negativeStrand = r.getReadNegativeStrandFlag();
+			byte[] seq = r.getReadBases();
+			if (seq == null || seq.length == 0) continue;
+			if (seq.length > cons.length) {
+				cons = Arrays.copyOf(seq, seq.length);
+				if (negativeStrand) {
+					SequenceUtil.reverseComplement(cons);
+				}
+			} else {
+				for (int i = 0; i < seq.length; i++) {
+					if (cons[i] == 'N') {
+						int seqOffset = negativeStrand ? seq.length - 1 - i : i;
+						cons[i] = negativeStrand ? SequenceUtil.complement(seq[seqOffset]) : seq[seqOffset];
+					}
+				}
 			}
 		}
-		byte[] readBases = Arrays.copyOf(best.getReadBases(), best.getReadBases().length);
-		if (readBases == null || readBases == SAMRecord.NULL_SEQUENCE)
-			return null;
-		if (!best.getReadUnmappedFlag() && best.getReadNegativeStrandFlag()) {
-			SequenceUtil.reverseComplement(readBases);
-		}
-		return readBases;
+		return cons;
 	}
-
-	/**
-	 * Gets the full base quality scores
-	 * 
-	 * @param records
-	 * @return
-	 */
-	private static final byte[] getFullBaseQualities(List<SAMRecord> records) {
+	private static final byte[] getConsensusBaseQualities(List<SAMRecord> records) {
 		if (records == null || records.size() == 0)
 			return null;
-		SAMRecord best = records.get(0);
+		byte[] cons = SAMRecord.NULL_QUALS;
 		for (SAMRecord r : records) {
-			if (r.getBaseQualities().length > best.getBaseQualities().length) {
-				best = r;
+			boolean negativeStrand = r.getReadNegativeStrandFlag();
+			byte[] qual = r.getBaseQualities();
+			if (qual == null || qual.length == 0) continue;
+			if (qual.length > cons.length) {
+				cons = Arrays.copyOf(qual, qual.length);
+				if (negativeStrand) {
+					ArrayUtils.reverse(cons);
+				}
+			} else {
+				for (int i = 0; i < qual.length; i++) {
+					int offset = negativeStrand ? qual.length - 1 - i : i;
+					cons[i] = (byte) Math.max(cons[i], qual[offset]);
+				}
 			}
 		}
-		byte[] baseQuals = Arrays.copyOf(best.getBaseQualities(), best.getBaseQualities().length);
-		if (baseQuals == null || baseQuals == SAMRecord.NULL_QUALS)
-			return null;
-		if (!best.getReadUnmappedFlag() && best.getReadNegativeStrandFlag()) {
-			ArrayUtils.reverse(baseQuals);
-		}
-		return baseQuals;
+		return cons;
 	}
-
 	/**
 	 * The index of segment in the template
 	 * 
@@ -1370,13 +1362,26 @@ public class SAMRecordUtil {
 				}
 			}
 		}
-		read.setCigar(softClipToAligned(read.getCigar(), startunclip, endunclip));
-		read.setAlignmentStart(read.getAlignmentStart() - startunclip);
+		adjustAlignmentBounds(read, startunclip, endunclip);
 	}
-
+	/**
+	 * Adjusts the start/end alignment bounds of the given alignment. Expanded alignments are converted
+	 * @param r
+	 * @param expandStartBy
+	 * @param expandEndBy
+	 * @return record passed in
+	 */
+	public static SAMRecord adjustAlignmentBounds(SAMRecord r, int expandStartBy, int expandEndBy) {
+		Cigar newCigar = softClipToAligned(r.getCigar(), expandStartBy, 0);
+		r.setAlignmentStart(r.getAlignmentStart() + r.getCigar().getReferenceLength() - newCigar.getReferenceLength());
+		newCigar = softClipToAligned(newCigar, 0, expandEndBy);
+		r.setCigar(newCigar);
+		return r;
+	}
 	private static Cigar softClipToAligned(Cigar cigar, int startunclip, int endunclip) {
-		if (startunclip == 0 && endunclip == 0)
+		if (startunclip == 0 && endunclip == 0) {
 			return cigar;
+		}
 		List<CigarElement> list = cigar.getCigarElements();
 		list = CigarUtil.clean(list, true);
 		if (startunclip > 0) {
@@ -1390,17 +1395,72 @@ public class SAMRecordUtil {
 			list.set(i, new CigarElement(list.get(i).getLength() - startunclip, CigarOperator.SOFT_CLIP));
 			list.add(i + 1, new CigarElement(startunclip, CigarOperator.MATCH_OR_MISMATCH));
 			CigarUtil.clean(list, false);
+		} else if (startunclip < 0) {
+			int i = 0;
+			int alignedBasesLeftToRemove = -startunclip;
+			while (!list.get(i).getOperator().consumesReferenceBases()) {
+				i++;
+			}
+			while (alignedBasesLeftToRemove > 0 && i >= 0 && i < list.size()) {
+				CigarElement ce = list.get(i);
+				if (ce.getOperator().consumesReadBases()) {
+					if (ce.getLength() >= alignedBasesLeftToRemove) {
+						list.remove(i);
+						if (ce.getLength() != alignedBasesLeftToRemove) {
+							list.add(i, new CigarElement(ce.getLength() - alignedBasesLeftToRemove, ce.getOperator()));
+						}
+						list.add(i, new CigarElement(alignedBasesLeftToRemove, CigarOperator.SOFT_CLIP));
+						alignedBasesLeftToRemove = 0;
+					} else {
+						list.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+						alignedBasesLeftToRemove -= ce.getLength();
+						i++;
+					}
+				} else {
+					// D and N operators do not consume read bases - throw them out
+					list.remove(i);
+				}
+			}
+			CigarUtil.clean(list, false);
 		}
 		if (endunclip > 0) {
 			int i = list.size() - 1;
-			while (i > 0 && list.get(i).getOperator() != CigarOperator.SOFT_CLIP)
+			while (i >= 0 && list.get(i).getOperator() != CigarOperator.SOFT_CLIP) {
 				i--;
+			}
 			if (i < 0 || list.get(i).getLength() < endunclip) {
 				throw new IllegalArgumentException(
 						String.format("Unable to unclip %d clipped bases from end of %s", endunclip, cigar));
 			}
 			list.set(i, new CigarElement(list.get(i).getLength() - endunclip, CigarOperator.SOFT_CLIP));
 			list.add(i - 1, new CigarElement(endunclip, CigarOperator.MATCH_OR_MISMATCH));
+			CigarUtil.clean(list, false);
+		} else if (endunclip < 0) {
+			int i = list.size() - 1;
+			while (i >= 0 && !list.get(i).getOperator().consumesReferenceBases()) {
+				i--;
+			}
+			int alignedBasesLeftToRemove = -endunclip;
+			while (alignedBasesLeftToRemove > 0 && i >= 0 && i < list.size()) {
+				CigarElement ce = list.get(i);
+				if (ce.getOperator().consumesReadBases()) {
+					if (ce.getLength() >= alignedBasesLeftToRemove) {
+						list.remove(i);
+						list.add(i, new CigarElement(alignedBasesLeftToRemove, CigarOperator.SOFT_CLIP));
+						if (ce.getLength() != alignedBasesLeftToRemove) {
+							list.add(i, new CigarElement(ce.getLength() - alignedBasesLeftToRemove, ce.getOperator()));
+						}
+						alignedBasesLeftToRemove = 0;
+					} else {
+						alignedBasesLeftToRemove -= ce.getLength();
+						list.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+					}
+				} else {
+					// D and N operators do not consume read bases - throw them out
+					list.remove(i);
+				}
+				i--;
+			}
 			CigarUtil.clean(list, false);
 		}
 		return new Cigar(list);
@@ -1436,4 +1496,70 @@ public class SAMRecordUtil {
 		}
 		return null;
 	}
+	/**
+	 * Returns the number of bases common between the given alignments
+	 * @param r1 record to compare
+	 * @param r2 record to compare
+	 * @return number of matching reference-aligned bases.
+	 */
+	public static int overlappingBases(SAMRecord r1, SAMRecord r2) {
+		if (!overlap(r1, r2)) {
+			return 0;
+		}
+		return overlappingBases(
+				r1.getReferenceIndex(), r1.getAlignmentStart(), r1.getReadNegativeStrandFlag(), r1.getCigar(),
+				r2.getReferenceIndex(), r2.getAlignmentStart(), r2.getReadNegativeStrandFlag(), r2.getCigar());
+	}
+	public static int overlappingBases(
+			int referenceIndex1, int alignmentStart1, boolean negativeStrand1, Cigar cigar1,
+			int referenceIndex2, int alignmentStart2, boolean negativeStrand2, Cigar cigar2) {
+		if (referenceIndex1 != referenceIndex2 || negativeStrand1 != negativeStrand2) {
+			return 0;
+		}
+		ImmutableRangeSet<Integer> rs1 = getMappedBases(alignmentStart1, cigar1);
+		ImmutableRangeSet<Integer> rs2 = getMappedBases(alignmentStart2, cigar2);
+		ImmutableRangeSet<Integer> overlapSet = rs1.intersection(rs2);
+		int overlapCount = 0;
+		for (Range<Integer> r : overlapSet.asRanges()) {
+			overlapCount += r.upperEndpoint() - r.lowerEndpoint();
+		}
+		return overlapCount;
+	}
+	private static ImmutableRangeSet<Integer> getMappedBases(int start, Cigar cigar) {
+		Builder<Integer> builder = ImmutableRangeSet.builder();
+		int position = start;
+		for (CigarElement op : cigar.getCigarElements()) {
+			if (op.getOperator().consumesReferenceBases()) {
+				if (op.getOperator().consumesReadBases()) {
+					builder.add(Range.closedOpen(position, position + op.getLength()));
+				}
+				position += op.getLength();
+			}
+		}
+		return builder.build();
+	}
+	/**
+	 * Determines whether any read alignments overlaps the original alignment (if any).
+	 * @param r
+	 * @return
+	 */
+	public static boolean overlapsOriginalAlignment(SAMRecord r) {
+		String oa = r.getStringAttribute("OA");
+		if (StringUtil.isBlank(oa)) return false;
+		SAMSequenceDictionary dict = r.getHeader().getSequenceDictionary();
+		ChimericAlignment originalAlignment = new ChimericAlignment(oa);
+		ChimericAlignment thisAlignment = new ChimericAlignment(r);
+		int overlapCount = originalAlignment.overlappingBases(dict, thisAlignment);
+		for (ChimericAlignment ca : ChimericAlignment.getChimericAlignments(r)) {
+			overlapCount += originalAlignment.overlappingBases(dict, ca);
+		}
+		return overlapCount > 0;
+	}
+	public static int getReadLengthIncludingHardClipping(SAMRecord r) {
+		final int lengthWithHardClipping = r.getReadLength() + r.getCigar().getCigarElements().stream()
+			.filter(ce -> ce.getOperator() == CigarOperator.HARD_CLIP)
+			.mapToInt(ce -> ce.getLength()).sum();
+		return lengthWithHardClipping;
+	}
 }
+

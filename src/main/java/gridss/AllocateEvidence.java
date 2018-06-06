@@ -1,6 +1,8 @@
 package gridss;
 
+import java.io.File;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.broadinstitute.barclay.argparser.Argument;
@@ -9,6 +11,8 @@ import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
+import au.edu.wehi.idsv.AssemblyAssociator;
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DirectedEvidenceOrder;
@@ -17,12 +21,15 @@ import au.edu.wehi.idsv.SequentialEvidenceAllocator;
 import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
 import au.edu.wehi.idsv.StructuralVariationCallBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.cmdline.VcfTransformCommandLineProgram;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 
@@ -43,32 +50,62 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	public static enum EvidenceAllocationStrategy {
 		GREEDY,
 	}
-	public CloseableIterator<DirectedEvidence> getEvidenceIterator() {
+	public CloseableIterator<DirectedEvidence> getReadIterator() {
 		CloseableIterator<DirectedEvidence> evidenceIt;
-		boolean assemblyOnly = getContext().getVariantCallingParameters().callOnlyAssemblies;
-		if (assemblyOnly) {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(getAssemblySource()), true);
+		if (getContext().getVariantCallingParameters().callOnlyAssemblies) {
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(), false);
 		} else {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(getSamEvidenceSources()).add(getAssemblySource()).build(), true);
+			List<SAMEvidenceSource> sources = getSamEvidenceSources();
+			sources.stream().forEach(ses -> ses.assertPreprocessingComplete());
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(sources).build(), true);
 		}
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(
-					new PairedEvidenceTracker<>("Evidence",
+					new PairedEvidenceTracker<>("Reads",
+							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)),
+					evidenceIt);
+		}
+		return evidenceIt;
+	}
+	public CloseableIterator<DirectedEvidence> getAssemblyIterator() {
+		CloseableIterator<DirectedEvidence> evidenceIt;
+		evidenceIt = getAssemblySource().iterator();
+		if (Defaults.SANITY_CHECK_ITERATORS) {
+			evidenceIt = new AutoClosingIterator<>(
+					new PairedEvidenceTracker<>("Assemblies",
 							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)),
 					evidenceIt);
 		}
 		return evidenceIt;
 	}
 	@Override
-	public CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool) {
+	public CloseableIterator<VariantContextDirectedEvidence> iterator(CloseableIterator<VariantContextDirectedEvidence> calls, ExecutorService threadpool) {
 		log.info("Allocating evidence"); 
-		CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-allocation");
-		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
-		Iterator<VariantContextDirectedBreakpoint> it = Iterators.transform(annotator, bp -> annotate(bp));
+		CloseableIterator<DirectedEvidence> rawReads = new AsyncBufferedIterator<>(getReadIterator(), "mergedReads-allocation");
+		CloseableIterator<DirectedEvidence> reads = new AsyncBufferedIterator<>(annotateAssembly(rawReads), "annotate-associated-assembly");
+		CloseableIterator<DirectedEvidence> assemblies = new AsyncBufferedIterator<>(getAssemblyIterator(), "assembly-allocation");
+		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, reads, assemblies, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
+		CloseableIterator<VariantEvidenceSupport> bufferedAnnotator = new AsyncBufferedIterator<>(annotator, "annotator", 2, 8);
+		Iterator<VariantContextDirectedEvidence> it = Iterators.transform(bufferedAnnotator, bp -> annotate(bp));
 		it = Iterators.filter(it, v -> v != null);
-		return new AutoClosingIterator<>(it, calls, evidence);
+		return new AutoClosingIterator<>(it, calls, rawReads, reads, assemblies, bufferedAnnotator);
 	}
-	private VariantContextDirectedBreakpoint annotate(VariantEvidenceSupport ves) {
+	private CloseableIterator<DirectedEvidence> annotateAssembly(CloseableIterator<DirectedEvidence> it) {
+		AssemblyEvidenceSource aes = getAssemblySource();
+		// need to use the raw breakend assembly file (prior to realignment) so we annotate correctly
+		File assemblyFile = aes.getFile();
+		if (assemblyFile == null || !assemblyFile.exists()) {
+			log.error("Missing assembly file. BAN* annotations will be incorrect.");
+			return it;
+		}
+		int windowSize = aes.getMaxAssemblyLength() + 2 * aes.getMaxConcordantFragmentSize();
+		// defensive over-eager loading
+		windowSize *= 2;
+		SamReader reader = getContext().getSamReader(assemblyFile);
+		SAMRecordIterator assit = reader.iterator();
+		return new AutoClosingIterator<>(new AssemblyAssociator(it, assit, windowSize), assit, reader);
+	}
+	private VariantContextDirectedEvidence annotate(VariantEvidenceSupport ves) {
 		VariantCallingConfiguration vc = getContext().getConfig().getVariantCalling();
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), ves.variant);
 		for (DirectedEvidence e : ves.support) {
@@ -77,14 +114,19 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 				builder.addEvidence(e);
 			}
 		}
-		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)builder.make();
+		VariantContextDirectedEvidence be = builder.make();
 		if (!vc.writeFiltered) {
-			if (bp.getBreakpointQual() < vc.minScore) return null;
-			if (bp.getBreakpointEvidenceCount() < vc.minReads) return null;
-			if (bp.isFiltered()) return null;
+			if (be.isFiltered()) return null;
+			if (be.getPhredScaledQual() < vc.minScore) return null;
+			if (be instanceof VariantContextDirectedBreakpoint) {
+				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)be;
+				if (bp.getBreakpointSupportingFragmentCount() < vc.minReads) return null;
+			} else {
+				if (be.getBreakendSupportingFragmentCount() < vc.minReads) return null;
+			}
 		}
-		bp = (VariantContextDirectedBreakpoint)vc.applyConfidenceFilter(getContext(), bp);
-		return bp;
+		be = vc.applyConfidenceFilter(getContext(), be);
+		return be;
 	}
 	public static void main(String[] argv) {
         System.exit(new AllocateEvidence().instanceMain(argv));

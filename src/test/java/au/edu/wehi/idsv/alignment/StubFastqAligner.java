@@ -11,7 +11,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceIdentifierGenerator;
 import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.SplitReadIdentificationHelper;
+import au.edu.wehi.idsv.SplitReadHelper;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
@@ -38,7 +38,7 @@ public class StubFastqAligner implements FastqAligner {
 		this.eidgen = eidgen;
 	}
 	public StubFastqAligner align(SAMRecord r, BreakendDirection direction, int referenceIndex, int pos, boolean isNegativeStrand, String cigar) {
-		List<FastqRecord> srs = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, eidgen);
+		List<FastqRecord> srs = SplitReadHelper.getSplitReadRealignments(r, false, eidgen);
 		FastqRecord fqr = srs.get(0);
 		if (srs.size() == 2) {
 			if (direction == BreakendDirection.Forward ^ r.getReadNegativeStrandFlag()) {
@@ -51,7 +51,7 @@ public class StubFastqAligner implements FastqAligner {
 		return this;
 	}
 	public StubFastqAligner align(SAMRecord r, int referenceIndex, int pos, boolean isNegativeStrand, String cigar) {
-		List<FastqRecord> srs = SplitReadIdentificationHelper.getSplitReadRealignments(r, false, eidgen);
+		List<FastqRecord> srs = SplitReadHelper.getSplitReadRealignments(r, false, eidgen);
 		if(srs.size() != 1) throw new IllegalArgumentException("Need direction if source record contains clips on both sides");
 		align(r, SAMRecordUtil.getStartClipLength(r) > 0 ? BreakendDirection.Backward : BreakendDirection.Forward, referenceIndex, pos, isNegativeStrand, cigar);
 		return this;

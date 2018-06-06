@@ -1,9 +1,12 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.collect.ImmutableList;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
@@ -29,6 +32,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	private final BreakendSummary location;
 	private final SAMEvidenceSource source;
 	private String evidenceID = null;
+	private String associatedAssemblyName;
 	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
@@ -78,27 +82,20 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		}
 		return rp;
 	}
-	private static void assertAttribute(SAMRecord record, SAMTag tag) {
-		Object attr = record.getAttribute(tag.name());
-		if (attr == null) {
-			String msg = String.format("Read %s at %s:%d is missing the %s attribute containing mate information required by GRIDSS. Please run ComputeSamTags to populate this tag",
-					record.getReadName(), record.getReferenceName(), record.getAlignmentStart(), tag.name());
-			log.error(msg);
-			throw new IllegalArgumentException(msg);
-		}
-	}
 	public static NonReferenceReadPair create(SAMEvidenceSource source, SAMRecord record) {
 		if (!record.getReadPairedFlag()) return null;
-		assertAttribute(record, SAMTag.R2);
-		assertAttribute(record, SAMTag.Q2);
+		if (record.getAttribute(SAMTag.R2.name()) == null || record.getAttribute(SAMTag.Q2.name()) == null) {
+			String msg = String.format("Read %s at %s:%d is missing R2/Q2 attribute containing mate information required by GRIDSS. Ignoring read",
+					record.getReadName(), record.getReferenceName(), record.getAlignmentStart());
+			log.error(msg);
+			return null;
+		}
 		SAMRecord remote = new SAMRecord(record.getHeader());
 		remote.setReadUnmappedFlag(record.getMateUnmappedFlag());
 		byte[] r2 = record.getStringAttribute(SAMTag.R2.name()).getBytes(StandardCharsets.US_ASCII);
 		byte[] q2 = record.getStringAttribute(SAMTag.Q2.name()).getBytes(StandardCharsets.US_ASCII); 
 		SAMUtils.fastqToPhred(q2);
 		if (!remote.getReadUnmappedFlag()) {
-			assertAttribute(record, SAMTag.MC);
-			assertAttribute(record, SAMTag.MQ);
 			remote.setReferenceIndex(record.getMateReferenceIndex());
 			remote.setAlignmentStart(record.getMateAlignmentStart());
 			remote.setCigarString(record.getStringAttribute(SAMTag.MC.name()));
@@ -112,7 +109,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		remote.setReadName(record.getReadName());
 		remote.setReadPairedFlag(true);
 		remote.setProperPairFlag(record.getProperPairFlag());
-		remote.setNotPrimaryAlignmentFlag(record.getNotPrimaryAlignmentFlag());
+		remote.setSecondaryAlignment(record.isSecondaryAlignment());
 		remote.setReadBases(r2);
 		remote.setBaseQualities(q2);
 		if (record.getFirstOfPairFlag()) {
@@ -315,5 +312,24 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	@Override
 	public boolean isFromMultimappingFragment() {
 		return local.getAttribute(SamTags.MULTIMAPPING_FRAGMENT) != null;
+	}
+	@Override
+	public List<String> getOriginatingFragmentID(int category) {
+		return source.getSourceCategory() == category ? ImmutableList.of(local.getReadName()) : ImmutableList.of();
+	}
+	@Override
+	public double getStrandBias() {
+		return local.getReadNegativeStrandFlag() ? 1 : 0;
+	}
+	@Override
+	public int constituentReads() {
+		return 1;
+	}
+	@Override
+	public String getAssociatedAssemblyName() {
+		return associatedAssemblyName;
+	}
+	public void setAssociatedAssemblyName(String associatedAssemblyName) {
+		this.associatedAssemblyName = associatedAssemblyName; 
 	}
 }

@@ -18,6 +18,7 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
+import au.edu.wehi.idsv.util.FileHelper;
 import gridss.ComputeSamTags;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import picard.sam.BuildBamIndex;
@@ -36,6 +37,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		});
 		ProcessingContext pc = getCommandlineContext();
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.assembleBreakends(null);
 		File dir = new File(super.testFolder.getRoot(), "visualisation");

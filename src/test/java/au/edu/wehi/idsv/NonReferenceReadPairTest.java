@@ -388,4 +388,10 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).isFromMultimappingFragment());
 		assertTrue(NRRP(withAttr("mm", 5, DP(0, 1, "1M", true, 1, 3, "1M", false))).isFromMultimappingFragment());
 	}
+	@Test
+	public void strandBias_should_match_expected_mate_strand() {
+		assertEquals(0, NRRP(DP(0, 1, "1M", true, 1, 3, "1M", true)).getStrandBias(), 0);
+		assertEquals(0, NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).getStrandBias(), 0);
+		assertEquals(1, NRRP(DP(0, 1, "1M", false, 1, 3, "1M", true)).getStrandBias(), 0);
+	}
 }

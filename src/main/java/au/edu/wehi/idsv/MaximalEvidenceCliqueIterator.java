@@ -21,8 +21,8 @@ import htsjdk.samtools.util.Log;
  */
 public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedBreakpoint> {
 	private static final Log log = Log.getInstance(MaximalEvidenceCliqueIterator.class);
-	public static final String BREAKEND_ID_SUFFIX_HIGH = "h";
-	public static final String BREAKEND_ID_SUFFIX_LOW = "o";
+	public static final String BREAKPOINT_ID_SUFFIX_HIGH = "h";
+	public static final String BREAKPOINT_ID_SUFFIX_LOW = "o";
 	private VariantContextDirectedBreakpoint lastHigh = null;
 	private final BreakendDirection targetLowDir;
 	private final BreakendDirection targetHighDir;
@@ -105,8 +105,8 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 	private VariantContextDirectedBreakpoint toVariant(String event, RectangleGraphNode node, BreakpointSummary breakpoint, boolean isHighBreakend) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event);
-		builder.attribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, event + (isHighBreakend ? BREAKEND_ID_SUFFIX_LOW : BREAKEND_ID_SUFFIX_HIGH));
-		builder.id(event + (isHighBreakend ? BREAKEND_ID_SUFFIX_HIGH : BREAKEND_ID_SUFFIX_LOW));
+		builder.attribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, event + (isHighBreakend ? BREAKPOINT_ID_SUFFIX_LOW : BREAKPOINT_ID_SUFFIX_HIGH));
+		builder.id(event + (isHighBreakend ? BREAKPOINT_ID_SUFFIX_HIGH : BREAKPOINT_ID_SUFFIX_LOW));
 		if (isHighBreakend) {
 			breakpoint = breakpoint.remoteBreakpoint();
 		}

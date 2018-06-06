@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.util.List;
+
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 
@@ -39,6 +41,11 @@ public interface DirectedEvidence {
 	 */
 	String getEvidenceID();
 	/**
+	 * Unique identifier for the source DNA fragments.
+	 * @return distinct read names of supporting reads
+	 */
+	List<String> getOriginatingFragmentID(int category);
+	/**
 	 * Source of this evidence
 	 * @return Source providing this evidence
 	 */
@@ -59,6 +66,27 @@ public interface DirectedEvidence {
 	 * @return
 	 */
 	boolean isFromMultimappingFragment();
+	/**
+	 * Strand bias of evidence.
+	 * 1 indicates that breakend bases would be aligned to the positive strand if the reference was changed to the variant allele.
+	 * 0 indicates that breakend bases would be aligned to the negative strand if the reference was changed to the variant allele.
+	 * For read alignments, this corresponds the strand of the read alignment. A SR that is aligned to the positive strand will have a strand bias of 1.
+	 * For read pairs, this is the opposite strand to the local anchoring read alignment.
+	 * A DP that is aligned to the positive strand will have a strand bias of 0. 
+	 * @return Strand bias value between 0 and 1.  
+	 */
+	double getStrandBias();
+	/**
+	 * Number of reads/read pairs this evidence composed of.
+	 * @return
+	 */
+	int constituentReads();
+	/**
+	 * Name of assembly that this read is associated with.
+	 * For assembly evidence, this is the name of the assembly itself.
+	 * @return Name of associated assembly.
+	 */
+	String getAssociatedAssemblyName();
 	static final Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
