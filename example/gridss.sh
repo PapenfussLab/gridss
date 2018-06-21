@@ -45,6 +45,8 @@ if ! which Rscript >/dev/null 2>&1 ; then
 	exit 1
 fi
 
+ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
+
 # -Dreference_fasta is only required for CRAM input files
 # -Dgridss.gridss.output_to_temp_file=true allows GRIDSS to continue where it left off without data errors due to truncated files
 # -Dsamjdk.create_index=true is required for multi-threaded operation
