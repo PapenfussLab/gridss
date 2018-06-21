@@ -211,6 +211,9 @@ public class BreakendSummary {
 	 * @return
 	 */
 	public boolean isValid(SAMSequenceDictionary dictionary) {
+		if (dictionary == null) {
+			throw new NullPointerException("Missing required .dict sequence dictionary");
+		}
 		return referenceIndex >= 0 && referenceIndex < dictionary.size()
 				&& start <= end
 				&& start > 0 && end <= dictionary.getSequence(referenceIndex).getSequenceLength();
