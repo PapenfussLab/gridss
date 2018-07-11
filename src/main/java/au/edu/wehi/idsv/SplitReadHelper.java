@@ -317,7 +317,7 @@ public class SplitReadHelper {
 	 */
 	public static int[] getEditDistanceDelta(SAMRecord r, ReferenceLookup reference, boolean forwardDirection) {
 		if (r.getReadUnmappedFlag()) {
-			throw new IllegalArgumentException("Read must be mapped");
+			throw new IllegalArgumentException(String.format("Read (%s) must be mapped", r));
 		}
 		if (r.getReadNegativeStrandFlag()) {
 			forwardDirection = !forwardDirection;
