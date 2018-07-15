@@ -18,6 +18,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import au.edu.wehi.idsv.*;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
@@ -25,14 +26,6 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyFactory;
-import au.edu.wehi.idsv.AssemblyIdGenerator;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.SanityCheckFailureException;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
@@ -51,6 +44,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+import org.apache.commons.lang3.tuple.Pair;
 
 
 /**
@@ -149,7 +143,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * @param assemblyNameGenerator 
 	 * @param tracker evidence lookup
 	 * @param preferredContigDirection preferred direction of contig for anchoring purposes
-	 * @param maxEvidenceDistance maximum distance from the first position of the first kmer of a read,
 	 *  to the last position of the last kmer of a read. This should be set to read length plus
 	 *  the max-min concordant fragment size
 	 */
@@ -404,8 +397,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	/**
-	 * Verifies that the memoization matches a freshly calculated memoization 
-	 * @param contig
+	 * Verifies that the memoization matches a freshly calculated memoization
 	 */
 	private boolean verifyMemoization() {
 		int preGraphSize = graphByPosition.size();
@@ -423,7 +415,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * Calls the contig.
 	 * Note: to call the contig, additional graph nodes may be required to be loaded. No loading checks
 	 * (such as flushing excessively dense intervals) are performed on these additional loaded nodes.
-	 * @param contig to call 
 	 * @return SAMRecord containing breakend assembly, null if a valid break-end assembly contig
 	 * could not be created from this contig 
 	 */
@@ -566,8 +557,18 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			exportTracker.trackAssembly(bestContigCaller);
 		}
 		if (assembledContig != null) {
-			String categorySupport = PositionalContigCategorySupportHelper.getCategorySupport(fullContig, evidence, k);
-			assembledContig.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, categorySupport);
+			Pair<List<int[]>, List<float[]>> scSupport = PositionalContigCategorySupportHelper.getPerCategoryPerBaseSupport(fullContig, aes.getContext().getCategoryCount(), evidence.stream().filter(e -> e.evidence() instanceof SingleReadEvidence), k, preferredContigDirection, aes.getContext().getAssemblyParameters());
+			Pair<List<int[]>, List<float[]>> rpSupport = PositionalContigCategorySupportHelper.getPerCategoryPerBaseSupport(fullContig, aes.getContext().getCategoryCount(), evidence.stream().filter(e -> e.evidence() instanceof NonReferenceReadPair), k, preferredContigDirection, aes.getContext().getAssemblyParameters());
+			// Need to adjust if:
+			// a) we truncated bases off the anchor path since it was too long
+			// b) if we further truncated the SAM record due to the anchor being outside the reference contig bounds
+			int startTruncation = startBasesToTrim + assembledContig.getSignedIntArrayAttribute(SamTags.ASSEMBLY_ANCHOR_TRUNCATION)[0];
+			int endTruncation = endingBasesToTrim + assembledContig.getSignedIntArrayAttribute(SamTags.ASSEMBLY_ANCHOR_TRUNCATION)[1];
+			AssemblyAttributes.annotatePerBasePerCategorySupport(assembledContig,
+					scSupport.getLeft().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()),
+					scSupport.getRight().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()),
+					rpSupport.getLeft().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()),
+					rpSupport.getRight().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()));
 		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {

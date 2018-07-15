@@ -1,10 +1,13 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import au.edu.wehi.idsv.sam.SamTags;
+import com.google.common.collect.Range;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -49,7 +52,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		//          MMMMMSSSSS
 		//       GCAACGTTGGTTAA
 		//       MMMMMMMMSSSSSS
-		input.add(SCE(FWD, withSequence("ACGTTGGTTA", Read(0, 10, "5M5S"))[0]));
+		input.add(SCE(FWD, withSequence(        "ACGTTGGTTA", Read(0, 10, "5M5S"))[0]));
 		input.add(SCE(FWD, withSequence("TTTTTGCAACGTTGGTTAA", Read(0, 2, "13M6S"))[0]));
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
 		List<SingleReadEvidence> r = asAssemblyEvidence(aes, Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator())));
@@ -59,6 +62,12 @@ public class PositionalAssemblerTest extends TestHelper {
 		assertEquals("AACGTT", S(r.get(0).getAnchorSequence()));
 		assertEquals("GGTTAA", S(r.get(0).getBreakendSequence()));
 		assertEquals("AACGTTGGTTAA", S(r.get(0).getSAMRecord().getReadBases()));
+		int[] scCount = r.get(0).getSAMRecord().getSignedIntArrayAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT);
+		assertArrayEquals(new int[] {
+			  // A A C G T T G G T T A A
+				1,1,2,2,2,2,2,2,2,2,2,1,0, // category 0
+				0,0,0,0,0,0,0,0,0,0,0,0,0, // category 1
+			}, scCount);
 	}
 	@Test
 	public void rp_anchor_should_set_non_reference_bases_as_anchoring() {
@@ -122,8 +131,8 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
 		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
-		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator()));
-		assertEquals(2, ((int[])r.get(0).getAttribute("sc"))[0]);
+		SAMRecord r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator())).get(0);
+		assertEquals(2, (int)new AssemblyAttributes(r).getSupportingReadCount(Range.closedOpen(0, r.getReadLength()), null, null, Math::max).getRight());
 	}
 	@Test
 	public void should_set_assembly_direction() {

@@ -12,6 +12,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -109,47 +111,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("2X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 6), null, B("AAA"), B("AAA")).getCigarString());
 		assertEquals("1X1N1X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 7), null, B("AAA"), B("AAA")).getCigarString());
 	}
-	public static void assertEvidenceEquals(SAMRecord ass1, SAMRecord ass2) {
-		SingleReadEvidence e = asAssemblyEvidence(ass1);
-		SingleReadEvidence r = asAssemblyEvidence(ass2);
-		AssemblyAttributes ea = new AssemblyAttributes(e);
-		AssemblyAttributes ra = new AssemblyAttributes(e);
-		assertEquals(e.getAnchorSequence().length, r.getAnchorSequence().length);
-		assertEquals(S(e.getAnchorSequence()) , S(r.getAnchorSequence()));
-		assertEquals(ea.getAssemblyReadPairLengthMax(0) , ra.getAssemblyReadPairLengthMax(0));
-		assertEquals(ea.getAssemblyReadPairLengthMax(1) , ra.getAssemblyReadPairLengthMax(1));
-		assertEquals(ea.getAssemblyReadPairLengthMax() , ra.getAssemblyReadPairLengthMax());
-		assertEquals(S(ass1.getBaseQualities()) , S(ass2.getBaseQualities()));
-		assertEquals(ea.getAssemblySoftClipLengthMax(0) , ra.getAssemblySoftClipLengthMax(0));
-		assertEquals(ea.getAssemblySoftClipLengthMax(1) , ra.getAssemblySoftClipLengthMax(1));
-		assertEquals(ea.getAssemblySoftClipLengthMax() , ra.getAssemblySoftClipLengthMax());
-		assertEquals(ea.getAssemblySoftClipLengthTotal(0) , ra.getAssemblySoftClipLengthTotal(0));
-		assertEquals(ea.getAssemblySoftClipLengthTotal(1) , ra.getAssemblySoftClipLengthTotal(1));
-		assertEquals(ea.getAssemblySoftClipLengthTotal() , ra.getAssemblySoftClipLengthTotal());
-		assertEquals(ea.getAssemblySupportCountReadPair(0) , ra.getAssemblySupportCountReadPair(0));
-		assertEquals(ea.getAssemblySupportCountReadPair(1) , ra.getAssemblySupportCountReadPair(1));
-		assertEquals(ea.getAssemblySupportCountReadPair(ImmutableList.of(true, true)) , ra.getAssemblySupportCountReadPair(ImmutableList.of(true, true)));
-		assertEquals(ea.getAssemblySupportCountSoftClip(0) , ra.getAssemblySupportCountSoftClip(0));
-		assertEquals(ea.getAssemblySupportCountSoftClip(1) , ra.getAssemblySupportCountSoftClip(1));
-		assertEquals(ea.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)) , ra.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)));
-		assertArrayEquals(e.getBreakendQuality() , r.getBreakendQuality());
-		assertEquals(S(e.getBreakendSequence()) , S(r.getBreakendSequence()));
-		assertEquals(e.getBreakendSummary(), r.getBreakendSummary());
-		if (e.getBreakendSummary() != null) {
-			assertEquals(e.getBreakendSummary().getClass(), r.getBreakendSummary().getClass());
-		}
-		assertEquals(e.getEvidenceID() , r.getEvidenceID());
-		assertEquals(e.getEvidenceSource() , r.getEvidenceSource());
-		assertEquals(e.getLocalMapq() , r.getLocalMapq());
-		if (e instanceof DirectedBreakpoint) {
-			assertTrue(r instanceof DirectedBreakpoint);
-			DirectedBreakpoint de = (DirectedBreakpoint)e;
-			DirectedBreakpoint dr = (DirectedBreakpoint)r;
-			assertEquals(de.getBreakendSummary(), dr.getBreakendSummary());
-			assertEquals(de.getRemoteMapq(), dr.getRemoteMapq());
-			assertEquals(de.getUntemplatedSequence(), dr.getUntemplatedSequence());
-		}
-	}
 	@Test
 	public void should_track_breakend_evidence() {
 		DirectedEvidence e1 = SCE(BWD, Read(0, 1, "5S5M"));
@@ -164,8 +125,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssembly(e3));
 		assertFalse(e.isPartOfAssembly(b1));
 		
-		assertEquals(2, e.getAssemblySupportCountSoftClip(ImmutableList.of(true, true)));
-		assertEquals(1, e.getAssemblySupportCountReadPair(ImmutableList.of(true, true)));
+		assertEquals(2, (int)e.getSupportingReadCount(Range.closed(0, r.getReadLength()), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight());
+		assertEquals(1, (int)e.getSupportingReadCount(Range.closed(0, r.getReadLength()), null, ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight());
 	}
 	@Test
 	public void should_track_read_name() {
@@ -248,22 +209,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				0, 1, 1, B(assembly), B(40, assembly.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, e).size());
-	}
-	@Test
-	@Ignore("Enhancement")
-	public void getBreakendQual_should_exclude_assembled_evidence_that_does_not_support_breakend() {
-		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
-				NRRP(OEA(0, 1, "1M", true)),
-				NRRP(OEA(0, 2, "1M", true)),
-				NRRP(OEA(0, 1000, "1M", true)));
-		ProcessingContext pc = getContext();
-		pc.getAssemblyParameters().excludeNonSupportingEvidence = false;
-		SAMRecord ass = AssemblyFactory.createUnanchoredBreakend(pc, AES(pc), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1), support, B("GTAC"), new byte[] {1,2,3,4});
-		assertEquals(support.get(0).getBreakendQual() + support.get(1).getBreakendQual() + support.get(2).getBreakendQual(), asAssemblyEvidence(ass).getBreakendQual(), DELTA);
-		
-		pc.getAssemblyParameters().excludeNonSupportingEvidence = true;
-		ass = AssemblyFactory.createUnanchoredBreakend(pc, AES(pc), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1), support, B("GTAC"), new byte[] {1,2,3,4});
-		assertEquals(support.get(0).getBreakendQual() + support.get(1).getBreakendQual(), asAssemblyEvidence(ass).getBreakendQual(), DELTA);
 	}
 	@Test
 	public void getAnchor_should_not_include_inexact_breakend_bases() {

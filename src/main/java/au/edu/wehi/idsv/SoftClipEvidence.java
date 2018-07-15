@@ -4,6 +4,8 @@ import java.util.List;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 import htsjdk.samtools.SAMRecord;
 
 public class SoftClipEvidence extends SingleReadEvidence {
@@ -48,17 +50,12 @@ public class SoftClipEvidence extends SingleReadEvidence {
 	private float scoreAssembly() {
 		if (getBreakendSequence().length == 0) return 0;
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
-		List<Boolean> support = getCategorySupportBreakdown();
-		int rp = attr.getAssemblySupportCountReadPair(support);
-		double rpq = attr.getAssemblySupportReadPairQualityScore(support);
-		int sc = attr.getAssemblySupportCountSoftClip(support);
-		double scq =  attr.getAssemblySupportSoftClipQualityScore(support);
-		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
-			rp -= attr.getAssemblyNonSupportingReadPairCount(support);
-			rpq -= attr.getAssemblyNonSupportingReadPairQualityScore(support);
-			sc -= attr.getAssemblyNonSupportingSoftClipCount(support);
-			scq -= attr.getAssemblyNonSupportingSoftClipQualityScore(support);
-		}
+		Range<Integer> offsetRange = getBreakendReadOffsetInterval();
+		int pos = attr.getMinQualPosition(offsetRange);
+		int rp = attr.getSupportingReadCount(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight();
+		double rpq = attr.getSupportingQualScore(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight();
+		int sc = attr.getSupportingReadCount(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight();
+		double scq = attr.getSupportingQualScore(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight();
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreBreakendAssembly(
 				rp, rpq,
 				sc, scq,

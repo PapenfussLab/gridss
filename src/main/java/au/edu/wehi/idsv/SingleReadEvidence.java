@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
 import com.google.common.collect.Streams;
 
 import au.edu.wehi.idsv.debruijn.ContigCategorySupportHelper;
@@ -17,6 +18,8 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import gridss.cmdline.programgroups.Assembly;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
@@ -34,10 +37,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final byte[] breakendBases;
 	private final byte[] breakendQuals;
 	private final boolean isUnanchored;
-	private final List<Boolean> categorySupport;
+	private final int unanchoredXNXHackMappedBases;
+	private final int nominalBreakendAfterReadOffset;
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
 	private String associatedAssemblyName;
+
 	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, int minIndelSize, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
 		List<SingleReadEvidence> list = new ArrayList<>(4);
@@ -49,12 +54,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			boolean hasBackwardSR = false;
 			for (SplitReadEvidence sre : srlist) {
 				switch (sre.getBreakendSummary().direction) {
-				case Forward:
-					hasForwardSR = true;
-					break;
-				case Backward:
-					hasBackwardSR = true;
-					break;
+					case Forward:
+						hasForwardSR = true;
+						break;
+					case Backward:
+						hasBackwardSR = true;
+						break;
 				}
 			}
 			if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
@@ -75,10 +80,11 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		}
 		return list;
 	}
+
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
-			int offsetLocalStart, int offsetLocalEnd,
-			int offsetUnmappedStart, int offsetUnmappedEnd,
-			int localInexactMargin) {
+								 int offsetLocalStart, int offsetLocalEnd,
+								 int offsetUnmappedStart, int offsetUnmappedEnd,
+								 int localInexactMargin) {
 		this(source, record, location,
 				offsetLocalStart, offsetLocalEnd,
 				offsetUnmappedStart, offsetUnmappedEnd,
@@ -86,14 +92,16 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				offsetLocalStart < offsetUnmappedStart ? offsetUnmappedEnd : offsetUnmappedStart,
 				localInexactMargin, 0);
 	}
+
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
-			int offsetLocalStart, int offsetLocalEnd,
-			int offsetUnmappedStart, int offsetUnmappedEnd,
-			int offsetRemoteStart, int offsetRemoteEnd,
-			int localInexactMargin, int remoteInexactMargin) {
+								 int offsetLocalStart, int offsetLocalEnd,
+								 int offsetUnmappedStart, int offsetUnmappedEnd,
+								 int offsetRemoteStart, int offsetRemoteEnd,
+								 int localInexactMargin, int remoteInexactMargin) {
+
 		// TODO: we could use this to infer the unmapped bounds
-		assert(offsetLocalEnd == offsetUnmappedStart || offsetLocalStart == offsetUnmappedEnd);
-		assert(offsetUnmappedEnd == offsetRemoteStart || offsetRemoteEnd == offsetUnmappedStart);
+		assert (offsetLocalEnd == offsetUnmappedStart || offsetLocalStart == offsetUnmappedEnd);
+		assert (offsetUnmappedEnd == offsetRemoteStart || offsetRemoteEnd == offsetUnmappedStart);
 		if (IntervalUtil.overlapsClosed(offsetLocalStart, offsetLocalEnd - 1, offsetRemoteStart, offsetRemoteEnd - 1)) {
 			int remoteBasesToTrim = offsetUnmappedStart - offsetUnmappedEnd;
 			// Alignments overlap - turns out bwa writes such records
@@ -109,11 +117,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				offsetUnmappedStart -= remoteBasesToTrim;
 			}
 		}
+		this.unanchoredXNXHackMappedBases = localInexactMargin + remoteInexactMargin;
 		if (localInexactMargin > 0 || remoteInexactMargin > 0) {
 			// strip out placeholder anchorings
 			// 1X*N1X format has at most 2 anchoring bases
 			if (localInexactMargin > 0) {
-				assert(offsetLocalEnd - offsetLocalStart == Math.min(2, localInexactMargin));
+				assert (offsetLocalEnd - offsetLocalStart == Math.min(2, localInexactMargin));
 				if (offsetUnmappedStart >= offsetLocalStart) {
 					offsetLocalStart = offsetLocalEnd;
 				} else {
@@ -121,7 +130,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				}
 			}
 			if (remoteInexactMargin > 0) {
-				assert(offsetRemoteEnd - offsetRemoteStart == Math.min(2, remoteInexactMargin));
+				assert (offsetRemoteEnd - offsetRemoteStart == Math.min(2, remoteInexactMargin));
 				if (offsetUnmappedEnd >= offsetRemoteEnd) {
 					offsetRemoteStart = offsetRemoteEnd;
 				} else {
@@ -143,7 +152,8 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		if (offsetLocalEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetUnmappedEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetRemoteEnd > record.getReadLength()) throw new IllegalArgumentException();
-		if (offsetUnmappedEnd != offsetRemoteStart && offsetUnmappedStart != offsetRemoteEnd) throw new IllegalArgumentException();
+		if (offsetUnmappedEnd != offsetRemoteStart && offsetUnmappedStart != offsetRemoteEnd)
+			throw new IllegalArgumentException();
 		this.source = source;
 		this.record = record;
 		this.untemplated = new String(Arrays.copyOfRange(record.getReadBases(), offsetUnmappedStart, offsetUnmappedEnd), StandardCharsets.US_ASCII);
@@ -162,7 +172,8 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			location = location.asValidFor(source.getContext().getReference().getSequenceDictionary());
 		}
 		this.location = location;
-		this.categorySupport = getCategorySupportBreakdown(offsetLocalStart, offsetLocalEnd);
+		int nominalOffset = location.direction == BreakendDirection.Forward ? offsetLocalEnd : offsetLocalStart - 1;
+		this.nominalBreakendAfterReadOffset = record.getReadNegativeStrandFlag() ? record.getReadLength() - nominalOffset : nominalOffset;
 	}
 	private BreakendSummary withExactHomology(BreakendSummary location) {
 		if (!isBreakendExact()) return location;
@@ -364,56 +375,6 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public boolean involvesPrimaryReadAlignment() {
 		return !getSAMRecord().getSupplementaryAlignmentFlag();
 	}
-	/**
-	 * Determines which categories 
-	 * @param offsetLocalEnd 
-	 * @param offsetLocalStart 
-	 * @return
-	 */
-	protected List<Boolean> getCategorySupportBreakdown(int offsetLocalStart, int offsetLocalEnd) {
-		if (getEvidenceSource() instanceof AssemblyEvidenceSource) {
-			if (!isUnanchored && getSAMRecord().hasAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR) && getEvidenceSource().getContext().getConfig().getVariantCalling().requireAssemblyCategorySupport) {
-				// Example: alignment is no negative strand
-				// 5S 10M 15S
-				//   ^ evaluting this breakend
-				// position = read base position immediately after breakend
-				int nominalPosition = location.direction == BreakendDirection.Backward ? offsetLocalStart : offsetLocalEnd + 1;
-				int leftPos = nominalPosition - (location.nominal - location.start);
-				int rightPos = nominalPosition + (location.end - location.nominal);
-				if (getSAMRecord().getReadNegativeStrandFlag()) {
-					// no - 1 since before position -> after position when flipping
-					leftPos = getSAMRecord().getReadLength() - leftPos;
-					rightPos = getSAMRecord().getReadLength() - rightPos;
-				}
-				String cigar = getSAMRecord().getStringAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR);
-				// needs support at both extremes of the homology
-				List<Boolean> categories = Streams.zip(
-						ContigCategorySupportHelper.supportsBreakendBefore(leftPos, cigar).stream(),
-						ContigCategorySupportHelper.supportsBreakendBefore(rightPos, cigar).stream(),
-						(a, b) -> (Boolean)(a && b))
-					.collect(Collectors.toList());
-				// CIGAR only include categories that actually have evidence. Need to pad out to number of categories we actually have 
-				while (categories.size() < getEvidenceSource().getContext().getCategoryCount()) {
-					categories.add(false);
-				}
-				return categories;
-			} else {
-				return Stream.generate(() -> true)
-					.limit(getEvidenceSource().getContext().getCategoryCount())
-					.collect(Collectors.toList());
-			}
-		} else {
-			if (getEvidenceSource() == null) return null;
-			List<Boolean> list = Stream.generate(() -> false)
-					.limit(Math.max(getEvidenceSource().getContext().getCategoryCount(), getEvidenceSource().getSourceCategory() + 1))
-					.collect(Collectors.toList());
-			list.set(getEvidenceSource().getSourceCategory(), true);
-			return list;
-		}
-	}
-	public List<Boolean> getCategorySupportBreakdown() {
-		return categorySupport;
-	}
 	@Override
 	public List<String> getOriginatingFragmentID(int category) {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
@@ -434,7 +395,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	public int constituentReads() {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
-			return new AssemblyAttributes(record).getAssemblyTotalReadSupportCount();
+			AssemblyAttributes aa = new AssemblyAttributes(record);
+			int pos = aa.getMinQualPosition(getBreakendReadOffsetInterval());
+			return aa.getSupportingReadCount(Range.closed(pos, pos), null, null, Math::min).getRight();
 		}
 		return 1;
 	}
@@ -447,5 +410,31 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	public void setAssociatedAssemblyName(String associatedAssemblyName) {
 		this.associatedAssemblyName = associatedAssemblyName; 
+	}
+
+	/**
+	 * Position of the breakend relative to the start of the read sequence.
+	 * A range is required to account for breakpoint sequence homology.
+	 * @return 0-based position relative to the start of the read.
+	 * The breakpoint is considered to be immediately prior (in read-space coordinates) to the given position.
+	 */
+	protected Range<Integer> getBreakendReadOffsetInterval() {
+		if (isUnanchored) {
+			// Take the extrema for the unanchored contigs since everything supports the event
+			if (new AssemblyAttributes(record).getAssemblyDirection() == BreakendDirection.Forward) {
+				return Range.closed(0, 0);
+			} else {
+				// read length is 1-2 more than the contig length due to anchoring hacks
+				int end = record.getReadLength() - unanchoredXNXHackMappedBases;
+				return Range.closed(end, end);
+			}
+		}
+		Range<Integer> r;
+		if (!record.getReadNegativeStrandFlag()) {
+			r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
+		} else {
+			r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
+		}
+		return r;
 	}
 }

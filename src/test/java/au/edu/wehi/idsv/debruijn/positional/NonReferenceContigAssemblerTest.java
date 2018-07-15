@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Range;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -82,7 +83,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, sce);
 		AssemblyAttributes attr = new AssemblyAttributes(output.get(0));
 		assertNotNull(attr);
-		assertEquals(1, attr.getAssemblySupportCount(ImmutableList.of(true, true)));
+		assertEquals(1, (int)attr.getSupportingReadCount(Range.closed(5, 5), null, null, Math::min).getRight());
 	}
 	@Test
 	public void should_call_simple_bwd_SC() {
@@ -417,7 +418,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SoftClipEvidence sce3 = SCE(FWD, ses1, withSequence("ACGTGGTCGT", Read(0, 5, "6M4S")));
 		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3);
 		assertEquals(1, output.size());
-		assertEquals("1X11=,1X9=2X", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
+		assertEquals("1X11=,1X9=2X", output.get(0).getAttribute("SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR"));
 	}
 	@Test
 	public void should_generate_rp_contig_support_CIGAR() {
@@ -438,7 +439,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertEquals(27, output.get(0).getReadLength());
 		assertEquals("GGTTGCATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
-		assertEquals("1X26=", output.get(0).getAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR));
+		assertEquals("1X26=", output.get(0).getAttribute("SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR"));
 	}
 	@Test
 	public void should_not_write_inconsistent_anchors() {

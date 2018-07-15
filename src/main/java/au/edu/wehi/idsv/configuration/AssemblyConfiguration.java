@@ -14,7 +14,6 @@ public class AssemblyConfiguration {
 		includePairAnchors = config.getBoolean("includePairAnchors");
 		pairAnchorMismatchIgnoreEndBases = config.getInt("pairAnchorMismatchIgnoreEndBases");
 		writeFiltered = config.getBoolean("writeFiltered");
-		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
 		anchorLength = config.getInt("anchorLength");
 		removeMisassembledPartialContigsDuringAssembly = config.getBoolean("removeMisassembledPartialContigsDuringAssembly");
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
@@ -50,7 +49,6 @@ public class AssemblyConfiguration {
 	 * Determines whether filtered assemblies are written to intermediate files
 	 */
 	public boolean writeFiltered;
-	public boolean excludeNonSupportingEvidence;
 	/**
 	 * Default minimum length in bases of reference sequence anchor assembly. A breakend assembly longer than this
 	 * length will cause reference sequence assembly to be at least as long as the breakend 

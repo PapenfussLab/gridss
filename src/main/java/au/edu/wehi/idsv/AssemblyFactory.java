@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
 import au.edu.wehi.idsv.sam.SamTags;
@@ -32,8 +33,6 @@ public final class AssemblyFactory {
 	 * @param anchoredBaseCount number of anchored bases in assembly
 	 * @param baseCalls assembly base sequence as per a positive strand read over the anchor
 	 * @param baseQuals assembly base qualities
-	 * @param normalBaseCount number of assembly bases contributed by normal evidence sources
-	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
 	 * @return assembly evidence for the given assembly
 	 */
 	public static SAMRecord createAnchoredBreakend(
@@ -78,7 +77,6 @@ public final class AssemblyFactory {
 	 * @param evidence evidence supporting the assembly breakend
 	 * @param baseCalls assembly base sequence as per a positive strand read into a putative anchor
 	 * @param baseQuals assembly base qualities
-	 * @param direction direction of breakend
 	 * @return assembly evidence for the given assembly
 	 */
 	public static SAMRecord createUnanchoredBreakend(
@@ -197,6 +195,8 @@ public final class AssemblyFactory {
 	}
 	private static void truncateAnchorToContigBounds(ProcessingContext processContext, SAMRecord r) {
 		int end = processContext.getDictionary().getSequences().get(r.getReferenceIndex()).getSequenceLength();
+		int startTruncation = 0;
+		int endTruncation = 0;
 		if (r.getAlignmentStart() < 1) {
 			int basesToTruncate = 1 - r.getAlignmentStart();
 			ArrayList<CigarElement> cigar = new ArrayList<>(r.getCigar().getCigarElements());
@@ -217,6 +217,7 @@ public final class AssemblyFactory {
 				if (q != null && q != SAMRecord.NULL_QUALS) {
 					r.setBaseQualities(Arrays.copyOfRange(q, basesToTruncate, q.length));
 				}
+				startTruncation = basesToTruncate;
 			}
 		}
 		if (r.getAlignmentEnd() > end) {
@@ -240,8 +241,10 @@ public final class AssemblyFactory {
 				if (q != null && q != SAMRecord.NULL_QUALS) {
 					r.setBaseQualities(Arrays.copyOf(q, q.length - basesToTruncate));
 				}
+				endTruncation = basesToTruncate;
 			}
 		}
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_TRUNCATION, new int[] {startTruncation, endTruncation });
 	}
 }
 

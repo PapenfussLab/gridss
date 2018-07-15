@@ -7,7 +7,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.stream.DoubleStream;
 
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -104,28 +106,17 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
-		assertEquals(2, new AssemblyAttributes(bigr()).getAssemblySupportCountReadPair(0));
-		assertEquals(4, new AssemblyAttributes(bigr()).getAssemblySupportCountReadPair(1));
+		assertEquals(2, (int)new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendReadOffsetInterval(), ImmutableSet.of(0), ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight());
+		assertEquals(4, (int)new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendReadOffsetInterval(), ImmutableSet.of(1), ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight());
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_LENGTH_MAX() {
-		assertEquals(10, new AssemblyAttributes(bigr()).getAssemblyReadPairLengthMax(0));
-		assertEquals(5, new AssemblyAttributes(bigr()).getAssemblyReadPairLengthMax(1));
+		assertEquals(10, new AssemblyAttributes(bigr()).getAssemblyReadPairLengthMax());
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_COUNT() {
-		assertEquals(1, new AssemblyAttributes(bigr()).getAssemblySupportCountSoftClip(0));
-		assertEquals(2, new AssemblyAttributes(bigr()).getAssemblySupportCountSoftClip(1));
-	}
-	@Test
-	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL() {	
-		assertEquals(4, new AssemblyAttributes(bigr()).getAssemblySoftClipLengthTotal(0));
-		assertEquals(6, new AssemblyAttributes(bigr()).getAssemblySoftClipLengthTotal(1));
-	}
-	@Test
-	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX() {
-		assertEquals(4, new AssemblyAttributes(bigr()).getAssemblySoftClipLengthMax(0));
-		assertEquals(3, new AssemblyAttributes(bigr()).getAssemblySoftClipLengthMax(1));
+		assertEquals(1, (int)new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendReadOffsetInterval(), ImmutableSet.of(0), ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight());
+		assertEquals(2, (int)new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendReadOffsetInterval(), ImmutableSet.of(1), ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight());
 	}
 //	@Test
 //	public void should_set_assembly_attribute_ASSEMBLY_REMOTE_COUNT() {
@@ -441,11 +432,9 @@ public class AssemblyFactoryTest extends TestHelper {
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), new SequentialIdGenerator("asm"), BWD, support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7});
 		SoftClipEvidence asse = SoftClipEvidence.create(AES(), BWD, ass);
-		
-		assertEquals(support.stream()
-				.mapToDouble(e -> e.getBreakendQual())
-				.sum(),
-				asse.getBreakendQual(), 0.001);
+
+		double[] supportQual = support.stream().mapToDouble(e -> e.getBreakendQual()).toArray();
+		assertEquals(DoubleStream.of(supportQual).sum(), asse.getBreakendQual(), 0.001);
 	}
 	@Test
 	public void getLocalMapq_should_be_max_evidence_mapq() {

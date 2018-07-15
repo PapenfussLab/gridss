@@ -405,16 +405,22 @@ public class SplitReadEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_pro_rata_assembly_suport() {
-		SAMRecord primary = Read(1, 200, "100M50S");
+		SAMRecord primary = withSequence("NNNNNN", Read(1, 200, "4M2S"))[0];
 		primary.setMappingQuality(100);
-		SAMRecord r = Read(1, 100, "50M100S");
+		SAMRecord r = Read(1, 100, "2M4S");
 		r.setMappingQuality(100);
 		r.setReadNegativeStrandFlag(true);		
 		r.setAttribute("SA", new ChimericAlignment(primary).toString());
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
-		r.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, "90=60X,125=25X");
-		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, new int[] { 100, 2 });
-		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, new int[] { 1000, 50 });
+		//r.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, "90=60X,125=25X");
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, new int[] {
+				6, 5, 4, 3, 2, 1, 0,
+				0, 1, 2, 3, 4, 5, 6,
+		});
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, new int[] {
+				60, 50, 40, 30, 20, 10,  0,
+				 0, 10, 20, 30, 40, 50, 60,
+		});
 		r.setAttribute(SamTags.EVIDENCEID, "e");
 		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
 		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);

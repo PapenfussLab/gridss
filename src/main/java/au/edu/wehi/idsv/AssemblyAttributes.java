@@ -1,31 +1,54 @@
 package au.edu.wehi.idsv;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-
+import au.edu.wehi.idsv.debruijn.ContigCategorySupportHelper;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.*;
+import java.util.function.DoubleBinaryOperator;
+import java.util.function.IntBinaryOperator;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class AssemblyAttributes {
 	private static final Log log = Log.getInstance(AssemblyAttributes.class);
 	private static final String ID_COMPONENT_SEPARATOR = " ";
 	private final SAMRecord record;
 	private HashSet<String> evidenceIDs = null;
+	private class Support {
+		private final List<int[]> count;
+		private final List<float[]> qual;
+		public Support(SAMRecord record, String countAttr, String qualAttr) {
+			int expectedLength = record.getReadLength() + 1;
+			if (isUnanchored(record)) {
+				expectedLength = Math.max(SAMRecordUtil.getStartClipLength(record), SAMRecordUtil.getEndClipLength(record)) + 1;
+			}
+			this.count = ContigCategorySupportHelper.unpackInts(record.getSignedIntArrayAttribute(countAttr), expectedLength);
+			this.qual = ContigCategorySupportHelper.unpackFloats(record.getFloatArrayAttribute(qualAttr), expectedLength);
+		}
+	}
+	private Support srSupport = null;
+	private Support rpSupport = null;
+	private Support getSplitReadSupport() {
+		if (srSupport == null) {
+			srSupport = new Support(record, SamTags.ASSEMBLY_SOFTCLIP_COUNT, SamTags.ASSEMBLY_SOFTCLIP_QUAL);
+		}
+		return srSupport;
+	}
+	private Support getReadPairSupport() {
+		if (rpSupport == null) {
+			rpSupport = new Support(record, SamTags.ASSEMBLY_READPAIR_COUNT, SamTags.ASSEMBLY_READPAIR_QUAL);
+		}
+		return rpSupport;
+	}
 	public static boolean isAssembly(SAMRecord record) {
 		return record.getAttribute(SamTags.EVIDENCEID) != null;
 	}
@@ -51,7 +74,6 @@ public class AssemblyAttributes {
 	 * This method is a probabilistic method and it is possible for the record to return true
 	 * when the record does not form part of the assembly breakend
 	 *
-	 * @param evidence
 	 * @return true if the record is likely part of the breakend, false if definitely not
 	 */
 	public boolean isPartOfAssembly(DirectedEvidence e) {
@@ -99,34 +121,30 @@ public class AssemblyAttributes {
 				.filter(s -> StringUtils.isNotEmpty(s))
 				.collect(Collectors.toList());
 	}
-	public static void annotateNonSupporting(ProcessingContext context, BreakpointSummary assemblyBreakpoint, SAMRecord record, Collection<DirectedEvidence> support) {
-		int n = context.getCategoryCount();
-		float[] nsrpQual = new float[n];
-		float[] nsscQual = new float[n];
-		int[] nsrpCount = new int[n];
-		int[] nsscCount = new int[n];
-		BreakpointSummary breakendWithMargin = (BreakpointSummary)context.getVariantCallingParameters().withMargin(assemblyBreakpoint);
-		for (DirectedEvidence e : support) {
-			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
-			float qual = e.getBreakendQual();
-			if (e instanceof NonReferenceReadPair) {
-				if (breakendWithMargin != null && !breakendWithMargin.overlaps(e.getBreakendSummary())) {
-					nsrpCount[offset]++;
-					nsrpQual[offset] += qual;
-				}
-			} else if (e instanceof SingleReadEvidence) {
-				if (breakendWithMargin != null && !breakendWithMargin.overlaps(e.getBreakendSummary())) {
-					nsscCount[offset]++;
-					nsscQual[offset] += qual;
-				}
-			} else {
-				throw new NotImplementedException("Sanity check failure: not a read or a read pair.");
-			}
-		}
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT, nsrpCount);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT, nsscCount);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL, nsrpQual);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL, nsscQual);
+	public static void annotatePerBasePerCategorySupport(
+			SAMRecord record,
+			List<int[]> scCount,
+			List<float[]> scQual,
+			List<int[]> rpCount,
+			List<float[]> rpQual) {
+		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, ContigCategorySupportHelper.packInts(scCount));
+		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, ContigCategorySupportHelper.packInts(rpCount));
+		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, ContigCategorySupportHelper.packFloats(scQual));
+		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, ContigCategorySupportHelper.packFloats(rpQual));
+	}
+	public static void annotatePerCategorySupport(
+			SAMRecord record,
+			List<Integer> scCount,
+			List<Float> scQual,
+			List<Integer> rpCount,
+			List<Float> rpQual) {
+		final int expectedLength = isUnanchored(record) ? Math.max(SAMRecordUtil.getStartClipLength(record), SAMRecordUtil.getEndClipLength(record)) + 1 : record.getReadLength() + 1;
+		annotatePerBasePerCategorySupport(
+			record,
+			scCount.stream().map(x -> { int[] arr = new int[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()),
+			scQual.stream().map(x -> { float[] arr = new float[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()),
+			rpCount.stream().map(x -> { int[] arr = new int[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()),
+			rpQual.stream().map(x -> { float[] arr = new float[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()));
 	}
 	/**
 	 * Annotates an assembly with summary information regarding the reads used to produce the assembly
@@ -138,32 +156,24 @@ public class AssemblyAttributes {
 			}
 			support = Collections.emptyList();
 		}
-		int n = context.getCategoryCount();
-		float[] rpQual = new float[n];
-		float[] scQual = new float[n];
-		int[] rpCount = new int[n];
-		int[] rpMaxLen = new int[n];
-		int[] scCount = new int[n];
-		int[] scLenMax = new int[n];
-		int[] scLenTotal = new int[n];
 		int maxLocalMapq = 0;
+		int rpMaxLen = 0;
+		List<Integer> scCount = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0));
+		List<Float> scQual = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0f));
+		List<Integer> rpCount = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0));
+		List<Float> rpQual = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0f));
 		for (DirectedEvidence e : support) {
+			int category = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
+			float qual = e.getBreakendQual();
 			assert(e != null);
 			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
-			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
-			float qual = e.getBreakendQual();
 			if (e instanceof NonReferenceReadPair) {
-				rpCount[offset]++;
-				rpQual[offset] += qual;
-				rpMaxLen[offset] = Math.max(rpMaxLen[offset], ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
-			} else if (e instanceof SingleReadEvidence) {
-				scCount[offset]++;
-				scQual[offset] += qual;
-				int clipLength = e.getBreakendSequence().length;
-				scLenMax[offset] = Math.max(scLenMax[offset], clipLength);
-				scLenTotal[offset] += clipLength;
+				rpMaxLen = Math.max(rpMaxLen, ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
+				rpCount.set(category, rpCount.get(category) + 1);
+				rpQual.set(category, rpQual.get(category) + qual);
 			} else {
-				throw new NotImplementedException("Sanity check failure: not a read or a read pair.");
+				scCount.set(category, scCount.get(category) + 1);
+				scQual.set(category, scQual.get(category) + qual);
 			}
 		}
 		ensureUniqueEvidenceID(record.getReadName(), support);
@@ -186,13 +196,7 @@ public class AssemblyAttributes {
 			.collect(Collectors.joining(ID_COMPONENT_SEPARATOR + ID_COMPONENT_SEPARATOR));
 		record.setAttribute(SamTags.EVIDENCEID, evidenceString);
 		record.setAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS, fragmentString);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
 		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, (float)(support.size() == 0 ? 0.0 : (support.stream().mapToDouble(de -> de.getStrandBias()).sum() / support.size())));
 		// TODO: proper mapq model
 		record.setMappingQuality(maxLocalMapq);
@@ -201,6 +205,8 @@ public class AssemblyAttributes {
 				log.warn(String.format("Sanity check failure: %s has mapq below minimum", record.getReadName()));
 			}
 		}
+		// pad out a default since we don't know any positional information here
+		annotatePerCategorySupport(record, scCount, scQual, rpCount, rpQual);
 	}
 	private static boolean ensureUniqueEvidenceID(String assemblyName, Collection<DirectedEvidence> support) {
 		boolean isUnique = true;
@@ -216,110 +222,95 @@ public class AssemblyAttributes {
 		}
 		return isUnique;
 	}
-	private int asFilteredIntSum(String attr, List<Boolean> filter) {
-		List<Integer> list = AttributeConverter.asIntList(record.getAttribute(attr));
-		return Streams.zip(
-				list.stream(),
-				filter.stream(),
-				(x, supported) -> (Integer)(((boolean) supported) ? x : 0))
-			.mapToInt(x -> x).sum();
+	public enum SupportType {
+		SplitRead,
+		ReadPair,
 	}
-	private float asFilteredFloatSum(String attr, List<Boolean> filter) {
-		List<Double> list = AttributeConverter.asDoubleList(record.getAttribute(attr));
-		return (float)Streams.zip(
-				list.stream(),
-				filter.stream(),
-				(x, supported) -> (Double)(double)(((boolean) supported) ? x : 0))
-			.mapToDouble(x -> x).sum();
+	public int getMinQualPosition(Range<Integer> assemblyContigOffset) {
+		return getSupportingQualScore(assemblyContigOffset, null, null, Math::min).getLeft();
 	}
-	public int getAssemblyTotalReadSupportCount() {
-		return Streams.concat(
-			AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT)).stream(),
-			AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_READPAIR_COUNT)).stream())
-		.mapToInt(x -> x)
-		.sum();
+	public Pair<Integer, Integer> getSupportingReadCount(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<SupportType> support, IntBinaryOperator positionalChoiceOperator) {
+		List<List<int[]>> counts = new ArrayList<>();
+		if (support == null || support.contains(SupportType.ReadPair)) {
+			counts.add(getReadPairSupport().count);
+		}
+		if (support == null || support.contains(SupportType.SplitRead)) {
+			counts.add(getSplitReadSupport().count);
+		}
+		int bestPos = -1;
+		int best = -1;
+		if (counts.size() == 0) {
+			throw new IllegalArgumentException("support must be specified");
+		}
+		for (int i = assemblyContigOffset.lowerEndpoint(); i <= assemblyContigOffset.upperEndpoint(); i++) {
+			int current = 0;
+			for (int j = 0; j < counts.get(0).size(); j++) {
+				if (supportingCategories == null || supportingCategories.contains(j)) {
+					for (List<int[]> list : counts) {
+						int[] arr = list.get(j);
+						if (arr != null && arr.length > i) {
+							current += arr[i];
+						}
+					}
+				}
+			}
+			if (bestPos < 0) {
+				bestPos = i;
+				best = current;
+			} else {
+				int newBest = positionalChoiceOperator.applyAsInt(best, current);
+				if (newBest != best) {
+					bestPos = i;
+					best = newBest;
+				}
+			}
+		}
+		return Pair.of(bestPos, best);
 	}
-	public int getAssemblySupportCount(List<Boolean> supportingCategories) {
-		return getAssemblySupportCountSoftClip(supportingCategories) + getAssemblySupportCountReadPair(supportingCategories);
-	}
-	public int getAssemblySupportCountReadPair(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_READPAIR_COUNT), category, 0);
-	}
-	public int getAssemblyReadPairLengthMax(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX), category, 0);
-	}
-	public int getAssemblySupportCountSoftClip(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT), category, 0);
-	}
-	public int getAssemblyNonSupportingReadPairCount(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT), category, 0);
-	}
-	public int getAssemblyNonSupportingReadPairCount(List<Boolean> supportingCategories) {
-		return asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT, supportingCategories);
-	}
-	public int getAssemblyNonSupportingSoftClipCount(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT), category, 0);
-	}
-	public int getAssemblyNonSupportingSoftClipCount(List<Boolean> supportingCategories) {
-		return asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT, supportingCategories);
-	}
-	public int getAssemblySoftClipLengthTotal(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL), category, 0);
-	}
-	public int getAssemblySoftClipLengthMax(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX), category, 0);
-	}
-	public float getAssemblySupportReadPairQualityScore(int category) {
-		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_READPAIR_QUAL), category, 0);
-	}
-	public float getAssemblySupportSoftClipQualityScore(int category) {
-		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL), category, 0);
-	}
-	public float getAssemblyNonSupportingReadPairQualityScore(int category) {
-		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL), category, 0);
-	}
-	public float getAssemblyNonSupportingReadPairQualityScore(List<Boolean> supportingCategories) {
-		return asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL, supportingCategories);
-	}
-	public float getAssemblyNonSupportingSoftClipQualityScore(int category) {
-		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL), category, 0);
-	}
-	public float getAssemblyNonSupportingSoftClipQualityScore(List<Boolean> supportingCategories) {
-		return asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL, supportingCategories);
-	}
-	public int getAssemblySupportCountReadPair(List<Boolean> supportingCategories) {
-		return asFilteredIntSum(SamTags.ASSEMBLY_READPAIR_COUNT, supportingCategories);
+	public Pair<Integer, Float> getSupportingQualScore(Range<Integer> assemblyContigOffset, List<Boolean> supportingCategories, Set<SupportType> support, DoubleBinaryOperator positionalChoiceOperator) {
+		List<List<float[]>> quals = new ArrayList<>();
+		if (support == null || support.contains(SupportType.ReadPair)) {
+			quals.add(getReadPairSupport().qual);
+		}
+		if (support == null || support.contains(SupportType.SplitRead)) {
+			quals.add(getSplitReadSupport().qual);
+		}
+		int bestPos = -1;
+		float best = -1;
+		if (quals.size() == 0) {
+			throw new IllegalArgumentException("support must be specified");
+		}
+		for (int i = assemblyContigOffset.lowerEndpoint(); i <= assemblyContigOffset.upperEndpoint(); i++) {
+			float current = 0;
+			for (int j = 0; j < quals.get(0).size(); j++) {
+				if (supportingCategories == null || supportingCategories.contains(j)) {
+					for (List<float[]> list : quals) {
+						float[] arr = list.get(j);
+						if (arr != null && arr.length > i) {
+							current += arr[i];
+						}
+					}
+				}
+			}
+			if (bestPos < 0) {
+				bestPos = i;
+				best = current;
+			} else {
+				float newBest = (float)positionalChoiceOperator.applyAsDouble(best, current);
+				if (newBest != best) {
+					bestPos = i;
+				}
+			}
+		}
+		return Pair.of(bestPos, best);
 	}
 	public int getAssemblyReadPairLengthMax() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX)).stream().mapToInt(x -> x).sum();
-	}
-	public int getAssemblySupportCountSoftClip(List<Boolean> supportingCategories) {
-		return asFilteredIntSum(SamTags.ASSEMBLY_SOFTCLIP_COUNT, supportingCategories);
-	}
-	public int getAssemblySoftClipLengthTotal() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL)).stream().mapToInt(x -> x).sum();
-	}
-	public int getAssemblySoftClipLengthMax() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX)).stream().mapToInt(x -> x).sum();
-	}
-	public float getAssemblySupportReadPairQualityScore(List<Boolean> supportingCategories) {
-		return asFilteredFloatSum(SamTags.ASSEMBLY_READPAIR_QUAL, supportingCategories);
-	}
-	public float getAssemblySupportSoftClipQualityScore(List<Boolean> supportingCategories) {
-		return asFilteredFloatSum(SamTags.ASSEMBLY_SOFTCLIP_QUAL, supportingCategories);
-	}
-	public float getAssemblyNonSupportingQualityScore(List<Boolean> supportingCategories) {
-		return asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL, supportingCategories) +
-				asFilteredFloatSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL, supportingCategories);
-	}
-	public int getAssemblyNonSupportingCount(List<Boolean> supportingCategories) {
-		return asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT, supportingCategories) +
-				asFilteredIntSum(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT, supportingCategories);
+		return record.getIntegerAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX);
 	}
 	public BreakendDirection getAssemblyDirection() {
 		Character c = (Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION);
 		if (c == null) return null;
-		return BreakendDirection.fromChar((char)c);
+		return BreakendDirection.fromChar(c);
 	}
 	public double getStrandBias() {
 		return AttributeConverter.asDouble(record.getAttribute(SamTags.ASSEMBLY_STRAND_BIAS), 0);

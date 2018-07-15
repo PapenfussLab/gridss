@@ -1,27 +1,21 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
+import com.google.common.collect.*;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import gridss.cmdline.programgroups.Assembly;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -207,6 +201,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return !(parent.getBreakendSummary() instanceof BreakpointSummary);
 	}
 	public VariantContextDirectedEvidence make() {
+		Map<SingleReadEvidence, AssemblyAttributes> aaLookup = new HashMap<>();
+		Map<SingleReadEvidence, Range<Integer>> minSupportPositionLookup = new HashMap<>();
+		Stream.of(supportingAS.stream(), supportingRAS.stream(), supportingCAS.stream(), supportingBAS.stream())
+			.flatMap(x -> x)
+			.forEach(ass -> {
+				AssemblyAttributes aa =  new AssemblyAttributes(ass.getSAMRecord());
+				int pos = aa.getMinQualPosition(ass.getBreakendReadOffsetInterval());
+				aaLookup.put(ass, aa);
+				minSupportPositionLookup.put(ass, Range.closed(pos, pos));
+			});
+
 		attribute(VcfInfoAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
 		double beQual = supportingBAS.stream().mapToDouble(e -> e.getBreakendQual()).sum() 
 				+ supportingSC.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum()
@@ -231,17 +236,15 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		sumIntAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_COUNT, supportingOEA, e -> 1);
 		
 		// Qual
-		double[] asq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL, supportingAS);
-		double[] rasq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, supportingRAS);
-		double[] casq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, supportingCAS);
-		double[] basq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKEND_ASSEMBLY_QUAL, supportingBAS);
+		double[] asq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL, supportingAS, aaLookup, minSupportPositionLookup);
+		double[] rasq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, supportingRAS, aaLookup, minSupportPositionLookup);
+		double[] casq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, supportingCAS, aaLookup, minSupportPositionLookup);
+		double[] basq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKEND_ASSEMBLY_QUAL, supportingBAS, aaLookup, minSupportPositionLookup);
 		double[] srq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_SPLITREAD_QUAL, supportingSR, e -> e.getBreakpointQual());
 		double[] iq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL, VcfFormatAttributes.BREAKPOINT_INDEL_QUAL, supportingIndel, e -> e.getBreakpointQual());
 		double[] rpq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_READPAIR_QUAL, supportingDP, e -> e.getBreakpointQual());
 		double[] scq = sumDoubleAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_QUAL, VcfFormatAttributes.BREAKEND_SOFTCLIP_QUAL, supportingSC, e -> e.getBreakendQual());
 		double[] umq = sumDoubleAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_QUAL, supportingOEA, e -> e.getBreakendQual());
-		//sumAttr(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT);
-		//sumAttr(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT);
 		sumDoubleAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_QUAL, supportingOEA, e -> e.getBreakendQual());
 		
 		// Non-supporting assemblies
@@ -266,22 +269,42 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		for (int i = 0; i < processContext.getCategoryCount(); i++) {
 			int category = i;
 			asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
-					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountSoftClip(category) : 0)
+					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+						minSupportPositionLookup.get(ass),
+						ImmutableSet.of(category),
+						ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead),
+						Math::min).getRight())
 					.sum();
 			asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
-					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountReadPair(category) : 0)
+					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+							minSupportPositionLookup.get(ass),
+							ImmutableSet.of(category),
+							ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair),
+							Math::min).getRight())
 					.sum();
 			basr[category] = supportingBAS.stream()
-					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountSoftClip(category) : 0)
+					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+							minSupportPositionLookup.get(ass),
+							ImmutableSet.of(category),
+							ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead),
+							Math::min).getRight())
 					.sum();
 			basrp[category] = supportingBAS.stream()
-					.mapToInt(ass -> ass.getCategorySupportBreakdown().get(category) ? new AssemblyAttributes(ass.getSAMRecord()).getAssemblySupportCountReadPair(category) : 0)
+					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+							minSupportPositionLookup.get(ass),
+							ImmutableSet.of(category),
+							ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair),
+							Math::min).getRight())
 					.sum();
 			Set<String> bpfrags = supportingBreakpoint.stream()
 					.map(e -> {
 						if (AssemblyAttributes.isAssembly(e)) {
-							SingleReadEvidence ass = (SingleReadEvidence)e; 
-							return ass.getCategorySupportBreakdown().get(category) ? e.getOriginatingFragmentID(category) : ImmutableList.<String>of();
+							SingleReadEvidence ass = (SingleReadEvidence)e;
+							if (aaLookup.get(ass).getSupportingReadCount(minSupportPositionLookup.get(ass), ImmutableSet.of(category), null, Math::min).getRight() > 0) {
+								return e.getOriginatingFragmentID(category);
+							} else {
+								return ImmutableList.<String>of();
+							}
 						}
 						return e.getOriginatingFragmentID(category); 
 					})
@@ -291,8 +314,12 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			Set<String> befrags = supportingBreakend.stream()
 					.map(e -> {
 						if (AssemblyAttributes.isAssembly(e)) {
-							SingleReadEvidence ass = (SingleReadEvidence)e; 
-							return ass.getCategorySupportBreakdown().get(category) ? e.getOriginatingFragmentID(category) : ImmutableList.<String>of();
+							SingleReadEvidence ass = (SingleReadEvidence)e;
+							if (aaLookup.get(ass).getSupportingReadCount(minSupportPositionLookup.get(ass), ImmutableSet.of(category), null, Math::min).getRight() > 0) {
+								return e.getOriginatingFragmentID(category);
+							} else {
+								return ImmutableList.<String>of();
+							}
 						}
 						return e.getOriginatingFragmentID(category); 
 					})
@@ -398,18 +425,23 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	 * Note that the sum of the contributing breakend scores is not necessarily the same as the assembly breakpoint score.
 	 * This means that each assembly must be individually pro-rataed. 
 	 */
-	private <T extends SingleReadEvidence> double[] prorataAssemblyQualBreakdown(VcfInfoAttributes infoAttr, VcfFormatAttributes attr, List<T> assemblies) {
+	private <T extends SingleReadEvidence> double[] prorataAssemblyQualBreakdown(
+			VcfInfoAttributes infoAttr, VcfFormatAttributes attr, List<T> assemblies,
+			Map<SingleReadEvidence, AssemblyAttributes> aaLookup,
+			Map<SingleReadEvidence, Range<Integer>> minSupportPositionLookup) {
 		double totalAssQual = 0;
 		double[] prorata = new double[processContext.getCategoryCount()];
 		for (SingleReadEvidence ass : assemblies) {
-			List<Boolean> supportingCategories = ass.getCategorySupportBreakdown();
-			AssemblyAttributes aa = new AssemblyAttributes(ass.getSAMRecord());
+			Range<Integer> r = minSupportPositionLookup.get(ass);
+			AssemblyAttributes aa = aaLookup.get(ass);
 			double assQual = (ass instanceof DirectedBreakpoint) ? ((DirectedBreakpoint)ass).getBreakpointQual() : ass.getBreakendQual();
-			double beQual = aa.getAssemblySupportSoftClipQualityScore(supportingCategories) + aa.getAssemblySupportReadPairQualityScore(supportingCategories);
+			double[] breakdownQual = new double[processContext.getCategoryCount()];
+			for (int i = 0; i < breakdownQual.length; i++) {
+				breakdownQual[i] = aa.getSupportingReadCount(r, ImmutableSet.of(i), null, Math::min).getRight();
+			}
+			double breakdownTotal = DoubleStream.of(breakdownQual).sum();
 			for (int i = 0; i < prorata.length; i++) {
-				if (supportingCategories.get(i)) {
-					prorata[i] += assQual * (aa.getAssemblySupportSoftClipQualityScore(i) + aa.getAssemblySupportReadPairQualityScore(i)) / beQual;
-				}
+				prorata[i] += assQual * (breakdownQual[i] / breakdownTotal);
 			}
 			totalAssQual += assQual;
 		}

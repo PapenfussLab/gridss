@@ -12,8 +12,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
@@ -59,7 +61,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
-	 * @param intermediateFileLocation location to store intermediate files
 	 */
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
 		super(processContext, assemblyFile, null, -1);
@@ -84,12 +85,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		List<File> assembledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();
 		for (int i = 0; i < chunks.size(); i++) {
-			QueryInterval[] chunck = chunks.get(i);
+			QueryInterval[] chunk = chunks.get(i);
 			File f = getContext().getFileSystemContext().getAssemblyChunkBam(getFile(), i);
 			int chunkNumber = i;
 			assembledChunk.add(f);
 			if (!f.exists()) {
-				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunkNumber, chunck); return null; }));
+				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunkNumber, chunk); return null; }));
 			}
 			
 		}
@@ -285,15 +286,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					breakendLength));
 			return true;
 		}
-		List<Boolean> allCategories = Stream.generate(() -> true)
-				.limit(getContext().getCategoryCount())
-				.collect(Collectors.toList());
 		// too few reads
-		if (attr.getAssemblySupportCount(allCategories) < ap.minReads) {
+		if (attr.getSupportingReadCount(Range.closed(0, asm.getReadLength()), null, null, Math::max).getRight() < ap.minReads) {
 			return true;
 		}
 		// unanchored assembly that not actually any longer than any of the reads that were assembled together
-		if (attr.getAssemblySupportCountSoftClip(allCategories) == 0 && breakendLength <= attr.getAssemblyReadPairLengthMax()) {
+		if (attr.getSupportingReadCount(Range.closed(0, asm.getReadLength()), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::max).getRight() == 0
+				&& breakendLength <= attr.getAssemblyReadPairLengthMax()) {
 			// assembly length = 1 read
 			// at best, we've just error corrected a single reads with other reads.
 			// at worst, we've created a misassembly.

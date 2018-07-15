@@ -27,11 +27,6 @@ public class SamTags {
 	 */
 	public static final String ASSEMBLY_FILTERS = "af";
 	/**
-	 * CIGAR of per category assembly coverage. = indicates coverage from that category for
-	 * a breakpoint immediately before the given base, X indicates lack of coverage.
-	 */
-	public static final String ASSEMBLY_CATEGORY_COVERAGE_CIGAR = "cc";
-	/**
 	 * EvidenceID of assembly components
 	 */
 	public static final String EVIDENCEID = "ez";
@@ -47,35 +42,25 @@ public class SamTags {
 	public static final String ASSEMBLY_READPAIR_COUNT = "dc";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
 	public static final String ASSEMBLY_STRAND_BIAS = "sb";
-	//public static final String ASSEMBLY_SOFTCLIP_REMOTE_COUNT = "rc";
-	public static final String ASSEMBLY_NONSUPPORTING_READPAIR_COUNT = "ec";
-	public static final String ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT = "tc";
 	public static final String ASSEMBLY_READPAIR_QUAL = "dq";
 	public static final String ASSEMBLY_SOFTCLIP_QUAL = "sq";
-	public static final String ASSEMBLY_NONSUPPORTING_READPAIR_QUAL = "eq";
-	public static final String ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL = "tq";
 	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "dl";
-	// other fields no longer in active use
-	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "ds";
-	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "ms";
+	/***
+	 * Pair of integers indicating how many bases at the start/end of the contig were truncated
+	 * to ensure the contig anchor did not overrun the contig bounds
+	 */
+	public static final String ASSEMBLY_ANCHOR_TRUNCATION = "at";
 	public static final List<String> ASSEMBLY_ANNOTATIONS = ImmutableList.of(
 			ASSEMBLY_FILTERS,
 			EVIDENCEID,
 			ASSEMBLY_DIRECTION,
 			UNANCHORED,
-			ASSEMBLY_CATEGORY_COVERAGE_CIGAR,
 			ASSEMBLY_READPAIR_COUNT,
 			ASSEMBLY_SOFTCLIP_COUNT,
-			//ASSEMBLY_SOFTCLIP_REMOTE_COUNT,
-			ASSEMBLY_NONSUPPORTING_READPAIR_COUNT,
-			ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT,
 			ASSEMBLY_READPAIR_QUAL,
 			ASSEMBLY_SOFTCLIP_QUAL,
-			ASSEMBLY_NONSUPPORTING_READPAIR_QUAL,
-			ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL,
 			ASSEMBLY_READPAIR_LENGTH_MAX,
-			ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX,
-			ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL,
-			ASSEMBLY_STRAND_BIAS
+			ASSEMBLY_STRAND_BIAS,
+			ASSEMBLY_ANCHOR_TRUNCATION
 			);
 }
