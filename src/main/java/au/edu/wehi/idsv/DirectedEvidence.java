@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import java.util.Collection;
 import java.util.List;
 
 import com.google.common.collect.Ordering;
@@ -44,7 +45,7 @@ public interface DirectedEvidence {
 	 * Unique identifier for the source DNA fragments.
 	 * @return distinct read names of supporting reads
 	 */
-	List<String> getOriginatingFragmentID(int category);
+	Collection<String> getOriginatingFragmentID(int category);
 	/**
 	 * Source of this evidence
 	 * @return Source providing this evidence
@@ -60,12 +61,6 @@ public interface DirectedEvidence {
 	 * @return true if the breakend is known exactly, false otherwise
 	 */
 	boolean isBreakendExact();
-	/**
-	 * Indicates whether this any reads from the originating template
-	 * have be aligned to multiple (non-chimeric) locations.
-	 * @return
-	 */
-	boolean isFromMultimappingFragment();
 	/**
 	 * Strand bias of evidence.
 	 * 1 indicates that breakend bases would be aligned to the positive strand if the reference was changed to the variant allele.
@@ -87,23 +82,24 @@ public interface DirectedEvidence {
 	 * @return Name of associated assembly.
 	 */
 	String getAssociatedAssemblyName();
-	static final Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
+	Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
 			return BreakendSummary.ByEndStart.nullsFirst().compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
 		}
 	};
-	static final Ordering<DirectedEvidence> ByStartEnd = new Ordering<DirectedEvidence>() {
+	Ordering<DirectedEvidence> ByStartEnd = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
 			return BreakendSummary.ByStartEnd.nullsFirst().compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
 		}
 	};
-	static final Ordering<DirectedEvidence> ByBreakendQual = new Ordering<DirectedEvidence>() {
+	Ordering<DirectedEvidence> ByBreakendQual = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
 			return Doubles.compare(arg0.getBreakendQual(), arg1.getBreakendQual());
 		}
 	};
-	static final Ordering<DirectedEvidence> ByBreakendQualDesc = ByBreakendQual.reverse();
+	Ordering<DirectedEvidence> ByBreakendQualDesc = ByBreakendQual.reverse();
+	Ordering<DirectedEvidence> ByEvidenceID = Ordering.natural().onResultOf(de -> de.getEvidenceID());
 }

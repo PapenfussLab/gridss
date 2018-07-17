@@ -129,11 +129,11 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	private float scoreAssembly() {
 		if (getBreakendSequence().length == 0) return 0;
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
-		int pos = attr.getMinQualPosition(getBreakendReadOffsetInterval());
-		int rp = attr.getSupportingReadCount(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight();
-		double rpq = attr.getSupportingQualScore(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight();
-		int sc = attr.getSupportingReadCount(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight();
-		double scq = attr.getSupportingQualScore(Range.closed(pos, pos), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight();
+		int pos = attr.getMinQualPosition(getBreakendReadOffsetInterval(), null, null);
+		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair));
+		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair));
+		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read));
+		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read));
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(
 				rp, rpq,
 				sc, scq,

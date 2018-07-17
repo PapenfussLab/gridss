@@ -1,56 +1,22 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.debruijn.ContigCategorySupportHelper;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MessageThrottler;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
-import java.util.function.DoubleBinaryOperator;
-import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class AssemblyAttributes {
 	private static final Log log = Log.getInstance(AssemblyAttributes.class);
 	private static final String ID_COMPONENT_SEPARATOR = " ";
 	private final SAMRecord record;
-	private HashSet<String> evidenceIDs = null;
-	private class Support {
-		private final List<int[]> count;
-		private final List<float[]> qual;
-		public Support(SAMRecord record, String countAttr, String qualAttr) {
-			int expectedLength = record.getReadLength() + 1;
-			if (isUnanchored(record)) {
-				expectedLength = Math.max(SAMRecordUtil.getStartClipLength(record), SAMRecordUtil.getEndClipLength(record)) + 1;
-			}
-			this.count = ContigCategorySupportHelper.unpackInts(record.getSignedIntArrayAttribute(countAttr), expectedLength);
-			this.qual = ContigCategorySupportHelper.unpackFloats(record.getFloatArrayAttribute(qualAttr), expectedLength);
-		}
-	}
-	private Support srSupport = null;
-	private Support rpSupport = null;
-	private Support getSplitReadSupport() {
-		if (srSupport == null) {
-			srSupport = new Support(record, SamTags.ASSEMBLY_SOFTCLIP_COUNT, SamTags.ASSEMBLY_SOFTCLIP_QUAL);
-		}
-		return srSupport;
-	}
-	private Support getReadPairSupport() {
-		if (rpSupport == null) {
-			rpSupport = new Support(record, SamTags.ASSEMBLY_READPAIR_COUNT, SamTags.ASSEMBLY_READPAIR_QUAL);
-		}
-		return rpSupport;
-	}
+	private Collection<AssemblyEvidenceSupport> support = null;
 	public static boolean isAssembly(SAMRecord record) {
-		return record.getAttribute(SamTags.EVIDENCEID) != null;
+		return record.getAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID) != null;
 	}
 	public static boolean isUnanchored(SAMRecord record) {
 		return record.hasAttribute(SamTags.UNANCHORED);
@@ -63,6 +29,9 @@ public class AssemblyAttributes {
 		return false;
 	}
 	public AssemblyAttributes(SAMRecord record) {
+		if (!isAssembly(record)) {
+			throw new IllegalArgumentException("record is not an assembly.");
+		}
 		this.record = record;
 	}
 	public AssemblyAttributes(SingleReadEvidence record) {
@@ -77,136 +46,107 @@ public class AssemblyAttributes {
 	 * @return true if the record is likely part of the breakend, false if definitely not
 	 */
 	public boolean isPartOfAssembly(DirectedEvidence e) {
-		return getEvidenceIDs().contains(e.getEvidenceID());
+		return getSupport().stream().anyMatch(ee -> ee.getEvidenceID().equals(e.getEvidenceID()));
 	}
-	public Collection<String> getEvidenceIDs() {
-		if (evidenceIDs == null) {
-			String encoded = record.getStringAttribute(SamTags.EVIDENCEID);
-			if (encoded == null) {
-				throw new IllegalStateException("Unable to get constituent evidenceIDs from assembly with evidence tracking disabled");
+	private Collection<AssemblyEvidenceSupport> getSupport() {
+		if (support == null) {
+			if (!record.hasAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY)) {
+				String msg = "Fatal error: GRIDSS assembly annotation format has changed in version 1.8. Please delete the assembly bam file, assembly working directory and regenerate.";
+				log.error(msg);
+				throw new RuntimeException(msg);
 			}
-			String[] ids = encoded.split(ID_COMPONENT_SEPARATOR);
-			evidenceIDs = new HashSet<String>(Arrays.asList(ids));
-			evidenceIDs.remove("");
+			byte[] type = record.getSignedByteArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE);
+			int[] category = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY);
+			int[] intervalStart = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START);
+			int[] intervalEnd = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END);
+			float[] qual = record.getFloatArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL);
+			String[] evidenceId = record.getStringAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID).split(ID_COMPONENT_SEPARATOR);
+			String[] fragmentId = record.getStringAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID).split(ID_COMPONENT_SEPARATOR);
+
+			List<AssemblyEvidenceSupport> support = new ArrayList<>();
+			for (int i = 0; i < category.length; i++) {
+				support.add(new AssemblyEvidenceSupport(
+						AssemblyEvidenceSupport.SupportType.value(type[i]),
+						Range.closed(intervalStart[i], intervalEnd[i]),
+						evidenceId[i],
+						fragmentId[i],
+						category[i],
+						qual[i]
+				));
+			}
 		}
-		return evidenceIDs;
+		return support;
 	}
-	public List<String> getOriginatingFragmentID() {
-		String encoded = record.getStringAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS);
-		if (encoded == null) {
-			return ImmutableList.of();
+	private static int maxReadLength(Collection<DirectedEvidence> support) {
+		return support.stream()
+				.mapToInt(e -> e instanceof NonReferenceReadPair ? ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength() : ((SingleReadEvidence)e).getSAMRecord().getReadLength())
+				.max()
+				.orElse(0);
+	}
+	private static float strandBias(Collection<DirectedEvidence> support) {
+		if (support.size() == 0) {
+			return 0;
 		}
-		return toList(encoded, ID_COMPONENT_SEPARATOR);
+		return (float)support.stream()
+				.mapToDouble(e -> e.getStrandBias())
+				.sum() / support.size();
 	}
-	private static final List<String> toList(String str, String separator) {
-		return Arrays.stream(str.split(ID_COMPONENT_SEPARATOR))
-				.filter(s -> StringUtils.isNotEmpty(s))
-				.collect(Collectors.toList());
-	}
-	/**
-	 * Breakdown of DNA fragment support by category
-	 * @param category
-	 * @return
-	 */
-	public List<String> getOriginatingFragmentID(int category) {
-		String encoded = record.getStringAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS);
-		if (encoded == null) {
-			return ImmutableList.of();
-		}
-		String[] categoryString = encoded.split(ID_COMPONENT_SEPARATOR + ID_COMPONENT_SEPARATOR);
-		if (categoryString.length <= category) {
-			return ImmutableList.of();
-		}
-		return Arrays.stream(categoryString[category].split(ID_COMPONENT_SEPARATOR))
-				.filter(s -> StringUtils.isNotEmpty(s))
-				.collect(Collectors.toList());
-	}
-	public static void annotatePerBasePerCategorySupport(
-			SAMRecord record,
-			List<int[]> scCount,
-			List<float[]> scQual,
-			List<int[]> rpCount,
-			List<float[]> rpQual) {
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, ContigCategorySupportHelper.packInts(scCount));
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, ContigCategorySupportHelper.packInts(rpCount));
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, ContigCategorySupportHelper.packFloats(scQual));
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, ContigCategorySupportHelper.packFloats(rpQual));
-	}
-	public static void annotatePerCategorySupport(
-			SAMRecord record,
-			List<Integer> scCount,
-			List<Float> scQual,
-			List<Integer> rpCount,
-			List<Float> rpQual) {
-		final int expectedLength = isUnanchored(record) ? Math.max(SAMRecordUtil.getStartClipLength(record), SAMRecordUtil.getEndClipLength(record)) + 1 : record.getReadLength() + 1;
-		annotatePerBasePerCategorySupport(
-			record,
-			scCount.stream().map(x -> { int[] arr = new int[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()),
-			scQual.stream().map(x -> { float[] arr = new float[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()),
-			rpCount.stream().map(x -> { int[] arr = new int[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()),
-			rpQual.stream().map(x -> { float[] arr = new float[expectedLength]; Arrays.fill(arr, x); return arr; }).collect(Collectors.toList()));
+	private static int maxLocalMapq(Collection<DirectedEvidence> support) {
+		return support.stream()
+				.mapToInt(e -> e.getLocalMapq())
+				.max()
+				.orElse(0);
 	}
 	/**
 	 * Annotates an assembly with summary information regarding the reads used to produce the assembly
 	 */
-	public static void annotateAssembly(ProcessingContext context, SAMRecord record, Collection<DirectedEvidence> support) {
+	public static void annotateAssembly(ProcessingContext context, SAMRecord record, List<DirectedEvidence> support, List<AssemblyEvidenceSupport> aes) {
 		if (support == null) {
 			if (!MessageThrottler.Current.shouldSupress(log, "assemblies with no support")) {
 				log.error("No support for assembly " + record.getReadName());
 			}
 			support = Collections.emptyList();
 		}
-		int maxLocalMapq = 0;
-		int rpMaxLen = 0;
-		List<Integer> scCount = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0));
-		List<Float> scQual = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0f));
-		List<Integer> rpCount = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0));
-		List<Float> rpQual = Lists.newArrayList(Collections.nCopies(context.getCategoryCount(), 0f));
-		for (DirectedEvidence e : support) {
-			int category = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
-			float qual = e.getBreakendQual();
-			assert(e != null);
-			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
-			if (e instanceof NonReferenceReadPair) {
-				rpMaxLen = Math.max(rpMaxLen, ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
-				rpCount.set(category, rpCount.get(category) + 1);
-				rpQual.set(category, rpQual.get(category) + qual);
-			} else {
-				scCount.set(category, scCount.get(category) + 1);
-				scQual.set(category, scQual.get(category) + qual);
+		if (support.size() != aes.size()) {
+			throw new IllegalArgumentException("support and aes sizes do not match");
+		}
+		byte[] type = new byte[support.size()];
+		int[] category = new int[support.size()];
+		int[] intervalStart = new int[support.size()];
+		int[] intervalEnd = new int[support.size()];
+		float[] qual = new float[support.size()];
+		StringBuilder evidenceId = new StringBuilder();
+		StringBuilder fragmentId = new StringBuilder();
+		for (int i = 0; i < aes.size(); i++) {
+			AssemblyEvidenceSupport s = aes.get(i);
+			category[i] = s.getCategory();
+			intervalStart[i] = s.getAssemblyContigOffset().lowerEndpoint();
+			intervalEnd[i] = s.getAssemblyContigOffset().upperEndpoint();
+			qual[i] = s.getQual();
+			if (i != 0) {
+				evidenceId.append(ID_COMPONENT_SEPARATOR);
+				fragmentId.append(ID_COMPONENT_SEPARATOR);
 			}
+			evidenceId.append(s.getEvidenceID());
+			evidenceId.append(s.getFragmentID());
 		}
 		ensureUniqueEvidenceID(record.getReadName(), support);
-		
-		Map<Integer, List<DirectedEvidence>> evidenceByCategory = support.stream()
-				.collect(Collectors.groupingBy(e -> ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory()));
-		String evidenceString = IntStream.range(0, evidenceByCategory.keySet().stream().mapToInt(x -> x).max().orElse(0) + 1)
-			.mapToObj(i -> evidenceByCategory.get(i) == null ? "" : evidenceByCategory.get(i).stream()
-					.map(e -> e.getEvidenceID())
-					.distinct()
-					.sorted()
-					.collect(Collectors.joining(ID_COMPONENT_SEPARATOR)))
-			.collect(Collectors.joining(ID_COMPONENT_SEPARATOR + ID_COMPONENT_SEPARATOR));
-		String fragmentString = IntStream.range(0, evidenceByCategory.keySet().stream().mapToInt(x -> x).max().orElse(0) + 1)
-			.mapToObj(i -> evidenceByCategory.get(i) == null ? "" : evidenceByCategory.get(i).stream()
-					.flatMap(x -> x.getOriginatingFragmentID(i).stream())
-					.distinct()
-					.sorted()
-					.collect(Collectors.joining(ID_COMPONENT_SEPARATOR)))
-			.collect(Collectors.joining(ID_COMPONENT_SEPARATOR + ID_COMPONENT_SEPARATOR));
-		record.setAttribute(SamTags.EVIDENCEID, evidenceString);
-		record.setAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS, fragmentString);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
-		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, (float)(support.size() == 0 ? 0.0 : (support.stream().mapToDouble(de -> de.getStrandBias()).sum() / support.size())));
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, type);
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, category);
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, evidenceId.toString());
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, fragmentId.toString());
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, intervalStart);
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, intervalEnd);
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, qual);
+		record.setAttribute(SamTags.ASSEMBLY_MAX_READ_LENGTH, maxReadLength(support));
+		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, strandBias(support));
 		// TODO: proper mapq model
-		record.setMappingQuality(maxLocalMapq);
+		record.setMappingQuality(maxLocalMapq(support));
 		if (record.getMappingQuality() < context.getConfig().minMapq) {
 			if (!MessageThrottler.Current.shouldSupress(log, "below minimum mapq")) {
 				log.warn(String.format("Sanity check failure: %s has mapq below minimum", record.getReadName()));
 			}
 		}
-		// pad out a default since we don't know any positional information here
-		annotatePerCategorySupport(record, scCount, scQual, rpCount, rpQual);
 	}
 	private static boolean ensureUniqueEvidenceID(String assemblyName, Collection<DirectedEvidence> support) {
 		boolean isUnique = true;
@@ -222,90 +162,52 @@ public class AssemblyAttributes {
 		}
 		return isUnique;
 	}
-	public enum SupportType {
-		SplitRead,
-		ReadPair,
+	private Stream<AssemblyEvidenceSupport> filterSupport(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		Stream<AssemblyEvidenceSupport> stream = getSupport().stream();
+		if (assemblyContigOffset != null) {
+			stream = stream.filter(s -> s.getAssemblyContigOffset().isConnected(assemblyContigOffset));
+		}
+		if (supportingCategories != null) {
+			stream = stream.filter(s -> supportingCategories.contains(s.getCategory()));
+		}
+		if (supportTypes != null) {
+			stream = stream.filter(s -> supportTypes.contains(s.getSupportType()));
+		}
+		return stream;
 	}
-	public int getMinQualPosition(Range<Integer> assemblyContigOffset) {
-		return getSupportingQualScore(assemblyContigOffset, null, null, Math::min).getLeft();
+	public Collection<String> getEvidenceIDs(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		return filterSupport(assemblyContigOffset, supportingCategories, supportTypes)
+				.map(s -> s.getEvidenceID())
+				.collect(Collectors.toList());
 	}
-	public Pair<Integer, Integer> getSupportingReadCount(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<SupportType> support, IntBinaryOperator positionalChoiceOperator) {
-		List<List<int[]>> counts = new ArrayList<>();
-		if (support == null || support.contains(SupportType.ReadPair)) {
-			counts.add(getReadPairSupport().count);
+	public Set<String> getOriginatingFragmentID(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		return filterSupport(assemblyContigOffset, supportingCategories, supportTypes)
+				.map(s -> s.getFragmentID())
+				.collect(Collectors.toSet());
+	}
+	public int getMinQualPosition(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		if (assemblyContigOffset == null) {
+			throw new NullPointerException("assemblyContigOffset is required.");
 		}
-		if (support == null || support.contains(SupportType.SplitRead)) {
-			counts.add(getSplitReadSupport().count);
-		}
-		int bestPos = -1;
-		int best = -1;
-		if (counts.size() == 0) {
-			throw new IllegalArgumentException("support must be specified");
-		}
-		for (int i = assemblyContigOffset.lowerEndpoint(); i <= assemblyContigOffset.upperEndpoint(); i++) {
-			int current = 0;
-			for (int j = 0; j < counts.get(0).size(); j++) {
-				if (supportingCategories == null || supportingCategories.contains(j)) {
-					for (List<int[]> list : counts) {
-						int[] arr = list.get(j);
-						if (arr != null && arr.length > i) {
-							current += arr[i];
-						}
-					}
-				}
-			}
-			if (bestPos < 0) {
-				bestPos = i;
+		float best = getSupportingQualScore(assemblyContigOffset.lowerEndpoint(), supportingCategories, supportTypes);
+		int bestPos = assemblyContigOffset.lowerEndpoint();
+		for (int i = assemblyContigOffset.lowerEndpoint() + 1; i <= assemblyContigOffset.upperEndpoint(); i++) {
+			float current = getSupportingQualScore(i, null, null);
+			if (current > best) {
 				best = current;
-			} else {
-				int newBest = positionalChoiceOperator.applyAsInt(best, current);
-				if (newBest != best) {
-					bestPos = i;
-					best = newBest;
-				}
-			}
-		}
-		return Pair.of(bestPos, best);
-	}
-	public Pair<Integer, Float> getSupportingQualScore(Range<Integer> assemblyContigOffset, List<Boolean> supportingCategories, Set<SupportType> support, DoubleBinaryOperator positionalChoiceOperator) {
-		List<List<float[]>> quals = new ArrayList<>();
-		if (support == null || support.contains(SupportType.ReadPair)) {
-			quals.add(getReadPairSupport().qual);
-		}
-		if (support == null || support.contains(SupportType.SplitRead)) {
-			quals.add(getSplitReadSupport().qual);
-		}
-		int bestPos = -1;
-		float best = -1;
-		if (quals.size() == 0) {
-			throw new IllegalArgumentException("support must be specified");
-		}
-		for (int i = assemblyContigOffset.lowerEndpoint(); i <= assemblyContigOffset.upperEndpoint(); i++) {
-			float current = 0;
-			for (int j = 0; j < quals.get(0).size(); j++) {
-				if (supportingCategories == null || supportingCategories.contains(j)) {
-					for (List<float[]> list : quals) {
-						float[] arr = list.get(j);
-						if (arr != null && arr.length > i) {
-							current += arr[i];
-						}
-					}
-				}
-			}
-			if (bestPos < 0) {
 				bestPos = i;
-				best = current;
-			} else {
-				float newBest = (float)positionalChoiceOperator.applyAsDouble(best, current);
-				if (newBest != best) {
-					bestPos = i;
-				}
 			}
 		}
-		return Pair.of(bestPos, best);
+		return bestPos;
 	}
-	public int getAssemblyReadPairLengthMax() {
-		return record.getIntegerAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX);
+	public int getSupportingReadCount(int assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		return (int)filterSupport(Range.closed(assemblyContigOffset, assemblyContigOffset), supportingCategories, supportTypes).count();
+	}
+	public float getSupportingQualScore(int assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		return (float)filterSupport(Range.closed(assemblyContigOffset, assemblyContigOffset), supportingCategories, supportTypes).mapToDouble(s -> s.getQual()).sum();
+	}
+	public int getAssemblyMaxReadLength() {
+		return record.getIntegerAttribute(SamTags.ASSEMBLY_MAX_READ_LENGTH);
 	}
 	public BreakendDirection getAssemblyDirection() {
 		Character c = (Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION);

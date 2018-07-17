@@ -310,10 +310,6 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		throw new IllegalStateException("Unknown read pair orientation");
 	}
 	@Override
-	public boolean isFromMultimappingFragment() {
-		return local.getAttribute(SamTags.MULTIMAPPING_FRAGMENT) != null;
-	}
-	@Override
 	public List<String> getOriginatingFragmentID(int category) {
 		return source.getSourceCategory() == category ? ImmutableList.of(local.getReadName()) : ImmutableList.of();
 	}

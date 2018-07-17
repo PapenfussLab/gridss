@@ -202,14 +202,14 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	public VariantContextDirectedEvidence make() {
 		Map<SingleReadEvidence, AssemblyAttributes> aaLookup = new HashMap<>();
-		Map<SingleReadEvidence, Range<Integer>> minSupportPositionLookup = new HashMap<>();
+		Map<SingleReadEvidence, Integer> minSupportPositionLookup = new HashMap<>();
 		Stream.of(supportingAS.stream(), supportingRAS.stream(), supportingCAS.stream(), supportingBAS.stream())
 			.flatMap(x -> x)
 			.forEach(ass -> {
 				AssemblyAttributes aa =  new AssemblyAttributes(ass.getSAMRecord());
-				int pos = aa.getMinQualPosition(ass.getBreakendReadOffsetInterval());
+				int pos = aa.getMinQualPosition(ass.getBreakendReadOffsetInterval(), null, null);
 				aaLookup.put(ass, aa);
-				minSupportPositionLookup.put(ass, Range.closed(pos, pos));
+				minSupportPositionLookup.put(ass, pos);
 			});
 
 		attribute(VcfInfoAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
@@ -272,39 +272,31 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 						minSupportPositionLookup.get(ass),
 						ImmutableSet.of(category),
-						ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead),
-						Math::min).getRight())
+						ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
 					.sum();
 			asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 							minSupportPositionLookup.get(ass),
 							ImmutableSet.of(category),
-							ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair),
-							Math::min).getRight())
+							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
 					.sum();
 			basr[category] = supportingBAS.stream()
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 							minSupportPositionLookup.get(ass),
 							ImmutableSet.of(category),
-							ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead),
-							Math::min).getRight())
+							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
 					.sum();
 			basrp[category] = supportingBAS.stream()
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 							minSupportPositionLookup.get(ass),
 							ImmutableSet.of(category),
-							ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair),
-							Math::min).getRight())
+							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
 					.sum();
 			Set<String> bpfrags = supportingBreakpoint.stream()
 					.map(e -> {
 						if (AssemblyAttributes.isAssembly(e)) {
 							SingleReadEvidence ass = (SingleReadEvidence)e;
-							if (aaLookup.get(ass).getSupportingReadCount(minSupportPositionLookup.get(ass), ImmutableSet.of(category), null, Math::min).getRight() > 0) {
-								return e.getOriginatingFragmentID(category);
-							} else {
-								return ImmutableList.<String>of();
-							}
+							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(minSupportPositionLookup.get(ass), minSupportPositionLookup.get(ass)), ImmutableSet.of(category), null);
 						}
 						return e.getOriginatingFragmentID(category); 
 					})
@@ -315,11 +307,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.map(e -> {
 						if (AssemblyAttributes.isAssembly(e)) {
 							SingleReadEvidence ass = (SingleReadEvidence)e;
-							if (aaLookup.get(ass).getSupportingReadCount(minSupportPositionLookup.get(ass), ImmutableSet.of(category), null, Math::min).getRight() > 0) {
-								return e.getOriginatingFragmentID(category);
-							} else {
-								return ImmutableList.<String>of();
-							}
+							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(minSupportPositionLookup.get(ass), minSupportPositionLookup.get(ass)), ImmutableSet.of(category), null);
 						}
 						return e.getOriginatingFragmentID(category); 
 					})
@@ -428,16 +416,16 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private <T extends SingleReadEvidence> double[] prorataAssemblyQualBreakdown(
 			VcfInfoAttributes infoAttr, VcfFormatAttributes attr, List<T> assemblies,
 			Map<SingleReadEvidence, AssemblyAttributes> aaLookup,
-			Map<SingleReadEvidence, Range<Integer>> minSupportPositionLookup) {
+			Map<SingleReadEvidence, Integer> minSupportPositionLookup) {
 		double totalAssQual = 0;
 		double[] prorata = new double[processContext.getCategoryCount()];
 		for (SingleReadEvidence ass : assemblies) {
-			Range<Integer> r = minSupportPositionLookup.get(ass);
+			int offset = minSupportPositionLookup.get(ass);
 			AssemblyAttributes aa = aaLookup.get(ass);
 			double assQual = (ass instanceof DirectedBreakpoint) ? ((DirectedBreakpoint)ass).getBreakpointQual() : ass.getBreakendQual();
 			double[] breakdownQual = new double[processContext.getCategoryCount()];
 			for (int i = 0; i < breakdownQual.length; i++) {
-				breakdownQual[i] = aa.getSupportingReadCount(r, ImmutableSet.of(i), null, Math::min).getRight();
+				breakdownQual[i] = aa.getSupportingQualScore(offset, ImmutableSet.of(i), null);
 			}
 			double breakdownTotal = DoubleStream.of(breakdownQual).sum();
 			for (int i = 0; i < prorata.length; i++) {

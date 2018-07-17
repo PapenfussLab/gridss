@@ -71,8 +71,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			SAMTag.Q2.name(),
 			SAMTag.R2.name(),
 			SAMTag.MC.name(),
-			SAMTag.MQ.name(),
-			SamTags.MULTIMAPPING_FRAGMENT);
+			SAMTag.MQ.name());
 	@Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");

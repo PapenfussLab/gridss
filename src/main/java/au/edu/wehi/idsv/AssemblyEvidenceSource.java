@@ -287,12 +287,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			return true;
 		}
 		// too few reads
-		if (attr.getSupportingReadCount(Range.closed(0, asm.getReadLength()), null, null, Math::max).getRight() < ap.minReads) {
+		if (attr.getOriginatingFragmentID(null, null, null).size() < ap.minReads) {
 			return true;
 		}
-		// unanchored assembly that not actually any longer than any of the reads that were assembled together
-		if (attr.getSupportingReadCount(Range.closed(0, asm.getReadLength()), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::max).getRight() == 0
-				&& breakendLength <= attr.getAssemblyReadPairLengthMax()) {
+		// unanchored assembly that not actually any longer than any of the reads that were assembled
+		if (AssemblyAttributes.isUnanchored(asm) && breakendLength <= attr.getAssemblyMaxReadLength()) {
 			// assembly length = 1 read
 			// at best, we've just error corrected a single reads with other reads.
 			// at worst, we've created a misassembly.

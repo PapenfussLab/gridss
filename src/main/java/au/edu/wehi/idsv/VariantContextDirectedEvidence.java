@@ -175,10 +175,6 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		return null;
 	}
 	@Override
-	public boolean isFromMultimappingFragment() {
-		throw new UnsupportedOperationException();
-	}
-	@Override
 	public List<String> getOriginatingFragmentID(int category) {
 		return null;
 	}

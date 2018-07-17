@@ -2,29 +2,14 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.*;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import com.google.common.collect.*;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -39,10 +24,8 @@ import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.ContigStats
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -471,7 +454,15 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		quals = Arrays.copyOfRange(quals, startBasesToTrim, quals.length - endingBasesToTrim);
 		
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
-		List<DirectedEvidence> evidenceIds = evidence.stream().map(e -> e.evidence()).collect(Collectors.toList());
+		List<DirectedEvidence> evidenceIds = evidence.stream()
+				.map(e -> e.evidence())
+				.sorted(DirectedEvidence.ByEvidenceID) // ensure stable ordering when we write the SAM record annotations
+				.collect(Collectors.toList());
+		SupportLookup supportLookup = new SupportLookup(fullContig);
+		List<AssemblyEvidenceSupport> supportList = evidence.stream()
+				.map(e -> new AssemblyEvidenceSupport(e.evidence(), supportLookup.supportInterval(e)).adjustForAssemblyTruncation(startBasesToTrim))
+				.collect(Collectors.toList());
+
 		SAMRecord assembledContig;
 		if (startingAnchor.size() == 0 && endingAnchor.size() == 0) {
 			assert(startBasesToTrim == 0);
@@ -483,7 +474,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					evidence.stream().map(e -> ScalingHelper.toScaledWeight(e.evidenceQuality())).collect(Collectors.toList()));
 				assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes, assemblyNameGenerator,
 						be,
-						evidenceIds,
+						evidenceIds, supportList,
 						bases, quals);
 				if (evidence.stream().anyMatch(e -> e.isAnchored())) {
 					log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getReadName(), contigName, contig.getFirst().firstStart()));
@@ -495,13 +486,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		} else if (startingAnchor.size() == 0) {
 			// end anchored
 			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes, assemblyNameGenerator,
-					BreakendDirection.Backward, evidenceIds,
+					BreakendDirection.Backward, evidenceIds, supportList,
 					referenceIndex, endAnchorPosition, endAnchorBaseCount - endingBasesToTrim,
 					bases, quals);
 		} else if (endingAnchor.size() == 0) {
 			// start anchored
 			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes, assemblyNameGenerator,
-					BreakendDirection.Forward, evidenceIds,
+					BreakendDirection.Forward, evidenceIds, supportList,
 					referenceIndex, startAnchorPosition, startAnchorBaseCount - startBasesToTrim,
 					bases, quals);
 		} else {
@@ -509,7 +500,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				// no unanchored bases - not an SV assembly
 				assembledContig = null;
 			} else {
-				assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, assemblyNameGenerator, evidenceIds,
+				assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, assemblyNameGenerator, evidenceIds, supportList,
 						referenceIndex, startAnchorPosition, startAnchorBaseCount - startBasesToTrim,
 						referenceIndex, endAnchorPosition, endAnchorBaseCount - endingBasesToTrim,
 						bases, quals);
@@ -555,20 +546,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		stats.endAnchorNodes = endingAnchor.size();
 		if (exportTracker != null) {
 			exportTracker.trackAssembly(bestContigCaller);
-		}
-		if (assembledContig != null) {
-			Pair<List<int[]>, List<float[]>> scSupport = PositionalContigCategorySupportHelper.getPerCategoryPerBaseSupport(fullContig, aes.getContext().getCategoryCount(), evidence.stream().filter(e -> e.evidence() instanceof SingleReadEvidence), k, preferredContigDirection, aes.getContext().getAssemblyParameters());
-			Pair<List<int[]>, List<float[]>> rpSupport = PositionalContigCategorySupportHelper.getPerCategoryPerBaseSupport(fullContig, aes.getContext().getCategoryCount(), evidence.stream().filter(e -> e.evidence() instanceof NonReferenceReadPair), k, preferredContigDirection, aes.getContext().getAssemblyParameters());
-			// Need to adjust if:
-			// a) we truncated bases off the anchor path since it was too long
-			// b) if we further truncated the SAM record due to the anchor being outside the reference contig bounds
-			int startTruncation = startBasesToTrim + assembledContig.getSignedIntArrayAttribute(SamTags.ASSEMBLY_ANCHOR_TRUNCATION)[0];
-			int endTruncation = endingBasesToTrim + assembledContig.getSignedIntArrayAttribute(SamTags.ASSEMBLY_ANCHOR_TRUNCATION)[1];
-			AssemblyAttributes.annotatePerBasePerCategorySupport(assembledContig,
-					scSupport.getLeft().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()),
-					scSupport.getRight().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()),
-					rpSupport.getLeft().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()),
-					rpSupport.getRight().stream().map(arr -> Arrays.copyOfRange(arr, startTruncation, arr.length - endTruncation)).collect(Collectors.toList()));
 		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
@@ -807,6 +784,109 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		list.remove(node);
 		if (list.size() == 0) {
 			graphByKmerNode.remove(node.firstKmer());
+		}
+	}
+	private class SupportLookup {
+		private final Long2ObjectOpenHashMap<RangeMap<Integer, Integer>> lookup;
+		private final int contigBaseLength;
+		public SupportLookup(Collection<KmerPathSubnode> fullContig) {
+			this.lookup = buildLookup(fullContig);
+			this.contigBaseLength = fullContig.stream().mapToInt(n -> n.length()).sum() + k - 1;
+		}
+		public Range<Integer> supportInterval(KmerEvidence e) {
+			if (e.evidence() instanceof SingleReadEvidence) {
+				return singleReadEvidence(e);
+			}
+			assert(e.evidence() instanceof NonReferenceReadPair);
+			return readPairEvidence(e);
+		}
+		private Range<Integer> singleReadEvidence(KmerEvidence e) {
+			RangeSet<Integer> supportedBaseOffsets = TreeRangeSet.create();
+			for (int i = 0; i < e.length(); i++) {
+				for (Integer contigKmerOffset : getContigBaseOffsetFor(lookup, e, i)) {
+					// read kmer support is support for just the base transitions within the kmer
+					supportedBaseOffsets.add(Range.closedOpen(contigKmerOffset + 1, contigKmerOffset + k));
+				}
+			}
+			// currently our support model only handles a single interval
+			return supportedBaseOffsets.span();
+		}
+		private Range<Integer> readPairEvidence(KmerEvidence e) {
+			NonReferenceReadPair nrrp = (NonReferenceReadPair)e.evidence();
+			KmerEvidence e2 = KmerEvidence.createAnchor(k, nrrp, aes.getContext().getAssemblyParameters().pairAnchorMismatchIgnoreEndBases, nrrp.getEvidenceSource().getContext().getReference());
+
+			Range<Integer> bounds = contigBaseOffsetBounds(lookup, e);
+			Range<Integer> anchorBounds = contigBaseOffsetBounds(lookup, e2);
+
+			if (anchorBounds == null) {
+				if (preferredContigDirection == BreakendDirection.Forward) {
+					bounds = Range.closed(0, bounds.upperEndpoint());
+				} else {
+					bounds = Range.closed(bounds.lowerEndpoint(), contigBaseLength);
+				}
+			} else {
+				bounds = Range.closed(Math.min(bounds.lowerEndpoint(), anchorBounds.lowerEndpoint()), Math.min(bounds.upperEndpoint(), anchorBounds.upperEndpoint()));
+			}
+			return Range.closed(bounds.lowerEndpoint(), bounds.upperEndpoint() + k - 1);
+		}
+		/**
+		 * Determins where offset in the given evidence is included in the assembly.
+		 * Read pairs can overlap multiple times if the sequence kmer is repeated.
+		 * Since we don't actually know which position we placed the read in, we'll return them all.
+		 */
+		private Collection<Integer> getContigBaseOffsetFor(Long2ObjectOpenHashMap<RangeMap<Integer,Integer>> lookup, KmerEvidence e, int evidenceOffset) {
+			KmerSupportNode node = e.node(evidenceOffset);
+			if (node != null) {
+				long kmer = node.firstKmer();
+				RangeMap<Integer, Integer> lookupEntry = lookup.get(kmer);
+				if (lookupEntry != null) {
+					Map<Range<Integer>, Integer> matching = lookupEntry.subRangeMap(Range.closedOpen(node.firstStart(), node.firstEnd() + 1)).asMapOfRanges();
+					if (!matching.isEmpty()) {
+						return matching.values();
+					}
+				}
+			}
+			return Collections.emptyList();
+		}
+		private Range<Integer> contigBaseOffsetBounds(Long2ObjectOpenHashMap<RangeMap<Integer,Integer>> lookup, KmerEvidence e) {
+			int min = Integer.MAX_VALUE;
+			int max = Integer.MIN_VALUE;
+			for (int i = 0; i < e.length(); i++) {
+				for (Integer contigKmerOffset : getContigBaseOffsetFor(lookup, e, i)) {
+					min = Math.min(contigKmerOffset, min);
+					max = Math.max(contigKmerOffset, max);
+				}
+			}
+			if (min == Integer.MAX_VALUE) {
+				return null;
+			}
+			return Range.closed(min, max);
+		}
+		private Long2ObjectOpenHashMap<RangeMap<Integer, Integer>> buildLookup(Collection<KmerPathSubnode> fullContig) {
+			Long2ObjectOpenHashMap<RangeMap<Integer, Integer>> lookup = new Long2ObjectOpenHashMap<>(512);
+			int offset = 0;
+			for (KmerPathSubnode n : fullContig) {
+				// primary kmers
+				for (int i = 0; i < n.length(); i++) {
+					addToLookup(offset + i, n.kmer(i), n.firstStart() + i, n.firstEnd() + i, lookup);
+				}
+				// error corrected kmers
+				LongArrayList kmers = n.node().collapsedKmers();
+				IntArrayList offsets = n.node().collapsedKmerOffsets();
+				for (int i = 0; i < kmers.size(); i++) {
+					addToLookup(offset + offsets.getInt(i), kmers.getLong(i), n.firstStart() + offsets.getInt(i), n.firstEnd() + offsets.getInt(i), lookup);
+				}
+				offset += n.length();
+			}
+			return lookup;
+		}
+		private void addToLookup(int offset, long kmer, int start, int end, Long2ObjectOpenHashMap<RangeMap<Integer, Integer>> lookup) {
+			RangeMap<Integer, Integer> rm = lookup.get(kmer);
+			if (rm == null) {
+				rm = TreeRangeMap.create();
+				lookup.put(kmer, rm);
+			}
+			rm.put(Range.closedOpen(start, end + 1), offset);
 		}
 	}
 	public boolean sanityCheck() {

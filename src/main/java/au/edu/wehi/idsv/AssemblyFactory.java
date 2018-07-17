@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
 import au.edu.wehi.idsv.sam.SamTags;
@@ -38,12 +37,12 @@ public final class AssemblyFactory {
 	public static SAMRecord createAnchoredBreakend(
 			ProcessingContext processContext, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyIdGenerator,
 			BreakendDirection direction,
-			Collection<DirectedEvidence> evidence,
+			List<DirectedEvidence> evidence, List<AssemblyEvidenceSupport> supportList,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition);
 		assert(breakend.direction != null);
-		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, processContext.getBasicSamHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
 				baseCalls, baseQuals);
@@ -51,7 +50,7 @@ public final class AssemblyFactory {
 	}
 	public static SAMRecord createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyIdGenerator,
-			Collection<DirectedEvidence> evidence,
+			List<DirectedEvidence> evidence, List<AssemblyEvidenceSupport> supportList,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
@@ -60,7 +59,7 @@ public final class AssemblyFactory {
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition);
 		assert(startAnchorBaseCount > 0);
 		assert(endAnchorBaseCount > 0);
-		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, bp,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, processContext.getBasicSamHeader(), source, bp,
 				startAnchorBaseCount,
 				endAnchorBaseCount,
 				baseCalls, baseQuals);
@@ -75,6 +74,7 @@ public final class AssemblyFactory {
 	 * @param processContext context
 	 * @param source assembly source
 	 * @param evidence evidence supporting the assembly breakend
+	 * @param supportList
 	 * @param baseCalls assembly base sequence as per a positive strand read into a putative anchor
 	 * @param baseQuals assembly base qualities
 	 * @return assembly evidence for the given assembly
@@ -82,9 +82,9 @@ public final class AssemblyFactory {
 	public static SAMRecord createUnanchoredBreakend(
 			ProcessingContext processContext, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyIdGenerator,
 			BreakendSummary breakend,
-			Collection<DirectedEvidence> evidence,
+			List<DirectedEvidence> evidence, List<AssemblyEvidenceSupport> supportList,
 			byte[] baseCalls, byte[] baseQuals) {
-		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, processContext.getBasicSamHeader(), source, breakend,
 				0, 0, baseCalls, baseQuals);
 		return r;
 	}
@@ -93,7 +93,8 @@ public final class AssemblyFactory {
 	private static SAMRecord createAssemblySAMRecord(
 			ProcessingContext processContext,
 			AssemblyIdGenerator assemblyIdGenerator,
-			Collection<DirectedEvidence> evidence,
+			List<DirectedEvidence> evidence,
+			List<AssemblyEvidenceSupport> supportList,
 			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
 			BreakendSummary breakend,
 			int startAnchoredBaseCount,
@@ -164,7 +165,7 @@ public final class AssemblyFactory {
 							log.warn(String.format("Negative deletions not supported by SAM specs. Breakpoint assembly has been converted to breakend. "
 									+ "Sanity check failure: this should not be possible for positional assembly. Breakpoint is: %s Indel is: %dI%dD", bp, insSize, delSize));
 						}
-						return createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, samFileHeader, source, bp.localBreakend(), startAnchoredBaseCount, 0, baseCalls, baseQuals);
+						return createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, samFileHeader, source, bp.localBreakend(), startAnchoredBaseCount, 0, baseCalls, baseQuals);
 					}
 					c.add(new CigarElement(delSize, CigarOperator.DELETION));
 				}
@@ -189,11 +190,12 @@ public final class AssemblyFactory {
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
-		AssemblyAttributes.annotateAssembly(processContext, record, evidence);
-		truncateAnchorToContigBounds(processContext, record);
+		int[] truncationAmount = truncateAnchorToContigBounds(processContext, record);
+
+		AssemblyAttributes.annotateAssembly(processContext, record, evidence, supportList);
 		return record;
 	}
-	private static void truncateAnchorToContigBounds(ProcessingContext processContext, SAMRecord r) {
+	private static int[] truncateAnchorToContigBounds(ProcessingContext processContext, SAMRecord r) {
 		int end = processContext.getDictionary().getSequences().get(r.getReferenceIndex()).getSequenceLength();
 		int startTruncation = 0;
 		int endTruncation = 0;
@@ -244,7 +246,9 @@ public final class AssemblyFactory {
 				endTruncation = basesToTruncate;
 			}
 		}
-		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_TRUNCATION, new int[] {startTruncation, endTruncation });
+		int[] truncationAmount = new int[] {startTruncation, endTruncation };
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_TRUNCATION, truncationAmount);
+		return truncationAmount;
 	}
 }
 

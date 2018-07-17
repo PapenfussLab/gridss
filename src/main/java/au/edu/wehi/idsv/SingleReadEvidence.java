@@ -1,25 +1,17 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
-import com.google.common.collect.Streams;
 
-import au.edu.wehi.idsv.debruijn.ContigCategorySupportHelper;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
-import gridss.cmdline.programgroups.Assembly;
-import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
@@ -363,10 +355,6 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public String toString() {
 		return getEvidenceID();
 	}
-	@Override
-	public boolean isFromMultimappingFragment() {
-		return record.getAttribute(SamTags.MULTIMAPPING_FRAGMENT) != null;
-	}
 	/**
 	 * Determines whether this evidence involves the primary read alignment
 	 * @return true if the primary read alignment supports this evidence,
@@ -376,11 +364,11 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		return !getSAMRecord().getSupplementaryAlignmentFlag();
 	}
 	@Override
-	public List<String> getOriginatingFragmentID(int category) {
+	public Collection<String> getOriginatingFragmentID(int category) {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
-			return new AssemblyAttributes(record).getOriginatingFragmentID(category);
+			return new AssemblyAttributes(record).getOriginatingFragmentID(null, ImmutableSet.of(category), null);
 		}
-		return source.getSourceCategory() == category ? ImmutableList.of(record.getReadName()) : ImmutableList.of();
+		return source.getSourceCategory() == category ? ImmutableSet.of(record.getReadName()) : ImmutableSet.of();
 	}
 	@Override
 	public double getStrandBias() {
@@ -396,8 +384,8 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public int constituentReads() {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
 			AssemblyAttributes aa = new AssemblyAttributes(record);
-			int pos = aa.getMinQualPosition(getBreakendReadOffsetInterval());
-			return aa.getSupportingReadCount(Range.closed(pos, pos), null, null, Math::min).getRight();
+			int pos = aa.getMinQualPosition(getBreakendReadOffsetInterval(), null, null);
+			return aa.getSupportingReadCount(pos, null, null);
 		}
 		return 1;
 	}

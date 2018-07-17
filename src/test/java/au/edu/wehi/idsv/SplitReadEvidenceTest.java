@@ -409,7 +409,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		primary.setMappingQuality(100);
 		SAMRecord r = Read(1, 100, "2M4S");
 		r.setMappingQuality(100);
-		r.setReadNegativeStrandFlag(true);		
+		r.setReadNegativeStrandFlag(true);
 		r.setAttribute("SA", new ChimericAlignment(primary).toString());
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
 		//r.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, "90=60X,125=25X");
@@ -419,7 +419,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		});
 		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, new int[] {
 				60, 50, 40, 30, 20, 10,  0,
-				 0, 10, 20, 30, 40, 50, 60,
+				0, 10, 20, 30, 40, 50, 60,
 		});
 		r.setAttribute(SamTags.EVIDENCEID, "e");
 		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));

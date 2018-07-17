@@ -61,7 +61,7 @@ public class AssemblyAssociator implements CloseableIterator<DirectedEvidence> {
 	}
 	private void load(SAMRecord ass) {
 		assert(ass != null);
-		Collection<String> eids = new AssemblyAttributes(ass).getEvidenceIDs();
+		Collection<String> eids = new AssemblyAttributes(ass).getEvidenceIDs(null, null, null);
 		for (String eid : eids) {
 			evidenceToAssemblyName.put(eid, ass.getReadName());
 		}

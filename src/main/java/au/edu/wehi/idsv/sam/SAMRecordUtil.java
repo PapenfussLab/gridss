@@ -317,9 +317,7 @@ public class SAMRecordUtil {
 	/**
 	 * Conservative estimate as to whether the reads overlap due to small
 	 * fragment size
-	 * 
-	 * @param local
-	 * @param remote
+	 *
 	 * @return number possible breakpoints between the read pair mapped in the
 	 *         expected orientation, or Integer.MAX_VALUE if placement is not as
 	 *         expected
@@ -361,9 +359,7 @@ public class SAMRecordUtil {
 
 	/**
 	 * Estimates the size of sequenced fragment
-	 * 
-	 * @param record
-	 * @return
+	 *
 	 */
 	public static int calculateFragmentSize(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation) {
 		if (expectedOrientation != PairOrientation.FR)
@@ -804,17 +800,6 @@ public class SAMRecordUtil {
 				}
 			}
 		}
-		if (tags.contains(SamTags.MULTIMAPPING_FRAGMENT)) {
-			int mappingLocations = 0;
-			for (SAMRecord r : records) {
-				if (!r.getSupplementaryAlignmentFlag()) {
-					mappingLocations++;
-				}
-			}
-			for (SAMRecord r : records) {
-				r.setAttribute(SamTags.MULTIMAPPING_FRAGMENT, mappingLocations <= segments.size() ? null : mappingLocations - segments.size());
-			}
-		}
 	}
 	/**
 	 * Orders the records such that the primary record for a split read alignment is first
@@ -1130,8 +1115,6 @@ public class SAMRecordUtil {
 
 	/**
 	 * Converts any hard clips into soft clipped N bases
-	 * 
-	 * @param record
 	 */
 	public static final void hardClipToN(SAMRecord r) {
 		if (r.getReadUnmappedFlag() || r.getCigar() == null)
@@ -1324,9 +1307,7 @@ public class SAMRecordUtil {
 	 * matches. In general, such bases should be included in the alignment but,
 	 * due to error correction of sequencing errors, this does not necessarily
 	 * hold true for assembly contigs.
-	 * 
-	 * @param r
-	 *            record
+	 *
 	 */
 	public static void unclipExactReferenceMatches(ReferenceLookup ref, SAMRecord read) {
 		if (read.getReadUnmappedFlag())
