@@ -50,8 +50,7 @@ public class SoftClipEvidence extends SingleReadEvidence {
 	private float scoreAssembly() {
 		if (getBreakendSequence().length == 0) return 0;
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
-		Range<Integer> offsetRange = getBreakendReadOffsetInterval();
-		int pos = attr.getMinQualPosition(offsetRange, null, null);
+		int pos = getBreakendAssemblyContigOffset();
 		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair));
 		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair));
 		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read));

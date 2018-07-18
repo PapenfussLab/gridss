@@ -31,7 +31,7 @@ import htsjdk.samtools.metrics.Header;
 public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void should_create_SAMRecord_for_assembly() {
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null, null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
 		assertNotNull(e);
 		assertEquals("GTAC", S(e.getReadBases()));
@@ -39,8 +39,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void anchor_positions_should_match_genomic() {
-		SAMRecord fwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null, 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8, 8 });
-		SAMRecord bwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null, 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8, 8 });
+		SAMRecord fwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null, null, 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8, 8 });
+		SAMRecord bwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null, null, 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8, 8 });
 		assertEquals(1, (int)fwd.getReferenceIndex());
 		assertEquals(1, (int)bwd.getReferenceIndex());
 		assertEquals(8, fwd.getAlignmentStart());
@@ -54,8 +54,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void unanchor_positions_should_match_genomic() {
-		SAMRecord fwd = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 7, 5, 10), null, supportList, B("AAA"), B("AAA"));
-		SAMRecord bwd = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 7, 5, 10), null, supportList, B("AAA"), B("AAA"));
+		SAMRecord fwd = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 7, 5, 10), null, null, B("AAA"), B("AAA"));
+		SAMRecord bwd = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 7, 5, 10), null, null, B("AAA"), B("AAA"));
 		assertEquals(1, (int)fwd.getReferenceIndex());
 		assertEquals(1, (int)bwd.getReferenceIndex());
 		assertEquals(5, fwd.getAlignmentStart());
@@ -72,14 +72,14 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void unanchor_sequences_should_match_assembly() {
 		for (SAMRecord e : new SAMRecord[] {
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 1), null, supportList, B("AAA"), B("AAA")),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 2), null, supportList, B("AAA"), B("AAA")),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 3), null, supportList, B("AAA"), B("AAA")),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 4), null, supportList, B("AAA"), B("AAA")),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 1), null, supportList, B("AAA"), B("AAA")),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 2), null, supportList, B("AAA"), B("AAA")),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 3), null, supportList, B("AAA"), B("AAA")),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 4), null, supportList, B("AAA"), B("AAA"))
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 1), null, null, B("AAA"), B("AAA")),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 2), null, null, B("AAA"), B("AAA")),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 3), null, null, B("AAA"), B("AAA")),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 1, 1, 4), null, null, B("AAA"), B("AAA")),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 1), null, null, B("AAA"), B("AAA")),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 2), null, null, B("AAA"), B("AAA")),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 3), null, null, B("AAA"), B("AAA")),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, BWD, 1, 1, 4), null, null, B("AAA"), B("AAA"))
 		}) {
 			assertEquals("AAA", S(asAssemblyEvidence(e).getBreakendSequence()));
 			assertEquals("", S(asAssemblyEvidence(e).getAnchorSequence()));
@@ -93,21 +93,21 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_use_MS_for_anchored_breakend() {
-		assertEquals("1M3S", AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		assertEquals("1M3S", AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null, null,
 				1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).getCigarString());
-		assertEquals("3S1M", AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,
+		assertEquals("3S1M", AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null, null,
 				1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).getCigarString());
 	}
 	@Test
 	public void should_use_XNXS_for_unanchored_interval_breakend() {
-		assertEquals("1X1N1X4S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1, 1, 3), null, supportList, B("GTAC"), new byte[] {1,2,3,4}).getCigarString());
-		assertEquals("4S1X9N1X", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, BWD, 10, 10, 20), null, supportList, B("GTAC"), new byte[] {1,2,3,4}).getCigarString());
+		assertEquals("1X1N1X4S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1, 1, 3), null, null, B("GTAC"), new byte[] {1,2,3,4}).getCigarString());
+		assertEquals("4S1X9N1X", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, BWD, 10, 10, 20), null, null, B("GTAC"), new byte[] {1,2,3,4}).getCigarString());
 	}
 	@Test
 	public void should_use_minimal_cigar_representation() {
-		assertEquals("1X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 5), null, supportList, B("AAA"), B("AAA")).getCigarString());
-		assertEquals("2X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 6), null, supportList, B("AAA"), B("AAA")).getCigarString());
-		assertEquals("1X1N1X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 7), null, supportList, B("AAA"), B("AAA")).getCigarString());
+		assertEquals("1X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 5), null, null, B("AAA"), B("AAA")).getCigarString());
+		assertEquals("2X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 6), null, null, B("AAA"), B("AAA")).getCigarString());
+		assertEquals("1X1N1X3S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(1, FWD, 5, 5, 7), null, null, B("AAA"), B("AAA")).getCigarString());
 	}
 	@Test
 	public void should_track_breakend_evidence() {
@@ -115,7 +115,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		DirectedEvidence e2 = SCE(BWD, Read(0, 1, "6S5M"));
 		DirectedEvidence e3 = NRRP(OEA(0, 1, "1M", false));
 		DirectedEvidence b1 = SCE(BWD, Read(0, 1, "7S5M"));
-		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3),
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3), null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
 		AssemblyAttributes e = new AssemblyAttributes(r);
 		assertTrue(e.isPartOfAssembly(e1));
@@ -123,8 +123,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssembly(e3));
 		assertFalse(e.isPartOfAssembly(b1));
 		
-		assertEquals(2, (int)e.getSupportingReadCount(Range.closed(0, r.getReadLength()), null, ImmutableSet.of(AssemblyAttributes.SupportType.SplitRead), Math::min).getRight());
-		assertEquals(1, (int)e.getSupportingReadCount(Range.closed(0, r.getReadLength()), null, ImmutableSet.of(AssemblyAttributes.SupportType.ReadPair), Math::min).getRight());
+		assertEquals(2, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)));
+		assertEquals(1, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
 	}
 	@Test
 	public void should_track_read_name() {
@@ -134,24 +134,28 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		MockSAMEvidenceSource cat2 = SES();
 		cat2.category = 1;
 		DirectedEvidence b1 = SCE(BWD, cat2, withReadName("r4", Read(0, 1, "7S5M")));
-		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3, b1),
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3, b1), null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
 		AssemblyAttributes e = new AssemblyAttributes(r);
-		assertEquals("r1 r2 r3  r4", r.getStringAttribute(SamTags.ASSEMBLY_SUPPORTING_FRAGMENTS));
-		assertEquals("r1", e.getOriginatingFragmentID(0).get(0));
-		assertEquals("r2", e.getOriginatingFragmentID(0).get(1));
-		assertEquals("r3", e.getOriginatingFragmentID(0).get(2));
-		assertEquals("r4", e.getOriginatingFragmentID(1).get(0));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r1"));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r2"));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r3"));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r4"));
+
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r1"));
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r2"));
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r3"));
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r4"));
 	}
 	@Test
 	public void getEvidenceIDs_should_return_underlying_evidence() {
 		DirectedEvidence e1 = SCE(BWD, Read(0, 1, "5S5M"));
 		DirectedEvidence e2 = SCE(BWD, Read(0, 1, "6S5M"));
 		DirectedEvidence e3 = NRRP(OEA(0, 1, "1M", false));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3),
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3), null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
 		//Collection<String> ids = e.getEvidenceIDs();
-		Collection<String> eid = new AssemblyAttributes(e).getEvidenceIDs();
+		Collection<String> eid = new AssemblyAttributes(e).getEvidenceIDs(Range.closed(0,0), null, null);
 		assertEquals(3, eid.size());
 		assertTrue(eid.contains(e1.getEvidenceID()));
 		assertTrue(eid.contains(e2.getEvidenceID()));
@@ -159,10 +163,9 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getEvidenceIDs_should_return_empty_collection_for_no_evidence() {
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(),
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(),null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
-		//Collection<String> ids = e.getEvidenceIDs();
-		assertEquals(0, new AssemblyAttributes(e).getEvidenceIDs().size());
+		assertEquals(0, new AssemblyAttributes(e).getEvidenceIDs(Range.closed(0, 4), null, null).size());
 	}
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
@@ -174,7 +177,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		ProcessingContext context = new ProcessingContext(getFSContext(), ref, null, new ArrayList<Header>(),
 				new GridssConfiguration());
 		context.registerCategory("input.bam");
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(context, AES(context), new SequentialIdGenerator("asm"), BWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(context, AES(context), new SequentialIdGenerator("asm"), BWD, null, null,
 				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length()));
 		e = SAMRecordUtil.realign(context.getReference(), e, 50, true);
 		// anchor location is 11bp off
@@ -184,7 +187,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void small_indel_should_be_called_if_realignment_spans_event() {
 		String assembly = "AAAAAAAAAATTAAAAAAAAAA";
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,null,
 				0, 10, 10, B(assembly), B(40, assembly.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals("10M2I10M", e.getCigarString());
@@ -195,7 +198,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void should_allow_reference_allele_assemblies() {
 		String assembly = "AAAAAAAAAAA";
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,null,
 				0, 1, assembly.length(), B(assembly), B(40, assembly.length()));
 		
 		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, e).size());
@@ -203,7 +206,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void should_allow_realignment_to_reference_allele() {
 		String assembly = "AAAAAAAAAAA";
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,null,
 				0, 1, 1, B(assembly), B(40, assembly.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, e).size());
@@ -211,7 +214,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void getAnchor_should_not_include_inexact_breakend_bases() {
 		//List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1, "1M", true)));
-		assertEquals(0, asAssemblyEvidence(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1), null, supportList, B("GTAC"), new byte[] {1,2,3,4})).getAnchorSequence().length);
+		assertEquals(0, asAssemblyEvidence(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1), null, null, B("GTAC"), new byte[] {1,2,3,4})).getAnchorSequence().length);
 	}
 	@Test
 	public void breakpoint_should_use_indel_cigar() {
@@ -219,7 +222,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		// 1234567890   1234567890
 		//         MMIIIDDDDMMMM
 		//         NNAAA    TTTT
-		SAMRecord r = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), new SequentialIdGenerator("asm"), null,
+		SAMRecord r = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), new SequentialIdGenerator("asm"), null,null,
 				0, 10, 2,
 				0, 15, 4,
 				B("NNAAATTTT"),
@@ -230,116 +233,9 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("ABCDEFGHI", S(r.getBaseQualities()));
 		assertEquals("NNAAATTTT", S(r.getReadBases()));
 	}
-	/*// Now covered by the more general SA split read realignment tests
-	@Test
-	public void getAllRealignments_should_return_all_breakpoints_fwd() {
-		//                1         2         3         4
-		//      012345678901234567890123456789012345678901234567890123456789012345
-		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA anchor
-		//      ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA realign 1
-		//      SSSSSSSSSSSSSSSSSSSSSSSSSMMMMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
-		//          CAAGAGCGGGTTGTATTCGACGCCAAGTCAGCT realign 2
-		//          SSSSSSSSMMMMMMMMSSSSSSSSSSSSSSSSS
-		//                                        G realign 3
-		//                                        M
-		//
-		//
-		//          1         2         3         4         5         6         7      
-		// 123456789012345678901234567890123456789012345678901234567890123456789012345
-		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA
-		// *****SSSSSSSSSSSSSSSSSSSSSSSSSMMMMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
-		//          SSSSSSSSMMMMMMMMSSSSSSSSSSSSSSSSS
-		//                                        M
-		SAMRecord be = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				0, 5, 5, B("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA"), B(40,75));
-		RealignedSAMRecord e = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), be, ImmutableList.of(
-				withReadName("0#0#0#readname", withSequence(B("ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA"),
-						withQual(B(40,"ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA".length()), Read(1, 100, "25S5M40S"))))[0],
-				withReadName("0#0#4#readname", withSequence(B("CAAGAGCGGGTTGTATTCGACGCCAAGTCAGCT"),
-						withQual(B(40,"CAAGAGCGGGTTGTATTCGACGCCAAGTCAGCT".length()), Read(2, 200, "8S8M17S"))))[0],
-				withReadName("0#0#34#readname", withQual(B("1"), withSequence("G", Read(0, 40, "1M"))))[0]
-				));
-		assertEquals(new BreakpointSummary(0, FWD, 5, 2, BWD, 200), e.getBreakendSummary());
-		assertEquals("ATCGCAAGAGCG", e.getUntemplatedSequence());
-		List<SAMRecordAssemblyEvidence> rl = e.getSubsequentRealignments();
-		assertEquals(2, rl.size());
-		
-		RealignedSAMRecord r0 = (RealignedSAMRecordAssemblyEvidence)rl.get(0);
-		assertEquals(new BreakpointSummary(2, FWD, 207, 1, BWD, 100), r0.getBreakendSummary());
-		assertEquals("CATTAATCGCAAGAGCGGGTTGTAT", S(r0.getAnchorSequence()));
-		assertEquals("TCGAC", r0.getUntemplatedSequence());
-		
-		RealignedSAMRecord r1 = (RealignedSAMRecordAssemblyEvidence)rl.get(1);
-		assertEquals(new BreakpointSummary(1, FWD, 104, 0, BWD, 40), r1.getBreakendSummary());
-		assertEquals("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAA", S(r1.getAnchorSequence()));
-		assertEquals("GTCA", r1.getUntemplatedSequence());
-	}
-	@Test
-	public void getAllRealignments_should_return_all_breakpoints_fwd_fwd_bwd() {
-		//          1         2         3         4         5         6         7      
-		// 123456789012345678901234567890123456789012345678901234567890123456789012345
-		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA
-		// *****SSSSSSSSSSSSSSSSSSSSSSSSSMMMMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
-		//          SSSSSSSSMMMMMMMMSSSSSSSSSSSSSSSSS
-		//                                        M
-		SAMRecord be = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				0, 5, 5, B("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA"), B(40,75));
-		RealignedSAMRecord e = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), be, ImmutableList.of(
-				withReadName("0#0#0#readname", withSequence(B("ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA"),
-						withQual(B(40,"ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA".length()), Read(1, 100, "25S5M40S"))))[0],
-				withReadName("0#0#4#readname", withSequence(B("CAAGAGCGGGTTGTATTCGACGCCAAGTCAGCT"),
-						withQual(B(40,"CAAGAGCGGGTTGTATTCGACGCCAAGTCAGCT".length()), Read(2, 200, "8S8M17S"))))[0],
-				onNegative(withReadName("0#0#34#readname", withQual(B("1"), withSequence("G", Read(0, 40, "1M")))))[0]
-				));
-		assertEquals(new BreakpointSummary(0, FWD, 5, 2, BWD, 200), e.getBreakendSummary());
-		assertEquals("ATCGCAAGAGCG", e.getUntemplatedSequence());
-		List<SAMRecordAssemblyEvidence> rl = e.getSubsequentRealignments();
-		assertEquals(2, rl.size());
-		
-		RealignedSAMRecord r0 = (RealignedSAMRecordAssemblyEvidence)rl.get(0);
-		assertEquals(new BreakpointSummary(2, FWD, 207, 1, BWD, 100), r0.getBreakendSummary());
-		assertEquals("CATTAATCGCAAGAGCGGGTTGTAT", S(r0.getAnchorSequence()));
-		assertEquals("TCGAC", r0.getUntemplatedSequence());
-		assertEquals(be.getEvidenceID() + "_0", r0.getEvidenceID());
-		
-		RealignedSAMRecord r1 = (RealignedSAMRecordAssemblyEvidence)rl.get(1);
-		assertEquals(new BreakpointSummary(1, FWD, 104, 0, FWD, 40), r1.getBreakendSummary());
-		assertEquals("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAA", S(r1.getAnchorSequence()));
-		assertEquals("GTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA", S(r1.getBreakendSequence()));
-		assertEquals("GTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA", SequenceUtil.reverseComplement(S(r1.getRemoteSAMRecord().getReadBases())));
-		assertEquals("GTCA", r1.getUntemplatedSequence());
-		assertEquals(be.getEvidenceID() + "_1", r1.getEvidenceID());
-	}
-	@Test
-	public void getAllRealignments_should_return_all_breakpoints_bwd4() {
-		GenomicProcessingContext pc = getContext();
-		AssemblyEvidenceSource aes = AES();
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 70, 10, B("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"), B("00000000000000000000000000000000000000000000000000"));
-		//          1         2         3         4         5         6         7         8         9         0
-		// 123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-		//          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM
-		//                                                  SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMM
-		//                    SSSSSSSSSSMMMMMMMMMMSSSSSSSSSSSSSSSSSSSS offset = 0
-		//          MMMMMMMMMM offset = 0
-		//                                                            SSSSSSSSSSMMMMMMMMMM offset = 20
-		//                                                  MMMMMMMMMM offset = 20                  
-		RealignedSAMRecord re = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(
-				withSequence("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", withReadName("0#70#0#ReadName", Read(0, 30, "10S10M20S")))[0],
-				withSequence("NNNNNNNNNN", withReadName("0#70#0#ReadName", Read(0, 10, "10M")))[0],
-				withSequence("NNNNNNNNNNNNNNNNNNNN", withReadName("0#70#20#ReadName", Read(0, 70, "10S10M")))[0],
-				withSequence("NNNNNNNNNN", withReadName("0#70#20#ReadName", Read(0, 50, "10M")))[0]
-				));
-		assertEquals(new BreakpointSummary(0, BWD, 70, 0, FWD, 79), re.getBreakendSummary());
-		List<SAMRecordAssemblyEvidence> list = re.getSubsequentRealignments();
-		Collections.sort(list, DirectedEvidenceOrder.ByStartEnd);
-		assertEquals(new BreakpointSummary(0, BWD, 30, 0, FWD, 19), list.get(0).getBreakendSummary());
-		assertEquals(new BreakpointSummary(0, BWD, 50, 0, FWD, 39), list.get(1).getBreakendSummary());
-		assertEquals(new BreakpointSummary(0, BWD, 70, 0, FWD, 59), list.get(2).getBreakendSummary());
-	}
-	*/
 	@Test
 	public void realign_should_shift_breakend_to_match_reference() {
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,null,
 				0, 5, 5, B("AAAATTTT"), new byte[] {1,2,3,4,1,2,3,4});
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals("TTTT", S(asAssemblyEvidence(e).getBreakendSequence()));
@@ -351,7 +247,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		int margin = 50;
 		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
 			String seq = S("N", 50) + S(Arrays.copyOfRange(RANDOM, 299, 399)); // genomic positions 300-400
-			SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,
+			SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,null,
 					2, startpos, 100, B(seq), B(40, seq.length()));
 			e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 			assertEquals(300, asAssemblyEvidence(e).getBreakendSummary().start);
@@ -360,7 +256,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		// FWD breakend
 		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
 			String seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S("N", 50);
-			SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+			SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,null,
 					2, startpos + 100 - 1, 100, B(seq), B(40, seq.length()));
 			e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 			assertEquals(399, asAssemblyEvidence(e).getBreakendSummary().start);
@@ -371,13 +267,13 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void realign_should_expand_window_by_breakend_length_to_allow_for_mapping_over_small_indels() {
 		int indelSize = 20;
 		String seq = "N" + S(Arrays.copyOfRange(RANDOM, 299-indelSize-100, 299-indelSize)) + S(Arrays.copyOfRange(RANDOM, 299, 399)); // genomic positions 300-400
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,null,
 				2, 300, 100, B(seq), B(40, seq.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals("1S100M20D100M", e.getCigarString());
 		
 		seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S(Arrays.copyOfRange(RANDOM, 399+indelSize, 399+indelSize+100)) + "N";
-		e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,null,
 				2, 399, 100, B(seq), B(40, seq.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals("100M20D100M1S", e.getCigarString());
@@ -385,7 +281,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void realign_should_allow_small_anchor_deletion() {
 		String seq = S(B('N', 100)) + S(Arrays.copyOfRange(RANDOM, 0, 100)) + S(Arrays.copyOfRange(RANDOM, 110, 210));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,null,
 				2, 1, 210, B(seq), B(40, seq.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals("100S100M10D100M", e.getCigarString());
@@ -393,7 +289,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void realign_should_allow_small_anchor_insertion() {
 		String seq = S(B('N', 100)) + S(Arrays.copyOfRange(RANDOM, 0, 100)) + "NNNNNNNNNN" + S(Arrays.copyOfRange(RANDOM, 100, 200));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,null,
 				2, 1, 200, B(seq), B(40, seq.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals("100S100M10I100M", e.getCigarString());
@@ -402,7 +298,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Ignore("Not part of SAMRecordUtil realign functionality")
 	public void realign_should_abort_if_anchor_turns_into_soft_clip() {
 		String seq = S(Arrays.copyOfRange(RANDOM, 0, 10)) + S(Arrays.copyOfRange(RANDOM, 30, 70));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,null,
 				2, 1, 10, B(seq), B(40, seq.length()));
 		assertEquals("10M40S", e.getCigarString());
 		assertEquals("10M40S", SAMRecordUtil.realign(getContext().getReference(), e, 50, true).getCigarString());
@@ -412,7 +308,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void realign_should_not_flip_tandem_duplication() {
 		ProcessingContext pc = getContext();
 		String seq = S(Arrays.copyOfRange(RANDOM, 150, 200)) + S(Arrays.copyOfRange(RANDOM, 100, 200)) + S(Arrays.copyOfRange(RANDOM, 100, 150));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,null,
 				2, 100, 50, B(seq), B(40, seq.length()));
 		
 		// breakend alignment is actually better
@@ -425,7 +321,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void realign_should_turn_reference_bubble_into_reference_assembly() {
-		SAMRecord ass = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), new SequentialIdGenerator("asm"), null,
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), new SequentialIdGenerator("asm"), null,null,
 				0, 10, 1,
 				0, 17, 1,
 				B("AAAAAAAA"),

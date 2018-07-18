@@ -639,26 +639,6 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1", read3.getStringAttribute("SA"));
 	}
 	@Test
-	public void calculateTemplateTags_mm_should_be_total_number_of_additional_mappings() {
-		SAMRecord read0a = Read(0, 1, "1M");
-		SAMRecord read0a1 = Read(0, 1, "1M");
-		read0a1.setSupplementaryAlignmentFlag(true);
-		SAMRecord read0b = Read(0, 1, "1M");
-		
-		SAMRecord read1a = Read(0, 1, "1M");
-		SAMRecord read1b = Read(0, 1, "1M");
-		SAMRecord read1c = Read(0, 1, "1M");
-		read1a.setSecondOfPairFlag(true);
-		read1b.setSecondOfPairFlag(true);
-		read1c.setSecondOfPairFlag(true);
-		ImmutableList<SAMRecord> list = ImmutableList.of(read0a, read0a1, read0b, read1a, read1b, read1c);
-		list.stream().forEach(r -> r.setReadPairedFlag(true));
-		SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of("mm"), false, false, false, false);
-		for (SAMRecord r : list) {
-			assertEquals(1+2, (int)r.getAttribute("mm"));
-		}
-	}
-	@Test
 	public void calculateMultimappingTags_should_use_circular_pointers() {
 		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(1, 2, "1H1M4H")))[0];

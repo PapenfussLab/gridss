@@ -58,7 +58,7 @@ public class AssemblyEvidenceSupport {
     public AssemblyEvidenceSupport adjustForAssemblyTruncation(int startBasesTruncated) {
         return new AssemblyEvidenceSupport(
                 supportType,
-                Range.closed(assemblyContigOffset.lowerEndpoint() - startBasesTruncated, assemblyContigOffset.upperEndpoint()),
+                Range.closed(assemblyContigOffset.lowerEndpoint() - startBasesTruncated, assemblyContigOffset.upperEndpoint() - startBasesTruncated),
                 evidenceID,
                 fragmentID,
                 category,
@@ -87,7 +87,7 @@ public class AssemblyEvidenceSupport {
                 supportInterval,
                 e.getEvidenceID(),
                 e.getOriginatingFragmentID(((SAMEvidenceSource)(e.getEvidenceSource())).getSourceCategory()).iterator().next(),
-                ((SAMEvidenceSource)e).getSourceCategory(),
+                ((SAMEvidenceSource)(e.getEvidenceSource())).getSourceCategory(),
                 e.getBreakendQual());
     }
     public static Ordering<AssemblyEvidenceSupport> ByEvidenceID = new Ordering<AssemblyEvidenceSupport>() {

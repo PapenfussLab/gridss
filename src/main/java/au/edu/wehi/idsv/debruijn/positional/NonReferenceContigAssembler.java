@@ -456,7 +456,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		List<DirectedEvidence> evidenceIds = evidence.stream()
 				.map(e -> e.evidence())
-				.sorted(DirectedEvidence.ByEvidenceID) // ensure stable ordering when we write the SAM record annotations
 				.collect(Collectors.toList());
 		SupportLookup supportLookup = new SupportLookup(fullContig);
 		List<AssemblyEvidenceSupport> supportList = evidence.stream()
@@ -805,7 +804,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			for (int i = 0; i < e.length(); i++) {
 				for (Integer contigKmerOffset : getContigBaseOffsetFor(lookup, e, i)) {
 					// read kmer support is support for just the base transitions within the kmer
-					supportedBaseOffsets.add(Range.closedOpen(contigKmerOffset + 1, contigKmerOffset + k));
+					supportedBaseOffsets.add(Range.closed(contigKmerOffset + 1, contigKmerOffset + k - 1));
 				}
 			}
 			// currently our support model only handles a single interval
@@ -820,14 +819,16 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 
 			if (anchorBounds == null) {
 				if (preferredContigDirection == BreakendDirection.Forward) {
-					bounds = Range.closed(0, bounds.upperEndpoint());
+					bounds = Range.closed(0, bounds.upperEndpoint() + k - 1);
 				} else {
-					bounds = Range.closed(bounds.lowerEndpoint(), contigBaseLength);
+					bounds = Range.closed(bounds.lowerEndpoint() + 1, contigBaseLength);
 				}
 			} else {
-				bounds = Range.closed(Math.min(bounds.lowerEndpoint(), anchorBounds.lowerEndpoint()), Math.min(bounds.upperEndpoint(), anchorBounds.upperEndpoint()));
+				// if we have a local anchor then we only support breakends between the bounds of the two reads
+				// ie those that overlay the fragment
+				bounds = Range.closed(Math.min(bounds.lowerEndpoint(), anchorBounds.lowerEndpoint()) + 1, Math.max(bounds.upperEndpoint(), anchorBounds.upperEndpoint()) + k - 1);
 			}
-			return Range.closed(bounds.lowerEndpoint(), bounds.upperEndpoint() + k - 1);
+			return bounds;
 		}
 		/**
 		 * Determins where offset in the given evidence is included in the assembly.

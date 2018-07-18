@@ -202,14 +202,11 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	public VariantContextDirectedEvidence make() {
 		Map<SingleReadEvidence, AssemblyAttributes> aaLookup = new HashMap<>();
-		Map<SingleReadEvidence, Integer> minSupportPositionLookup = new HashMap<>();
 		Stream.of(supportingAS.stream(), supportingRAS.stream(), supportingCAS.stream(), supportingBAS.stream())
 			.flatMap(x -> x)
 			.forEach(ass -> {
 				AssemblyAttributes aa =  new AssemblyAttributes(ass.getSAMRecord());
-				int pos = aa.getMinQualPosition(ass.getBreakendReadOffsetInterval(), null, null);
 				aaLookup.put(ass, aa);
-				minSupportPositionLookup.put(ass, pos);
 			});
 
 		attribute(VcfInfoAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
@@ -236,10 +233,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		sumIntAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_COUNT, supportingOEA, e -> 1);
 		
 		// Qual
-		double[] asq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL, supportingAS, aaLookup, minSupportPositionLookup);
-		double[] rasq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, supportingRAS, aaLookup, minSupportPositionLookup);
-		double[] casq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, supportingCAS, aaLookup, minSupportPositionLookup);
-		double[] basq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKEND_ASSEMBLY_QUAL, supportingBAS, aaLookup, minSupportPositionLookup);
+		double[] asq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL, supportingAS, aaLookup);
+		double[] rasq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, supportingRAS, aaLookup);
+		double[] casq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, supportingCAS, aaLookup);
+		double[] basq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKEND_ASSEMBLY_QUAL, supportingBAS, aaLookup);
 		double[] srq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_SPLITREAD_QUAL, supportingSR, e -> e.getBreakpointQual());
 		double[] iq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL, VcfFormatAttributes.BREAKPOINT_INDEL_QUAL, supportingIndel, e -> e.getBreakpointQual());
 		double[] rpq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_READPAIR_QUAL, supportingDP, e -> e.getBreakpointQual());
@@ -270,25 +267,25 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			int category = i;
 			asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-						minSupportPositionLookup.get(ass),
+                            ass.getBreakendAssemblyContigOffset(),
 						ImmutableSet.of(category),
 						ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
 					.sum();
 			asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-							minSupportPositionLookup.get(ass),
+							ass.getBreakendAssemblyContigOffset(),
 							ImmutableSet.of(category),
 							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
 					.sum();
 			basr[category] = supportingBAS.stream()
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-							minSupportPositionLookup.get(ass),
+                            ass.getBreakendAssemblyContigOffset(),
 							ImmutableSet.of(category),
 							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
 					.sum();
 			basrp[category] = supportingBAS.stream()
 					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-							minSupportPositionLookup.get(ass),
+                            ass.getBreakendAssemblyContigOffset(),
 							ImmutableSet.of(category),
 							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
 					.sum();
@@ -296,7 +293,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.map(e -> {
 						if (AssemblyAttributes.isAssembly(e)) {
 							SingleReadEvidence ass = (SingleReadEvidence)e;
-							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(minSupportPositionLookup.get(ass), minSupportPositionLookup.get(ass)), ImmutableSet.of(category), null);
+							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(ass.getBreakendAssemblyContigOffset(), ass.getBreakendAssemblyContigOffset()), ImmutableSet.of(category), null);
 						}
 						return e.getOriginatingFragmentID(category); 
 					})
@@ -307,7 +304,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.map(e -> {
 						if (AssemblyAttributes.isAssembly(e)) {
 							SingleReadEvidence ass = (SingleReadEvidence)e;
-							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(minSupportPositionLookup.get(ass), minSupportPositionLookup.get(ass)), ImmutableSet.of(category), null);
+							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(ass.getBreakendAssemblyContigOffset(), ass.getBreakendAssemblyContigOffset()), ImmutableSet.of(category), null);
 						}
 						return e.getOriginatingFragmentID(category); 
 					})
@@ -415,12 +412,11 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	 */
 	private <T extends SingleReadEvidence> double[] prorataAssemblyQualBreakdown(
 			VcfInfoAttributes infoAttr, VcfFormatAttributes attr, List<T> assemblies,
-			Map<SingleReadEvidence, AssemblyAttributes> aaLookup,
-			Map<SingleReadEvidence, Integer> minSupportPositionLookup) {
+			Map<SingleReadEvidence, AssemblyAttributes> aaLookup) {
 		double totalAssQual = 0;
 		double[] prorata = new double[processContext.getCategoryCount()];
 		for (SingleReadEvidence ass : assemblies) {
-			int offset = minSupportPositionLookup.get(ass);
+			int offset = ass.getBreakendAssemblyContigOffset();
 			AssemblyAttributes aa = aaLookup.get(ass);
 			double assQual = (ass instanceof DirectedBreakpoint) ? ((DirectedBreakpoint)ass).getBreakpointQual() : ass.getBreakendQual();
 			double[] breakdownQual = new double[processContext.getCategoryCount()];

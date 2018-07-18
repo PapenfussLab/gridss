@@ -3,13 +3,11 @@ package au.edu.wehi.idsv;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.SAMRecord;
@@ -34,6 +32,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
 	private String associatedAssemblyName;
+	private int assemblyOffset = Integer.MIN_VALUE;
 
 	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, int minIndelSize, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
@@ -384,8 +383,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public int constituentReads() {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
 			AssemblyAttributes aa = new AssemblyAttributes(record);
-			int pos = aa.getMinQualPosition(getBreakendReadOffsetInterval(), null, null);
-			return aa.getSupportingReadCount(pos, null, null);
+			return aa.getSupportingReadCount(getBreakendAssemblyContigOffset(), null, null);
 		}
 		return 1;
 	}
@@ -406,7 +404,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	 * @return 0-based position relative to the start of the read.
 	 * The breakpoint is considered to be immediately prior (in read-space coordinates) to the given position.
 	 */
-	protected Range<Integer> getBreakendReadOffsetInterval() {
+	public Range<Integer> getBreakendAssemblyContigHomologyInterval() {
 		if (isUnanchored) {
 			// Take the extrema for the unanchored contigs since everything supports the event
 			if (new AssemblyAttributes(record).getAssemblyDirection() == BreakendDirection.Forward) {
@@ -424,5 +422,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
 		}
 		return r;
+	}
+	public int getBreakendAssemblyContigOffset() {
+		if (assemblyOffset == Integer.MIN_VALUE && AssemblyAttributes.isAssembly(record)) {
+			AssemblyAttributes aa = new AssemblyAttributes(record);
+			assemblyOffset = aa.getMinQualPosition(getBreakendAssemblyContigHomologyInterval(), null, null);
+		}
+		return assemblyOffset;
 	}
 }

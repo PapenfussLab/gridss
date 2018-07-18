@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import au.edu.wehi.idsv.sam.SamTags;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
@@ -243,7 +244,7 @@ public class TestHelper {
 		assert(bs.start == bs.end);
 		assert(bs.start2 == bs.end2);
 		assert(bs.direction2 == BWD);
-		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator(String.format("asm(%d)-%d%s", bs.referenceIndex, bs.start, bs.direction.toChar())), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"));
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator(String.format("asm(%d)-%d%s", bs.referenceIndex, bs.start, bs.direction.toChar())), bs.direction, null, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"));
 		SAMRecord ra = new SAMRecord(getContext().getBasicSamHeader());
 		ra.setReferenceIndex(bs.referenceIndex2);
 		ra.setAlignmentStart(bs.start2);
@@ -290,7 +291,7 @@ public class TestHelper {
 	public static SoftClipEvidence AE() {
 		return SoftClipEvidence.create(AES(), FWD, AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), 
 				FWD,
-				null,
+				null, null,
 				0, 1,
 				1, B("ATT"), new byte[] { 7, 7, 7 }));
 	}
@@ -1065,7 +1066,6 @@ public class TestHelper {
 	 * @param baseCount number of bases to return
 	 * @param breakendPos breakend position
 	 * @param direction direction of breakend
-	 * @param localFragBaseCount number of fragment bases on this side of the breakend
 	 * @return read bases
 	 */
 	public static byte[] getRef(byte[] contig, int baseCount, int breakendPos, BreakendDirection direction) {
@@ -1249,8 +1249,10 @@ public class TestHelper {
 				.collect(Collectors.toList());
 	}
 	public static SingleReadEvidence asAssemblyEvidence(SAMEvidenceSource aes, SAMRecord assembly) {
+		assembly.setAttribute(SamTags.IS_ASSEMBLY, 1);
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, 0, assembly);
 		assertEquals(1, list.size());
+		assertTrue(AssemblyAttributes.isAssembly(list.get(0)));
 		return list.get(0);
 	}
 	public static SingleReadEvidence asAssemblyEvidence(SAMRecord assembly) {

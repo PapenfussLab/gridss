@@ -113,14 +113,14 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void should_filter_fully_reference_assemblies() {
 		SAMRecord r = AssemblyFactory.createAnchoredBreakend(
-				getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,
+				getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null, null,
 				0, 1, 2, B("AA"), B("AA"));
 		assertTrue(AES().shouldFilterAssembly(r));
 	}
 	@Test
 	public void should_filter_single_read_assemblies() {
 		MockDirectedEvidence ev = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 1, 2));
-		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(ev), 0, 1, 1, B("AA"), B("AA"));
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(ev), null,0, 1, 1, B("AA"), B("AA"));
 		assertTrue(AES().shouldFilterAssembly(r));
 	}
 	@Test
@@ -128,7 +128,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1, "4M", true)));
 		SAMRecord e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 5, 5, 300), support,
-                supportList, B("AAA"), B("AAA"));
+				null, B("AAA"), B("AAA"));
 		assertTrue(AES().shouldFilterAssembly(e));
 	}
 	@Test
@@ -137,7 +137,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				NRRP(OEA(0, 1, "3M", true)),
 				NRRP(OEA(0, 1, "4M", true)));
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(
-				getContext(), AES(), new SequentialIdGenerator("asm"), FWD, support,
+				getContext(), AES(), new SequentialIdGenerator("asm"), FWD, support,null,
 				0, 1, 1, B("AAA"), B("AAA"));
 		assertFalse(AES().shouldFilterAssembly(e));
 	}
@@ -148,7 +148,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				NRRP(OEA(0, 1, "4M", false)));
 		SAMRecord e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 5, 5, 300), support,
-                supportList, B("AAAAAA"), B("AAAAAA"));
+				null, B("AAAAAA"), B("AAAAAA"));
 		assertFalse(AES().shouldFilterAssembly(e));
 	}
 	@Test
@@ -158,7 +158,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				NRRP(OEA(0, 1, "3M", false)),
 				NRRP(OEA(0, 1, "4M", false)));
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(
-				getContext(), AES(), new SequentialIdGenerator("asm"), BWD, support,
+				getContext(), AES(), new SequentialIdGenerator("asm"), BWD, support, null,
 				0, 1, 2, B("AA"), B("AA"));
 		// reference assembly
 		assertTrue(AES().shouldFilterAssembly(e));
@@ -170,7 +170,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(SES(100, 100), DP(0, 1, "1M", true, 0, 5, "1M", false)));
 		SAMRecord e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1, 1, 300), support,
-                supportList, B("AA"), B("AA"));
+				null, B("AA"), B("AA"));
 		
 		assertFalse(aes.shouldFilterAssembly(e));
 	}
@@ -179,13 +179,13 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
 		pc.getAssemblyParameters().minReads = 3;
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"));
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BWD, null, null,0, 1, 5, B("AACGTG"), B("AACGTG"));
 		assertTrue(aes.shouldFilterAssembly(e));
 		
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))));
 		e = AssemblyFactory.createAnchoredBreakend(
-				getContext(), aes, new SequentialIdGenerator("asm"), BWD, support,
+				getContext(), aes, new SequentialIdGenerator("asm"), BWD, support,null,
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		assertTrue(aes.shouldFilterAssembly(e));
 		
@@ -193,7 +193,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 				NRRP(OEA(0, 1, "4M", false)));
 		e = AssemblyFactory.createAnchoredBreakend(
-				pc, aes, new SequentialIdGenerator("asm"), BWD, support,
+				pc, aes, new SequentialIdGenerator("asm"), BWD, support,null,
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		assertTrue(aes.shouldFilterAssembly(e));
 		
@@ -202,7 +202,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				NRRP(OEA(0, 1, "3M", false)),
 				NRRP(OEA(0, 1, "5M", false)));
 		e = AssemblyFactory.createAnchoredBreakend(
-				pc, aes, new SequentialIdGenerator("asm"), BWD, support,
+				pc, aes, new SequentialIdGenerator("asm"), BWD, support,null,
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		assertFalse(AES().shouldFilterAssembly(e));
 	}
@@ -212,7 +212,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		//evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		//evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, evidence,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, evidence,null,
 				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"));
 		assertTrue(AES().shouldFilterAssembly(e));
 	}
@@ -222,7 +222,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, evidence,
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, evidence,null,
 				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"));
 		SAMRecordUtil.unclipExactReferenceMatches(SMALL_FA, e);
 		assertTrue(AES().shouldFilterAssembly(e));

@@ -2,26 +2,20 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.sam.SamTags;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-import au.edu.wehi.idsv.AssemblyAttributes;
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DirectedEvidenceOrder;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SequentialIdGenerator;
-import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 
 
@@ -62,12 +56,16 @@ public class PositionalAssemblerTest extends TestHelper {
 		assertEquals("AACGTT", S(r.get(0).getAnchorSequence()));
 		assertEquals("GGTTAA", S(r.get(0).getBreakendSequence()));
 		assertEquals("AACGTTGGTTAA", S(r.get(0).getSAMRecord().getReadBases()));
-		int[] scCount = r.get(0).getSAMRecord().getSignedIntArrayAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT);
-		assertArrayEquals(new int[] {
-			  // A A C G T T G G T T A A
-				1,1,2,2,2,2,2,2,2,2,2,1,0, // category 0
-				0,0,0,0,0,0,0,0,0,0,0,0,0, // category 1
-			}, scCount);
+        assertTrue(AssemblyAttributes.isAssembly(r.get(0).getSAMRecord()));
+        AssemblyAttributes aa = new AssemblyAttributes(r.get(0).getSAMRecord());
+                                  // A A C G T T G G T T A A
+        int[] expected = new int[] {1,1,2,2,2,2,2,2,2,2,2,1,0,};
+        int[] actual = IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, null, null)).toArray();
+		assertArrayEquals(expected, actual);
+        assertArrayEquals(expected, IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read))).toArray());
+        assertArrayEquals(expected, IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read))).toArray());
+        assertArrayEquals(new int[13], IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, ImmutableSet.of(1), null)).toArray());
+        assertArrayEquals(new double[13], IntStream.range(0, 12+1).mapToDouble(i -> aa.getSupportingQualScore(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair))).toArray(), 0);
 	}
 	@Test
 	public void rp_anchor_should_set_non_reference_bases_as_anchoring() {
@@ -132,7 +130,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
 		SAMRecord r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator())).get(0);
-		assertEquals(2, (int)new AssemblyAttributes(r).getSupportingReadCount(Range.closedOpen(0, r.getReadLength()), null, null, Math::max).getRight());
+		assertEquals(2, new AssemblyAttributes(r).getSupportingReadCount(6, null, null));
 	}
 	@Test
 	public void should_set_assembly_direction() {

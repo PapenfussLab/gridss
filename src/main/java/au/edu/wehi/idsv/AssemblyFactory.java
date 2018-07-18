@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
 import com.google.common.primitives.Bytes;
 
 import au.edu.wehi.idsv.sam.SamTags;
@@ -105,6 +107,15 @@ public final class AssemblyFactory {
 		assert(startAnchoredBaseCount + endAnchoredBaseCount <= baseCalls.length);
 		assert(baseCalls.length == baseQuals.length);
 		assert(breakend != null);
+		// null checks useful only during testing
+		if (evidence == null) {
+			evidence = new ArrayList<>();
+		}
+		if (supportList == null) {
+			supportList = evidence.stream()
+					.map(e -> new AssemblyEvidenceSupport(e, Range.closed(0, baseCalls.length)))
+					.collect(Collectors.toList());
+		}
 		SAMRecord record = new SAMRecord(samFileHeader);
 		// default to the minimum mapping quality that is still valid
 		record.setMappingQuality((int)Math.ceil(source.getContext().getConfig().minMapq));

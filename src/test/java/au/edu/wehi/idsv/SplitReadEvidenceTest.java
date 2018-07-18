@@ -405,25 +405,23 @@ public class SplitReadEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_pro_rata_assembly_suport() {
-		SAMRecord primary = withSequence("NNNNNN", Read(1, 200, "4M2S"))[0];
+		SAMRecord primary = withSequence("NNNN", Read(1, 200, "1M3S"))[0];
 		primary.setMappingQuality(100);
 		SAMRecord r = Read(1, 100, "2M4S");
 		r.setMappingQuality(100);
 		r.setReadNegativeStrandFlag(true);
 		r.setAttribute("SA", new ChimericAlignment(primary).toString());
+		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
-		//r.setAttribute(SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR, "90=60X,125=25X");
-		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, new int[] {
-				6, 5, 4, 3, 2, 1, 0,
-				0, 1, 2, 3, 4, 5, 6,
-		});
-		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, new int[] {
-				60, 50, 40, 30, 20, 10,  0,
-				0, 10, 20, 30, 40, 50, 60,
-		});
-		r.setAttribute(SamTags.EVIDENCEID, "e");
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 0, 1, 1});
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0, 0, 1});
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, new int[] { 3, 2, 3});
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, new int[] { 4, 3, 5});
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[] { 10, 20, 5});
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "1 2 3");
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
 		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
 		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);
-		Assert.assertEquals(50, e.getBreakpointQual(), 0);
+		Assert.assertEquals(15, e.getBreakpointQual(), 0);
 	}
 }

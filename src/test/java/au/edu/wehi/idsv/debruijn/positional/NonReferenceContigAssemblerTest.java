@@ -12,25 +12,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Range;
+import au.edu.wehi.idsv.*;
+import com.google.common.collect.*;
+import gridss.cmdline.programgroups.Assembly;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-
-import au.edu.wehi.idsv.AssemblyAttributes;
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DiscordantReadPair;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.SequentialIdGenerator;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.SAMRecord;
@@ -44,7 +31,15 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> assemblies = Lists.newArrayList(caller);
 		return assemblies;
 	}
+	public List<SAMRecord> go(ProcessingContext pc, boolean collapse, BreakendDirection direction, DirectedEvidence... input) {
+		caller = create(pc, collapse, direction, input);
+		List<SAMRecord> assemblies = Lists.newArrayList(caller);
+		return assemblies;
+	}
 	private NonReferenceContigAssembler create(ProcessingContext pc, boolean collapse, DirectedEvidence... input) {
+		return create(pc, collapse, BreakendDirection.Forward, input);
+	}
+	private NonReferenceContigAssembler create(ProcessingContext pc, boolean collapse, BreakendDirection direction, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, Arrays.stream(input).map(e -> (SAMEvidenceSource)e.getEvidenceSource()).collect(Collectors.toList()), new File("NonReferenceContigAssemblerTest.bam"));
 		int maxEvidenceWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
@@ -60,7 +55,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test", BreakendDirection.Forward);
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test", direction);
 		return caller;
 	}
 	@Test
@@ -83,7 +78,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, sce);
 		AssemblyAttributes attr = new AssemblyAttributes(output.get(0));
 		assertNotNull(attr);
-		assertEquals(1, (int)attr.getSupportingReadCount(Range.closed(5, 5), null, null, Math::min).getRight());
+		assertEquals(1, attr.getSupportingReadCount(5, null, null));
 	}
 	@Test
 	public void should_call_simple_bwd_SC() {
@@ -408,7 +403,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		go(pc, true, e.toArray(new DirectedEvidence[0]));
 	}
 	@Test
-	public void should_generate_contig_support_CIGAR() {
+	public void should_generate_support_attributes() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		MockSAMEvidenceSource ses0 = SES(false);
@@ -418,10 +413,17 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SoftClipEvidence sce3 = SCE(FWD, ses1, withSequence("ACGTGGTCGT", Read(0, 5, "6M4S")));
 		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3);
 		assertEquals(1, output.size());
-		assertEquals("1X11=,1X9=2X", output.get(0).getAttribute("SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR"));
+		assertEquals(3, output.get(0).getSignedByteArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE).length);
+		assertEquals(3, output.get(0).getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY).length);
+		assertEquals(3, output.get(0).getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START).length);
+		assertEquals(3, output.get(0).getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END).length);
+		assertEquals(3, output.get(0).getFloatArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL).length);
+		assertNotNull(output.get(0).getAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID));
+		assertNotNull(output.get(0).getAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID));
+
 	}
 	@Test
-	public void should_generate_rp_contig_support_CIGAR() {
+	public void should_generate_rp_contig_support_over_rp_interval() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 5;
 		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
@@ -439,7 +441,57 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertEquals(27, output.get(0).getReadLength());
 		assertEquals("GGTTGCATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
-		assertEquals("1X26=", output.get(0).getAttribute("SamTags.ASSEMBLY_CATEGORY_COVERAGE_CIGAR"));
+		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
+		// GGTTGCATAGACGTGGTCGACCTAGTA
+		// 012345678901234567890123456
+		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		for (int i = 1; i <= 26; i++) {
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		}
+		assertEquals(0, aa.getSupportingReadCount(27, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+	}
+	@Test
+	public void rp_support_without_anchor_should_extend_to_contig_start() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 30);
+		SAMRecord[] rp = DP(0, 1, "10M", true, 0, 1000, "10M", false);
+		rp[0].setReadBases(B("NNNNNNNNNN"));
+		rp[1].setReadBases(B("CGACCTAGTA"));
+		SoftClipEvidence sce = SCE(FWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 6, "5M12S")));
+		List<SAMRecord> output = go(pc, true, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertEquals(1, output.size());
+		assertEquals("CATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
+		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
+		// CATAGACGTGGTCGACCTAGTA
+		// 0123456789012345678901
+		for (int i = 0; i <= 21; i++) {
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		}
+		assertEquals(0, aa.getSupportingReadCount(22, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+	}
+
+	@Test
+	public void rp_support_without_anchor_should_extend_to_contig_end() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 100);
+		SAMRecord[] rp = DP(0, 120, "10M", false, 0, 1000, "10M", true);
+		rp[0].setReadBases(B("NNNNNNNNNN"));
+		rp[1].setReadBases(B("GGTTGCATAG"));
+		SoftClipEvidence sce = SCE(BWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 100, "12S5M")));
+		List<SAMRecord> output = go(pc, true, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertEquals(1, output.size());
+		assertEquals("GGTTGCATAGACGTGGTCGACC", S(output.get(0).getReadBases()));
+		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
+		// GGTTGCATAGACGTGGTCGACC
+		// 0123456789012345678901
+		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		for (int i = 1; i <=output.get(0).getReadLength(); i++) {
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		}
 	}
 	@Test
 	public void should_not_write_inconsistent_anchors() {

@@ -16,7 +16,7 @@ public class AssemblyAttributes {
 	private final SAMRecord record;
 	private Collection<AssemblyEvidenceSupport> support = null;
 	public static boolean isAssembly(SAMRecord record) {
-		return record.getAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID) != null;
+		return record.hasAttribute(SamTags.IS_ASSEMBLY);
 	}
 	public static boolean isUnanchored(SAMRecord record) {
 		return record.hasAttribute(SamTags.UNANCHORED);
@@ -50,29 +50,43 @@ public class AssemblyAttributes {
 	}
 	private Collection<AssemblyEvidenceSupport> getSupport() {
 		if (support == null) {
+			support = new ArrayList<>();
 			if (!record.hasAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY)) {
-				String msg = "Fatal error: GRIDSS assembly annotation format has changed in version 1.8. Please delete the assembly bam file, assembly working directory and regenerate.";
-				log.error(msg);
-				throw new RuntimeException(msg);
-			}
-			byte[] type = record.getSignedByteArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE);
-			int[] category = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY);
-			int[] intervalStart = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START);
-			int[] intervalEnd = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END);
-			float[] qual = record.getFloatArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL);
-			String[] evidenceId = record.getStringAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID).split(ID_COMPONENT_SEPARATOR);
-			String[] fragmentId = record.getStringAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID).split(ID_COMPONENT_SEPARATOR);
-
-			List<AssemblyEvidenceSupport> support = new ArrayList<>();
-			for (int i = 0; i < category.length; i++) {
-				support.add(new AssemblyEvidenceSupport(
-						AssemblyEvidenceSupport.SupportType.value(type[i]),
-						Range.closed(intervalStart[i], intervalEnd[i]),
-						evidenceId[i],
-						fragmentId[i],
-						category[i],
-						qual[i]
-				));
+				// can't write zero length SAM arrays
+				// no attribute means no supporting evidence
+			} else {
+				byte[] type = record.getSignedByteArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE);
+				int[] category = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY);
+				int[] intervalStart = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START);
+				int[] intervalEnd = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END);
+				float[] qual = record.getFloatArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL);
+				String[] evidenceId = record.getStringAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID).split(ID_COMPONENT_SEPARATOR);
+				String[] fragmentId = record.getStringAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID).split(ID_COMPONENT_SEPARATOR);
+				if (type == null || category == null || intervalStart == null || intervalEnd == null || qual == null) {
+					String msg = "Sanity check failure:" + record.getReadName() + " missing required evidence SAM tag.";
+					log.error(msg);
+					throw new IllegalStateException(msg);
+				}
+				if (type.length != category.length
+						|| type.length != intervalStart.length
+						|| type.length != intervalEnd.length
+						|| type.length != qual.length
+						|| type.length != evidenceId.length
+						|| type.length != fragmentId.length) {
+					String msg = "Sanity check failure:" + record.getReadName() + " has inconsistent evidence SAM tag.";
+					log.error(msg);
+					throw new IllegalStateException(msg);
+				}
+				for (int i = 0; i < category.length; i++) {
+					support.add(new AssemblyEvidenceSupport(
+							AssemblyEvidenceSupport.SupportType.value(type[i]),
+							Range.closed(intervalStart[i], intervalEnd[i]),
+							evidenceId[i],
+							fragmentId[i],
+							category[i],
+							qual[i]
+					));
+				}
 			}
 		}
 		return support;
@@ -110,15 +124,36 @@ public class AssemblyAttributes {
 		if (support.size() != aes.size()) {
 			throw new IllegalArgumentException("support and aes sizes do not match");
 		}
-		byte[] type = new byte[support.size()];
-		int[] category = new int[support.size()];
-		int[] intervalStart = new int[support.size()];
-		int[] intervalEnd = new int[support.size()];
-		float[] qual = new float[support.size()];
+		annotateAssemblyEvidenceSupport(record, aes);
+
+		record.setAttribute(SamTags.IS_ASSEMBLY, (byte)1);
+		record.setAttribute(SamTags.ASSEMBLY_MAX_READ_LENGTH, maxReadLength(support));
+		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, strandBias(support));
+		ensureUniqueEvidenceID(record.getReadName(), support);
+		// TODO: proper mapq model
+		record.setMappingQuality(maxLocalMapq(support));
+		if (record.getMappingQuality() < context.getConfig().minMapq) {
+			if (!MessageThrottler.Current.shouldSupress(log, "below minimum mapq")) {
+				log.warn(String.format("Sanity check failure: %s has mapq below minimum", record.getReadName()));
+			}
+		}
+	}
+
+	private static void annotateAssemblyEvidenceSupport(SAMRecord record, List<AssemblyEvidenceSupport> aes) {
+		if (aes == null || aes.size() == 0) {
+			return;
+		}
+		Collections.sort(aes, AssemblyEvidenceSupport.ByEvidenceID);
+		byte[] type = new byte[aes.size()];
+		int[] category = new int[aes.size()];
+		int[] intervalStart = new int[aes.size()];
+		int[] intervalEnd = new int[aes.size()];
+		float[] qual = new float[aes.size()];
 		StringBuilder evidenceId = new StringBuilder();
 		StringBuilder fragmentId = new StringBuilder();
 		for (int i = 0; i < aes.size(); i++) {
 			AssemblyEvidenceSupport s = aes.get(i);
+			type[i] = (byte)s.getSupportType().getValue();
 			category[i] = s.getCategory();
 			intervalStart[i] = s.getAssemblyContigOffset().lowerEndpoint();
 			intervalEnd[i] = s.getAssemblyContigOffset().upperEndpoint();
@@ -128,9 +163,8 @@ public class AssemblyAttributes {
 				fragmentId.append(ID_COMPONENT_SEPARATOR);
 			}
 			evidenceId.append(s.getEvidenceID());
-			evidenceId.append(s.getFragmentID());
+			fragmentId.append(s.getFragmentID());
 		}
-		ensureUniqueEvidenceID(record.getReadName(), support);
 		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, type);
 		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, category);
 		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, evidenceId.toString());
@@ -138,16 +172,8 @@ public class AssemblyAttributes {
 		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, intervalStart);
 		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, intervalEnd);
 		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, qual);
-		record.setAttribute(SamTags.ASSEMBLY_MAX_READ_LENGTH, maxReadLength(support));
-		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, strandBias(support));
-		// TODO: proper mapq model
-		record.setMappingQuality(maxLocalMapq(support));
-		if (record.getMappingQuality() < context.getConfig().minMapq) {
-			if (!MessageThrottler.Current.shouldSupress(log, "below minimum mapq")) {
-				log.warn(String.format("Sanity check failure: %s has mapq below minimum", record.getReadName()));
-			}
-		}
 	}
+
 	private static boolean ensureUniqueEvidenceID(String assemblyName, Collection<DirectedEvidence> support) {
 		boolean isUnique = true;
 		Set<String> map = new HashSet<String>();
