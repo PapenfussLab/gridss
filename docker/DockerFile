@@ -6,7 +6,7 @@ FROM ubuntu:16.04
 LABEL base.image="biocontainers:latest" 
 LABEL version="1"
 LABEL software="GRIDSS"
-LABEL software.version="1.7.2"
+LABEL software.version="1.8.0"
 LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
 LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.documentation="https://github.com/PapenfussLab/gridss"
@@ -36,7 +36,7 @@ USER gridss
 
 WORKDIR /home/gridss/
 
-RUN wget https://github.com/PapenfussLab/gridss/releases/download/v1.7.2/gridss-1.7.2-gridss-jar-with-dependencies.jar
+RUN wget https://github.com/PapenfussLab/gridss/releases/download/v1.8.0/gridss-1.8.0-gridss-jar-with-dependencies.jar
 
 WORKDIR /data/
 
