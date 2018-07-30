@@ -50,6 +50,7 @@ java -ea -Xmx31g \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
 	-Dsamjdk.compression_level=1 \
+	-Dgridss.gridss.output_to_temp_file=true \
 	-cp $GRIDSS_JAR gridss.CallVariants \
 	TMP_DIR=. \
 	WORKING_DIR=. \
