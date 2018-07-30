@@ -44,6 +44,8 @@ if [[ ! "$JAVA_VERSION" =~ "\"1.8" ]] ; then
 	exit 1
 fi
 
+ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
+
 java -ea -Xmx31g \
 	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
