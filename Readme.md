@@ -364,6 +364,7 @@ On linux 'ulimit -n' displays your current limit. This error likely to be encoun
 If those options fail, your remaining options are:
 * Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
 * Increase the chunk size. The default chunk size is 10 million bases. This can be increased by adding a `chunkSize=100000000` line a `gridss.properties` file and adding `CONFIGURATION_FILE=gridss.properties` to the GRIDSS command line. Note that this will increase the number of bases processed by each job thus reduce the level of parallelisation possible.
+* As a last-ditch effort, you can keep rerunning GRIDSS until it completes. If you are using the default entry point of `gridss.CallVariants` and have `-Dgridss.gridss.output_to_temp_file=true`, then you can rerun GRIDSS and it will continue from where it left off. Assuming it doesn't keep dying at the same spot, it will eventually complete.
 
 ### Reference genome used by _input.bam_ does not match reference genome _reference.fa_. The reference supplied must match the reference used for every input.
 

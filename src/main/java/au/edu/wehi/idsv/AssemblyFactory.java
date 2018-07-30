@@ -121,6 +121,7 @@ public final class AssemblyFactory {
 		record.setMappingQuality((int)Math.ceil(source.getContext().getConfig().minMapq));
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(assemblyIdGenerator.generate(breakend, baseCalls, startAnchoredBaseCount, endAnchoredBaseCount));
+		int startingPadBases = 0;
 		if (startAnchoredBaseCount == 0 && endAnchoredBaseCount == 0) {
 			assert(!(breakend instanceof BreakpointSummary));
 			// SAM spec requires at least one mapped base
@@ -146,6 +147,7 @@ public final class AssemblyFactory {
 				record.setCigar(new Cigar(ce));
 				record.setReadBases(Bytes.concat(PAD_BASES[padBases], baseCalls));
 				record.setBaseQualities(Bytes.concat(PAD_QUALS[padBases], baseQuals));
+				startingPadBases = padBases;
 			} else {
 				ce.addFirst(new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP));
 				record.setCigar(new Cigar(ce));
@@ -202,8 +204,9 @@ public final class AssemblyFactory {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
 		int[] truncationAmount = truncateAnchorToContigBounds(processContext, record);
-
+		truncationAmount[0] -= startingPadBases;
 		AssemblyAttributes.annotateAssembly(processContext, record, evidence, supportList);
+		AssemblyAttributes.adjustAssemblyAnnotationDueToContigChange(record, truncationAmount[0]);
 		return record;
 	}
 	private static int[] truncateAnchorToContigBounds(ProcessingContext processContext, SAMRecord r) {

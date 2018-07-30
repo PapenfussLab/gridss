@@ -151,7 +151,6 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 				getLocalMapq(), getRemoteMapq());
 	}
 	private float scoreAssembly() {
-		if (getBreakendSequence().length == 0) return 0;
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
 		int pos = getBreakendAssemblyContigOffset();
 		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair));

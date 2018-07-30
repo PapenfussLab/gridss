@@ -48,7 +48,6 @@ public class SoftClipEvidence extends SingleReadEvidence {
 		return (float)source.getContext().getConfig().getScoring().getModel().scoreSoftClip(source.getMetrics(), clipLength, getLocalMapq());
 	}
 	private float scoreAssembly() {
-		if (getBreakendSequence().length == 0) return 0;
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
 		int pos = getBreakendAssemblyContigOffset();
 		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair));

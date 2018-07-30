@@ -821,7 +821,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				if (preferredContigDirection == BreakendDirection.Forward) {
 					bounds = Range.closed(0, bounds.upperEndpoint() + k - 1);
 				} else {
-					bounds = Range.closed(bounds.lowerEndpoint() + 1, contigBaseLength);
+					bounds = Range.closed(bounds.lowerEndpoint() + 1, contigBaseLength - 1);
 				}
 			} else {
 				// if we have a local anchor then we only support breakends between the bounds of the two reads

@@ -1,10 +1,17 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
+import com.google.common.collect.Streams;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -37,6 +44,18 @@ public class AssemblyAttributes {
 	public AssemblyAttributes(SingleReadEvidence record) {
 		this(record.getSAMRecord());
 	}
+
+	public static void adjustAssemblyAnnotationDueToContigChange(SAMRecord record, int startTruncatedBases) {
+		int[] intervalStart = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START);
+		int[] intervalEnd = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END);
+		for (int i = 0; i < intervalStart.length; i++) {
+			intervalStart[i] -= startTruncatedBases;
+			intervalEnd[i] -= startTruncatedBases;
+		}
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, intervalStart);
+		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, intervalEnd);
+	}
+
 	/**
 	 * Determines whether the given record is part of the given assembly
 	 *
@@ -242,5 +261,24 @@ public class AssemblyAttributes {
 	}
 	public double getStrandBias() {
 		return AttributeConverter.asDouble(record.getAttribute(SamTags.ASSEMBLY_STRAND_BIAS), 0);
+	}
+	public static int getUnanchoredPlacholderAnchoredBases(SAMRecord record) {
+		if (!isUnanchored(record)) {
+			throw new IllegalArgumentException("Assembly is not unanchored.");
+		}
+		Cigar c = getUnanchoredCigar(record);
+		int xbases = c.getCigarElements().stream()
+				.filter(ce -> ce.getOperator() == CigarOperator.X)
+				.mapToInt(ce -> ce.getLength())
+				.sum();
+		return xbases;
+	}
+	private static Cigar getUnanchoredCigar(SAMRecord record) {
+		return Streams.concat(Stream.of(new ChimericAlignment(record)),
+				ChimericAlignment.getChimericAlignments(record).stream())
+				.filter(ca -> ca.cigar.getCigarElements().stream().anyMatch(ce -> ce.getOperator() == CigarOperator.X))
+				.map(ca -> ca.cigar)
+				.findFirst()
+				.orElse(null);
 	}
 }

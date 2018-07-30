@@ -404,7 +404,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		Assert.assertEquals(e3.get(0).getEvidenceID(), e2.get(1).getRemoteEvidenceID());
 	}
 	@Test
-	public void should_pro_rata_assembly_suport() {
+	public void should_pro_rata_assembly_support() {
 		SAMRecord primary = withSequence("NNNN", Read(1, 200, "1M3S"))[0];
 		primary.setMappingQuality(100);
 		SAMRecord r = Read(1, 100, "2M4S");
@@ -423,5 +423,94 @@ public class SplitReadEvidenceTest extends TestHelper {
 		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
 		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);
 		Assert.assertEquals(15, e.getBreakpointQual(), 0);
+	}
+	@Test
+	public void FWD_unanchored_assembly_should_pro_rata_support_to_start_of_contig() {
+		SAMRecord r = withSequence("NNACTG", Read(1, 100, "1X10N1X4S"))[0];
+		SAMRecord realigned = Read(2, 100, "2S4M");
+		r.setMappingQuality(60);
+		realigned.setMappingQuality(60);
+		r.setAttribute("SA", new ChimericAlignment(realigned).toString());
+		realigned.setAttribute("SA", new ChimericAlignment(r).toString());
+		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, 'f');
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 1 });
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0});
+		// 0 1 2 3 4 5 6
+		//  N N A C T G
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, new int[] { 2 });
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, new int[] { 5 });
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[] { 10});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "e");
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "e");
+		r.setAttribute(SamTags.UNANCHORED, 1);
+		copyAssemblyAttributes(r, realigned);
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		SplitReadEvidence local = SplitReadEvidence.create(aes, r).get(0);
+		SplitReadEvidence remote = SplitReadEvidence.create(aes, realigned).get(0);
+		Assert.assertEquals(10, local.getBreakpointQual(), 0);
+		Assert.assertEquals(10, remote.getBreakpointQual(), 0);
+	}
+	@Test
+	public void BWD_unanchored_assembly_should_pro_rata_support_to_start_of_contig() {
+		SAMRecord r = withSequence("ACTGNN", Read(1, 100, "4S1X10N1X"))[0];
+		SAMRecord realigned = Read(2, 100, "4M2S");
+		r.setMappingQuality(60);
+		realigned.setMappingQuality(60);
+		r.setAttribute("SA", new ChimericAlignment(realigned).toString());
+		realigned.setAttribute("SA", new ChimericAlignment(r).toString());
+		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, 'b');
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 1 });
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0});
+		// 0 1 2 3 4 5 6
+		//  A C T G N N
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, new int[] { 1 });
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, new int[] { 4 });
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[] { 10});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "e");
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "e");
+		r.setAttribute(SamTags.UNANCHORED, 1);
+		copyAssemblyAttributes(r, realigned);
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		SplitReadEvidence local = SplitReadEvidence.create(aes, r).get(0);
+		SplitReadEvidence remote = SplitReadEvidence.create(aes, realigned).get(0);
+		Assert.assertEquals(10, local.getBreakpointQual(), 0);
+		Assert.assertEquals(10, remote.getBreakpointQual(), 0);
+	}
+	@Test
+	public void assembly_prorata_with_inserted_sequence_should_be_symmetrical() {
+
+		SAMRecord r = Read(2, 300, "10S5M");
+		SAMRecord r2 = Read(2, 200, "5M10S");
+		r.setMappingQuality(100);
+		r2.setMappingQuality(100);
+		r.setAttribute("SA", new ChimericAlignment(r2).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r).toString());
+		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 0,0, 0});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0, 0, 0});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, new int[] { 2, 6, 0});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, new int[] { 7, 15, 15});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[] { 1, 2, 3});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "1 2 3");
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
+		copyAssemblyAttributes(r, r2);
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		SplitReadEvidence elocal = SplitReadEvidence.create(aes, r2).get(0);
+		SplitReadEvidence eremote = SplitReadEvidence.create(aes, r).get(0);
+		Assert.assertEquals(elocal.getBreakpointQual(), eremote.getBreakpointQual(), 0);
+	}
+	public void copyAssemblyAttributes(SAMRecord source, SAMRecord dest) {
+		dest.setAttribute(SamTags.IS_ASSEMBLY, source.getAttribute(SamTags.IS_ASSEMBLY));
+		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE));
+		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY));
+		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START));
+		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END));
+		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL));
+		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID));
+		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID));
+		dest.setAttribute(SamTags.UNANCHORED, source.getAttribute(SamTags.UNANCHORED));
 	}
 }

@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import au.edu.wehi.idsv.*;
 import com.google.common.collect.*;
 import gridss.cmdline.programgroups.Assembly;
+import htsjdk.samtools.CigarOperator;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -485,13 +486,15 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals("GGTTGCATAGACGTGGTCGACC", S(output.get(0).getReadBases()));
+		assertFalse(output.get(0).hasAttribute(SamTags.UNANCHORED));
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
 		// GGTTGCATAGACGTGGTCGACC
 		// 0123456789012345678901
 		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
-		for (int i = 1; i <=output.get(0).getReadLength(); i++) {
+		for (int i = 1; i < output.get(0).getReadLength(); i++) {
 			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
 		}
+		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
 	}
 	@Test
 	public void should_not_write_inconsistent_anchors() {
@@ -511,5 +514,63 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3, sce4, sce5, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertFalse(output.get(0).getCigarString().contains("I"));
 		assertFalse(output.get(0).getCigarString().contains("D"));
+	}
+	@Test
+	public void unanchored_rp_should_support_at_contig_bounds_but_not_padding_bases_FWD() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().minReads = 1;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 50);
+		SAMRecord[] rp = DP(0, 1, "10M", true, 0, 1000, "10M", false);
+		rp[0].setReadBases(B("NNNNNNNNNN"));
+		rp[1].setReadBases(B("CGACCTAGTA"));
+		List<SAMRecord> output = go(pc, true, FWD, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertEquals(1, output.size());
+		assertEquals(rp[1].getReadLength() + 2, output.get(0).getReadLength());
+		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
+		assertTrue(output.get(0).hasAttribute(SamTags.UNANCHORED));
+		assertEquals("1X29N1X10S", output.get(0).getCigarString());
+		// 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
+		//  * * M M M M M M M M M M - -
+		assertEquals(0, aa.getSupportingReadCount(0, null, null));
+		assertEquals(0, aa.getSupportingReadCount(1, null, null));
+		assertEquals(1, aa.getSupportingReadCount(2, null, null));
+		assertEquals(1, aa.getSupportingReadCount(3, null, null));
+		assertEquals(1, aa.getSupportingReadCount(4, null, null));
+		assertEquals(1, aa.getSupportingReadCount(10, null, null));
+		assertEquals(1, aa.getSupportingReadCount(11, null, null));
+		assertEquals(0, aa.getSupportingReadCount(12, null, null));
+		assertEquals(0, aa.getSupportingReadCount(13, null, null));
+	}
+	@Test
+	public void unanchored_rp_should_support_at_contig_bounds_but_not_padding_bases_BWD() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().minReads = 1;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 50);
+		SAMRecord[] rp = DP(0, 100, "10M", false, 0, 1000, "10M", false);
+		rp[0].setReadBases(B("NNNNNNNNNN"));
+		rp[1].setReadBases(B("CGACCTAGTA"));
+		List<SAMRecord> output = go(pc, true, BWD, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertEquals(1, output.size());
+		assertEquals(rp[1].getReadLength() + 2, output.get(0).getReadLength());
+		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
+		assertTrue(output.get(0).hasAttribute(SamTags.UNANCHORED));
+		assertEquals("10S1X29N1X", output.get(0).getCigarString());
+		assertEquals(0, aa.getSupportingReadCount(0, null, null));
+		//  0 1 2 3 4 5 6 7 8 9 0 1 2 3
+		// M M M M M M M M M M * * - -
+		assertEquals(0, aa.getSupportingReadCount(0, null, null));
+		assertEquals(1, aa.getSupportingReadCount(1, null, null));
+		assertEquals(1, aa.getSupportingReadCount(2, null, null));
+		assertEquals(1, aa.getSupportingReadCount(3, null, null));
+		assertEquals(1, aa.getSupportingReadCount(8, null, null));
+		assertEquals(1, aa.getSupportingReadCount(9, null, null));
+		assertEquals(0, aa.getSupportingReadCount(10, null, null));
+		assertEquals(0, aa.getSupportingReadCount(11, null, null));
+		assertEquals(0, aa.getSupportingReadCount(12, null, null));
+		assertEquals(0, aa.getSupportingReadCount(13, null, null));
 	}
 }

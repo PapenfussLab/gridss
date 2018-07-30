@@ -10,6 +10,7 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
@@ -27,7 +28,6 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final byte[] breakendBases;
 	private final byte[] breakendQuals;
 	private final boolean isUnanchored;
-	private final int unanchoredXNXHackMappedBases;
 	private final int nominalBreakendAfterReadOffset;
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
@@ -108,7 +108,6 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				offsetUnmappedStart -= remoteBasesToTrim;
 			}
 		}
-		this.unanchoredXNXHackMappedBases = localInexactMargin + remoteInexactMargin;
 		if (localInexactMargin > 0 || remoteInexactMargin > 0) {
 			// strip out placeholder anchorings
 			// 1X*N1X format has at most 2 anchoring bases
@@ -406,13 +405,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	 */
 	public Range<Integer> getBreakendAssemblyContigHomologyInterval() {
 		if (isUnanchored) {
-			// Take the extrema for the unanchored contigs since everything supports the event
+			int anchorBases = AssemblyAttributes.getUnanchoredPlacholderAnchoredBases(record);
 			if (new AssemblyAttributes(record).getAssemblyDirection() == BreakendDirection.Forward) {
-				return Range.closed(0, 0);
+				return Range.closed(anchorBases, anchorBases);
 			} else {
-				// read length is 1-2 more than the contig length due to anchoring hacks
-				int end = record.getReadLength() - unanchoredXNXHackMappedBases;
-				return Range.closed(end, end);
+				int rl = SAMRecordUtil.getReadLengthIncludingHardClipping(record);
+				return Range.closed(rl - anchorBases, rl - anchorBases);
 			}
 		}
 		Range<Integer> r;
