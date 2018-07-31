@@ -220,13 +220,13 @@ public class SingleReadEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendReadOffsetInterval_should_consider_mapping_strand() {
-		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, Read(0, 1, "2M3S")).get(0).getBreakendAssemblyContigHomologyInterval();
+		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, Read(0, 1, "2M3S")).get(0).getBreakendAssemblyContigBreakpointInterval();
 		// 01234
 		// MMSSS
 		assertEquals(2, (int)r.lowerEndpoint());
 		assertEquals(2, (int)r.upperEndpoint());
 
-		r = SingleReadEvidence.createEvidence(SES(), 0, onNegative(Read(0, 1, "1M4S"))[0]).get(0).getBreakendAssemblyContigHomologyInterval();
+		r = SingleReadEvidence.createEvidence(SES(), 0, onNegative(Read(0, 1, "1M4S"))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
 		// 43210
 		// MSSSS
 		assertEquals(4, (int)r.lowerEndpoint());
@@ -234,7 +234,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendReadOffsetInterval_should_consider_homology() {
-		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,10,+,2S3M,20,0", withSequence("NAAANN", Read(0, 1, "2M4S")))[0]).get(0).getBreakendAssemblyContigHomologyInterval();
+		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,10,+,2S3M,20,0", withSequence("NAAANN", Read(0, 1, "2M4S")))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
 		// 01234
 		// MMSSS
 		//  ***  homology interval

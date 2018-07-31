@@ -10,7 +10,6 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
-import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
@@ -403,7 +402,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	 * @return 0-based position relative to the start of the read.
 	 * The breakpoint is considered to be immediately prior (in read-space coordinates) to the given position.
 	 */
-	public Range<Integer> getBreakendAssemblyContigHomologyInterval() {
+	public Range<Integer> getBreakendAssemblyContigBreakpointInterval() {
 		if (isUnanchored) {
 			int anchorBases = AssemblyAttributes.getUnanchoredPlacholderAnchoredBases(record);
 			if (new AssemblyAttributes(record).getAssemblyDirection() == BreakendDirection.Forward) {
@@ -413,18 +412,29 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				return Range.closed(rl - anchorBases, rl - anchorBases);
 			}
 		}
+		// Variant has either inserted sequence or homology
 		Range<Integer> r;
-		if (!record.getReadNegativeStrandFlag()) {
-			r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
+		int insertLength = getUntemplatedSequence().length();
+		if (insertLength > 0) {
+			if ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag()) |
+					(location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag())) {
+				r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset + insertLength);
+			} else {
+				r =  Range.closed(nominalBreakendAfterReadOffset - insertLength, nominalBreakendAfterReadOffset);
+			}
 		} else {
-			r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
+			if (!record.getReadNegativeStrandFlag()) {
+				r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
+			} else {
+				r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
+			}
 		}
 		return r;
 	}
 	public int getBreakendAssemblyContigOffset() {
 		if (assemblyOffset == Integer.MIN_VALUE && AssemblyAttributes.isAssembly(record)) {
 			AssemblyAttributes aa = new AssemblyAttributes(record);
-			assemblyOffset = aa.getMinQualPosition(getBreakendAssemblyContigHomologyInterval(), null, null);
+			assemblyOffset = aa.getMinQualPosition(getBreakendAssemblyContigBreakpointInterval(), null, null);
 		}
 		return assemblyOffset;
 	}

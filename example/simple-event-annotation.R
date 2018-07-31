@@ -24,7 +24,7 @@ writeVcf(vcf, "chr12.1527326.DEL1024.sv.annotated.vcf")
 
 # TODO: perform event filtering here
 # By default, GRIDSS is very sensitive but this comes at the cost of a high false discovery rate
-gr <- gr[gr$FILTER == "." & partner(gr)$FILTER == "."] # Remove low confidence calls
+gr <- gr[gr$FILTER == "PASS" & partner(gr)$FILTER == "PASS"] # Remove low confidence calls
 
 simplegr <- gr[simpleEventType(gr) %in% c("INS", "INV", "DEL", "DUP")]
 simplebed <- data.frame(

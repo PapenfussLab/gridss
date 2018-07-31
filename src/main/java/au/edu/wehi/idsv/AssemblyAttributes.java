@@ -238,6 +238,21 @@ public class AssemblyAttributes {
 		int bestPos = assemblyContigOffset.lowerEndpoint();
 		for (int i = assemblyContigOffset.lowerEndpoint() + 1; i <= assemblyContigOffset.upperEndpoint(); i++) {
 			float current = getSupportingQualScore(i, null, null);
+			if (current < best) {
+				best = current;
+				bestPos = i;
+			}
+		}
+		return bestPos;
+	}
+	public int getMaxQualPosition(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		if (assemblyContigOffset == null) {
+			throw new NullPointerException("assemblyContigOffset is required.");
+		}
+		float best = getSupportingQualScore(assemblyContigOffset.lowerEndpoint(), supportingCategories, supportTypes);
+		int bestPos = assemblyContigOffset.lowerEndpoint();
+		for (int i = assemblyContigOffset.lowerEndpoint() + 1; i <= assemblyContigOffset.upperEndpoint(); i++) {
+			float current = getSupportingQualScore(i, null, null);
 			if (current > best) {
 				best = current;
 				bestPos = i;
