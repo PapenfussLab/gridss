@@ -220,16 +220,31 @@ public class SingleReadEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendReadOffsetInterval_should_consider_mapping_strand() {
-		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, Read(0, 1, "2M3S")).get(0).getBreakendAssemblyContigBreakpointInterval();
+		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, withSequence("NNNNN", Read(0, 1, "2M3S"))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
 		// 01234
 		// MMSSS
 		assertEquals(2, (int)r.lowerEndpoint());
 		assertEquals(2, (int)r.upperEndpoint());
 
-		r = SingleReadEvidence.createEvidence(SES(), 0, onNegative(Read(0, 1, "1M4S"))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
+		r = SingleReadEvidence.createEvidence(SES(), 0, withSequence("NNNNN", onNegative(Read(0, 1, "1M4S")))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
 		// 43210
 		// MSSSS
 		assertEquals(4, (int)r.lowerEndpoint());
+		assertEquals(4, (int)r.upperEndpoint());
+	}
+	@Test
+	public void getBreakendReadOffsetInterval_should_untemplated_inserted_Sequence() {
+		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,10,+,3S2M,20,0", withSequence("NNNNN", Read(0, 1, "2M3S")))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
+		// 01234
+		// MMSSS
+		assertEquals(2, (int)r.lowerEndpoint());
+		assertEquals(3, (int)r.upperEndpoint());
+
+		r = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,10,+,2M3S,20,0", withSequence("NNNNN", onNegative(Read(0, 1, "1M4S"))))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
+		// 43210
+		// MSSSS
+		// SSSMM
+		assertEquals(2, (int)r.lowerEndpoint());
 		assertEquals(4, (int)r.upperEndpoint());
 	}
 	@Test
