@@ -23,6 +23,8 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
+import static picard.fingerprint.DiploidHaplotype.aa;
+
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
 	private final ProcessingContext processContext;
@@ -328,17 +330,26 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(basrp).sum());
 		attribute(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakpointFragments).sum());
 		attribute(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakendFragments).sum());
-		
-		if (supportingBreakpoint.size() > 0) {
-			int totalSupport = supportingBreakpoint.stream().mapToInt(e -> e.constituentReads()).sum();
-			if (totalSupport != 0) {
-				attribute(VcfInfoAttributes.STRAND_BIAS.attribute(), supportingBreakpoint.stream().mapToDouble(e -> e.getStrandBias() * e.constituentReads()).sum() / totalSupport);
+
+		// Calculate strand bias purely from direct read support
+		int reads = 0;
+		float strandReads = 0;
+		for (DirectedEvidence de : Iterables.concat(supportingBreakpoint, supportingBreakend)) {
+			if (de instanceof SingleReadEvidence) {
+				SingleReadEvidence e = (SingleReadEvidence) de;
+				if (AssemblyAttributes.isAssembly(e)) {
+					AssemblyAttributes aa = aaLookup.get(de);
+					int asmReads = aa.getSupportingReadCount(null, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read));
+					reads += asmReads;
+					strandReads += aa.getStrandBias() * asmReads;
+				} else {
+					reads++;
+					strandReads += e.getStrandBias();
+				}
 			}
-		} else {
-			int totalSupport = supportingBreakend.stream().mapToInt(e -> e.constituentReads()).sum();
-			if (totalSupport != 0) {
-				attribute(VcfInfoAttributes.STRAND_BIAS.attribute(), supportingBreakend.stream().mapToDouble(e -> e.getStrandBias() * e.constituentReads()).sum() / totalSupport);
-			}
+		}
+		if (reads > 0) {
+			attribute(VcfInfoAttributes.STRAND_BIAS.attribute(), strandReads / reads);
 		}
 		List<String> breakendIds = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
 				.map(e -> e.getSAMRecord().getReadName())
