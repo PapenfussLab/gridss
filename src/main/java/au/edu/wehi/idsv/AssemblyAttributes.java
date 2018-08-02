@@ -45,12 +45,14 @@ public class AssemblyAttributes {
 	public static void adjustAssemblyAnnotationDueToContigChange(SAMRecord record, int startTruncatedBases) {
 		int[] intervalStart = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START);
 		int[] intervalEnd = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END);
-		for (int i = 0; i < intervalStart.length; i++) {
-			intervalStart[i] -= startTruncatedBases;
-			intervalEnd[i] -= startTruncatedBases;
+		if (intervalStart != null && intervalEnd != null) {
+			for (int i = 0; i < intervalStart.length; i++) {
+				intervalStart[i] -= startTruncatedBases;
+				intervalEnd[i] -= startTruncatedBases;
+			}
+			record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, intervalStart);
+			record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, intervalEnd);
 		}
-		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, intervalStart);
-		record.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, intervalEnd);
 	}
 
 	/**

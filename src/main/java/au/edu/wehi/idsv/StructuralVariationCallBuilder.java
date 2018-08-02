@@ -435,8 +435,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				breakdownQual[i] = aa.getSupportingQualScore(offset, ImmutableSet.of(i), null);
 			}
 			double breakdownTotal = DoubleStream.of(breakdownQual).sum();
-			for (int i = 0; i < prorata.length; i++) {
-				prorata[i] += assQual * (breakdownQual[i] / breakdownTotal);
+			if (breakdownTotal != 0) { // defensive check to mitigate impact of 0 qual assemblies (#156)
+				for (int i = 0; i < prorata.length; i++) {
+					prorata[i] += assQual * (breakdownQual[i] / breakdownTotal);
+				}
 			}
 			totalAssQual += assQual;
 		}

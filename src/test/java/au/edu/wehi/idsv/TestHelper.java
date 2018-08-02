@@ -22,16 +22,12 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import au.edu.wehi.idsv.sam.SamTags;
+import com.google.common.collect.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
@@ -1273,5 +1269,10 @@ public class TestHelper {
 	}
 	public static SingleReadEvidence incorporateRealignment(SAMEvidenceSource aes, SAMRecord assembly, SAMRecord... realignments) {
 		return incorporateRealignment(aes, assembly, Lists.newArrayList(realignments));
+	}
+	public static List<AssemblyEvidenceSupport> fullSupport(Collection<DirectedEvidence> support) {
+		return support.stream()
+				.map(e -> new AssemblyEvidenceSupport(e, Range.closed(-100000, 100000)))
+				.collect(Collectors.toList());
 	}
 }

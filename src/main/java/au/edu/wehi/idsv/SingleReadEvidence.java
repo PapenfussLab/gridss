@@ -412,23 +412,27 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				return Range.closed(rl - anchorBases, rl - anchorBases);
 			}
 		}
-		// Variant has either inserted sequence or homology
-		Range<Integer> r;
-		int insertLength = getUntemplatedSequence().length();
-		if (insertLength > 0) {
-			if ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag()) |
-					(location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag())) {
-				r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset + insertLength);
-			} else {
-				r =  Range.closed(nominalBreakendAfterReadOffset - insertLength, nominalBreakendAfterReadOffset);
-			}
-		} else {
-			if (!record.getReadNegativeStrandFlag()) {
-				r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
-			} else {
-				r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
-			}
-		}
+        Range<Integer> r;
+		if (location instanceof BreakpointSummary) {
+            // Variant has either inserted sequence or homology
+            int insertLength = getUntemplatedSequence().length();
+            if (insertLength > 0) {
+                if ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag()) |
+                        (location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag())) {
+                    r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset + insertLength);
+                } else {
+                    r = Range.closed(nominalBreakendAfterReadOffset - insertLength, nominalBreakendAfterReadOffset);
+                }
+            } else {
+                if (!record.getReadNegativeStrandFlag()) {
+                    r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
+                } else {
+                    r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
+                }
+            }
+        } else {
+            r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset);
+        }
 		return r;
 	}
 	public int getBreakendAssemblyContigOffset() {

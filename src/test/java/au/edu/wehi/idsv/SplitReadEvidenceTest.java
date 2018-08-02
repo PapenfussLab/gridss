@@ -404,8 +404,8 @@ public class SplitReadEvidenceTest extends TestHelper {
 		Assert.assertEquals(e3.get(0).getEvidenceID(), e2.get(1).getRemoteEvidenceID());
 	}
 	@Test
-	public void should_pro_rata_assembly_support() {
-		SAMRecord primary = withSequence("NNNN", Read(1, 200, "1M3S"))[0];
+	public void untemplated_inserted_sequence_should_report_max_over_interval() {
+		SAMRecord primary = withSequence("NNNNNN", Read(1, 200, "1M5S"))[0];
 		primary.setMappingQuality(100);
 		SAMRecord r = Read(1, 100, "2M4S");
 		r.setMappingQuality(100);
@@ -415,14 +415,37 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 0, 1, 1});
         r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0, 0, 1});
-        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, new int[] { 3, 2, 3});
-        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, new int[] { 4, 3, 5});
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, new int[] { 0, 2, 3});
+        r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, new int[] { 6, 3, 5});
         r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[] { 10, 20, 5});
         r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "1 2 3");
         r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
 		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
 		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);
-		Assert.assertEquals(15, e.getBreakpointQual(), 0);
+		// 0 1 2 3 4 5 6
+		//  M S S S    primary
+		//  S S S S M M realigned
+		Assert.assertEquals(10, e.getBreakpointQual(), 0);
+	}
+	@Test
+	public void homology_should_report_min_over_interval() {
+		SAMRecord primary = withSequence("NAAAAN", Read(1, 200, "1M5S"))[0];
+		primary.setMappingQuality(100);
+		SAMRecord r = withSequence("NAAAAN", Read(1, 300, "1S5M"))[0];
+		r.setMappingQuality(100);
+		r.setAttribute("SA", new ChimericAlignment(primary).toString());
+		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 0, 1, 1});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0, 0, 1});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, new int[] { 3, 2, 3});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_END, new int[] { 4, 3, 5});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[] { 10, 20, 5});
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "1 2 3");
+		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);
+		Assert.assertEquals(0, e.getBreakpointQual(), 0);
 	}
 	@Test
 	public void FWD_unanchored_assembly_should_pro_rata_support_to_start_of_contig() {
