@@ -3,15 +3,12 @@ package au.edu.wehi.idsv;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MessageThrottler;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.Streams;
 import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
-import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -118,9 +115,12 @@ public class AssemblyAttributes {
 				.max()
 				.orElse(0);
 	}
-	private static float strandBias(Collection<DirectedEvidence> support) {
+	private static float readStrandBias(Collection<DirectedEvidence> fullSupport) {
+		List<DirectedEvidence> support = fullSupport.stream()
+				.filter(s -> s instanceof SingleReadEvidence)
+				.collect(Collectors.toList());
 		if (support.size() == 0) {
-			return 0;
+			return 0.5f;
 		}
 		return (float)support.stream()
 				.mapToDouble(e -> e.getStrandBias())
@@ -149,7 +149,7 @@ public class AssemblyAttributes {
 
 		record.setAttribute(SamTags.IS_ASSEMBLY, (byte)1);
 		record.setAttribute(SamTags.ASSEMBLY_MAX_READ_LENGTH, maxReadLength(support));
-		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, strandBias(support));
+		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, readStrandBias(support));
 		ensureUniqueEvidenceID(record.getReadName(), support);
 		// TODO: proper mapq model
 		record.setMappingQuality(maxLocalMapq(support));
@@ -261,6 +261,9 @@ public class AssemblyAttributes {
 			}
 		}
 		return bestPos;
+	}
+	public int getSupportingReadCount(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
+		return (int)filterSupport(assemblyContigOffset, supportingCategories, supportTypes).count();
 	}
 	public int getSupportingReadCount(int assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes) {
 		return (int)filterSupport(Range.closed(assemblyContigOffset, assemblyContigOffset), supportingCategories, supportTypes).count();
