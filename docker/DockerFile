@@ -9,12 +9,8 @@ LABEL software="GRIDSS"
 LABEL software.version="1.8.1"
 LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
 LABEL about.home="https://github.com/PapenfussLab/gridss"
-LABEL about.documentation="https://github.com/PapenfussLab/gridss"
-LABEL license="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
 
-################## MAINTAINER ######################
-MAINTAINER Daniel L Cameron <daniel.l.cameron@gmail.com>
 
 RUN bash -c 'echo -e "deb http://archive.ubuntu.com/ubuntu/ xenial main restricted universe multiverse\n\
 deb http://archive.ubuntu.com/ubuntu/ xenial-updates main restricted universe multiverse\n\
@@ -40,4 +36,4 @@ RUN wget https://github.com/PapenfussLab/gridss/releases/download/v1.8.1/gridss-
 
 WORKDIR /data/
 
-ENTRYPOINT ["java", "-ea", "-Xmx16g", "-Dsamjdk.create_index=true", "-Dsamjdk.use_async_io_read_samtools=true", "-Dsamjdk.use_async_io_write_samtools=true", "-Dsamjdk.use_async_io_write_tribble=true", "-Dgridss.gridss.output_to_temp_file=true", "-cp", "/home/gridss/gridss-1.7.2-gridss-jar-with-dependencies.jar", "gridss.CallVariants", "TMP_DIR=/data/", "WORKING_DIR=/data/", "WORKER_THREADS=8"]
+ENTRYPOINT ["java", "-ea", "-Xmx16g", "-Dsamjdk.create_index=true", "-Dsamjdk.use_async_io_read_samtools=true", "-Dsamjdk.use_async_io_write_samtools=true", "-Dsamjdk.use_async_io_write_tribble=true", "-Dgridss.gridss.output_to_temp_file=true", "-cp", "/home/gridss/gridss-1.8.1-gridss-jar-with-dependencies.jar", "gridss.CallVariants", "WORKER_THREADS=4"]
