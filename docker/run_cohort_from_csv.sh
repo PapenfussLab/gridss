@@ -61,8 +61,17 @@ fi
 # but we want to avoid anyone running multiple instances of bwa index on the
 # same reference which will happen if multiple GRIDSS jobs get run in parallel
 if [[ ! -f "$REFERENCE.bwt" ]] ; then
-	echo "Missing bwa index for $REFERENCE. Could not find $REFERENCE.bwt. Create a bwa index (using \"bwa index $REFERENCE\") or symlink the index files to the expected file names." 1>&2
-	exit 1
+	echo "Missing bwa index for $REFERENCE. Attempting to create" 1>&2
+	docker run \
+		-v "$(dirname $(readlink -f $REFERENCE)):/data/reference/" \
+		--rm \
+		--entrypoint bwa \
+		$CONTAINER \
+		index "/data/reference/$(basename $REFERENCE)"
+	if [[ ! -f "$REFERENCE.bwt" ]] ; then
+		echo "Could not generate $REFERENCE.bwt. Create a bwa index (using \"bwa index $REFERENCE\") or symlink the index files to the expected file names." 1>&2
+		exit 1
+	fi
 fi
 
 # Sanity check coreutils installed on the system
@@ -99,31 +108,30 @@ grep -vE "^#" $1 | while IFS=',' read -a ALINE ; do
 			exit 1
 			echo "DEAD CODE"
 		fi
-		INPUT_MOUNTS="$INPUT_MOUNTS -v \"/data/bam${ORDINAL}:$(dirname $(readlink -f $BAM))\""
+		INPUT_MOUNTS="$INPUT_MOUNTS -v \"$(dirname $(readlink -f $BAM)):/data/bam${ORDINAL}\""
 		INPUT_ARGS="$INPUT_ARGS INPUT=/data/bam${ORDINAL}/$(basename $BAM) "
 	done
 	PATIENT_SCRIPT=$OUTDIR/run_gridss_docker_patient_${PATIENT_ID}.sh
 	cat > $PATIENT_SCRIPT << EOF
 #!/bin/sh
 docker run \
-	--ulimit nofile=$(ulimit -Hn):$(ulimit -Hn) \
-	-v "/data/reference/:$(dirname $(readlink -f $REFERENCE))" \
-	-v "/data/blacklist/:$(dirname $(readlink -f $BLACKLIST))" \
-	-v "/data/assembly/:$(dirname $(readlink -f $ASSEMBLY))" \
-	-v "/data/output/:$(dirname $(readlink -f $OUTPUT))" \
-	$INPUT_MOUNTS \
-	$CONTAINER \
-	TMP_DIR="/data/output/" \
-	REFERENCE_SEQUENCE="/data/reference/$REFERENCE" \
-	BLACKLIST="/data/blacklist/$(basename $BLACKLIST)" \
-	ASSEMBLY="/data/assembly/$(basename $ASSEMBLY)" \
-	OUTPUT="/data/output/$(basename $OUTPUT)" \
-	$INPUT_ARGS \
-	2>&1 | tee -a /data/output/gridss.$PATIENT_ID.\$HOSTNAME.\$\$.log
+        --ulimit nofile=$(ulimit -Hn):$(ulimit -Hn) \
+        -v "$(dirname $(readlink -f $REFERENCE)):/data/reference/" \
+        -v "$(dirname $(readlink -f $BLACKLIST)):/data/blacklist/" \
+        -v "$(dirname $(readlink -f $ASSEMBLY)):/data/assembly/" \
+        -v "$(dirname $(readlink -f $OUTPUT)):/data/output/" \
+        $INPUT_MOUNTS \
+        $CONTAINER \
+        TMP_DIR="/data/output/" \
+        REFERENCE_SEQUENCE="/data/reference/$(basename $REFERENCE)" \
+        BLACKLIST="/data/blacklist/$(basename $BLACKLIST)" \
+        ASSEMBLY="/data/assembly/$(basename $ASSEMBLY)" \
+        OUTPUT="/data/output/$(basename $OUTPUT)" \
+        $INPUT_ARGS \
+        2>&1 | tee -a $(readlink -f $OUTDIR)/gridss.$PATIENT_ID.\$HOSTNAME.\$\$.log
 EOF
-	chmod +x $PATIENT_SCRIPT
-	echo "Generated sample script $PATIENT_SCRIPT"
+        chmod +x $PATIENT_SCRIPT
+        echo "Generated sample script $PATIENT_SCRIPT"
 done
 
 #echo "Generated cohort script $RUN_SCRIPT"
-
