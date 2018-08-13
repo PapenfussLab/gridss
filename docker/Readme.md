@@ -17,7 +17,7 @@ This readme guides the user through the installation and use of GRIDSS for this.
 
 ## Installation
 
-The docker image can be pulled 
+The gridss docker image `gridss/gridss` can be built locally, or pulled from docker hub.
 
 ## Running
 

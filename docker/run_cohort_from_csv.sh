@@ -15,7 +15,7 @@
 REFERENCE=../hg19.fa
 #####
 BLACKLIST=ENCFF001TDO.bed
-CONTAINER=gridss:v1.8.1
+CONTAINER=gridss/gridss
 
 if [[ ! -f "$1" ]] ; then
 	echo "Usage run_cohort_from_csv.sh cohort.csv output_directory"  1>&2
