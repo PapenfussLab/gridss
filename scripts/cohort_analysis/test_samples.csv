@@ -1,0 +1,3 @@
+#patient_id, somatic_sv_vcf, output_assembly_bam, normal_bam, tumour1_bam, additional_bams...
+patient1, output/patient1_sv.vcf, output/patient1_assembly.bam, normal1.bam, primary1.bam
+patient2, output/patient2_sv.vcf, output/patient2_assembly.bam, normal2.bam, primary2.bam, met2.bam
