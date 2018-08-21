@@ -53,8 +53,9 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void should_annotate_reads() throws IOException {
 		final ProcessingContext pc = getCommandlineContext();
-		pc.getVariantCallingParameters().minScore = 0;
 		pc.getVariantCallingParameters().minSize = 0;
+		pc.getVariantCallingParameters().minScore = 0;
+		pc.getVariantCallingParameters().minReads = 0;
 		createInput(
 				RP(0, 1, 10),
 				DP(0, 1, "5M5S", true, 1, 10, "5M", true),

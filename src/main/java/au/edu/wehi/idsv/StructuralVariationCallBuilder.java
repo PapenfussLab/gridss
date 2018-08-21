@@ -8,7 +8,6 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import au.edu.wehi.idsv.sam.ChimericAlignment;
 import com.google.common.collect.*;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
@@ -16,15 +15,12 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import gridss.cmdline.programgroups.Assembly;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-
-import static picard.fingerprint.DiploidHaplotype.aa;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
@@ -490,9 +486,11 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return result;
 	}
 	public VariantContextDirectedEvidence applyFilters(VariantContextDirectedEvidence variant) {
-		List<VcfFilter> filters = processContext.getVariantCallingParameters().calculateBreakendFilters(variant);
+		List<VcfFilter> filters = processContext.getVariantCallingParameters().calculateCommonFilters(variant);
 		if (variant instanceof VariantContextDirectedBreakpoint) {
 			filters.addAll(processContext.getVariantCallingParameters().calculateBreakpointFilters((VariantContextDirectedBreakpoint)variant));
+		} else {
+			filters.addAll(processContext.getVariantCallingParameters().calculateSingleBreakendFilters(variant));
 		}
 		if (!filters.isEmpty()) {
 			VariantContextBuilder builder = new VariantContextBuilder(variant);
