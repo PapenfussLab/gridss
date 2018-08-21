@@ -62,6 +62,8 @@ public enum VcfInfoAttributes {
 	INEXACT_HOMPOS ("IHOMPOS", 2, VCFHeaderLineType.Integer, "Position of inexact homology"),
 	SUPPORT_CIGAR ("SC", 1, VCFHeaderLineType.String, "CIGAR for displaying anchoring alignment of any contributing evidence and microhomologies."),
 	BREAKEND_ASSEMBLY_ID ("BEID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Identifiers of assemblies supporting the variant."),
+	BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET ("BEIDL", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Local chimeric alignment offset of corresponding BEID assembly. "),
+	BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET ("BEIDH", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Remote chimeric alignment offset of corresponding BEID assembly."),
 	BREAKEND_ALIGNMENTS ("BEALN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Potential alignment locations of breakend sequence in the format chr:start|strand|cigar|mapq. Depending on the alignment information available, strand and mapq may be empty.");
 	private final VCFInfoHeaderLine header;
 	private final String tag;

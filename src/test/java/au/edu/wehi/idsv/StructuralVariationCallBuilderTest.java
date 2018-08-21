@@ -422,6 +422,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), new SequentialIdGenerator("asm"), BWD, support, fullSupport(support),0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7});
+		ass.setReadName("ass1");
 		return (SoftClipEvidence)asAssemblyEvidence(ass);
 	}
 	public SplitReadEvidence ass2() {
@@ -440,10 +441,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(pc, AES(), new SequentialIdGenerator("asm"), BWD, support, fullSupport(support),0, 10, 5, B("GGTAAAAC"), new byte[] { 7,6,5,4,3,2,1,0});
+		e.setReadName("ass2");
 		SAMRecord ra = Read(1, 102, "1S1M1S");
 		ra.setReadBases(B("GGT"));
 		ra.setMappingQuality(45);
 		ra.setBaseQualities(new byte[] { 0,1,2});
+		ra.setReadNegativeStrandFlag(true);
 		SingleReadEvidence ev = incorporateRealignment(AES(), e, ImmutableList.of(ra));
 		return (SplitReadEvidence)ev;
 	}
@@ -978,5 +981,21 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READ_COUNT() {
 		assertAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, VcfFormatAttributes.BREAKEND_SOFTCLIP_COUNT, new int[] { 2,  1, }, complex_bp());
+	}
+	@Test
+	public void should_set_VcfAttributes_BREAKEND_ASSEMBLY_ID() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(BP, "GT").make());
+		cb.addEvidence(ass1());
+		cb.addEvidence(ass2());
+		VariantContextDirectedEvidence bp = cb.make();
+		assertEquals("ass1", bp.getAttributeAsStringList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID.attribute(), "").get(0));
+		assertEquals("ass2", bp.getAttributeAsStringList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID.attribute(), "").get(1));
+		assertEquals(3, (int)bp.getAttributeAsIntList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET.attribute(), 1234).get(0));
+		assertEquals(3, (int)bp.getAttributeAsIntList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET.attribute(), 1234).get(1));
+		assertEquals(-1, (int)bp.getAttributeAsIntList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET.attribute(), 1234).get(0));
+		assertEquals(1, (int)bp.getAttributeAsIntList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET.attribute(), 1234).get(1));
 	}
 }

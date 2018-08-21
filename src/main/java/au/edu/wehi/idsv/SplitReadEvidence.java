@@ -211,4 +211,12 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		int remoteBases = remoteAlignment.getLastAlignedBaseReadOffset() - remoteAlignment.getFirstAlignedBaseReadOffset() + 1;
 		return anchorHomLen >= localBases || remoteHomLen >= remoteBases;
 	}
+	/**
+	 * Offset of the read alignment
+	 * @return
+	 */
+	public int getRemoteChimericAlignmentReadOffset() {
+		return remoteAlignment.getFirstAlignedBaseReadOffset();
+	}
+
 }

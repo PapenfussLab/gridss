@@ -8,6 +8,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import com.google.common.collect.*;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
@@ -351,15 +352,24 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		if (reads > 0) {
 			attribute(VcfInfoAttributes.STRAND_BIAS.attribute(), strandReads / reads);
 		}
-		List<String> breakendIds = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
-				.map(e -> e.getSAMRecord().getReadName())
-				.distinct()
-				.sorted() // ensure deterministic output
+		List<SingleReadEvidence> suportingAssemblies = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
+				.sorted(Comparator.comparing(o -> o.getSAMRecord().getReadName()))
 				.collect(Collectors.toList());
-		if (breakendIds.size() > 0) {
-			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, breakendIds);
+		if (suportingAssemblies.size() > 0) {
+			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, suportingAssemblies.stream()
+					.map(o -> o.getSAMRecord().getReadName())
+					.collect(Collectors.toList()));
+			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET, suportingAssemblies.stream()
+					.map(o -> o.getLocalChimericAlignmentReadOffset())
+					.collect(Collectors.toList()));
+			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET, suportingAssemblies.stream()
+					.map(o -> (o instanceof SplitReadEvidence) ? ((SplitReadEvidence)o).getRemoteChimericAlignmentReadOffset() :
+							(o instanceof IndelEvidence ? o.getLocalChimericAlignmentReadOffset() : -1 ))
+					.collect(Collectors.toList()));
 		} else {
 			rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID.attribute());
+			rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET.attribute());
+			rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET.attribute());
 		}
 		
 		String untemplated = parent.getBreakpointSequenceString();

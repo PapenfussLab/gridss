@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 
@@ -441,5 +442,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			assemblyOffset = aa.getMinQualPosition(getBreakendAssemblyContigBreakpointInterval(), null, null);
 		}
 		return assemblyOffset;
+	}
+	/**
+	 * Offset of the read alignment
+	 * @return
+	 */
+	public int getLocalChimericAlignmentReadOffset() {
+		return new ChimericAlignment(record).getFirstAlignedBaseReadOffset();
 	}
 }
