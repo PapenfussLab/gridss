@@ -4,7 +4,7 @@
 	<groupId>au.edu.wehi</groupId>
 	<artifactId>gridss</artifactId>
 	<packaging>jar</packaging>
-	<version>1.8.1-gridss</version>
+	<version>1.9.0-gridss</version>
 	<name>gridss</name>
 	<url>https://github.com/PapenfussLab/gridss</url>
 	<properties>
