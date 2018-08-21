@@ -37,8 +37,8 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 	private static final Log log = Log.getInstance(MultipleSamFileCommandLineProgram.class);
 	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
-	@Argument(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
-    public List<File> INPUT_NAME_SORTED;
+	//@Argument(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
+    //public List<File> INPUT_NAME_SORTED;
 	@Argument(doc="Input label. Variant calling evidence breakdowns are reported for each label."
 			+ " Default labels correspond to INPUT filenames. "
 			+ "When specifying labels, labels must be provided for all input files.", optional=true)
@@ -107,7 +107,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 	    	for (int i = 0; i < INPUT.size(); i++) {
 	    		samEvidence.add(constructSamEvidenceSource(
 	    				getOffset(INPUT, i, null),
-	    				getOffset(INPUT_NAME_SORTED, i, null),
+	    				null, // getOffset(INPUT_NAME_SORTED, i, null),
 	    				getOffset(INPUT_LABEL, i, ""),
 	    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
 	    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
@@ -255,9 +255,9 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 		if (INPUT == null || INPUT.size() == 0) {
 			return new String[] { "No INPUT files specified." };
     	}
-		if (INPUT_NAME_SORTED != null && INPUT_NAME_SORTED.size() > 0 && INPUT_NAME_SORTED.size() != INPUT.size()) {
-    		return new String[] { "INPUT_NAME_SORTED must omitted or specified for every INPUT." };
-    	}
+		//if (INPUT_NAME_SORTED != null && INPUT_NAME_SORTED.size() > 0 && INPUT_NAME_SORTED.size() != INPUT.size()) {
+    	//	return new String[] { "INPUT_NAME_SORTED must omitted or specified for every INPUT." };
+    	//}
     	if (INPUT_LABEL != null && INPUT_LABEL.size() > 0 && INPUT_LABEL.size() != INPUT.size()) {
     		return new String[] { "INPUT_LABEL must omitted or specified for every INPUT." };
     	}
