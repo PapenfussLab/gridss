@@ -52,13 +52,9 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	}
 	public CloseableIterator<DirectedEvidence> getReadIterator() {
 		CloseableIterator<DirectedEvidence> evidenceIt;
-		if (getContext().getVariantCallingParameters().callOnlyAssemblies) {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(), false);
-		} else {
-			List<SAMEvidenceSource> sources = getSamEvidenceSources();
-			sources.stream().forEach(ses -> ses.assertPreprocessingComplete());
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(sources).build(), true);
-		}
+		List<SAMEvidenceSource> sources = getSamEvidenceSources();
+		sources.stream().forEach(ses -> ses.assertPreprocessingComplete());
+		evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(sources).build(), true);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(
 					new PairedEvidenceTracker<>("Reads",

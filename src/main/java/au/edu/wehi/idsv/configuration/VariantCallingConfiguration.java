@@ -23,7 +23,8 @@ public class VariantCallingConfiguration {
 		minReads = config.getDouble("minReads");
 		minScore = config.getDouble("minScore");
 		minSize = config.getInt("minSize");
-		callOnlyAssemblies = config.getBoolean("callOnlyAssemblies");
+		callUnassembledBreakpoints = config.getBoolean("callUnassembledBreakpoints");
+		callUnassembledBreakends = config.getBoolean("callUnassembledBreakends");
 		breakendMargin = config.getInt("breakendMargin");
 		writeFiltered = config.getBoolean("writeFiltered");
 		lowQuality = config.getDouble("lowQuality");
@@ -55,9 +56,13 @@ public class VariantCallingConfiguration {
 	 */
 	public int minSize;
 	/**
-	 * Call breakends only on assembled contigs
+	 * Call only assembled breakpoint
 	 */
-	public boolean callOnlyAssemblies;
+	public boolean callUnassembledBreakpoints;
+	/**
+	 * Call only assembled breakends
+	 */
+	public boolean callUnassembledBreakends;
 	/**
 	 * Number bases in which nearby evidence will be considered to support the same variant.
 	 * This margin is used to mitigate soft clip alignment errors and microhomologies around breakend coordinates
@@ -113,6 +118,15 @@ public class VariantCallingConfiguration {
 	}
 	public List<VcfFilter> calculateBreakendFilters(VariantContextDirectedEvidence call) {
 		List<VcfFilter> filters = Lists.newArrayList();
+		if (!callUnassembledBreakends && call.getBreakendEvidenceCountAssembly() == 0) {
+			filters.add(VcfFilter.NO_ASSEMBLY);
+		}
+		if (call.getBreakendQual() < minScore) {
+			filters.add(VcfFilter.INSUFFICIENT_QUAL);
+		}
+		if (call.getBreakendSupportingFragmentCount() < minReads) {
+			filters.add(VcfFilter.INSUFFICIENT_READS);
+		}
 		return filters;
 	}
 	public List<VcfFilter> calculateBreakpointFilters(VariantContextDirectedBreakpoint call) {
@@ -126,11 +140,14 @@ public class VariantCallingConfiguration {
 		if (bp.couldBeReferenceAllele() && call.getUntemplatedSequence().length() == 0) {
 			filters.add(VcfFilter.REFERENCE_ALLELE);
 		}
-		if (call.getBreakpointQual() < minScore || call.getBreakpointEvidenceCount() == 0) {
-			filters.add(VcfFilter.LOW_BREAKPOINT_SUPPORT);
+		if (call.getBreakpointQual() < minScore) {
+			filters.add(VcfFilter.INSUFFICIENT_QUAL);
 		}
-		if (call.getBreakpointEvidenceCountAssembly() == 0 && call.getBreakpointEvidenceCountReadPair() + call.getBreakpointEvidenceCountSoftClip() == 1) {
-			filters.add(VcfFilter.SINGLE_SUPPORT);
+		if (call.getBreakpointSupportingFragmentCount() < minReads) {
+			filters.add(VcfFilter.INSUFFICIENT_READS);
+		}
+		if (!callUnassembledBreakpoints && call.getBreakpointEvidenceCountAssembly() == 0) {
+			filters.add(VcfFilter.NO_ASSEMBLY);
 		}
 		return filters;
 	}
