@@ -90,8 +90,15 @@ public class CollectGridssMetricsAndExtractSVReads extends CollectGridssMetrics 
     public ProgramInterface createExtractSVReads() {
     	return new ProgramInterface() {
 			@Override
-			public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
-					Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
+			public SinglePassSamProgram makeInstance(final String outbase,
+                                                     final String outext,
+                                                     final File input,
+                                                     final File reference,
+                                                     final Set<MetricAccumulationLevel> metricAccumulationLevel,
+                                                     final File dbSnp,
+                                                     final File intervals,
+                                                     final File refflat,
+                                                     final  Set<String> ignoreSequence) {
 				final ExtractSVReads program = getExtractSVReads();
                 return program.asSinglePassSamProgram();
 			}

@@ -73,8 +73,15 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     			case CollectCigarMetrics:
     				return new ProgramInterface() {
 	    				@Override
-	    				public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
-	    						Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
+	    				public SinglePassSamProgram makeInstance(final String outbase,
+																 final String outext,
+																 final File input,
+																 final File reference,
+																 final Set<MetricAccumulationLevel> metricAccumulationLevel,
+																 final File dbSnp,
+																 final File intervals,
+																 final File refflat,
+																 final  Set<String> ignoreSequence) {
 	    					final CollectCigarMetrics program = new CollectCigarMetrics();
 	    	                program.OUTPUT = new File(outbase + gridss.analysis.CollectCigarMetrics.METRICS_SUFFIX + outext);
 	
@@ -98,8 +105,15 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     			case CollectIdsvMetrics:
     				return new ProgramInterface() {
     					@Override
-    					public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
-    							Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
+    					public SinglePassSamProgram makeInstance(final String outbase,
+																 final String outext,
+																 final File input,
+																 final File reference,
+																 final Set<MetricAccumulationLevel> metricAccumulationLevel,
+																 final File dbSnp,
+																 final File intervals,
+																 final File refflat,
+																 final  Set<String> ignoreSequence) {
     						final CollectIdsvMetrics program = new CollectIdsvMetrics();
     		                program.OUTPUT = new File(outbase + gridss.analysis.CollectIdsvMetrics.METRICS_SUFFIX + outext);
 
@@ -123,8 +137,15 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     			case CollectMapqMetrics:
     				return new ProgramInterface() {
     					@Override
-    					public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
-    							Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
+    					public SinglePassSamProgram makeInstance(final String outbase,
+																 final String outext,
+																 final File input,
+																 final File reference,
+																 final Set<MetricAccumulationLevel> metricAccumulationLevel,
+																 final File dbSnp,
+																 final File intervals,
+																 final File refflat,
+																 final  Set<String> ignoreSequence) {
     						final CollectMapqMetrics program = new CollectMapqMetrics();
     		                program.OUTPUT = new File(outbase + gridss.analysis.CollectMapqMetrics.METRICS_SUFFIX + outext);
     		                // TODO: why does this only work on my local desktop+servers and not the CI or cluster systems?
@@ -152,8 +173,15 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     			case CollectTagMetrics:
     				return new ProgramInterface() {
     					@Override
-    					public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
-    							Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
+    					public SinglePassSamProgram makeInstance(final String outbase,
+																 final String outext,
+																 final File input,
+																 final File reference,
+																 final Set<MetricAccumulationLevel> metricAccumulationLevel,
+																 final File dbSnp,
+																 final File intervals,
+																 final File refflat,
+																 final  Set<String> ignoreSequence) {
     						final CollectTagMetrics program = new CollectTagMetrics();
     		                program.OUTPUT = new File(outbase + gridss.analysis.CollectTagMetrics.METRICS_SUFFIX + outext);
 
@@ -179,8 +207,15 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     			case ReportThresholdCoverage:
     				return new ProgramInterface() {
     					@Override
-    					public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
-    							Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
+    					public SinglePassSamProgram makeInstance(final String outbase,
+																 final String outext,
+																 final File input,
+																 final File reference,
+																 final Set<MetricAccumulationLevel> metricAccumulationLevel,
+																 final File dbSnp,
+																 final File intervals,
+																 final File refflat,
+																 final  Set<String> ignoreSequence) {
     						final ReportThresholdCoverage program = new ReportThresholdCoverage();
     		                program.OUTPUT = new File(outbase + gridss.analysis.ReportThresholdCoverage.SUFFIX);
     		                
