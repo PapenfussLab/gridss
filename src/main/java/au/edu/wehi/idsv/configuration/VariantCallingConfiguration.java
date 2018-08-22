@@ -118,18 +118,18 @@ public class VariantCallingConfiguration {
 	}
 	public List<VcfFilter> calculateCommonFilters(VariantContextDirectedEvidence call) {
 		List<VcfFilter> filters = Lists.newArrayList();
-		if (call.getBreakendQual() < minScore) {
-			filters.add(VcfFilter.INSUFFICIENT_QUAL);
-		}
-		if (call.getBreakendSupportingFragmentCount() < minReads) {
-			filters.add(VcfFilter.INSUFFICIENT_READS);
-		}
 		return filters;
 	}
 	public List<VcfFilter> calculateSingleBreakendFilters(VariantContextDirectedEvidence call) {
 		List<VcfFilter> filters = Lists.newArrayList();
 		if (!callUnassembledBreakends && call.getBreakendEvidenceCountAssembly() == 0) {
 			filters.add(VcfFilter.NO_ASSEMBLY);
+		}
+		if (call.getBreakendQual() < minScore) {
+			filters.add(VcfFilter.INSUFFICIENT_QUAL);
+		}
+		if (call.getBreakendSupportingFragmentCount() < minReads) {
+			filters.add(VcfFilter.INSUFFICIENT_READS);
 		}
 		return filters;
 	}
