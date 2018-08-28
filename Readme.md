@@ -172,15 +172,6 @@ Input files containing read groups from multiple different libraries should be s
 
 The reference genome used for all input files should match the reference genome supplied to GRIDSS.
 
-### INPUT_NAME_SORTED
-
-Input libraries sorted in lexographical read name order. This parameter is required if any of the input
-libraries contain multiple alignment records for a single read ("multi-mapping reads"). Failure to supply
-a name sorted input file for multi-mapping reads will result in an increased false discovery rate.
-
-Note that this sort order matches the Picard tools SortSam queryname sort order (which unfortunately is not the same
-as the samtools name sort order).
-
 ### INPUT_LABEL
 
 Labels to allocate inputs. The default label for each input file corresponds to the file name but can be overridden by
