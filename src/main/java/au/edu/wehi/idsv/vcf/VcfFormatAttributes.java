@@ -7,7 +7,7 @@ import htsjdk.variant.vcf.VCFHeaderLineType;
 public enum VcfFormatAttributes {
 	REFERENCE_READ_COUNT ("REF", 1, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend"),
 	REFERENCE_READPAIR_COUNT ("REFPAIR", 1, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele"),
-	REFERENCE_FRAGMENTS ("RF", 1, VCFHeaderLineType.Integer, "Reference fragments. Count of fragments suspporting the reference allele and not the variant allele."),
+	REFERENCE_FRAGMENTS ("RF", 1, VCFHeaderLineType.Integer, "Reference fragments. Count of fragments supporting the reference allele and not the variant allele."),
 	BREAKEND_QUAL ("BQ", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
 	BREAKPOINT_QUAL ("QUAL", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
 	
@@ -25,8 +25,8 @@ public enum VcfFormatAttributes {
 	BREAKPOINT_VARIANT_FRAGMENTS ("VF", 1, VCFHeaderLineType.Integer, "Count of fragments suspporting the variant breakpoint allele and not the reference allele."),
 	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT("BANRP", 1, VCFHeaderLineType.Integer, "Count of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
 	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT("BANSR", 1, VCFHeaderLineType.Integer, "Count of split reads at this breakend assembled into a contig that does not support the breakpoint."),
-	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL("BANRPQ", 1, VCFHeaderLineType.Integer, "Quality score of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
-	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL("BANSRQ", 1, VCFHeaderLineType.Integer, "Quality score of split reads at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL("BANRPQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL("BANSRQ", 1, VCFHeaderLineType.Float, "Quality score of split reads at this breakend assembled into a contig that does not support the breakpoint."),
 
 	BREAKEND_UNMAPPEDMATE_COUNT("BUM", 1, VCFHeaderLineType.Integer, "Count of read pairs (with one read unmapped) supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_COUNT("BSC", 1, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend per category"),
