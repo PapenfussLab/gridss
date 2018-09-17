@@ -1,6 +1,8 @@
 package au.edu.wehi.idsv.alignment;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
@@ -11,9 +13,12 @@ import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
+import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.SequenceUtil;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Determines the length of any inexact breakpoint homology
@@ -36,7 +41,7 @@ public class BreakpointHomology {
 	 * @param lookup reference genome
 	 * @param bs breakpoint
 	 * @param maxBreakendLength maximum homology length to report
-	 * @param additional reference bases to include to accomodate indels
+	 * @param margin additional reference bases to include to accommodate indels
 	 * @return breakpoint homology length
 	 */
 	public static BreakpointHomology calculate(ReferenceLookup lookup, BreakpointSummary bs, String insertedSequence, int maxBreakendLength, int margin) {
@@ -65,20 +70,35 @@ public class BreakpointHomology {
 		String remoteSeq = SequenceUtil.reverseComplement(getAnchorSeq(lookup, bs.remoteBreakend(), refLength));
 		String remoteBsSeq = SequenceUtil.reverseComplement(getAnchorSeq(lookup, bs.remoteBreakend(), seqLength));
 		String remoteRef = SequenceUtil.reverseComplement(getAnchorSeq(lookup, advance(bs.remoteBreakend(), refLength), refLength));
-		byte[] breakend = (localBsSeq + insertedSequence + remoteBsSeq).getBytes(StandardCharsets.US_ASCII);
-		byte[] local = (localSeq + localRef).getBytes(StandardCharsets.US_ASCII);
-		byte[] remote = (remoteRef + remoteSeq).getBytes(StandardCharsets.US_ASCII);
+		String strBreakend = localBsSeq + insertedSequence + remoteBsSeq;
+		String strLocal = localSeq + localRef;
+		String strRemote = remoteRef + remoteSeq;
+		byte[] breakend = strBreakend.getBytes(StandardCharsets.US_ASCII);
+		byte[] local = strLocal.getBytes(StandardCharsets.US_ASCII);
+		byte[] remote = strRemote.getBytes(StandardCharsets.US_ASCII);
 		Aligner aligner = AlignerFactory.create();
 		int localHomologyBaseCount = 0;
 		int remoteHomologyBaseCount = 0;
 		if (breakend != null && breakend.length > 0) {
 			if (local != null && local.length > 0) {
 				Alignment localAlignment = aligner.align_smith_waterman(breakend, local);
-				remoteHomologyBaseCount = remoteBsSeq.length() - SAMRecordUtil.getEndSoftClipLength(TextCigarCodec.decode(localAlignment.getCigar()).getCigarElements());
+				List<CigarElement> cigar = TextCigarCodec.decode(localAlignment.getCigar()).getCigarElements();
+				// We are defining a homology as the number of bases mapped on the other side
+				// inserted sequence means the number of bases consumed can be negative
+				remoteHomologyBaseCount = Math.max(0, remoteBsSeq.length() - SAMRecordUtil.getEndSoftClipLength(cigar));
+				if (SAMRecordUtil.getStartSoftClipLength(cigar) > 0) {
+					// anchor is not aligned - something went wrong
+					remoteHomologyBaseCount = 0;
+				}
 			}
 			if (remote != null && remote.length > 0) {
 				Alignment remoteAlignment = aligner.align_smith_waterman(breakend, remote);
-				localHomologyBaseCount = localBsSeq.length() - SAMRecordUtil.getStartSoftClipLength(TextCigarCodec.decode(remoteAlignment.getCigar()).getCigarElements());
+				List<CigarElement> cigar = TextCigarCodec.decode(remoteAlignment.getCigar()).getCigarElements();
+				localHomologyBaseCount = Math.max(0, localBsSeq.length() - SAMRecordUtil.getStartSoftClipLength(cigar));
+				if (SAMRecordUtil.getEndSoftClipLength(cigar) > 0) {
+					// anchor is not aligned - something went wrong
+					localHomologyBaseCount = 0;
+				}
 			}
 		}
 		return new BreakpointHomology(localHomologyBaseCount, remoteHomologyBaseCount);
@@ -104,13 +124,20 @@ public class BreakpointHomology {
 			start = bs.start;
 			end = start + length - 1;
 		}
+		int startPadding = Math.max(0, 1 - start);
+		int endPadding = Math.max(0, end - refseq.getSequenceLength());
 		start = Math.max(1, start);
 		end = Math.min(refseq.getSequenceLength(), end);
 		if (start > end) {
 			// anchor is outside of contig bounds
-			return "";
+			return StringUtils.repeat('N', end - start + 1);
 		}
 		byte[] bseq = lookup.getSubsequenceAt(refseq.getSequenceName(), start, end).getBases();
+		if (startPadding > 0 || endPadding > 0) {
+			byte[] arr = new byte[startPadding + bseq.length + endPadding];
+			Arrays.fill(arr, (byte)'N');
+			System.arraycopy(bseq, 0, arr, startPadding, bseq.length);
+		}
 		if (bs.direction == BreakendDirection.Backward) {
 			SequenceUtil.reverseComplement(bseq);
 		}

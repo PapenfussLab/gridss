@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.alignment;
 
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -84,8 +85,8 @@ public class BreakpointHomologyTest extends TestHelper {
 							   B("TTTAAAATTTGGGAAAAAAGGGGGGGGGGGGGGGGGGG"), });
 		// CCCAAAATTT GGGAAAAAATTTTTTTTTTT TTTTTTTT"),
 		// TTTAAAATTT GGGAAAAAAGGGGGGGGGGG GGGGGGGG"
-		// MMMMMMMMMMMMMMMMMMMSSSSSSSSSSSS fwd
-		// SSSMMMMMMMMMMMMMMMMMMMMMMMMMMMM bwd
+		// MMMMMMMMMMIMMMMMMMMSSSSSSSSSSSS fwd
+		// SSSMMMMMMMIMMMMMMMMMMMMMMMMMMMM bwd
 		// 1234567890 1234567890
 		//          >G
 		//            <
@@ -117,5 +118,47 @@ public class BreakpointHomologyTest extends TestHelper {
 				}
 			}
 		}
+	}
+	@Test
+	public void should_not_report_homology_for_small_dup() {
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(
+				new String[] { "0", "1", },
+				new byte[][] {
+						//    0        1         2         3         4         5         6
+						//    123456789012345678901234567890123456789012345678901234567890
+						B("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"),
+						B("CACCGCCTATTCGAACGGGCGAATCTACCTAGGTCGCTCAGAACCGGCACCCTTAA"), });
+
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, BWD, 10, 0, FWD, 20), "", 20, 10);
+		assertEquals(0, bh.getLocalHomologyLength());
+		assertEquals(0, bh.getRemoteHomologyLength());
+	}
+	@Test
+	public void should_handle_inserted_sequence_no_homology() {
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(
+				new String[] { "0", "1", },
+				new byte[][] {
+						//    0        1         2         3         4         5         6
+						//    123456789012345678901234567890123456789012345678901234567890
+						B("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"),
+						B("CACCGCCTATTCGAACGGGCGAATCTACCTAGGTCGCTCAGAACCGGCACCCTTAA"), });
+
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 10, 1, BWD, 10), "GGGGG", 20, 10);
+		assertEquals(0, bh.getLocalHomologyLength());
+		assertEquals(0, bh.getRemoteHomologyLength());
+	}
+	@Test
+	public void should_handle_inserted_sequence_with_homology() {
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(
+				new String[] { "0", "1", },
+				new byte[][] {
+						//    0        1         2         3         4         5         6
+						//    123456789012345678901234567890123456789012345678901234567890
+						B("AGAACCGGCACCCTTAACATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"),
+						B("AGAACCGGCACCCTTAACACCGCCTACAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"), });
+
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 27, 1, BWD, 28), "GGGGG", 20, 5);
+		assertEquals(0, bh.getLocalHomologyLength());
+		assertEquals(20, bh.getRemoteHomologyLength());
 	}
 }
