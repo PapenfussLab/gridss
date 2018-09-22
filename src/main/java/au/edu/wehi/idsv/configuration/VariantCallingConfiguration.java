@@ -27,7 +27,8 @@ public class VariantCallingConfiguration {
 		callUnassembledBreakends = config.getBoolean("callUnassembledBreakends");
 		breakendMargin = config.getInt("breakendMargin");
 		writeFiltered = config.getBoolean("writeFiltered");
-		lowQuality = config.getDouble("lowQuality");
+		breakpointLowQuality = config.getDouble("breakpointLowQuality");
+		breakendLowQuality = config.getDouble("breakendLowQuality");
 		maxBreakendHomologyLength = config.getInt("maxBreakendHomologyLength");
 		breakendHomologyAlignmentMargin = config.getInt("breakendHomologyAlignmentMargin");
 		requireAssemblyCategorySupport = config.getBoolean("requireAssemblyCategorySupport");
@@ -74,7 +75,8 @@ public class VariantCallingConfiguration {
 	private int fullMarginMultiple = 2;
 	public boolean writeFiltered;
 	//public boolean placeholderBreakend;
-	public double lowQuality;
+	public double breakpointLowQuality;
+	public double breakendLowQuality;
 	/**
 	 * Maximum length of breakend homology to calculate
 	 */
@@ -167,13 +169,16 @@ public class VariantCallingConfiguration {
 					v.getBreakpointEvidenceCountReadPair() + v.getBreakpointEvidenceCountSoftClip() == 0) {
 				filters.add(VcfFilter.ASSEMBLY_ONLY.filter());
 			}
+			if (variant.getPhredScaledQual() < processContext.getVariantCallingParameters().breakpointLowQuality) {
+				filters.add(VcfFilter.LOW_QUAL.filter());
+			}
 		} else {
 			if (variant.getBreakendEvidenceCountAssembly() == 0) {
 				filters.add(VcfFilter.NO_ASSEMBLY.filter());
 			}
-		}
-		if (variant.getPhredScaledQual() < processContext.getVariantCallingParameters().lowQuality) {
-			filters.add(VcfFilter.LOW_QUAL.filter());
+			if (variant.getPhredScaledQual() < processContext.getVariantCallingParameters().breakendLowQuality) {
+				filters.add(VcfFilter.LOW_QUAL.filter());
+			}
 		}
 		VariantContextDirectedEvidence filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, variant).filters(filters.toArray(new String[0])).make();
 		return filteredVariant;
