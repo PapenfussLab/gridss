@@ -1,9 +1,8 @@
 package au.edu.wehi.idsv.sam;
 
 public class SamTags {
-	public static final String IS_ASSEMBLY = "aa";
+	public static final String ASSEMBLY_ANCHOR_LENGTH = "aa";
 	public static final String ASSEMBLY_DIRECTION = "ad";
-	public static final String UNANCHORED = "ua";
 	public static final String ASSEMBLY_STRAND_BIAS = "sb";
 	public static final String ASSEMBLY_EVIDENCE_OFFSET_START = "os";
 	public static final String ASSEMBLY_EVIDENCE_OFFSET_END = "oe";

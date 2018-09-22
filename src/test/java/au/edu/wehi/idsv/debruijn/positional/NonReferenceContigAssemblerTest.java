@@ -486,7 +486,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals("GGTTGCATAGACGTGGTCGACC", S(output.get(0).getReadBases()));
-		assertFalse(output.get(0).hasAttribute(SamTags.UNANCHORED));
+		assertFalse(AssemblyAttributes.isUnanchored(output.get(0)));
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
 		// GGTTGCATAGACGTGGTCGACC
 		// 0123456789012345678901
@@ -529,7 +529,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertEquals(rp[1].getReadLength() + 2, output.get(0).getReadLength());
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
-		assertTrue(output.get(0).hasAttribute(SamTags.UNANCHORED));
+		assertTrue(AssemblyAttributes.isUnanchored(output.get(0)));
 		assertEquals("1X29N1X10S", output.get(0).getCigarString());
 		// 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
 		//  * * M M M M M M M M M M - -
@@ -557,7 +557,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertEquals(rp[1].getReadLength() + 2, output.get(0).getReadLength());
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
-		assertTrue(output.get(0).hasAttribute(SamTags.UNANCHORED));
+		assertTrue(AssemblyAttributes.isUnanchored(output.get(0)));
 		assertEquals("10S1X29N1X", output.get(0).getCigarString());
 		assertEquals(0, aa.getSupportingReadCount(0, null, null));
 		//  0 1 2 3 4 5 6 7 8 9 0 1 2 3

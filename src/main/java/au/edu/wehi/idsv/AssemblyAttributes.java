@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.Range;
 import com.google.common.collect.Streams;
 import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
@@ -20,11 +21,11 @@ public class AssemblyAttributes {
 	private final SAMRecord record;
 	private Collection<AssemblyEvidenceSupport> support = null;
 	public static boolean isAssembly(SAMRecord record) {
-		return record.hasAttribute(SamTags.IS_ASSEMBLY);
+		return record.hasAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH);
 	}
 	public static boolean isUnanchored(SAMRecord record) {
-		return record.hasAttribute(SamTags.UNANCHORED);
-		//return Iterables.any(record.getCigar().getCigarElements(), ce -> ce.getOperator() == CigarOperator.X);
+		int[] anchors = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH);
+		return anchors != null && anchors.length == 2 && anchors[0] == 0 && anchors[1] == 0;
 	}
 	public static boolean isAssembly(DirectedEvidence record) {
 		if (record instanceof SingleReadEvidence) {
@@ -146,8 +147,10 @@ public class AssemblyAttributes {
 			throw new IllegalArgumentException("support and aes sizes do not match");
 		}
 		annotateAssemblyEvidenceSupport(record, aes);
-
-		record.setAttribute(SamTags.IS_ASSEMBLY, (byte)1);
+		List<CigarElement> ce = record.getCigar().getCigarElements();
+		int startAnchorLength = ce.get(0).getOperator() == CigarOperator.M ? ce.get(0).getLength() : 0;
+		int endAnchorLength = ce.get(ce.size() - 1).getOperator() == CigarOperator.M ? ce.get(ce.size() - 1).getLength() : 0;
+		record.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { startAnchorLength, endAnchorLength });
 		record.setAttribute(SamTags.ASSEMBLY_MAX_READ_LENGTH, maxReadLength(support));
 		record.setAttribute(SamTags.ASSEMBLY_STRAND_BIAS, readStrandBias(support));
 		ensureUniqueEvidenceID(record.getReadName(), support);
@@ -281,6 +284,21 @@ public class AssemblyAttributes {
 	}
 	public double getStrandBias() {
 		return AttributeConverter.asDouble(record.getAttribute(SamTags.ASSEMBLY_STRAND_BIAS), 0);
+	}
+
+	/**
+	 * Number of starting bases anchored to the reference when the contig was called
+	 */
+	public int startAnchorLength() {
+		int[] anchors = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH);
+		return anchors[0];
+	}
+	/**
+	 * Number of ending bases anchored to the reference when the contig was called
+	 */
+	public int endAnchorLength() {
+		int[] anchors = record.getSignedIntArrayAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH);
+		return anchors[1];
 	}
 	public static int getUnanchoredPlacholderAnchoredBases(SAMRecord record) {
 		if (!isUnanchored(record)) {

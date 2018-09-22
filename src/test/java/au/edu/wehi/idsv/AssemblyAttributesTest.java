@@ -50,7 +50,7 @@ public class AssemblyAttributesTest extends TestHelper {
 	@Test
 	public void getMinQualPosition_should_return_min_position() {
 		SAMRecord r = Read(0, 1, "100M");
-		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 100, 0 });
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 0,0, 0});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0, 0, 0});
@@ -65,7 +65,7 @@ public class AssemblyAttributesTest extends TestHelper {
 	@Test
 	public void getMaxQualPosition_should_return_min_position() {
 		SAMRecord r = Read(0, 1, "100M");
-		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 100, 0 });
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[] { 0,0, 0});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[] { 0, 0, 0});

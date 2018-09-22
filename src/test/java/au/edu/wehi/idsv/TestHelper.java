@@ -23,6 +23,7 @@ import java.util.stream.StreamSupport;
 
 import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.*;
+import htsjdk.samtools.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
@@ -66,19 +67,6 @@ import gridss.analysis.CigarSizeDistribution;
 import gridss.analysis.IdsvMetrics;
 import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.DefaultSAMRecordFactory;
-import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMLineParser;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -1245,7 +1233,13 @@ public class TestHelper {
 				.collect(Collectors.toList());
 	}
 	public static SingleReadEvidence asAssemblyEvidence(SAMEvidenceSource aes, SAMRecord assembly) {
-		assembly.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		List<CigarElement> ci = assembly.getCigar().getCigarElements();
+		assembly.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] {
+				ci.get(0).getOperator() == CigarOperator.M ? ci.get(0).getLength() : 0,
+				ci.get(ci.size() - 1).getOperator() == CigarOperator.M ? ci.get(ci.size() - 1).getLength(): 0, });
+		if (ChimericAlignment.getChimericAlignments(assembly).stream().anyMatch(ca -> ca.cigar.getCigarElements().stream().anyMatch(ce -> ce.getOperator() == CigarOperator.X))) {
+			assembly.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 0 });
+		}
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, 0, assembly);
 		assertEquals(1, list.size());
 		assertTrue(AssemblyAttributes.isAssembly(list.get(0)));

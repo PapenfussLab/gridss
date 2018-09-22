@@ -430,7 +430,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setMappingQuality(100);
 		r.setReadNegativeStrandFlag(true);
 		r.setAttribute("SA", new ChimericAlignment(primary).toString());
-		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 0 });
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[]{0, 1, 1});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[]{0, 0, 1});
@@ -454,7 +454,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		SAMRecord r = withSequence("NAAAAN", Read(1, 300, "1S5M"))[0];
 		r.setMappingQuality(100);
 		r.setAttribute("SA", new ChimericAlignment(primary).toString());
-		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 0 });
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[]{0, 1, 1});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[]{0, 0, 1});
@@ -476,7 +476,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		realigned.setMappingQuality(60);
 		r.setAttribute("SA", new ChimericAlignment(realigned).toString());
 		realigned.setAttribute("SA", new ChimericAlignment(r).toString());
-		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 0 });
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, 'f');
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[]{1});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[]{0});
@@ -487,7 +487,6 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[]{10});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "e");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "e");
-		r.setAttribute(SamTags.UNANCHORED, 1);
 		copyAssemblyAttributes(r, realigned);
 		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
 		SplitReadEvidence local = SplitReadEvidence.create(aes, r).get(0);
@@ -504,7 +503,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		realigned.setMappingQuality(60);
 		r.setAttribute("SA", new ChimericAlignment(realigned).toString());
 		realigned.setAttribute("SA", new ChimericAlignment(r).toString());
-		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 0 });
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, 'b');
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[]{1});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[]{0});
@@ -515,7 +514,6 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[]{10});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "e");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "e");
-		r.setAttribute(SamTags.UNANCHORED, 1);
 		copyAssemblyAttributes(r, realigned);
 		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
 		SplitReadEvidence local = SplitReadEvidence.create(aes, r).get(0);
@@ -533,7 +531,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r2.setMappingQuality(100);
 		r.setAttribute("SA", new ChimericAlignment(r2).toString());
 		r2.setAttribute("SA", new ChimericAlignment(r).toString());
-		r.setAttribute(SamTags.IS_ASSEMBLY, 1);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 5 });
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, "f");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, new byte[]{0, 0, 0});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, new int[]{0, 0, 0});
@@ -550,7 +548,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 	}
 
 	public void copyAssemblyAttributes(SAMRecord source, SAMRecord dest) {
-		dest.setAttribute(SamTags.IS_ASSEMBLY, source.getAttribute(SamTags.IS_ASSEMBLY));
+		dest.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, source.getAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH));
 		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE));
 		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY));
 		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_OFFSET_START));
@@ -558,7 +556,6 @@ public class SplitReadEvidenceTest extends TestHelper {
 		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL));
 		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID));
 		dest.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, source.getAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID));
-		dest.setAttribute(SamTags.UNANCHORED, source.getAttribute(SamTags.UNANCHORED));
 	}
 
 	//@Test

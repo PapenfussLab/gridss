@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.Range;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -255,5 +256,64 @@ public class SingleReadEvidenceTest extends TestHelper {
 		//  ***  homology interval
 		assertEquals(1, (int)r.lowerEndpoint());
 		assertEquals(4, (int)r.upperEndpoint());
+	}
+	@Test
+	public void isFullyContainedInAssemblyAnchor_should_filter_breakends_in_anchor_sequence() {
+		SAMRecord r = Read(0, 10, "1S2M3S");
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 1});
+		assertEquals(2, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 2, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 3, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 4, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 5, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 6, 0});
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 1});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 2});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 3});
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 4});
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 1, 5});
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+
+
+		r = Read(0, 10, "5S10M20S");
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 0});
+		assertEquals(2, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 10, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 10, 25});
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+	}
+	@Test
+	public void isFullyContainedInAssemblyAnchor_should_consider_strand() {
+		SAMRecord r = Read(0, 10, "10M5D10M50S");
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 0});
+		assertEquals(3, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 25, 0});
+		// del is fully contained
+		// The 50S starts in the anchor but extends past it so is not contained
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+
+		// As above but on negative strand
+		r = Read(0, 10, "50S10M5D10M");
+		r.setReadNegativeStrandFlag(true);
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 0, 0});
+		assertEquals(3, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		r.setAttribute(SamTags.ASSEMBLY_ANCHOR_LENGTH, new int[] { 25, 0});
+		assertEquals(1, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+		assertTrue(SingleReadEvidence.createEvidence(SES(), 0, r).get(0) instanceof SoftClipEvidence);
 	}
 }

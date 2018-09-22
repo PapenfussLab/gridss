@@ -69,6 +69,11 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				log.error(iae, msg);
 			}
 		}
+		for (int i = list.size() - 1; i >= 0; i--) {
+			if (isFullyContainedInAssemblyAnchor(list.get(i))) {
+				list.remove(i);
+			}
+		}
 		return list;
 	}
 
@@ -449,5 +454,27 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	 */
 	public int getLocalChimericAlignmentReadOffset() {
 		return new ChimericAlignment(record).getFirstAlignedBaseReadOffset();
+	}
+	public static boolean isFullyContainedInAssemblyAnchor(SingleReadEvidence e) {
+		SAMRecord r = e.getSAMRecord();
+		if (!AssemblyAttributes.isAssembly(r) || AssemblyAttributes.isUnanchored(r)) {
+			return false;
+		}
+		Range<Integer> offset = e.getBreakendAssemblyContigBreakpointInterval();
+		int startOffset = offset.lowerEndpoint();
+		int endOffset = offset.upperEndpoint();
+		int homologyLength = e.getUntemplatedSequence().length();
+		if (r.getReadNegativeStrandFlag() ^ e.location.direction == BreakendDirection.Forward) {
+			endOffset += homologyLength;
+		} else {
+			startOffset -= homologyLength;
+
+		}
+		AssemblyAttributes aa = new AssemblyAttributes(r);
+		// contig     MMMMMMMM-----------------MMMMMMMM
+		// breakpoint ********-----------------********
+		// If the breakpoint is contained in the * region then the SV occurs within the assembly anchor
+		// In these situations, the assembly is uninformative and likely to just be anchoring noise
+		return endOffset <= aa.startAnchorLength() || startOffset >= r.getReadLength() - aa.endAnchorLength();
 	}
 }
