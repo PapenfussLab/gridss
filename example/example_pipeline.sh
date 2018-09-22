@@ -10,7 +10,7 @@
 
 # environment modules
 module remove samtools bwa java R
-module add bwa/0.7.15 samtools/1.6 java/1.8.0_131 R/3.4.2 mbuffer
+module add bwa/0.7.15 samtools/1.6 java/1.8.0_131 R/3.5.1 mbuffer
 #cd ~/test/
 
 FQ1=example.R1.fq
@@ -19,7 +19,7 @@ REFERENCE=~/reference_genomes/human/hg19.fa
 INPUT=pipelined.example.input.bam
 OUTPUT=pipelined.example.sv.vcf
 RAW_GRIDSS_ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
-GRIDSS_JAR=~/bin/gridss-1.9.0-jar-with-dependencies.jar
+GRIDSS_JAR=~/bin/gridss-2.0.0-jar-with-dependencies.jar
 GRIDSS_JVM_ARGS="
 	-Dsamjdk.use_async_io_read_samtools=true 
 	-Dsamjdk.use_async_io_write_samtools=true 

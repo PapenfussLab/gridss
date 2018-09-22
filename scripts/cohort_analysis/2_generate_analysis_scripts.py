@@ -5,7 +5,7 @@ import sys
 
 BLACKLIST_FILENAME = "data/ENCODE_blacklist_hg19/ENCFF001TDO.bed"
 REFERENCE_GENOME = "data/hg19/hg19.fa"
-GRIDSS_JARFILE = "./gridss-1.7.1-gridss-jar-with-dependencies.jar"
+GRIDSS_JARFILE = "./gridss-2.0.0-gridss-jar-with-dependencies.jar"
 
 
 # Read the script template
