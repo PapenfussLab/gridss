@@ -33,6 +33,7 @@ public class VariantCallingConfiguration {
 		breakendHomologyAlignmentMargin = config.getInt("breakendHomologyAlignmentMargin");
 		requireAssemblyCategorySupport = config.getBoolean("requireAssemblyCategorySupport");
 		callBreakends = config.getBoolean("callBreakends");
+		includeSupportingReadNames = config.getBoolean("includeSupportingReadNames");
 //		switch (config.getString("format")) {
 //			case "vcf4.2":
 //				placeholderBreakend = false;
@@ -95,6 +96,10 @@ public class VariantCallingConfiguration {
 	 * Include unpaired breakends in variant calls
 	 */
 	public boolean callBreakends;
+	/**
+	 * Include read names of all supporting reads
+	 */
+	public boolean includeSupportingReadNames;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));

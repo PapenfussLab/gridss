@@ -327,6 +327,23 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(basrp).sum());
 		attribute(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakpointFragments).sum());
 		attribute(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakendFragments).sum());
+		if (processContext.getConfig().getVariantCalling().includeSupportingReadNames) {
+			List<String> supportingBreakpointNames = Streams.concat(
+					supportingIndel.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
+					supportingSR.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
+					supportingDP.stream().flatMap(l -> l.stream()).map(e -> e.getLocalledMappedRead().getReadName()))
+				.distinct()
+				.sorted()
+				.collect(Collectors.toList());
+			List<String> supportingBreakendNames = Streams.concat(
+					supportingSC.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
+					supportingOEA.stream().flatMap(l -> l.stream()).map(e -> e.getLocalledMappedRead().getReadName()))
+					.distinct()
+					.sorted()
+					.collect(Collectors.toList());
+			attribute(VcfInfoAttributes.SUPPORTING_BREAKPOINT_READ_NAMES.attribute(), supportingBreakpointNames);
+			attribute(VcfInfoAttributes.SUPPORTING_BREAKEND_READ_NAMES .attribute(), supportingBreakendNames);
+		}
 
 		// Calculate strand bias purely from direct read support
 		int reads = 0;
