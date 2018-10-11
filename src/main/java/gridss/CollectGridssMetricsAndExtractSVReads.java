@@ -81,6 +81,7 @@ public class CollectGridssMetricsAndExtractSVReads extends CollectGridssMetrics 
     	extract.READ_PAIR_CONCORDANT_PERCENT = READ_PAIR_CONCORDANT_PERCENT;
     	extract.INSERT_SIZE_METRICS = INSERT_SIZE_METRICS;
     	extract.UNMAPPED_READS = UNMAPPED_READS;
+        extract.INCLUDE_DUPLICATES = INCLUDE_DUPLICATES;
     	extract.METRICS_OUTPUT = METRICS_OUTPUT;
     	extract.OUTPUT = SV_OUTPUT;
     	extract.INPUT = this.INPUT;
