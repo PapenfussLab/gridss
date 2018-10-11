@@ -18,10 +18,10 @@ deb http://archive.ubuntu.com/ubuntu/ xenial-backports main restricted universe 
 deb http://archive.ubuntu.com/ubuntu/ xenial-security main restricted universe multiverse\n\n" > /etc/apt/sources.list'
 
 RUN apt-get clean all && apt-get update
-RUN apt-get openjdk-8-jre-headless
-RUN apt-get r-base
-RUN apt-get bwa
-RUN apt-get wget
+RUN apt-get install -y openjdk-8-jre-headless
+RUN apt-get install -y r-base
+RUN apt-get install -y bwa
+RUN apt-get install -y wget
 
 RUN useradd -ms /bin/bash gridss
 RUN mkdir /data
