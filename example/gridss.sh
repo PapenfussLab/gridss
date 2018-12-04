@@ -46,6 +46,7 @@ if ! which Rscript >/dev/null 2>&1 ; then
 fi
 
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
+unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 
 # -Dreference_fasta is only required for CRAM input files
 # -Dgridss.gridss.output_to_temp_file=true allows GRIDSS to continue where it left off without data errors due to truncated files

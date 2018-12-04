@@ -5,7 +5,13 @@
 #
 #
 #
-# DO NOT USE THIS SCRIPT IF YOU ALREADY HAVE A BAM FILE (use gridss_separate.sh)
+# DO NOT USE THIS SCRIPT IF YOU ALREADY HAVE A BAM FILE (use gridss.sh or gridss_separate.sh)
+#
+#
+#
+#
+#
+# WARNING: this pipeline does not mark duplicates or do base quality score recalibration
 #
 #
 #
@@ -154,7 +160,7 @@ if [[ ! -f $INPUT ]] ; then
 	fi
 	# Second step of pipeline: sorting
 	samtools sort -@ $(nproc) -O BAM -l 0 -T $INPUT_WORKING_DIR $INPUT_WORKING_PREFIX.unsorted.bam 2> $LOG_PREFIX.2.1.sort.log | \
-	samtools markdup - - -O BAM 2> $LOG_PREFIX.2.2.markdup.log | \
+	# samtools markdup - - -O BAM 2> $LOG_PREFIX.2.2.markdup.log | \
 	# Using non-POSIX process substitution feature of bash to fork the output stream
 	# Strip out R2, Q2 tags to save space. These can be rehydrated from
 	# the mate information and GRIDSS only needs them for the extracted reads
