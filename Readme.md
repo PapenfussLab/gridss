@@ -63,7 +63,7 @@ GRIDSS joint calling has been tested on up 12 samples with ~1000x aggregate cove
 
 ## How much memory should I give GRIDSS?
 
-It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-threaded operation
+At least 4GB + 2GB per thread. It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-threaded operation
 (WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for heavily multi-threaded
 server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS so is strongly discouraged.
 
