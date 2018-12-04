@@ -38,9 +38,30 @@ GRIDSS is built using htsjdk, so is invoked in the same manner as Picard tools u
 
 ## Example scripts
 
-Example scripts can be found in the examples subdirectory of this repository. example/GRIDSS.sh and example/somatic.sh contain examples for single-sample and somatic variant calling. example/somatic.R shows how the StructuralVariantAnnotation R package can be used to analyse GRIDSS variant calls and export variants of interest to other formats such as BEDPE.
+Example scripts can be found in the examples subdirectory of this repository.
 
-## Memory usage
+* example/GRIDSS.sh: simple example script to run GRIDSS on a single sample
+* example/somatic.sh: simple tumour/normal somatic variant calling
+* example/somatic.R shows how the StructuralVariantAnnotation R package can be used to analyse GRIDSS variant calls and export variants of interest to other formats such as BEDPE
+* example/separate.sh: example script showing how the GRIDSS 
+* example/gridss_fully_integrated_fastq_to_vcf_pipeline.sh: example script showing how the two preprocessing sorting steps can be avoided if the GRIDSS preprocessing steps are fully integrated into a NGS pipeline
+## FAQ
+
+### Should I process each input BAM separately or together?
+
+Wherever possible, samples should be processed together. Joint calling enables the detection of low allelic fraction SVs, as well as making the downstream analysis much easier (a single VCF with a breakdown of support per sample is much easier to deal with than multiple VCFs - the matching logic required to determine if two SVs are equivalent is non-trivial).
+
+GRIDSS joint calling has been tested on up 12 samples with ~1000x aggregate coverage. If you have hundreds of samples, joint assembly will likely be computationally prohibitive and you will need to perform assembly in batches, them merge the results together.
+
+### I encountered an error. What should I do?
+
+* Check the bottom of this page for commonly encountered errors and their solutions
+
+## How many threads should I use?
+
+1-16 threads is recommended. Note that pre-processing is limited by htsjdk BAM parsing thus is not multi-threaded. Asynchronous I/O means preprocessing will use up to 200-300% CPU for a nominally single-threaded operation. Make sure you specify enough memory for the number of threads you specified.
+
+## How much memory should I give GRIDSS?
 
 It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-threaded operation
 (WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for heavily multi-threaded
