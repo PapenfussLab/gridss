@@ -1,6 +1,22 @@
 #!/bin/bash
 #
+#
+#
+#
+#
+#
+# DO NOT USE THIS SCRIPT IF YOU ALREADY HAVE A BAM FILE (use gridss_separate.sh)
+#
+#
+#
+#
+#
+#
+#
+#
+#
 # Example of GRIDSS integrated into a NGS pipeline
+#
 #
 # This approach is more computationally efficient than
 # running GRIDSS as a stand-alone program as:
