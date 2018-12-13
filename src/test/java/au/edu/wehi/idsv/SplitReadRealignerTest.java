@@ -47,7 +47,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		createInput(Read(0, 1, "50M"));
 		SplitReadRealigner srr = new SplitReadRealigner(getContext());
 		FastqAligner aligner = null;
-		srr.createSupplementaryAlignments(aligner, input, output);
+		srr.createSupplementaryAlignments(aligner, input, output, true);
 		assertEquals(1, getRecords(output).size());
 	}
 	@Test
@@ -58,7 +58,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		
 		createBAM(input, SortOrder.coordinate, r);
 		SplitReadRealigner srr = new SplitReadRealigner(getContext());
-		srr.createSupplementaryAlignments(aligner, input, output);
+		srr.createSupplementaryAlignments(aligner, input, output, true);
 		
 		List<SAMRecord> result = getRecords(output);
 		assertEquals(2, result.size());
@@ -73,7 +73,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		
 		createBAM(input, SortOrder.coordinate, r);
 		SplitReadRealigner srr = new SplitReadRealigner(getContext());
-		srr.createSupplementaryAlignments(aligner, input, output);
+		srr.createSupplementaryAlignments(aligner, input, output, true);
 		
 		List<SAMRecord> result = getRecords(output);
 		assertEquals(3, result.size());
@@ -91,21 +91,21 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		
 		createBAM(input, SortOrder.coordinate, r);
 		srr = new SplitReadRealigner(getContext());
-		srr.createSupplementaryAlignments(aligner, input, output);
+		srr.createSupplementaryAlignments(aligner, input, output, true);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 		assertTrue(Ordering.from(SortOrder.coordinate.getComparatorInstance()).isOrdered(result));
 		
 		createBAM(input, SortOrder.queryname, r);
 		srr = new SplitReadRealigner(getContext());
-		srr.createSupplementaryAlignments(aligner, input, output);
+		srr.createSupplementaryAlignments(aligner, input, output, true);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 		assertTrue(Ordering.from(SortOrder.queryname.getComparatorInstance()).isOrdered(result));
 		
 		createBAM(input, SortOrder.unsorted, r);
 		srr = new SplitReadRealigner(getContext());
-		srr.createSupplementaryAlignments(aligner, input, output);
+		srr.createSupplementaryAlignments(aligner, input, output, true);
 		result = getRecords(output);
 		assertEquals(3, result.size());
 	}
@@ -180,7 +180,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		
 		createBAM(input, SortOrder.coordinate, r0);
 		SplitReadRealigner srr = new SplitReadRealigner(getContext());
-		srr.createSupplementaryAlignments(new StubStreamingAligner(r1, r2, r3), input, output, 100);
+		srr.createSupplementaryAlignments(new StubStreamingAligner(r1, r2, r3), input, output, true, 100);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(4, list.size());
 	}
@@ -213,7 +213,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		}
 		createBAM(input, header, arr);
 		
-		srr.createSupplementaryAlignments(aligner, input, output, 16);
+		srr.createSupplementaryAlignments(aligner, input, output, true, 16);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(4, list.size());
 	}
@@ -240,7 +240,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		
 		createBAM(input, header, r);
 		
-		srr.createSupplementaryAlignments(aligner, input, output, 100);
+		srr.createSupplementaryAlignments(aligner, input, output, true, 100);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(4, list.size());
 	}
@@ -267,7 +267,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		
 		createBAM(input, header, r);
 		
-		srr.createSupplementaryAlignments(aligner, input, output, 100);
+		srr.createSupplementaryAlignments(aligner, input, output, true, 100);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(4, list.size());
 	}
@@ -294,7 +294,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setSupplementaryAlignmentFlag(true);
 		
 		createBAM(input, header, r);
-		srr.createSupplementaryAlignments(aligner, input, output, 100);
+		srr.createSupplementaryAlignments(aligner, input, output, true, 100);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(0, list.size());	
 	}
@@ -320,7 +320,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setSupplementaryAlignmentFlag(true);
 		
 		createBAM(input, header, r);
-		srr.createSupplementaryAlignments(aligner, input, output, 100);
+		srr.createSupplementaryAlignments(aligner, input, output, true, 100);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(0, list.size());
 	}
@@ -351,7 +351,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setReadName("read");
 		
 		createBAM(input, header, r);
-		srr.createSupplementaryAlignments(aligner, input, output, 1);
+		srr.createSupplementaryAlignments(aligner, input, output, true, 1);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(2, list.size());
 		Assert.assertEquals("282S618M", list.get(0).getCigarString());
