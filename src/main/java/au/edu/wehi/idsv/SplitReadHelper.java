@@ -248,9 +248,10 @@ public class SplitReadHelper {
 	 * Replacement preference is given to alignments that partially overlap the originatingRecord alignment
 	 * @param originatingRecord
 	 * @param realignments
+	 * @param writeOA indicates whether the OA SAM tag should be updated
 	 * @return alignment record that the originatingRecord alignment was replaced with.
 	 */
-	public static SAMRecord replaceAlignment(SAMRecord originatingRecord, List<SAMRecord> realignments) {
+	public static SAMRecord replaceAlignment(SAMRecord originatingRecord, List<SAMRecord> realignments, boolean writeOA) {
 		// Find alignment that best matches the originatingRecord
 		SAMRecord newPrimary = null;
 		int maxOverlap = 0; 
@@ -265,15 +266,17 @@ public class SplitReadHelper {
 		if (newPrimary == null && realignments.size() > 0) {
 			newPrimary = realignments.get(0);
 		}
-		replaceAlignment(originatingRecord, newPrimary);
+		replaceAlignment(originatingRecord, newPrimary, writeOA);
 		return newPrimary;
 	}
-	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary) {
+	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary, boolean writeOA) {
 		if (originatingRecord == null) {
 			return;
 		}
 		assert(!AssemblyAttributes.isUnanchored(originatingRecord));
-		originatingRecord.setAttribute("OA", new ChimericAlignment(originatingRecord).toString());
+		if (writeOA) {
+			originatingRecord.setAttribute("OA", new ChimericAlignment(originatingRecord).toString());
+		}
 		if (newPrimary == null || newPrimary.getReadUnmappedFlag()) {
 			originatingRecord.setReadUnmappedFlag(true);
 			originatingRecord.setMappingQuality(0);

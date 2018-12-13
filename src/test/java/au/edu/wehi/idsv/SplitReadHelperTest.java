@@ -275,6 +275,10 @@ public class SplitReadHelperTest extends TestHelper {
 		assertEquals("polyA,1,+,3S1M,15,8;polyA,10,+,1S1M2S,17,9", supp2.getStringAttribute("SA"));
 	}
 	@Test
+	public void convertToSplitRead_should_set_OA() {
+		throw new RuntimeException("NYI");
+	}
+	@Test
 	public void supplementary_alignments_should_have_primary_read_name() {
 		SAMRecord primary = Read(0, 1, "3S1M");
 		primary.setReadName("r");
@@ -308,14 +312,14 @@ public class SplitReadHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "100M");
 		SAMRecord r1 = withReadName(r.getReadName() + "#50", Read(1, 1, "50M"))[0];
 		SAMRecord r2 = withReadName(r.getReadName() + "#0", Read(0, 1, "10M"))[0];
-		SAMRecord result = SplitReadHelper.replaceAlignment(r, ImmutableList.of(r1, r2));
+		SAMRecord result = SplitReadHelper.replaceAlignment(r, ImmutableList.of(r1, r2), true);
 		Assert.assertEquals(result, r2);
 		Assert.assertEquals("10M90S", r.getCigarString());
 	}
 	@Test
 	public void replaceAlignment_should_unmap_if_no_realignment_available() {
 		SAMRecord r = Read(0, 1, "100M");
-		SplitReadHelper.replaceAlignment(r, ImmutableList.of());
+		SplitReadHelper.replaceAlignment(r, ImmutableList.of(), true);
 		Assert.assertTrue(r.getReadUnmappedFlag());
 	}
 	@Test

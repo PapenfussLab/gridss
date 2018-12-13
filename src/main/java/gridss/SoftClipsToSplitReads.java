@@ -30,7 +30,7 @@ import picard.cmdline.StandardOptionDefinitions;
 )
 public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);
-	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-t", "%3$d", "%2$s", "%1$s");
+	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-L", "0,0", "-t", "%3$d", "%2$s", "%1$s");
 	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of("bowtie2", "--threads", "%3$d", "--local", "--mm", "--reorder", "-x", "%2$s", "-U", "%1$s");
     @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
     public File INPUT;
@@ -49,6 +49,8 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     @Argument(doc="Indicates whether to adjust the primary alignment position if the total edit distance can be reduced by extending or contracting the primary alignment. "
     		+ "ComputeSamTags should be rerun to correct any changes in primary alignment position if this operation is performed.", optional=true)
     public boolean READJUST_PRIMARY_ALIGNMENT_POSITON = false;
+	@Argument(doc="Write the original alignment to the OA SAM tag. Only relevant when REALIGN_ENTIRE_READ is true.", optional=true)
+    public boolean WRITE_OA = true;
     @Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
@@ -84,10 +86,10 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
         	
         	if (ALIGNER_STREAMING) {
         		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, MAX_RECORDS_IN_RAM);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, WRITE_OA, MAX_RECORDS_IN_RAM);
         	} else {
         		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, WRITE_OA);
         	}
     		
     		

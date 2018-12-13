@@ -256,4 +256,11 @@ public class SingleReadEvidenceTest extends TestHelper {
 		assertEquals(1, (int)r.lowerEndpoint());
 		assertEquals(4, (int)r.upperEndpoint());
 	}
+	@Test
+	public void getBreakendAssemblyContigBreakpointInterval_should_be_symmetrical() {
+		Range<Integer> r1 = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,10,+,2M3S,20,0", withSequence("AAAAA", onNegative(Read(0, 1, "1M4S"))))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
+		Range<Integer> r2 = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,1,-,1M4S,20,0", withSequence("AAAAA", Read(0, 10, "2M3S")))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
+		assertEquals(r1.lowerEndpoint(), r2.lowerEndpoint());
+		assertEquals(r1.upperEndpoint(), r2.upperEndpoint());
+	}
 }
