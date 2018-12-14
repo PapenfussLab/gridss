@@ -34,7 +34,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 
 @CommandLineProgramProperties(
-        summary = "Evidence reallocation is required to ensure that any given read/read pair/assembly, "
+        summary = "Evidence reallocation is required to ensure that any given read/read pair/assembly "
         		+ " supports only a consistent set breakpoints. \n"
         		+ "For discordant read pairs, this means that only a single breakpoint can be supported. \n"
         		+ "For split reads, only a single set of partial read mappings can be supported, and only one breakpoint per split can be supported.\n"

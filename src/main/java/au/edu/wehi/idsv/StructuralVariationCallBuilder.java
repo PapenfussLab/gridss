@@ -40,6 +40,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<List<SoftClipEvidence>> supportingSC = new ArrayList<>();
 	private final List<List<UnmappedMateReadPair>> supportingOEA = new ArrayList<>();
 	private final List<SoftClipEvidence> supportingBAS = new ArrayList<>();
+	private boolean updateReadInformation;
+	private boolean updateAssemblyInformation;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		this(processContext, parent, true);
 	}
@@ -207,188 +209,32 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				AssemblyAttributes aa =  new AssemblyAttributes(ass.getSAMRecord());
 				aaLookup.put(ass, aa);
 			});
-
-		attribute(VcfInfoAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
-		double beQual = supportingBAS.stream().mapToDouble(e -> e.getBreakendQual()).sum() 
-				+ supportingSC.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum()
-				+ supportingOEA.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum();
-		double bpQual = supportingAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
-				+ supportingRAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
-				+ supportingCAS.stream().mapToDouble(e -> ((DirectedBreakpoint)e).getBreakpointQual()).sum()
-				+ supportingSR.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
-				+ supportingIndel.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
-				+ supportingDP.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum();
-		attribute(VcfInfoAttributes.BREAKEND_QUAL.attribute(), beQual);
-		phredScore(isBreakend() ? beQual : bpQual);
-		// Count
-		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, supportingAS.size());
-		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, supportingRAS.size());
-		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_COMPOUND, supportingCAS.size());
-		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT, supportingBAS.size());
-		sumIntAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT, VcfFormatAttributes.BREAKPOINT_SPLITREAD_COUNT, supportingSR, e -> 1);
-		sumIntAttr(VcfInfoAttributes.BREAKPOINT_INDEL_COUNT, VcfFormatAttributes.BREAKPOINT_INDEL_COUNT, supportingIndel, e -> 1);
-		sumIntAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT, VcfFormatAttributes.BREAKPOINT_READPAIR_COUNT, supportingDP, e -> 1);
-		sumIntAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, VcfFormatAttributes.BREAKEND_SOFTCLIP_COUNT, supportingSC, e -> 1);
-		sumIntAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_COUNT, supportingOEA, e -> 1);
-		
-		// Qual
-		double[] asq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL, supportingAS, aaLookup);
-		double[] rasq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, supportingRAS, aaLookup);
-		double[] casq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, supportingCAS, aaLookup);
-		double[] basq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKEND_ASSEMBLY_QUAL, supportingBAS, aaLookup);
-		double[] srq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_SPLITREAD_QUAL, supportingSR, e -> e.getBreakpointQual());
-		double[] iq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL, VcfFormatAttributes.BREAKPOINT_INDEL_QUAL, supportingIndel, e -> e.getBreakpointQual());
-		double[] rpq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_READPAIR_QUAL, supportingDP, e -> e.getBreakpointQual());
-		double[] scq = sumDoubleAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_QUAL, VcfFormatAttributes.BREAKEND_SOFTCLIP_QUAL, supportingSC, e -> e.getBreakendQual());
-		double[] umq = sumDoubleAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_QUAL, supportingOEA, e -> e.getBreakendQual());
-		sumDoubleAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_QUAL, supportingOEA, e -> e.getBreakendQual());
-		
-		// Non-supporting assemblies
-		Set<String> assNames = supportingAS.stream()
-				.map(e -> e.getAssociatedAssemblyName())
-				.collect(Collectors.toSet());
-		sumIntAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT,
-				supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? 1 : 0);
-		sumIntAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT,
-				supportingSR, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? 1 : 0);
-		sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL,
-				supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? e.getBreakpointQual() : 0);
-		sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL,
-				supportingSR, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? e.getBreakpointQual() : 0);
-		// Assembly breakdown
-		int[] asr = new int[processContext.getCategoryCount()];
-		int[] asrp = new int[processContext.getCategoryCount()];
-		int[] basr = new int[processContext.getCategoryCount()];
-		int[] basrp = new int[processContext.getCategoryCount()];
-		int[] supportingBreakpointFragments = new int[processContext.getCategoryCount()];
-		int[] supportingBreakendFragments = new int[processContext.getCategoryCount()];
-		for (int i = 0; i < processContext.getCategoryCount(); i++) {
-			int category = i;
-			asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
-					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-                            ass.getBreakendAssemblyContigOffset(),
-						ImmutableSet.of(category),
-						ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
-					.sum();
-			asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
-					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-							ass.getBreakendAssemblyContigOffset(),
-							ImmutableSet.of(category),
-							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
-					.sum();
-			basr[category] = supportingBAS.stream()
-					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-                            ass.getBreakendAssemblyContigOffset(),
-							ImmutableSet.of(category),
-							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
-					.sum();
-			basrp[category] = supportingBAS.stream()
-					.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
-                            ass.getBreakendAssemblyContigOffset(),
-							ImmutableSet.of(category),
-							ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
-					.sum();
-			Set<String> bpfrags = supportingBreakpoint.stream()
-					.map(e -> {
-						if (AssemblyAttributes.isAssembly(e)) {
-							SingleReadEvidence ass = (SingleReadEvidence)e;
-							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(ass.getBreakendAssemblyContigOffset(), ass.getBreakendAssemblyContigOffset()), ImmutableSet.of(category), null);
-						}
-						return e.getOriginatingFragmentID(category); 
-					})
-					.flatMap(x -> x.stream())
-					.collect(Collectors.toSet());
-			supportingBreakpointFragments[category] = bpfrags.size();
-			Set<String> befrags = supportingBreakend.stream()
-					.map(e -> {
-						if (AssemblyAttributes.isAssembly(e)) {
-							SingleReadEvidence ass = (SingleReadEvidence)e;
-							return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(ass.getBreakendAssemblyContigOffset(), ass.getBreakendAssemblyContigOffset()), ImmutableSet.of(category), null);
-						}
-						return e.getOriginatingFragmentID(category); 
-					})
-					.flatMap(x -> x.stream())
-					.collect(Collectors.toSet());
-			befrags.removeAll(bpfrags);
-			supportingBreakendFragments[category] = befrags.size();
-			
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), asrp[category]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), basr[category]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), basrp[category]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_QUAL.attribute(), srq[i] + iq[i] + rpq[i] + asq[i] + rasq[i] + casq[i]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_QUAL.attribute(), scq[i] + umq[i] + basq[i]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), supportingBreakpointFragments[category]);
-			genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), supportingBreakendFragments[category]);
+		if (isUpdateVariantQualityScore()) {
+			updateVariantQualityScoreAttributes(aaLookup);
 		}
-		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(asr).sum());
-		attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(asrp).sum());
-		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(basr).sum());
-		attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(basrp).sum());
-		attribute(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakpointFragments).sum());
-		attribute(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakendFragments).sum());
+		updateVariantSupportCounts(aaLookup);
 		if (processContext.getConfig().getVariantCalling().includeSupportingReadNames) {
-			List<String> supportingBreakpointNames = Streams.concat(
-					supportingIndel.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
-					supportingSR.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
-					supportingDP.stream().flatMap(l -> l.stream()).map(e -> e.getLocalledMappedRead().getReadName()))
-				.distinct()
-				.sorted()
-				.collect(Collectors.toList());
-			List<String> supportingBreakendNames = Streams.concat(
-					supportingSC.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
-					supportingOEA.stream().flatMap(l -> l.stream()).map(e -> e.getLocalledMappedRead().getReadName()))
-					.distinct()
-					.sorted()
-					.collect(Collectors.toList());
-			attribute(VcfInfoAttributes.SUPPORTING_BREAKPOINT_READ_NAMES.attribute(), supportingBreakpointNames);
-			attribute(VcfInfoAttributes.SUPPORTING_BREAKEND_READ_NAMES .attribute(), supportingBreakendNames);
+			updateSupportingReadNames();
 		}
+		updateStrandBias(aaLookup);
+		updateAssemblySupportTracking();
+		updateNominalCallPosition();
+		
+		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
+		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
+		variant = applyFilters(variant);
+		//variant = Models.calculateSomatic(variant);
+		return variant;
+	}
 
-		// Calculate strand bias purely from direct read support
-		int reads = 0;
-		float strandReads = 0;
-		for (DirectedEvidence de : Iterables.concat(supportingBreakpoint, supportingBreakend)) {
-			if (de instanceof SingleReadEvidence) {
-				SingleReadEvidence e = (SingleReadEvidence) de;
-				if (AssemblyAttributes.isAssembly(e)) {
-					AssemblyAttributes aa = aaLookup.get(de);
-					int asmReads = aa.getSupportingReadCount(null, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read));
-					reads += asmReads;
-					strandReads += aa.getStrandBias() * asmReads;
-				} else {
-					reads++;
-					strandReads += e.getStrandBias();
-				}
-			}
+	private void updateNominalCallPosition() {
+		if (!isUpdateAssemblyInformation()) {
+			// nominal positions are usually from assembly so if we're not updating assemblies then we don't change the call
+			return;
 		}
-		if (reads > 0) {
-			attribute(VcfInfoAttributes.STRAND_BIAS.attribute(), strandReads / reads);
-		}
-		List<SingleReadEvidence> suportingAssemblies = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
-				.sorted(Comparator.comparing(o -> o.getSAMRecord().getReadName()))
-				.collect(Collectors.toList());
-		if (suportingAssemblies.size() > 0) {
-			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, suportingAssemblies.stream()
-					.map(o -> o.getSAMRecord().getReadName())
-					.collect(Collectors.toList()));
-			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET, suportingAssemblies.stream()
-					.map(o -> o.getLocalChimericAlignmentReadOffset())
-					.collect(Collectors.toList()));
-			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET, suportingAssemblies.stream()
-					.map(o -> (o instanceof SplitReadEvidence) ? ((SplitReadEvidence)o).getRemoteChimericAlignmentReadOffset() :
-							(o instanceof IndelEvidence ? o.getLocalChimericAlignmentReadOffset() : -1 ))
-					.collect(Collectors.toList()));
-		} else {
-			rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID.attribute());
-			rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET.attribute());
-			rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET.attribute());
-		}
-		
-		String untemplated = parent.getBreakpointSequenceString();
-		String homo = "";
 		BreakendSummary nominalPosition = parent.getBreakendSummary();
-		
+		String untemplated;// = parent.getBreakpointSequenceString();
+		String homo = "";
 		if (isBreakend()) {
 			DirectedEvidence bestBreakend = supportingBreakend.stream()
 					.sorted(ByBestBreakendDesc)
@@ -396,10 +242,12 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			if (bestBreakend != null && bestBreakend.isBreakendExact()) {
 				untemplated = new String(bestBreakend.getBreakendSequence());
 				nominalPosition = bestBreakend.getBreakendSummary();
-				breakend(bestBreakend.getBreakendSummary(), untemplated);
+				breakend(nominalPosition, untemplated);
 				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
 			} else {
-				attribute(VcfSvConstants.IMPRECISE_KEY, true);
+				if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {
+					attribute(VcfSvConstants.IMPRECISE_KEY, true);
+				}
 			}
 		} else {
 			DirectedBreakpoint bestBreakpoint = supportingBreakpoint.stream()
@@ -412,7 +260,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				homo = bestBreakpoint.getHomologySequence();
 				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
 			} else {
-				attribute(VcfSvConstants.IMPRECISE_KEY, true);
+				if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {
+					attribute(VcfSvConstants.IMPRECISE_KEY, true);
+				}
 			}
 		}
 		if (homo.length() > 0) {
@@ -431,13 +281,226 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		supportingRAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingCAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		attribute(VcfInfoAttributes.SUPPORT_CIGAR, makeCigar(allAnchoredBases, nominalPosition).toString());
-		
-		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
-		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
-		variant = applyFilters(variant);
-		//variant = Models.calculateSomatic(variant);
-		return variant;
 	}
+
+	private void updateAssemblySupportTracking() {
+		if (isUpdateAssemblyInformation()) {
+			List<SingleReadEvidence> suportingAssemblies = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
+					.sorted(Comparator.comparing(o -> o.getSAMRecord().getReadName()))
+					.collect(Collectors.toList());
+			if (suportingAssemblies.size() > 0) {
+				attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, suportingAssemblies.stream()
+						.map(o -> o.getSAMRecord().getReadName())
+						.collect(Collectors.toList()));
+				attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET, suportingAssemblies.stream()
+						.map(o -> o.getLocalChimericAlignmentReadOffset())
+						.collect(Collectors.toList()));
+				attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET, suportingAssemblies.stream()
+						.map(o -> (o instanceof SplitReadEvidence) ? ((SplitReadEvidence) o).getRemoteChimericAlignmentReadOffset() :
+								(o instanceof IndelEvidence ? o.getLocalChimericAlignmentReadOffset() : -1))
+						.collect(Collectors.toList()));
+			} else {
+				rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID.attribute());
+				rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET.attribute());
+				rmAttribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET.attribute());
+			}
+		}
+	}
+
+	private void updateSupportingReadNames() {
+		if (isUpdateAssemblyInformation() & isUpdateReadInformation()) {
+			List<String> supportingBreakpointNames = Streams.concat(
+					supportingIndel.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
+					supportingSR.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
+					supportingDP.stream().flatMap(l -> l.stream()).map(e -> e.getLocalledMappedRead().getReadName()))
+					.distinct()
+					.sorted()
+					.collect(Collectors.toList());
+			List<String> supportingBreakendNames = Streams.concat(
+					supportingSC.stream().flatMap(l -> l.stream()).map(e -> e.getSAMRecord().getReadName()),
+					supportingOEA.stream().flatMap(l -> l.stream()).map(e -> e.getLocalledMappedRead().getReadName()))
+					.distinct()
+					.sorted()
+					.collect(Collectors.toList());
+			attribute(VcfInfoAttributes.SUPPORTING_BREAKPOINT_READ_NAMES.attribute(), supportingBreakpointNames);
+			attribute(VcfInfoAttributes.SUPPORTING_BREAKEND_READ_NAMES.attribute(), supportingBreakendNames);
+		}
+	}
+
+	private void updateStrandBias(Map<SingleReadEvidence, AssemblyAttributes> aaLookup) {
+		if (isUpdateReadInformation()) {
+			// Calculate strand bias purely from direct read support
+			int reads = 0;
+			float strandReads = 0;
+			for (DirectedEvidence de : Iterables.concat(supportingBreakpoint, supportingBreakend)) {
+				if (de instanceof SingleReadEvidence) {
+					SingleReadEvidence e = (SingleReadEvidence) de;
+					if (AssemblyAttributes.isAssembly(e)) {
+						AssemblyAttributes aa = aaLookup.get(de);
+						int asmReads = aa.getSupportingReadCount(null, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read));
+						reads += asmReads;
+						strandReads += aa.getStrandBias() * asmReads;
+					} else {
+						reads++;
+						strandReads += e.getStrandBias();
+					}
+				}
+			}
+			if (reads > 0) {
+				attribute(VcfInfoAttributes.STRAND_BIAS.attribute(), strandReads / reads);
+			}
+		}
+	}
+
+	private void updateVariantSupportCounts(Map<SingleReadEvidence, AssemblyAttributes> aaLookup) {
+		if (isUpdateAssemblyInformation() & isUpdateReadInformation()) {
+			// Non-supporting assemblies
+			Set<String> assNames = supportingAS.stream()
+					.map(e -> e.getAssociatedAssemblyName())
+					.collect(Collectors.toSet());
+			sumIntAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT,
+					supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? 1 : 0);
+			sumIntAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT,
+					supportingSR, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? 1 : 0);
+			sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL,
+					supportingDP, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? e.getBreakpointQual() : 0);
+			sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL,
+					supportingSR, e -> (e.getAssociatedAssemblyName() != null && !assNames.contains(e.getAssociatedAssemblyName())) ? e.getBreakpointQual() : 0);
+		}
+		if (isUpdateAssemblyInformation()) {
+			// Assembly breakdown
+			int[] asr = new int[processContext.getCategoryCount()];
+			int[] asrp = new int[processContext.getCategoryCount()];
+			int[] basr = new int[processContext.getCategoryCount()];
+			int[] basrp = new int[processContext.getCategoryCount()];
+			for (int i = 0; i < processContext.getCategoryCount(); i++) {
+				final int category = i;
+				asr[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
+						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+								ass.getBreakendAssemblyContigOffset(),
+								ImmutableSet.of(category),
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
+						.sum();
+				asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
+						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+								ass.getBreakendAssemblyContigOffset(),
+								ImmutableSet.of(category),
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
+						.sum();
+				basr[category] = supportingBAS.stream()
+						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+								ass.getBreakendAssemblyContigOffset(),
+								ImmutableSet.of(category),
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
+						.sum();
+				basrp[category] = supportingBAS.stream()
+						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
+								ass.getBreakendAssemblyContigOffset(),
+								ImmutableSet.of(category),
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
+						.sum();
+
+				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
+				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), asrp[category]);
+				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), basr[category]);
+				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), basrp[category]);
+			}
+			attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(asr).sum());
+			attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(asrp).sum());
+			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT.attribute(), IntStream.of(basr).sum());
+			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT.attribute(), IntStream.of(basrp).sum());
+		}
+		if (isUpdateAssemblyInformation() & isUpdateReadInformation()) {
+			int[] supportingBreakpointFragments = new int[processContext.getCategoryCount()];
+			int[] supportingBreakendFragments = new int[processContext.getCategoryCount()];
+			for (int i = 0; i < processContext.getCategoryCount(); i++) {
+				final int category = i;
+				Set<String> bpfrags = supportingBreakpoint.stream()
+						.map(e -> {
+							return getOriginatingFragmentIDs(aaLookup, category, e);
+						})
+						.flatMap(x -> x.stream())
+						.collect(Collectors.toSet());
+				supportingBreakpointFragments[category] = bpfrags.size();
+				Set<String> befrags = supportingBreakend.stream()
+						.map(e -> {
+							return getOriginatingFragmentIDs(aaLookup, category, e);
+						})
+						.flatMap(x -> x.stream())
+						.collect(Collectors.toSet());
+				befrags.removeAll(bpfrags);
+				supportingBreakendFragments[category] = befrags.size();
+
+				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), supportingBreakpointFragments[category]);
+				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), supportingBreakendFragments[category]);
+			}
+		}
+	}
+
+	private void updateVariantQualityScoreAttributes(Map<SingleReadEvidence, AssemblyAttributes> aaLookup) {
+		if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {
+			attribute(VcfInfoAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
+			double beQual = supportingBAS.stream().mapToDouble(e -> e.getBreakendQual()).sum()
+					+ supportingSC.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum()
+					+ supportingOEA.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakendQual()).sum();
+			double bpQual = supportingAS.stream().mapToDouble(e -> ((DirectedBreakpoint) e).getBreakpointQual()).sum()
+					+ supportingRAS.stream().mapToDouble(e -> ((DirectedBreakpoint) e).getBreakpointQual()).sum()
+					+ supportingCAS.stream().mapToDouble(e -> ((DirectedBreakpoint) e).getBreakpointQual()).sum()
+					+ supportingSR.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
+					+ supportingIndel.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum()
+					+ supportingDP.stream().flatMap(l -> l.stream()).mapToDouble(e -> e.getBreakpointQual()).sum();
+			attribute(VcfInfoAttributes.BREAKEND_QUAL.attribute(), beQual);
+			phredScore(isBreakend() ? beQual : bpQual);
+		}
+		double[] asq = null;
+		double[] rasq = null;
+		double[] casq = null;
+		double[] basq = null;
+		// Count
+		if (isUpdateAssemblyInformation()) {
+			attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, supportingAS.size());
+			attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, supportingRAS.size());
+			attribute(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_COMPOUND, supportingCAS.size());
+			attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT, supportingBAS.size());
+			asq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL, supportingAS, aaLookup);
+			rasq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, supportingRAS, aaLookup);
+			casq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_QUAL_COMPOUND, supportingCAS, aaLookup);
+			basq = prorataAssemblyQualBreakdown(VcfInfoAttributes.BREAKEND_ASSEMBLY_QUAL, VcfFormatAttributes.BREAKEND_ASSEMBLY_QUAL, supportingBAS, aaLookup);
+		}
+		double[] srq = null;
+		double[] iq = null;
+		double[] rpq = null;
+		double[] scq = null;
+		double[] umq = null;
+		if (isUpdateReadInformation()) {
+			sumIntAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT, VcfFormatAttributes.BREAKPOINT_SPLITREAD_COUNT, supportingSR, e -> 1);
+			sumIntAttr(VcfInfoAttributes.BREAKPOINT_INDEL_COUNT, VcfFormatAttributes.BREAKPOINT_INDEL_COUNT, supportingIndel, e -> 1);
+			sumIntAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT, VcfFormatAttributes.BREAKPOINT_READPAIR_COUNT, supportingDP, e -> 1);
+			sumIntAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_COUNT, VcfFormatAttributes.BREAKEND_SOFTCLIP_COUNT, supportingSC, e -> 1);
+			sumIntAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_COUNT, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_COUNT, supportingOEA, e -> 1);
+			srq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, VcfFormatAttributes.BREAKPOINT_SPLITREAD_QUAL, supportingSR, e -> e.getBreakpointQual());
+			iq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL, VcfFormatAttributes.BREAKPOINT_INDEL_QUAL, supportingIndel, e -> e.getBreakpointQual());
+			rpq = sumDoubleAttr(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, VcfFormatAttributes.BREAKPOINT_READPAIR_QUAL, supportingDP, e -> e.getBreakpointQual());
+			scq = sumDoubleAttr(VcfInfoAttributes.BREAKEND_SOFTCLIP_QUAL, VcfFormatAttributes.BREAKEND_SOFTCLIP_QUAL, supportingSC, e -> e.getBreakendQual());
+			umq = sumDoubleAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_QUAL, supportingOEA, e -> e.getBreakendQual());
+			sumDoubleAttr(VcfInfoAttributes.BREAKEND_UNMAPPEDMATE_QUAL, VcfFormatAttributes.BREAKEND_UNMAPPEDMATE_QUAL, supportingOEA, e -> e.getBreakendQual());
+		}
+		if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {
+			for (int i = 0; i < processContext.getCategoryCount(); i++) {
+				genotypeBuilder.get(i).attribute(VcfFormatAttributes.BREAKPOINT_QUAL.attribute(), srq[i] + iq[i] + rpq[i] + asq[i] + rasq[i] + casq[i]);
+				genotypeBuilder.get(i).attribute(VcfFormatAttributes.BREAKEND_QUAL.attribute(), scq[i] + umq[i] + basq[i]);
+			}
+		}
+	}
+
+	private Collection<String> getOriginatingFragmentIDs(Map<SingleReadEvidence, AssemblyAttributes> aaLookup, int category, DirectedEvidence e) {
+		if (AssemblyAttributes.isAssembly(e)) {
+			SingleReadEvidence ass = (SingleReadEvidence)e;
+			return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(ass.getBreakendAssemblyContigOffset(), ass.getBreakendAssemblyContigOffset()), ImmutableSet.of(category), null);
+		}
+		return e.getOriginatingFragmentID(category);
+	}
+
 	/*
 	 * To get per-sample assembly scores, we pro-rata the assembly score by the contribution from each category.
 	 * 
@@ -547,4 +610,24 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.result();
 		}
 	}.nullsLast();
+
+	public boolean isUpdateAssemblyInformation() {
+		return updateAssemblyInformation;
+	}
+
+	public void setUpdateAssemblyInformation(boolean updateAssemblyInformation) {
+		this.updateAssemblyInformation = updateAssemblyInformation;
+	}
+
+	public boolean isUpdateReadInformation() {
+		return updateReadInformation;
+	}
+
+	public void setUpdateReadInformation(boolean updateReadInformation) {
+		this.updateReadInformation = updateReadInformation;
+	}
+
+	public boolean isUpdateVariantQualityScore() {
+		return updateReadInformation && updateAssemblyInformation;
+	}
 }
