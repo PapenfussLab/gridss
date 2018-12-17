@@ -40,8 +40,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<List<SoftClipEvidence>> supportingSC = new ArrayList<>();
 	private final List<List<UnmappedMateReadPair>> supportingOEA = new ArrayList<>();
 	private final List<SoftClipEvidence> supportingBAS = new ArrayList<>();
-	private boolean updateReadInformation;
-	private boolean updateAssemblyInformation;
+	private boolean updateReadInformation = true;
+	private boolean updateAssemblyInformation= true;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		this(processContext, parent, true);
 	}
@@ -434,6 +434,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), supportingBreakpointFragments[category]);
 				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), supportingBreakendFragments[category]);
 			}
+			attribute(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakpointFragments).sum());
+			attribute(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS.attribute(), IntStream.of(supportingBreakendFragments).sum());
 		}
 	}
 

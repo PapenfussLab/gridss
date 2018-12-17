@@ -14,7 +14,9 @@ public interface Hg19Tests {
 				"examples/",
 				"",
 				"../",
+				"../../",
 				"C:/dev/",
+				"D:/dev/",
 				"~/projects/reference_genomes/human/",
 			}) {
 			File f = new File(path + reference);
