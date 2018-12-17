@@ -47,6 +47,10 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	private static final Log log = Log.getInstance(AllocateEvidence.class);
 	@Argument(doc="Evidence allocation strategy used to uniquely assign evidence.")
 	public EvidenceAllocationStrategy ALLOCATION_STRATEGY = EvidenceAllocationStrategy.GREEDY;
+	@Argument(doc="Indicates whether supporting assemblies should be allocated.")
+	public boolean ALLOCATE_ASSEMBLIES = true;
+	@Argument(doc="Indicates whether supporting reads should be allocated.")
+	public boolean ALLOCATE_READS = true;
 	public static enum EvidenceAllocationStrategy {
 		GREEDY,
 	}
@@ -104,6 +108,8 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	private VariantContextDirectedEvidence annotate(VariantEvidenceSupport ves) {
 		VariantCallingConfiguration vc = getContext().getConfig().getVariantCalling();
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), ves.variant);
+		builder.setUpdateAssemblyInformation(ALLOCATE_ASSEMBLIES);
+		builder.setUpdateReadInformation(ALLOCATE_READS);
 		for (DirectedEvidence e : ves.support) {
 			boolean shouldExclude = false;
 			if (!shouldExclude) {
