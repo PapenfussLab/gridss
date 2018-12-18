@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 
 /**
@@ -72,5 +73,10 @@ public class IntegerLinearGenomicCoordinate implements LinearGenomicCoordinate {
 	@Override
 	public String encodedIntervalToString(long startLinearCoordinate, long endLinearCoordinate) {
 		return underlying.encodedIntervalToString(removeOffset(startLinearCoordinate), removeOffset(endLinearCoordinate));
+	}
+
+	@Override
+	public SAMSequenceDictionary getDictionary() {
+		return underlying.getDictionary();
 	}
 }

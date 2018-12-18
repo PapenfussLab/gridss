@@ -464,6 +464,8 @@ public class TestHelper {
 		clean(dp[0], dp[1]);
 		dp[0].setProperPairFlag(false);
 		dp[1].setProperPairFlag(false);
+		dp[0].setAttribute("MC", cigar2);
+		dp[1].setAttribute("MC", cigar);
 		return dp;
 	}
 	static public SAMRecord Read(int referenceIndex, int pos, int length) {

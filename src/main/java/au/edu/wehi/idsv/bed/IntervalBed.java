@@ -86,8 +86,17 @@ public class IntervalBed {
 	 * @return
 	 */
 	public boolean overlaps(int referenceIndex, int start, int end) {
-		Range<Long> r = Range.closedOpen(linear.getLinearCoordinate(referenceIndex, start), linear.getLinearCoordinate(referenceIndex, end) + 1);
-		RangeSet<Long> hits = intervals.subRangeSet(r);
+		return overlaps(linear.getLinearCoordinate(referenceIndex, start), linear.getLinearCoordinate(referenceIndex, end));
+	}
+	public boolean overlaps(long start, long end) {
+		Range<Long> r = Range.closedOpen(start, end + 1);
+		return overlaps(r);
+	}
+	public boolean overlaps(Range<Long> interval) {
+		if (interval == null) {
+			return false;
+		}
+		RangeSet<Long> hits = intervals.subRangeSet(interval);
 		return !hits.isEmpty();
 	}
 	/**
@@ -123,5 +132,8 @@ public class IntervalBed {
 			}
 		}
 		return qis;
+	}
+	public RangeSet<Long> asRangeSet() {
+		return TreeRangeSet.create(intervals);
 	}
 }

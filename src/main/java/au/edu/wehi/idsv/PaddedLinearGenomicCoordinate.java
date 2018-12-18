@@ -102,7 +102,7 @@ public class PaddedLinearGenomicCoordinate implements LinearGenomicCoordinate {
 	 */
 	@Override
 	public long getLinearCoordinate(String chr, long pos) {
-		return getLinearCoordinate(dictionary.getSequenceIndex(chr), pos);
+		return getLinearCoordinate(getDictionary().getSequenceIndex(chr), pos);
 	}
 	/* (non-Javadoc)
 	 * @see au.edu.wehi.idsv.LinearGenomicCoordinate#getStartLinearCoordinate(au.edu.wehi.idsv.BreakendSummary)
@@ -154,7 +154,7 @@ public class PaddedLinearGenomicCoordinate implements LinearGenomicCoordinate {
 	@Override
 	public String encodedToString(long linearCoordinate) {
 		return String.format("%s:%d",
-				dictionary.getSequence(getReferenceIndex(linearCoordinate)).getSequenceName(),
+				getDictionary().getSequence(getReferenceIndex(linearCoordinate)).getSequenceName(),
 				getReferencePosition(linearCoordinate));
 	}
 	/* (non-Javadoc)
@@ -165,11 +165,16 @@ public class PaddedLinearGenomicCoordinate implements LinearGenomicCoordinate {
 		if (startLinearCoordinate > endLinearCoordinate) throw new IllegalArgumentException("end cannot be before start");
 		if (getReferenceIndex(startLinearCoordinate) == getReferenceIndex(endLinearCoordinate)) {
 			return String.format("%s:%d-%d",
-					dictionary.getSequence(getReferenceIndex(startLinearCoordinate)).getSequenceName(),
+					getDictionary().getSequence(getReferenceIndex(startLinearCoordinate)).getSequenceName(),
 					getReferencePosition(startLinearCoordinate),
 					getReferencePosition(endLinearCoordinate)); 
 		} else {
 			return encodedToString(startLinearCoordinate) + "-" + encodedToString(endLinearCoordinate);
 		}
+	}
+
+	@Override
+	public SAMSequenceDictionary getDictionary() {
+		return dictionary;
 	}
 }
