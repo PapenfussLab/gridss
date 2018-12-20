@@ -111,23 +111,22 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		builder.setUpdateAssemblyInformation(ALLOCATE_ASSEMBLIES);
 		builder.setUpdateReadInformation(ALLOCATE_READS);
 		for (DirectedEvidence e : ves.support) {
-			boolean shouldExclude = false;
-			if (!shouldExclude) {
-				builder.addEvidence(e);
-			}
+			builder.addEvidence(e);
 		}
 		VariantContextDirectedEvidence be = builder.make();
-		if (!vc.writeFiltered) {
-			if (be.isFiltered()) return null;
-			if (be.getPhredScaledQual() < vc.minScore) return null;
-			if (be instanceof VariantContextDirectedBreakpoint) {
-				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)be;
-				if (bp.getBreakpointSupportingFragmentCount() < vc.minReads) return null;
-			} else {
-				if (be.getBreakendSupportingFragmentCount() < vc.minReads) return null;
+		if (ALLOCATE_READS && ALLOCATE_ASSEMBLIES) {
+			if (!vc.writeFiltered) {
+				if (be.isFiltered()) return null;
+				if (be.getPhredScaledQual() < vc.minScore) return null;
+				if (be instanceof VariantContextDirectedBreakpoint) {
+					VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint) be;
+					if (bp.getBreakpointSupportingFragmentCount() < vc.minReads) return null;
+				} else {
+					if (be.getBreakendSupportingFragmentCount() < vc.minReads) return null;
+				}
 			}
+			be = vc.applyConfidenceFilter(getContext(), be);
 		}
-		be = vc.applyConfidenceFilter(getContext(), be);
 		return be;
 	}
 	public static void main(String[] argv) {
