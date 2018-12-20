@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
+import htsjdk.variant.vcf.VCFHeader;
 import org.broadinstitute.barclay.argparser.Argument;
 
 import com.google.common.collect.ImmutableList;
@@ -42,6 +43,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT_VCF;
 	public abstract CloseableIterator<VariantContextDirectedEvidence> iterator(CloseableIterator<VariantContextDirectedEvidence> calls, ExecutorService threadpool);
+	private VCFHeader inputHeader = null;
 	@Override
 	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsReadable(ASSEMBLY);
@@ -65,6 +67,9 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 	}
 	public Iterator<IdsvVariantContext> getAllCalls(File file, CloseableIterator<VariantContextDirectedEvidence> breakendCalls) {
 		VCFFileReader vcfReader = new VCFFileReader(file, false);
+		if (inputHeader != null) {
+			inputHeader = vcfReader.getFileHeader();
+		}
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
 		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext(), null, variant));
 		Iterator<IdsvVariantContext> nonbeIt = Iterators.filter(idsvIt, variant -> !(variant instanceof VariantContextDirectedEvidence));
@@ -76,7 +81,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 	protected void saveVcf(File file, Iterator<IdsvVariantContext> calls) throws IOException {
 		File tmp = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(file) : file;
 		final ProgressLogger writeProgress = new ProgressLogger(log);
-		try (VariantContextWriter vcfWriter = getContext().getVariantContextWriter(tmp, true)) {
+		try (VariantContextWriter vcfWriter = getContext().getVariantContextWriter(tmp, getOutputHeader(), true)) {
 			while (calls.hasNext()) {
 				IdsvVariantContext record = calls.next();
 				vcfWriter.add(record);
@@ -86,5 +91,18 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		if (tmp != file) {
 			FileHelper.move(tmp, file, true);
 		}
+	}
+	protected VCFHeader getInputHeader() {
+		if (inputHeader == null) {
+			try (VCFFileReader vcfReader = new VCFFileReader(INPUT_VCF, false)) {
+				inputHeader = vcfReader.getFileHeader();
+			}
+		}
+		return inputHeader;
+	}
+	protected VCFHeader getOutputHeader() {
+		VCFHeader header = getInputHeader();
+		assert(header != null);
+		return header;
 	}
 }

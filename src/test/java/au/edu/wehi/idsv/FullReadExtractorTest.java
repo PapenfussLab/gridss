@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
-import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class FullReadExtractorTest extends TestHelper {
     private static LinearGenomicCoordinate lgc = new PaddedLinearGenomicCoordinate(getSequenceDictionary(), LCCB);
@@ -17,9 +17,10 @@ public class FullReadExtractorTest extends TestHelper {
         }
 
         @Override
-        public void extract(File input, File output) throws IOException {
+        public void extract(File input, File output, int workerThreads) throws IOException {
 
         }
+
     }
     @Test
     public void shouldExtractOverlappingRecords() {

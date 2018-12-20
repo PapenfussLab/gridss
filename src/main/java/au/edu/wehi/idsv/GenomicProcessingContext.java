@@ -222,9 +222,18 @@ public class GenomicProcessingContext implements Closeable {
 	 * @return opened output VCF stream
 	 */
 	public VariantContextWriter getVariantContextWriter(File file, boolean createIndex) {
+		return getVariantContextWriter(file, new VCFHeader(), createIndex);
+	}
+	/**
+	 * Gets a VCF file ready to write variants to
+	 * A header based on this processing context will have already been written to the returned writer
+	 * It is the responsibility of the caller to close the returned @link {@link VariantContextWriter}
+	 * @param output file
+	 * @return opened output VCF stream
+	 */
+	public VariantContextWriter getVariantContextWriter(File file, VCFHeader vcfHeader, boolean createIndex) {
 		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file, createIndex);
 		VariantContextWriter vcfWriter = builder.build();
-		final VCFHeader vcfHeader = new VCFHeader();
 		GridssVcfConstants.addHeaders(vcfHeader);
 		vcfHeader.setSequenceDictionary(getReference().getSequenceDictionary());
 		vcfWriter.writeHeader(vcfHeader);
