@@ -4,11 +4,14 @@ import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.*;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.File;
 import java.io.IOException;
 
 public class LinearScanFullReadExtractor extends FullReadExtractor {
+    private static final Log log = Log.getInstance(LinearScanFullReadExtractor.class);
     public LinearScanFullReadExtractor(LinearGenomicCoordinate lgc, IntervalBed bed, boolean extractMates, boolean extractSplits) {
         super(lgc, bed, extractMates, extractSplits);
     }
@@ -19,9 +22,10 @@ public class LinearScanFullReadExtractor extends FullReadExtractor {
         try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {
             SAMFileHeader header = reader.getFileHeader();
             try (AsyncBufferedIterator<SAMRecord> asyncIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
+                ProgressLoggingSAMRecordIterator it = new ProgressLoggingSAMRecordIterator(asyncIt, new ProgressLogger(log));
                 try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, true, tmpOut)) {
-                    while (asyncIt.hasNext()) {
-                        SAMRecord r = asyncIt.next();
+                    while (it.hasNext()) {
+                        SAMRecord r = it.next();
                         if (shouldExtract(r)) {
                             writer.addAlignment(r);
                         }
