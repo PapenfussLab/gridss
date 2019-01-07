@@ -16,7 +16,6 @@ public class IndexedLookupFullReadExtractor extends FullReadExtractor {
         super(lgc, bed, extractMates, extractSplits);
         this.regionPaddingSize = regionPaddingSize;
     }
-    @Override
     public void extract(File input, File output, int workerThreads) throws IOException {
         IntervalBed lookupIntervals = new IntervalBed(getLinearGenomicCoordinate().getDictionary(), getLinearGenomicCoordinate());
         for (QueryInterval qi : getRegionBed().asQueryInterval()) {
