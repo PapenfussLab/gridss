@@ -1,7 +1,7 @@
-/target
+target
 *.gridss.working
 .Rproj.user
 bin
-/chr12.*
-/hg19.*
-/.idea
+chr12.*
+hg19.*
+.idea
