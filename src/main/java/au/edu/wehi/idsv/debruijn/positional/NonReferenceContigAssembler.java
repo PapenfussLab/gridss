@@ -459,7 +459,11 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				.collect(Collectors.toList());
 		SupportLookup supportLookup = new SupportLookup(fullContig);
 		List<AssemblyEvidenceSupport> supportList = evidence.stream()
-				.map(e -> new AssemblyEvidenceSupport(e.evidence(), supportLookup.supportInterval(e)).adjustForAssemblyTruncation(startBasesToTrim))
+				.map(e -> {
+					Range<Integer> si = supportLookup.supportInterval(e);
+					return si == null ? null : new AssemblyEvidenceSupport(e.evidence(), si).adjustForAssemblyTruncation(startBasesToTrim);
+					})
+				.filter(x -> x != null)
 				.collect(Collectors.toList());
 
 		SAMRecord assembledContig;
@@ -772,7 +776,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private void addToGraph(KmerPathNodeKmerNode node) {
 		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.firstKmer());
 		if (list == null) {
-			list = new ArrayList<KmerPathNodeKmerNode>();
+			list = new ArrayList<>();
 			graphByKmerNode.put(node.firstKmer(), list);
 		}
 		list.add(node);
@@ -807,6 +811,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					supportedBaseOffsets.add(Range.closed(contigKmerOffset + 1, contigKmerOffset + k - 1));
 				}
 			}
+			if (supportedBaseOffsets.isEmpty()) {
+				return null;
+			}
 			// currently our support model only handles a single interval
 			return supportedBaseOffsets.span();
 		}
@@ -818,6 +825,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			Range<Integer> anchorBounds = contigBaseOffsetBounds(lookup, e2);
 
 			if (anchorBounds == null) {
+				if (bounds == null) {
+					return null;
+				}
 				if (preferredContigDirection == BreakendDirection.Forward) {
 					bounds = Range.closed(0, bounds.upperEndpoint() + k - 1);
 				} else {
