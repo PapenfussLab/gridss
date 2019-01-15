@@ -45,27 +45,7 @@ public class ExtractFullReadsTest extends IntermediateFilesTest {
                 "INPUT=" + input.toString(),
                 "REFERENCE_SEQUENCE=" + reference.toString(),
                 "OUTPUT=" + output.toString(),
-                "LINEAR_SCAN=true",
                 "REGION_BED=" + bed.toString()
-        };
-        assertEquals(0, new ExtractFullReads().instanceMain(args));
-        bed.delete();
-        List<SAMRecord> outputRecords = getRecords(output);
-        assertEquals(3000, outputRecords.size());
-    }
-    @Test
-    public void test_indexed_lookup() throws IOException {
-        File bed = simpleSetup();
-        try(BufferedWriter writer = Files.newWriter(bed, StandardCharsets.UTF_8)) {
-            writer.write("polyA 0   99\n");
-            writer.write("polyACGT 201   1000\n");
-        }
-        String[] args = new String[] {
-                "INPUT=" + input.toString(),
-                "REFERENCE_SEQUENCE=" + reference.toString(),
-                "OUTPUT=" + output.toString(),
-                "LINEAR_SCAN=false",
-                "REGION_BED=",bed.toString()
         };
         assertEquals(0, new ExtractFullReads().instanceMain(args));
         bed.delete();
