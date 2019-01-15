@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -275,6 +276,7 @@ public class SplitReadHelperTest extends TestHelper {
 		assertEquals("polyA,1,+,3S1M,15,8;polyA,10,+,1S1M2S,17,9", supp2.getStringAttribute("SA"));
 	}
 	@Test
+	@Ignore("NYI")
 	public void convertToSplitRead_should_set_OA() {
 		throw new RuntimeException("NYI");
 	}
