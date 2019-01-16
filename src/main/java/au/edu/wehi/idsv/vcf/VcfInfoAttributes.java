@@ -51,18 +51,18 @@ public enum VcfInfoAttributes {
 
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
 	STRAND_BIAS ("SB", 1, VCFHeaderLineType.Float, "Strand bias of the reads supporting the variant."
-			+ "1 indicates that reads would be aligned to the positive strand if the reference was changed to the variant allele. "
-			+ "0 indicates that reads bases would be aligned to the negative strand if the reference was changed to the variant allele. "
-			+ "Strand bias is calculated purely from supporting reads and exclude read pair support since these are 100% strand bias. "
-			+ "Note that reads both directly supporting the variant, and supporting via assembly will be double-counted. "
-			+ "Both breakpoint and breakend supporting reads are included."),
+			+ " 1 indicates that reads would be aligned to the positive strand if the reference was changed to the variant allele."
+			+ " 0 indicates that reads bases would be aligned to the negative strand if the reference was changed to the variant allele."
+			+ " Strand bias is calculated purely from supporting reads and exclude read pair support since these are 100% strand bias."
+			+ " Note that reads both directly supporting the variant, and supporting via assembly will be double-counted."
+			+ " Both breakpoint and breakend supporting reads are included."),
 	SELF_INTERSECTING ("SELF", 1, VCFHeaderLineType.Flag, "Indicates a breakpoint is self-intersecting"),
 	SUPPORT_INTERVAL ("SI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Support interval offsets from breakend position in which at least one supporting read/read pair/assembly is mapped."),
 	REMOTE_SUPPORT_INTERVAL ("RSI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Support interval offsets of partner breakend."),
 	INEXACT_HOMPOS ("IHOMPOS", 2, VCFHeaderLineType.Integer, "Position of inexact homology"),
 	SUPPORT_CIGAR ("SC", 1, VCFHeaderLineType.String, "CIGAR for displaying anchoring alignment of any contributing evidence and microhomologies."),
 	BREAKEND_ASSEMBLY_ID ("BEID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Identifiers of assemblies supporting the variant."),
-	BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET ("BEIDL", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Local chimeric alignment offset of corresponding BEID assembly. "),
+	BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET ("BEIDL", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Local chimeric alignment offset of corresponding BEID assembly."),
 	BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET ("BEIDH", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Remote chimeric alignment offset of corresponding BEID assembly."),
 	BREAKEND_ALIGNMENTS ("BEALN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Potential alignment locations of breakend sequence in the format chr:start|strand|cigar|mapq. Depending on the alignment information available, strand and mapq may be empty."),
 	SUPPORTING_BREAKPOINT_READ_NAMES ("BPNAMES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Read names of all reads providing direct breakpoint support."),
