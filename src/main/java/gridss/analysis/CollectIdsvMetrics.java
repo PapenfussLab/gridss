@@ -51,7 +51,7 @@ public class CollectIdsvMetrics extends SinglePassSamProgram {
     	if (record.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
     	idsv.MAX_READ_LENGTH = Math.max(idsv.MAX_READ_LENGTH, record.getReadLength());
     	if (!record.getReadUnmappedFlag()) {
-    		idsv.MAX_READ_MAPPED_LENGTH = Math.max(idsv.MAX_READ_MAPPED_LENGTH, record.getAlignmentEnd() - record.getAlignmentStart() + 1);
+    		idsv.MAX_READ_MAPPED_LENGTH = Math.max(idsv.MAX_READ_MAPPED_LENGTH, record.getUnclippedEnd() - record.getUnclippedStart() + 1);
     	}
     	if (record.isSecondaryAlignment()) {
     		if (record.getAttribute(SAMTag.SA.name()) == null) {
