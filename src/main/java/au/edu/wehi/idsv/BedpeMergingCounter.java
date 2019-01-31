@@ -1,7 +1,5 @@
-package au.edu.wehi;
+package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakpointSummary;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import htsjdk.samtools.util.Log;
