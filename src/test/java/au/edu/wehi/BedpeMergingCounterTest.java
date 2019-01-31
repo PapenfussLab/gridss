@@ -1,5 +1,6 @@
 package au.edu.wehi;
 
+import au.edu.wehi.idsv.BedpeMergingCounter;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.TestHelper;
 import org.apache.commons.math3.util.Pair;
@@ -9,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 public class BedpeMergingCounterTest extends TestHelper {

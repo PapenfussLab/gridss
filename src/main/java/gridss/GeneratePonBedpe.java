@@ -1,6 +1,6 @@
 package gridss;
 
-import au.edu.wehi.BedpeMergingCounter;
+import au.edu.wehi.idsv.BedpeMergingCounter;
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
@@ -63,6 +63,10 @@ public class GeneratePonBedpe extends CommandLineProgram {
     @Override
 	protected int doWork() {
 		try {
+			if (INCLUDE_IMPRECISE_CALLS) {
+				log.error("Imprecise call inclusion not recommended due to overly aggressive PON matching.");
+				Thread.sleep(10000);
+			}
 			log.debug("Setting language-neutral locale");
 			Locale.setDefault(Locale.ROOT);
 			GridssConfiguration config;
@@ -75,42 +79,39 @@ public class GeneratePonBedpe extends CommandLineProgram {
 			pc.setCommandLineProgram(this);
 			Iterator<BreakendSummary> mergedIt = filteredMerge(pc, INPUT);
 			BedpeMergingCounter pe = new BedpeMergingCounter();
+			BedMergingCounter se = new BedMergingCounter(true);
 			BedpeWriter writer = new BedpeWriter(pc.getDictionary(), OUTPUT);
-			List<BreakendSummary> be = new ArrayList<>();
+			BufferedWriter sewriter = Files.newBufferedWriter(SINGLE_BREAKEND_OUTPUT.toPath(), StandardCharsets.US_ASCII);
 			while(mergedIt.hasNext()) {
 				BreakendSummary bs = mergedIt.next();
 				if (bs instanceof BreakpointSummary) {
 					writeBedpe(pe.process((BreakpointSummary)bs), writer);
 				} else {
-					be.add(bs);
+					writeBed(pc.getReference().getSequenceDictionary(), sewriter, se.process(bs));
 				}
 			}
-			writeBed(pc.getDictionary(), new PeekableIterator(be.iterator()), SINGLE_BREAKEND_OUTPUT);
 			writeBedpe(pe.finish(), writer);
+			writeBed(pc.getReference().getSequenceDictionary(), sewriter, se.finish());
 			writer.close();
+			sewriter.close();
 		} catch (IOException e) {
 			log.error(e);
 			return 1;
+		} catch (InterruptedException e) {
 		}
+		log.error("Imprecise call inclusion not recommended due to overly aggressive PON matching.");
 		return 0;
  	}
-
-	private void writeBed(SAMSequenceDictionary dict, PeekableIterator<BreakendSummary> it, File output) throws IOException {
-		try (BufferedWriter writer = Files.newBufferedWriter(output.toPath(), StandardCharsets.US_ASCII)) {
-			//writer.write(String.format("track name=\"%s\" description=\"%s\" useScore=0\n", output, output));
-			while (it.hasNext()) {
-				BreakendSummary bs = it.next();
-				int count = 1;
-				while (it.hasNext() && it.peek().overlaps(bs) && bs.start == it.peek().start && bs.end == it.peek().end) {
-					count++;
-					it.next();
-				}
-				int referenceIndex = bs.referenceIndex;
-				int bedStart = bs.start - 1;
-				int bedEnd = bs.end;
-				writer.write(String.format("%s\t%d\t%d\t.\t%d\t%s\n", dict.getSequence(referenceIndex).getSequenceName(), bedStart, bedEnd, count, bs.direction == BreakendDirection.Forward ? '+' : '-'));
-			}
+	private void writeBed(SAMSequenceDictionary dict, BufferedWriter writer, List<Pair<BreakendSummary, Integer>> list) throws IOException {
+		for (Pair<BreakendSummary, Integer> pair : list) {
+			writeBed(dict, writer, pair.getFirst(), pair.getSecond());
 		}
+	}
+	private void writeBed(SAMSequenceDictionary dict, BufferedWriter writer, BreakendSummary bs, int count) throws IOException {
+		int referenceIndex = bs.referenceIndex;
+		int bedStart = bs.start - 1;
+		int bedEnd = bs.end;
+		writer.write(String.format("%s\t%d\t%d\t.\t%d\t%s\n", dict.getSequence(referenceIndex).getSequenceName(), bedStart, bedEnd, count, bs.direction == BreakendDirection.Forward ? '+' : '-'));
 	}
 
 	private void writeBedpe(List<Pair<BreakpointSummary, Integer>> list, BedpeWriter writer) throws IOException {
