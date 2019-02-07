@@ -7,22 +7,18 @@
 # This enables accurate calling of complex events for which only some of the
 # breakpoints involved fall within the initially targeted region
 #
-TARGETING_INPUT=regions_to_call.bed
-INPUT=chr12.1527326.DEL1024.bam
-REFERENCE=hg19.fa
+
+BED_REGIONS_OF_INTEREST=targetted_regions.bed # If it's already a bed then you don't need the next two lines
+VCF_REGIONS_OF_INTEREST=targetted_regions.vcf # If your input is a VCF you'll need to convert it to a BED file
+Rscript gridss_targeted_vcf_to_region_bed.R --input $VCF_REGIONS_OF_INTEREST --ouput #BED_REGIONS_OF_INTEREST
+
+INPUT=../../temp/test.bam
+REFERENCE=~/hartwig/temp/Homo_sapiens.GRCh37.GATK.illumina.fa
 OUTPUT=${INPUT/.bam/.targeted.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.targeted.gridss.assembly.bam}
-GRIDSS_JAR=../target/gridss-2.1.0-gridss-jar-with-dependencies.jar
-WORKING_DIR=./
-FLANKING_BASES=2000 # must be greater than 99.5% of fragments in the library
-
-if [[ "$TARGETING_INPUT" == *.bed ]] ; then
-	IN_BED=$1
-elif
-	# TODO VCF parsing
-	echo "$TARGETING_INPUT is not a bed file" 2>&1
-	exit 1
-fi
+GRIDSS_JAR=../target/gridss-2.1.2-gridss-jar-with-dependencies.jar
+WORKING_DIR=../../temp/
+TMP_DIR=../../temp/
 
 JVM_ARGS="-ea \
 	-Dreference_fasta="$REFERENCE" \
@@ -30,14 +26,24 @@ JVM_ARGS="-ea \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
+	-Dsamjdk.buffer_size=4194304 \
 	-Dgridss.gridss.output_to_temp_file=true \
 	-cp $GRIDSS_JAR "
 
-IN_BED_SLOPPED=$IN_BED.slopped.bed
-
-bedtools slop -g ${REFERENCE}.fai -b $FLANKING_BASES -i - < $IN_BED
-bedtools sort -i - | \
-bedtools merge -d $((2 * FLANKING_BASES)) -i - > $IN_BED
-
-# for each input file
-java 
+# If you have multiple input files, repeat for each input
+java -Xmx8g $JVM_ARGS gridss.ExtractFullReads \
+	B=$REGIONS_OF_INTEREST \
+	I=$INPUT \
+	O=$INPUT.targeted.bam \
+	TMP_DIR=../../temp
+	
+# Then run GRIDSS on all the input files together by specifying INPUT= multiple times
+java -Xmx16g $JVM_ARGS \
+	-cp $GRIDSS_JAR gridss.CallVariants \
+	TMP_DIR=. \
+	WORKING_DIR=. \
+	REFERENCE_SEQUENCE=$REFERENCE \
+	INPUT=$INPUT.targeted.bam \
+	OUTPUT=$OUTPUT \
+	ASSEMBLY=$ASSEMBLY \
+	2>&1 | tee -a log.gridss.$HOSTNAME.$$.log

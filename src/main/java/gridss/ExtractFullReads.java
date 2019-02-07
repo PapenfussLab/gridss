@@ -40,10 +40,14 @@ public class ExtractFullReads extends SinglePassSamProgram {
 	public boolean EXTRACT_SPLITS = true;
 	@Argument(doc = "Number of bases surrounding each export region to include in the index query. ")
 	public int REGION_PADDING_SIZE = 2000;
+	@Argument(doc = "Use the bam file index. Note that since the read mate and split reads are also extracted," +
+			" many more locations that just those supplied in the bed file will be queried. " +
+			"When querying small regions, an indexed scan may be faster.")
+	public boolean INDEXED_SCAN = false;
 
 	private File tmpOut;
 	private SAMFileWriter writer;
-	private FullReadExtractor extractor;
+	private ReadExtractor extractor;
 
 	public static void main(String[] argv) {
 		System.exit(new ExtractFullReads().instanceMain(argv));
@@ -65,7 +69,11 @@ public class ExtractFullReads extends SinglePassSamProgram {
 		} catch (IOException e) {
 			throw new RuntimeIOException(e);
 		}
-		extractor = new FullReadExtractor(lgc, bed, EXTRACT_MATES, EXTRACT_SPLITS);
+		if (INDEXED_SCAN) {
+			extractor = new IndexedReadExtractor(lgc, bed, EXTRACT_MATES, EXTRACT_SPLITS);
+		} else {
+			extractor = new FullReadExtractor(lgc, bed, EXTRACT_MATES, EXTRACT_SPLITS);
+		}
 		writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, true, tmpOut);
 	}
 
