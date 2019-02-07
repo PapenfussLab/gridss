@@ -57,15 +57,19 @@ GRIDSS joint calling has been tested on up 12 samples with ~1000x aggregate cove
 
 * Check the bottom of this page for commonly encountered errors and their solutions
 
-## How many threads should I use?
+### How many threads should I use?
 
 1-16 threads is recommended. Note that pre-processing is limited by htsjdk BAM parsing thus is not multi-threaded. Asynchronous I/O means preprocessing will use up to 200-300% CPU for a nominally single-threaded operation. Make sure you specify enough memory for the number of threads you specified.
 
-## How much memory should I give GRIDSS?
+### How much memory should I give GRIDSS?
 
 At least 4GB + 2GB per thread. It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-threaded operation
 (WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for heavily multi-threaded
 server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS so is strongly discouraged.
+
+### Should I include alt contigs in the reference?
+
+GRIDSS relies on the aligner to determine the mapping location and quality of assembly contigs and to identify split read from soft clipped reads. GRIDSS considers alignments with low mapping quality (default mapq <= 10) to not be uniquely aligned and treats them as unaligned. If alt contigs are included in an aligner that is not alt-aware then hits to sequences that are in both the primary reference contigs and the alt contigs will be given a low mapq by the aligner and will be treated as unaligned by GRIDSS. By default, GRIDSS uses bwa mem for alignment so by including the bwa alt contig definition file, reads from regions with alt homology will be preferentially aligned to the reference with a correspondingly improved mapq. Whether or not to include alt contigs depends on what sort of downstream analysis you intend to perform and how your intend to handle structural variants involving alt contigs. That said, if your reference genome includes alt contigs and a bwa alt contig definition file is available for your genome, you should use it.
 
 ## GRIDSS tools
 
