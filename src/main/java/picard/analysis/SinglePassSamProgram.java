@@ -72,7 +72,7 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
 
     private static final Log log = Log.getInstance(SinglePassSamProgram.class);
 
-    private static final int BATCH_SIZE = 64;
+    private static final int BATCH_SIZE = 512;
     private static final int IN_FLIGHT_BATCHES = 2;
     private static final Exception EOS_SENTINEL = new Exception();
     private static final boolean USE_ASYNC_ITERATOR = true;
