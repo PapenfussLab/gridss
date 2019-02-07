@@ -124,15 +124,15 @@ public class SAMEvidenceSource extends EvidenceSource {
 						"GRIDSS_PROGRAM=CollectTagMetrics",
 						"GRIDSS_PROGRAM=CollectIdsvMetrics",
 						"GRIDSS_PROGRAM=ReportThresholdCoverage",
-						// The CollectMultipleMetrics super class complains if no PROGRAM set so
-						// we'll just collect some stuff that is useful, but we don't actually
-						// use yet
-						"PROGRAM=null",
-						"PROGRAM=CollectAlignmentSummaryMetrics",
-						"PROGRAM=QualityScoreDistribution");
+						"PROGRAM=null");
 				if (!knownSingleEnded()) {
 					// Don't run CollectInsertSizeMetrics
 					args.add("PROGRAM=CollectInsertSizeMetrics");
+				} else {
+					// The CollectMultipleMetrics super class complains if no PROGRAM set so
+					// we'll just collect some stuff that is useful, but we don't actually
+					// use yet
+					args.add("PROGRAM=CollectAlignmentSummaryMetrics");
 				}
 				if (getContext().getCalculateMetricsRecordCount() < Integer.MAX_VALUE) {
 					args.add("STOP_AFTER=" + getContext().getCalculateMetricsRecordCount());
