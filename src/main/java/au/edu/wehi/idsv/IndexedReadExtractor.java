@@ -3,30 +3,16 @@ package au.edu.wehi.idsv;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.FileHelper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Range;
-import com.google.common.hash.BloomFilter;
-import com.google.common.hash.Funnels;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static au.edu.wehi.idsv.sam.ChimericAlignment.getChimericAlignments;
-import static htsjdk.samtools.SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-import static htsjdk.samtools.SAMRecord.NO_ALIGNMENT_START;
 
 public class IndexedReadExtractor extends ReadExtractor {
     private static final Log log = Log.getInstance(IndexedReadExtractor.class);
@@ -39,7 +25,7 @@ public class IndexedReadExtractor extends ReadExtractor {
         extract(input, output, getRegionBed().asQueryInterval());
     }
     private void extract(File input, File output, QueryInterval[] intervals) throws IOException {
-        IntervalBed remoteLocations = new IntervalBed(getLinearGenomicCoordinate().getDictionary(), getLinearGenomicCoordinate());
+        IntervalBed remoteLocations = new IntervalBed(getLinearGenomicCoordinate());
         boolean shouldLookupUnmapped = false;
         File regionOut = FileSystemContext.getWorkingFileFor(output);
         File offTargetOut =  FileSystemContext.getWorkingFileFor(output, "mate_splits");

@@ -86,7 +86,7 @@ public class GenomicProcessingContext implements Closeable {
 		this.linear = new PaddedLinearGenomicCoordinate(this.dictionary, LINEAR_COORDINATE_CHROMOSOME_BUFFER, true);
 		this.basicHeader = new SAMFileHeader();
 		this.basicHeader.setSequenceDictionary(this.reference.getSequenceDictionary());
-		this.blacklist = new IntervalBed(this.dictionary, this.linear);
+		this.blacklist = new IntervalBed(this.linear);
 	}
 	/**
 	 * Load a reference genome with synchronized access to prevent threading issues
@@ -295,7 +295,7 @@ public class GenomicProcessingContext implements Closeable {
 	
 	public void setBlacklist(File blacklistFile) throws IOException {
 		this.blacklistFile = blacklistFile;
-		this.blacklist = new IntervalBed(getDictionary(), getLinear(), blacklistFile);
+		this.blacklist = new IntervalBed(getLinear(), blacklistFile);
 	}
 	
 	public CommandLineProgram getCommandLineProgram() {

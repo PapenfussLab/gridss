@@ -13,7 +13,6 @@ import com.google.common.collect.TreeRangeSet;
 
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
@@ -30,13 +29,13 @@ public class IntervalBed {
 	public int size() {
 		return intervals.asRanges().size();
 	}
-	public IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, File bed) throws IOException {
-		this(linear, toRangeSet(dictionary, linear, bed));
+	public IntervalBed(LinearGenomicCoordinate linear, File bed) throws IOException {
+		this(linear, toRangeSet(linear, bed));
 	}
-	public IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear) {
+	public IntervalBed(LinearGenomicCoordinate linear) {
 		this(linear, TreeRangeSet.<Long>create());
 	}
-	public IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, QueryInterval[] intervals) {
+	public IntervalBed(LinearGenomicCoordinate linear, QueryInterval[] intervals) {
 		this(linear, TreeRangeSet.<Long>create());
 		for (QueryInterval qi : intervals) {
 			addInterval(qi);
@@ -46,7 +45,7 @@ public class IntervalBed {
 		this.linear = linear;
 		this.intervals = intervals;
 	}
-	public static IntervalBed merge(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, Iterable<IntervalBed> list) {
+	public static IntervalBed merge(LinearGenomicCoordinate linear, Iterable<IntervalBed> list) {
 		RangeSet<Long> blacklisted = TreeRangeSet.create();
 		for (IntervalBed bed : list) {
 			// TODO assert dictionaries and linear coordinates match
@@ -54,7 +53,7 @@ public class IntervalBed {
 		}
 		return new IntervalBed(linear, blacklisted);
 	}
-	private static RangeSet<Long> toRangeSet(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, File bed) throws IOException {
+	private static RangeSet<Long> toRangeSet(LinearGenomicCoordinate linear, File bed) throws IOException {
 		RangeSet<Long> rs = TreeRangeSet.create();
 		BEDCodec codec = new BEDCodec();
 	    try (AbstractFeatureReader<BEDFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(bed.getPath(), codec, false)) {
@@ -62,7 +61,7 @@ public class IntervalBed {
 				String chr = feat.getContig();
 				int start = feat.getStart();
 				int end = feat.getEnd();
-				int referenceIndex = dictionary.getSequenceIndex(chr);
+				int referenceIndex = linear.getDictionary().getSequenceIndex(chr);
 				rs.add(Range.closedOpen(linear.getLinearCoordinate(referenceIndex, start), linear.getLinearCoordinate(referenceIndex, end) + 1));
 			}
         }

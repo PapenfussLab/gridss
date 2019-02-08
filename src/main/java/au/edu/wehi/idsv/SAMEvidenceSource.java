@@ -245,7 +245,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
 		QueryInterval[] expandedIntervals = QueryIntervalUtil.padIntervals(getContext().getDictionary(), intervals, getMaxConcordantFragmentSize() + 1);
 		// ignore blacklisted regions
-		IntervalBed queryInterval = new IntervalBed(getContext().getDictionary(), getContext().getLinear(), expandedIntervals);
+		IntervalBed queryInterval = new IntervalBed(getContext().getLinear(), expandedIntervals);
 		queryInterval.remove(getBlacklistedRegions());
 		SAMRecordIterator it = tryOpenReader(reader, queryInterval.asQueryInterval());
 		Iterator<DirectedEvidence> eit = asEvidence(it);
@@ -383,9 +383,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 				return getContext().getBlacklistedRegions();
 			}
 			try {
-				blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(
+				blacklist = IntervalBed.merge(getContext().getLinear(), ImmutableList.of(
 						getContext().getBlacklistedRegions(),
-						new IntervalBed(getContext().getDictionary(), getContext().getLinear(), coverageBlacklist)
+						new IntervalBed(getContext().getLinear(), coverageBlacklist)
 						));
 			} catch (IOException e) {
 				log.error(e);

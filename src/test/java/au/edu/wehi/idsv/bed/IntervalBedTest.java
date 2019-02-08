@@ -17,14 +17,14 @@ import htsjdk.samtools.QueryInterval;
 public class IntervalBedTest extends TestHelper {
 	@Test
 	public void should_round_trip() throws IOException {
-		IntervalBed bed = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
+		IntervalBed bed = new IntervalBed(getContext().getLinear());
 		bed.addInterval(1, 3, 5);
 		TemporaryFolder folder = new TemporaryFolder();
 		folder.create();
 		File f = folder.newFile("IntervalBedTest.bed");
 		f.delete();
 		bed.write(f, "IntervalBedTest");
-		IntervalBed bed2 = new IntervalBed(getContext().getDictionary(), getContext().getLinear(), f);
+		IntervalBed bed2 = new IntervalBed(getContext().getLinear(), f);
 		assertFalse(bed2.overlaps(1, 2, 2));
 		assertTrue(bed2.overlaps(1, 3, 3));
 		assertTrue(bed2.overlaps(1, 4, 4));
@@ -35,7 +35,7 @@ public class IntervalBedTest extends TestHelper {
 	}
 	@Test
 	public void overlap_should_return_true_if_at_least_one_base_overlaps() {
-		IntervalBed bed = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
+		IntervalBed bed = new IntervalBed(getContext().getLinear());
 		bed.addInterval(1, 3, 5);
 		bed.addInterval(1, 7, 9);
 		assertFalse(bed.overlaps(0, 3, 5));
@@ -55,9 +55,9 @@ public class IntervalBedTest extends TestHelper {
 	}
 	@Test
 	public void remove_should_split_interval() {
-		IntervalBed bed = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
+		IntervalBed bed = new IntervalBed(getContext().getLinear());
 		bed.addInterval(0, 1, 10);
-		IntervalBed toRemove = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
+		IntervalBed toRemove = new IntervalBed(getContext().getLinear());
 		toRemove.addInterval(0, 1, 1);
 		toRemove.addInterval(1, 1, 1);
 		toRemove.addInterval(0, 5, 6);
@@ -80,7 +80,7 @@ public class IntervalBedTest extends TestHelper {
 			new QueryInterval(2, 4, 8),
 			new QueryInterval(2, 10, 10),
 		};
-		IntervalBed bed = new IntervalBed(getContext().getDictionary(), getContext().getLinear(), qi);
+		IntervalBed bed = new IntervalBed(getContext().getLinear(), qi);
 		QueryInterval[] result = bed.asQueryInterval();
 		assertEquals(qi.length, result.length);
 		for (int i = 0; i < qi.length; i++) {

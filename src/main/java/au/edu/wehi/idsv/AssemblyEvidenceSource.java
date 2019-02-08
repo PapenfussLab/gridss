@@ -8,14 +8,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
@@ -65,7 +61,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
 		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
-		this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
+		this.throttled = new IntervalBed(getContext().getLinear());
 	}
 	/**
 	 * Perform breakend assembly 

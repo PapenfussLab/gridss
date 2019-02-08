@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
 
 public class IndexedLookupFullReadExtractor extends FullReadExtractor {
     private final int regionPaddingSize;
@@ -17,7 +16,7 @@ public class IndexedLookupFullReadExtractor extends FullReadExtractor {
         this.regionPaddingSize = regionPaddingSize;
     }
     public void extract(File input, File output, int workerThreads) throws IOException {
-        IntervalBed lookupIntervals = new IntervalBed(getLinearGenomicCoordinate().getDictionary(), getLinearGenomicCoordinate());
+        IntervalBed lookupIntervals = new IntervalBed(getLinearGenomicCoordinate());
         for (QueryInterval qi : getRegionBed().asQueryInterval()) {
             lookupIntervals.addInterval(expandBy(qi, regionPaddingSize, getLinearGenomicCoordinate().getDictionary()));
         }

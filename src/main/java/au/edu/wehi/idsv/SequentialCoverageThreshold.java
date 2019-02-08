@@ -14,7 +14,7 @@ public class SequentialCoverageThreshold {
 	private int activeIntervalStart;
 	public SequentialCoverageThreshold(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, int thresholdCoverage) {
 		if (thresholdCoverage <= 0) throw new IllegalArgumentException("Coverage threshhold must be greater than zero.");
-		this.bed = new IntervalBed(dictionary, linear);
+		this.bed = new IntervalBed(linear);
 		this.threshold = thresholdCoverage;
 		this.linear = linear;
 	}

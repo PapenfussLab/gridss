@@ -407,7 +407,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void blacklisted_alignment_should_be_unmapped() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource ses = SES(pc);
-		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		IntervalBed blacklist = new IntervalBed(pc.getLinear());
 		blacklist.addInterval(0, 10, 12);
 		ses.setBlacklistedRegions(blacklist);
 		assertFalse(ses.transform(Read(1, 10, "1M")).getReadUnmappedFlag());
@@ -421,7 +421,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void blacklist_mate_should_be_treated_as_unmapped() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource ses = SES(pc);
-		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		IntervalBed blacklist = new IntervalBed(pc.getLinear());
 		blacklist.addInterval(0, 10, 12);
 		ses.setBlacklistedRegions(blacklist);
 		assertFalse(ses.transform(DP(0, 1, "1M", true, 1, 10, "1M", false)[0]).getMateUnmappedFlag());
@@ -435,7 +435,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void blacklist_chimeric_alignment_should_be_treated_as_unmapped() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource ses = SES(pc);
-		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		IntervalBed blacklist = new IntervalBed(pc.getLinear());
 		blacklist.addInterval(0, 10, 12);
 		ses.setBlacklistedRegions(blacklist);
 		SAMRecord read = Read(0, 1, "1M1S");
@@ -446,7 +446,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_filter_breakpoints_touching_blacklist() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource ses = SES(pc);
-		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		IntervalBed blacklist = new IntervalBed(pc.getLinear());
 		blacklist.addInterval(0, 10, 12);
 		ses.setBlacklistedRegions(blacklist);
 		assertTrue(ses.shouldFilter(NRRP(ses, DP(0, 1, "1M", true, 1, 100, "1M", false))));

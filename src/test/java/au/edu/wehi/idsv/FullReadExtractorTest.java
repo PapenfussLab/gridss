@@ -24,7 +24,7 @@ public class FullReadExtractorTest extends TestHelper {
     }
     @Test
     public void shouldExtractOverlappingRecords() {
-        IntervalBed bed = new IntervalBed(lgc.getDictionary(), lgc);
+        IntervalBed bed = new IntervalBed(lgc);
         bed.addInterval(0, 10, 20);
         bed.addInterval(0, 30, 40);
         FullReadExtractorStub fre = new FullReadExtractorStub(lgc, bed, false, false);
@@ -39,7 +39,7 @@ public class FullReadExtractorTest extends TestHelper {
     }
     @Test
     public void should_extract_if_mate_overlapping() {
-        IntervalBed bed = new IntervalBed(lgc.getDictionary(), lgc);
+        IntervalBed bed = new IntervalBed(lgc);
         bed.addInterval(0, 10, 20);
         bed.addInterval(0, 30, 40);
         FullReadExtractorStub fre = new FullReadExtractorStub(lgc, bed, true, false);
@@ -57,7 +57,7 @@ public class FullReadExtractorTest extends TestHelper {
     }
     @Test
     public void should_extract_if_split_overlapping() {
-        IntervalBed bed = new IntervalBed(lgc.getDictionary(), lgc);
+        IntervalBed bed = new IntervalBed(lgc);
         bed.addInterval(0, 100, 200);
         bed.addInterval(1, 30, 40);
         FullReadExtractorStub fre = new FullReadExtractorStub(lgc, bed, false, true);

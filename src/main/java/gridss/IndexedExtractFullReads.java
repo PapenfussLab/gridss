@@ -2,15 +2,11 @@ package gridss;
 
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.*;
-import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-import picard.analysis.SinglePassSamProgram;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
 
@@ -78,7 +74,7 @@ public class IndexedExtractFullReads extends CommandLineProgram {
 				throw new IllegalArgumentException("Missing input file sequence dictionary. Ensure the correct @SQ headers exist.");
 			}
 			LinearGenomicCoordinate lgc = new PaddedLinearGenomicCoordinate(dict, GenomicProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER, true);
-			IntervalBed bed = new IntervalBed(dict, lgc, REGION_BED);
+			IntervalBed bed = new IntervalBed(lgc, REGION_BED);
 			bed = bed.expandIntervals(REGION_PADDING_SIZE, REGION_PADDING_SIZE);
 			ReadExtractor extractor = new IndexedReadExtractor(lgc, bed, EXTRACT_MATES, EXTRACT_SPLITS);
 			extractor.extract(INPUT, OUTPUT, WORKER_THREADS);
