@@ -39,8 +39,8 @@ public class IndexedExtractFullReads extends CommandLineProgram {
 	public boolean EXTRACT_MATES = true;
 	@Argument(doc = "Extract all records for reads that have a chimeric alignment mapping to an export region")
 	public boolean EXTRACT_SPLITS = true;
-	@Argument(doc = "Number of bases surrounding each export region to include in the index query. ")
-	public int REGION_PADDING_SIZE = 2000;
+	@Argument(doc = "Number of additional bases surrounding each export region to include in the index query. ")
+	public int REGION_PADDING_SIZE = 0;
 	@Argument(doc="Number of worker threads to spawn. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
 			shortName="THREADS")
