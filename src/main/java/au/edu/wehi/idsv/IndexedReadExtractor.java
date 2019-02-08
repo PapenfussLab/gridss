@@ -17,6 +17,7 @@ import htsjdk.samtools.util.ProgressLogger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -79,9 +80,7 @@ public class IndexedReadExtractor extends ReadExtractor {
                 try (SAMRecordIterator it = reader.query(remoteLocations.asQueryInterval(), false)) {
                     while (it.hasNext()) {
                         SAMRecord r = it.next();
-                        if (overlapsRegionBed(r)) {
-                            // ignore since we already extracted these
-                        } else if (shouldExtract(r)) {
+                        if (!overlapsRegionBed(r) && shouldExtract(r)) {
                             writer.addAlignment(r);
                         }
                     }
@@ -99,5 +98,7 @@ public class IndexedReadExtractor extends ReadExtractor {
             }
         }
         SAMFileUtil.merge(ImmutableList.of(regionOut, offTargetOut), output);
+        Files.delete(regionOut.toPath());
+        Files.delete(offTargetOut.toPath());
     }
 }

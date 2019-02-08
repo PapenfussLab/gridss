@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -24,26 +25,24 @@ import htsjdk.tribble.readers.LineIterator;
  *
  */
 public class IntervalBed {
-	private final SAMSequenceDictionary dictionary;
 	private final LinearGenomicCoordinate linear;
 	private final RangeSet<Long> intervals;
 	public int size() {
 		return intervals.asRanges().size();
 	}
 	public IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, File bed) throws IOException {
-		this(dictionary, linear, toRangeSet(dictionary, linear, bed));
+		this(linear, toRangeSet(dictionary, linear, bed));
 	}
 	public IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear) {
-		this(dictionary, linear, TreeRangeSet.<Long>create());
+		this(linear, TreeRangeSet.<Long>create());
 	}
 	public IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, QueryInterval[] intervals) {
-		this(dictionary, linear, TreeRangeSet.<Long>create());
+		this(linear, TreeRangeSet.<Long>create());
 		for (QueryInterval qi : intervals) {
 			addInterval(qi);
 		}
 	}
-	private IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, RangeSet<Long> intervals) {
-		this.dictionary = dictionary;
+	private IntervalBed(LinearGenomicCoordinate linear, RangeSet<Long> intervals) {
 		this.linear = linear;
 		this.intervals = intervals;
 	}
@@ -53,7 +52,7 @@ public class IntervalBed {
 			// TODO assert dictionaries and linear coordinates match
 			blacklisted.addAll(bed.intervals);
 		}
-		return new IntervalBed(dictionary, linear, blacklisted);
+		return new IntervalBed(linear, blacklisted);
 	}
 	private static RangeSet<Long> toRangeSet(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, File bed) throws IOException {
 		RangeSet<Long> rs = TreeRangeSet.create();
@@ -69,14 +68,14 @@ public class IntervalBed {
         }
 		return rs;
 	}
-	public static void addInterval(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, RangeSet<Long> blacklisted, int referenceIndex, int start, int end) {
+	public static void addInterval(LinearGenomicCoordinate linear, RangeSet<Long> blacklisted, int referenceIndex, int start, int end) {
 		blacklisted.add(Range.closedOpen(linear.getLinearCoordinate(referenceIndex, start), linear.getLinearCoordinate(referenceIndex, end) + 1));
 	}
 	public synchronized void addInterval(int referenceIndex, int start, int end) {
-		addInterval(dictionary, linear, intervals, referenceIndex, start, end);
+		addInterval(linear, intervals, referenceIndex, start, end);
 	}
 	public synchronized void addInterval(QueryInterval qi) {
-		addInterval(dictionary, linear, intervals, qi.referenceIndex, qi.start, qi.end);
+		addInterval(linear, intervals, qi.referenceIndex, qi.start, qi.end);
 	}
 	/**
 	 * Determines whether any of the intervals overlap the given interval
@@ -117,7 +116,7 @@ public class IntervalBed {
 				assert(referenceIndex == referenceIndex2);
 				int bedStart = linear.getReferencePosition(lower) - 1;
 				int bedEnd = linear.getReferencePosition(upper) - 1;
-				writer.write(String.format("%s\t%d\t%d\n", dictionary.getSequence(referenceIndex).getSequenceName(), bedStart, bedEnd));
+				writer.write(String.format("%s\t%d\t%d\n", linear.getDictionary().getSequence(referenceIndex).getSequenceName(), bedStart, bedEnd));
 			}
 		}
 	}
@@ -132,6 +131,27 @@ public class IntervalBed {
 			}
 		}
 		return qis;
+	}
+
+	/**
+	 * Generates a new IntervalBed in which each interval in the set by the given number of bases.
+	 * Expanded intervals are truncated at reference contig bounds.
+	 */
+	public IntervalBed expandIntervals(int startBases, int endBases) {
+		TreeRangeSet<Long> expanded = TreeRangeSet.create(intervals
+				.asRanges()
+				.stream()
+				.map(r -> expand(r, startBases, endBases))
+				.collect(Collectors.toList()));
+		return new IntervalBed(linear, expanded);
+	}
+	private Range<Long> expand(Range<Long> range, int startBases, int endBases) {
+		int referenceIndex = linear.getReferenceIndex(range.lowerEndpoint());
+		int start = linear.getReferencePosition(range.lowerEndpoint());
+		int end = linear.getReferencePosition(range.upperEndpoint());
+		start = Math.max(1, start - startBases);
+		end = Math.min(linear.getDictionary().getSequence(referenceIndex).getSequenceLength() + 1, end + endBases);
+		return Range.closedOpen(linear.getLinearCoordinate(referenceIndex, start), linear.getLinearCoordinate(referenceIndex, end));
 	}
 	public RangeSet<Long> asRangeSet() {
 		return TreeRangeSet.create(intervals);
