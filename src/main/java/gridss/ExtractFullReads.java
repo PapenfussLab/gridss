@@ -33,7 +33,7 @@ public class ExtractFullReads extends SinglePassSamProgram {
 	@Argument(doc = "Extract all records for reads that have a chimeric alignment mapping to an export region")
 	public boolean EXTRACT_SPLITS = true;
 	@Argument(doc = "Number of bases surrounding each export region to include in the index query. ")
-	public int REGION_PADDING_SIZE = 2000;
+	public int REGION_PADDING_SIZE = 0;
 
 	private File tmpOut;
 	private SAMFileWriter writer;

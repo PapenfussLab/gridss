@@ -18,6 +18,7 @@ import htsjdk.samtools.util.Log;
  */
 public abstract class ProcessStructuralVariantReadsCommandLineProgram extends ByReadNameSinglePassSamProgram {
 	private static final Log log = Log.getInstance(ProcessStructuralVariantReadsCommandLineProgram.class);
+	//#region SV read args
 	@Argument(doc="Minimum indel size", optional=true)
     public int MIN_INDEL_SIZE = 1;
     @Argument(doc="Minimum bases clipped", optional=true)
@@ -46,6 +47,8 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     public boolean UNMAPPED_READS = true;
     @Argument(doc="If true, also include reads marked as duplicates.")
 	public boolean INCLUDE_DUPLICATES = false;
+	//#endregion SV read args
+
     @Override
 	public String[] customCommandLineValidation() {
 		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {

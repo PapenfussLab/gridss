@@ -61,10 +61,6 @@ public class CollectGridssMetricsAndExtractSVReads extends CollectGridssMetrics 
     public static void main(final String[] args) {
         new CollectGridssMetricsAndExtractSVReads().instanceMainWithExit(args);
     }
-    @Override
-    protected String[] customCommandLineValidation() {
-        return super.customCommandLineValidation();
-    }
     protected ExtractSVReads getExtractSVReads() {
     	ExtractSVReads extract = new ExtractSVReads();
     	CommandLineProgramHelper.copyInputs(this, extract);

@@ -153,7 +153,7 @@ public class IdsvSamFileMetrics {
 		}
 		double totalPairs = idsvMetrics.READ_PAIRS_BOTH_MAPPED;
 		double dpPairs = totalPairs - insertDistribution.getTotalMappedPairs() + pairsFromFragmentDistribution;
-		return dpPairs / totalPairs;
+		return Math.min(1, dpPairs / totalPairs);
 	}
 	
 	/**

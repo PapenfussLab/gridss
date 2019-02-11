@@ -33,7 +33,7 @@ public class CigarSizeDistribution {
 			CigarDetailMetrics m = sc.get(i);
 			assert(m.LENGTH == i);
 			if (cumsum > 0) {
-				score = -10 * Math.log10((double)cumsum / (double)total);
+				score = -10 * Math.log10((double)Math.max(1, cumsum) / (double)Math.max(1, total));
 			}
 			phred[i] = score;
 			cumsum -= m.COUNT;

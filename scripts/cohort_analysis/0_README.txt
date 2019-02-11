@@ -38,7 +38,7 @@ Instructions
 > ./1_setup.sh
 
 This will download the GRIDSS jar file and dependencies
-(https://github.com/PapenfussLab/gridss/releases/download/v2.0.1/gridss-2.0.1-gridss-jar-with-dependencies.jar)
+(https://github.com/PapenfussLab/gridss/releases/download/v2.2.0/gridss-2.2.0-gridss-jar-with-dependencies.jar)
 and download and decompress the ENCODE blacklist file
 (https://www.encodeproject.org/files/ENCFF001TDO/@@download/ENCFF001TDO.bed.gz).
 
@@ -54,7 +54,7 @@ of the following files:
 
 BLACKLIST_FILENAME = "data/ENCODE_blacklist_hg19/ENCFF001TDO.bed"
 REFERENCE_GENOME = "data/hg19.fa"
-GRIDSS_JARFILE = "./gridss-2.0.1-gridss-jar-with-dependencies.jar"
+GRIDSS_JARFILE = "./gridss-2.2.0-gridss-jar-with-dependencies.jar"
 
 
 5. Open & edit the samples file sample.csv using a text editor. The file

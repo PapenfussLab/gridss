@@ -30,17 +30,17 @@ public class IndexedExtractFullReads extends CommandLineProgram {
 	@Argument(shortName= StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file location.")
 	public File OUTPUT;
 	@Argument(shortName = "B", doc = "BED file containing regions to export")
-	public File REGION_BED;
+	public File REGION_BED = new ExtractFullReads().REGION_BED;
 	@Argument(doc = "Extract reads whose mate maps to an export region. " +
 			"If the MC tag is not present, only the starting alignment position of the mate is considered. " +
 			"When determining whether the mate maps to an export region " +
 			"only the primary alignment of that mate is considered. Secondary " +
 			"and supplementary alignments are ignored.")
-	public boolean EXTRACT_MATES = true;
+	public boolean EXTRACT_MATES = new ExtractFullReads().EXTRACT_MATES;
 	@Argument(doc = "Extract all records for reads that have a chimeric alignment mapping to an export region")
-	public boolean EXTRACT_SPLITS = true;
+	public boolean EXTRACT_SPLITS = new ExtractFullReads().EXTRACT_SPLITS;
 	@Argument(doc = "Number of additional bases surrounding each export region to include in the index query. ")
-	public int REGION_PADDING_SIZE = 0;
+	public int REGION_PADDING_SIZE = new ExtractFullReads().REGION_PADDING_SIZE;
 	@Argument(doc="Number of worker threads to spawn. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
 			shortName="THREADS")

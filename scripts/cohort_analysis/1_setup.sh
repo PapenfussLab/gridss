@@ -3,7 +3,7 @@
 # Setup script
 
 # Download the GRIDSS jar file and dependencies from:
-wget https://github.com/PapenfussLab/gridss/releases/download/v2.0.1/gridss-2.0.1-gridss-jar-with-dependencies.jar
+wget https://github.com/PapenfussLab/gridss/releases/download/v2.2.0/gridss-2.2.0-gridss-jar-with-dependencies.jar
 
 # Download and decompress the ENCODE blacklist file:
 mkdir data

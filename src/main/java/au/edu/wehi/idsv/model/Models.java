@@ -36,17 +36,10 @@ public class Models {
 				public BreakendSummary apply(DirectedEvidence input) {
 					return input.getBreakendSummary();
 				}
-			}), Lists.transform(evidence, new Function<DirectedEvidence, Long>() {
-				@Override
-				public Long apply(DirectedEvidence input) {
-					return ScalingHelper.toScaledWeight(input.getBreakendQual());
-				}
-			}));
+			}), Lists.transform(evidence, (Function<DirectedEvidence, Long>) input -> ScalingHelper.toScaledWeight(input.getBreakendQual())));
 	}
 	/**
 	 * Calculates the most likely breakend interval for the given evidence 
-	 * @param evidence
-	 * @return breakend interval with highest total evidence quality
 	 */
 	public static BreakendSummary calculateBreakend(LinearGenomicCoordinate lgc, List<BreakendSummary> bs, List<Long> weights) {
 		if (bs == null || bs.size() == 0) throw new IllegalArgumentException("No evidence supplied");
