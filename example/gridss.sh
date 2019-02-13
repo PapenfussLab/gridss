@@ -58,6 +58,7 @@ java -ea -Xmx31g \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
+	-Dsamjdk.buffer_size=4194304 \
 	-Dgridss.gridss.output_to_temp_file=true \
 	-cp $GRIDSS_JAR gridss.CallVariants \
 	TMP_DIR=. \
