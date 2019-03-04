@@ -6,7 +6,7 @@ FROM ubuntu:16.04
 LABEL base.image="biocontainers:latest"
 LABEL version="1"
 LABEL software="GRIDSS"
-LABEL software.version="2.2.0"
+LABEL software.version="2.2.1"
 LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
 LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
@@ -32,6 +32,6 @@ RUN chmod 777 /data
 USER gridss
 RUN mkdir /data/gridss
 WORKDIR /data/gridss
-RUN wget https://github.com/PapenfussLab/gridss/releases/download/v2.2.0/gridss-2.2.0-gridss-jar-with-dependencies.jar
+RUN wget https://github.com/PapenfussLab/gridss/releases/download/v2.2.1/gridss-2.2.1-gridss-jar-with-dependencies.jar
 
-ENTRYPOINT ["java", "-ea", "-Xmx16g", "-Dsamjdk.create_index=true", "-Dsamjdk.use_async_io_read_samtools=true", "-Dsamjdk.use_async_io_write_samtools=true", "-Dsamjdk.use_async_io_write_tribble=true", "-Dgridss.gridss.output_to_temp_file=true", "-cp", "/data/gridss/gridss-2.2.0-gridss-jar-with-dependencies.jar", "gridss.CallVariants", "WORKER_THREADS=4"]
+ENTRYPOINT ["java", "-ea", "-Xmx16g", "-Dsamjdk.create_index=true", "-Dsamjdk.use_async_io_read_samtools=true", "-Dsamjdk.use_async_io_write_samtools=true", "-Dsamjdk.use_async_io_write_tribble=true", "-Dgridss.gridss.output_to_temp_file=true", "-cp", "/data/gridss/gridss-2.2.1-gridss-jar-with-dependencies.jar", "gridss.CallVariants", "WORKER_THREADS=4"]
