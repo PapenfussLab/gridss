@@ -54,9 +54,10 @@ public class SyntheticDelDupSimulator extends CommandLineProgram {
                     if (len < 0) {
                         type = "DEL";
                         len *= -1;
-                        String deletedBases = getRandomBases(rng, len);
+                        String deletedBases = getRandomBases(rng, len - hombases);
+                        // deletion could be (hom + deletedBased), or (deletedBases + hom)
                         refSeq = leftFlank + hom + deletedBases + hom + rightFlank;
-                        varSeq = leftFlank + hom + ins + hom + rightFlank;
+                        varSeq = leftFlank + hom + ins + rightFlank;
                     } else {
                         type = "DUP";
                         // DUP

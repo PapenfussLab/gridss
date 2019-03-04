@@ -64,10 +64,11 @@ public class SingleReadEvidenceTest extends TestHelper {
 		// 0        1         2         3         4         5         6         7         
 		// 1234567890123456789012345678901234567890123456789012345678901234567890123456789
 		// ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
-		//     >>>>    <<<<     
+		//     ACGTACG     ACGTACG
 		SAMRecord r = withAttr("SA", "polyACGT,13,+,4S4M,0,0", withSequence("ACGTACGN", Read(1, 5, "4M4S")))[0];
 		SplitReadEvidence e = (SplitReadEvidence)asAssemblyEvidence(r);
 		assertEquals("ACGTACG", e.getHomologySequence());
+		assertEquals(e.getBreakendSummary().end - e.getBreakendSummary().start, e.getBreakendSummary().end2 - e.getBreakendSummary().start2);
 		assertEquals(4, e.getHomologyAnchoredBaseCount());
 		assertEquals(8, e.getBreakendSummary().nominal);
 		assertEquals(13, e.getBreakendSummary().nominal2);
@@ -75,6 +76,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		assertEquals(10, e.getBreakendSummary().end);
 		assertEquals(16, e.getBreakendSummary().start2);
 		assertEquals(9, e.getBreakendSummary().end2);
+		assertEquals(e.getBreakendSummary().start2 - e.getBreakendSummary().start, e.getBreakendSummary().nominal2 - e.getBreakendSummary().nominal);
 	}
 	public void microhomology_match_consider_strand() {
 		// 0        1         2         3         4         5         6         7         
@@ -83,6 +85,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		//     >>>>    <<<<     
 		SAMRecord r = withAttr("SA", "polyACGT,13,-,4S4M,0,0", onNegative(withSequence("ACGTACGN", Read(1, 5, "4M4S"))))[0];
 		SplitReadEvidence e = (SplitReadEvidence)asAssemblyEvidence(r);
+		assertEquals(e.getBreakendSummary().end - e.getBreakendSummary().start, e.getBreakendSummary().end2 - e.getBreakendSummary().start2);
 		assertEquals("ACGTACG", e.getHomologySequence());
 		assertEquals(4, e.getHomologyAnchoredBaseCount());
 		assertEquals(8, e.getBreakendSummary().nominal);
@@ -99,6 +102,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		//     >>>>    <<<<
 		SAMRecord r = withAttr("SA", "polyACGT,5,+,4M4S,0,0", withSequence("ACGTACGN", Read(1, 13, "4S4M")))[0];
 		SplitReadEvidence e = (SplitReadEvidence)asAssemblyEvidence(r);
+		assertEquals(e.getBreakendSummary().end - e.getBreakendSummary().start, e.getBreakendSummary().end2 - e.getBreakendSummary().start2);
 		assertEquals("ACGTACG", e.getHomologySequence());
 		assertEquals(3, e.getHomologyAnchoredBaseCount());
 		assertEquals(8, e.getBreakendSummary().nominal2);
@@ -107,6 +111,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		assertEquals(10, e.getBreakendSummary().end2);
 		assertEquals(16, e.getBreakendSummary().start);
 		assertEquals(9, e.getBreakendSummary().end);
+		assertEquals(e.getBreakendSummary().start2 - e.getBreakendSummary().start, e.getBreakendSummary().nominal2 - e.getBreakendSummary().nominal);
 	}
 	public void microhomology_match_ff() {
 		//      1         2         3         4
@@ -124,13 +129,14 @@ public class SingleReadEvidenceTest extends TestHelper {
 		r.setAttribute("SA", "Contig,22,-,5M4S,0,0");
 		SplitReadEvidence e = (SplitReadEvidence)asAssemblyEvidence(new MockSAMEvidenceSource(getContext(ref)), r);
 		assertEquals("AAAAA", e.getHomologySequence());
+		assertEquals(e.getBreakendSummary().end - e.getBreakendSummary().start, e.getBreakendSummary().end2 - e.getBreakendSummary().start2);
 		assertEquals(2, e.getHomologyAnchoredBaseCount());
 	}
 	public void microhomology_match_bb() {
 		//          1         2         3         4
 		// 1234567890123456789012345678901234567890123456789
 		// AAAACCGGGCCCCAAAAAAAAAGGGGCCCGGAAAAA
-		//           <<<<           <<<<<<<<<
+		//     <<<<<<<<<<        <<<<<<<<<
 		String contig = "AAAACCGGGCCCCAAAAAAAAAGGGGCCCGGAAAAA";
 		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(contig) });
 		SAMRecord r = new SAMRecord(new SAMFileHeader());
@@ -142,6 +148,7 @@ public class SingleReadEvidenceTest extends TestHelper {
 		r.setReadBases(B("TTCCGGGCCCCA"));
 		r.setAttribute("SA", "Contig,36,+,4S9M,0,0");
 		SplitReadEvidence e = (SplitReadEvidence)asAssemblyEvidence(new MockSAMEvidenceSource(getContext(ref)), r);
+		assertEquals(e.getBreakendSummary().end - e.getBreakendSummary().start, e.getBreakendSummary().end2 - e.getBreakendSummary().start2);
 		assertEquals("CCGGGCCCC", e.getHomologySequence());
 		assertEquals(3, e.getHomologyAnchoredBaseCount());
 		assertEquals(11, e.getBreakendSummary().nominal);
@@ -189,6 +196,25 @@ public class SingleReadEvidenceTest extends TestHelper {
 				assertEquals(bequal, sre.getBreakendQual(), 0);
 				assertEquals(bpqual, ((SplitReadEvidence) sre).getBreakpointQual(), 0);
 			}
+		}
+	}
+	@Test
+	@Category(Hg19Tests.class)
+	public void nominal_position_should_match_homology_interval() throws FileNotFoundException {
+		File sam = new File("src/test/resources/homass.sam");
+		File ref = Hg19Tests.findHg19Reference();
+		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
+		SAMEvidenceSource ses = SES(pc);
+		SamReader sr = SamReaderFactory.makeDefault().open(sam);
+		List<SAMRecord> in = Lists.newArrayList(sr.iterator());
+		List<SingleReadEvidence> sreList = in.stream()
+				.flatMap(record -> SingleReadEvidence.createEvidence(ses, 0, record).stream())
+				.collect(Collectors.toList());
+		for (SingleReadEvidence e: sreList) {
+			String asm = e.getSAMRecord().getReadName();
+			double qual = ((SplitReadEvidence) e).getBreakpointQual();
+			BreakpointSummary bs = (BreakpointSummary) e.getBreakendSummary();
+			assertEquals(bs.start2 - bs.start, bs.nominal2 - bs.nominal);
 		}
 	}
 	@Test
