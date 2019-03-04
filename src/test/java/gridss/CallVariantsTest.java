@@ -44,6 +44,7 @@ public class CallVariantsTest extends IntermediateFilesTest {
 		File propfile = testFolder.newFile("custom.properties");
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(propfile))) {
 			writer.write("assembly.k=5\n");
+			writer.write("minMapq=10\n");
 			writer.write("softclip.minLength=1\n");
 			writer.write("minAnchorShannonEntropy=0\n");
 			writer.write("softclip.minAnchorIdentity=0\n");

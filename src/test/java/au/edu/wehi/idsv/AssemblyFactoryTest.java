@@ -333,11 +333,8 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 150, 100, 200, 1, BWD, 450, 400, 500),
 				incorporateRealignment(aes,
 					AssemblyFactory.createUnanchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 150, 100, 200), null, null, B("CCCCC"), B("CCCCC")),
-					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/**
-						 * 
-						 */
+					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {/***/
 						private static final long serialVersionUID = 1L;
-
 					{
 						setMappingQuality(40);
 						setReferenceIndex(1);

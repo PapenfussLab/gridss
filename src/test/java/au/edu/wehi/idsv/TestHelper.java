@@ -352,10 +352,11 @@ public class TestHelper {
 	public static GridssConfiguration getConfig(File workingDirectory) {
 		GridssConfiguration config;
 		config = new GridssConfiguration(getDefaultConfig(), workingDirectory);
-		config.getSoftClip().minAverageQual = 0;
 		config.minAnchorShannonEntropy = 0;
+		config.minMapq = 10;
 		config.getAssembly().minReads = 2;
 		config.getAssembly().positional.trimSelfIntersectingReads = false;
+		config.getSoftClip().minAverageQual = 0;
 		config.getVariantCalling().breakendMargin = 3;
 		config.getVisualisation().buffers = false;
 		config.getVariantCalling().requireAssemblyCategorySupport = true;
