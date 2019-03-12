@@ -29,6 +29,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 	private static final Log log = Log.getInstance(UntemplatedSequenceAnnotator.class);
 	private final GenomicProcessingContext context;
 	private final File vcf;
+	private final boolean overwrite;
 	private final List<String> cmd;
 	private final int threads;
 	private CloseableIterator<IdsvVariantContext> vcfStream;
@@ -36,9 +37,10 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 	private ExternalProcessStreamingAligner aligner;
 	private Thread feedingAligner;
 	private IdsvVariantContext nextRecord = null;
-	public UntemplatedSequenceAnnotator(GenomicProcessingContext context, File vcf, List<String> aligner_command_line, int threads) {
+	public UntemplatedSequenceAnnotator(GenomicProcessingContext context, File vcf, boolean overwrite, List<String> aligner_command_line, int threads) {
 		this.context = context;
 		this.vcf = vcf;
+		this.overwrite = overwrite;
 		this.cmd = aligner_command_line;
 		this.threads = threads;
 		this.vcfStream = getVcf();
@@ -54,15 +56,18 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 	private ExternalProcessStreamingAligner createRecordAlignmentStream() {
 		aligner = new ExternalProcessStreamingAligner(context.getSamReaderFactory(), cmd, context.getReferenceFile(), threads);
 		feedingAligner = new Thread(() -> feedExternalAligner());
-		feedingAligner.setName("usa-to-aligner");
+		feedingAligner.setName("async-feedExternalAligner");
 		feedingAligner.start();
 		return aligner;
+	}
+	private boolean shouldAttemptAlignment(VariantContext v) {
+		return overwrite || !v.hasAttribute(VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute());
 	}
 	private void feedExternalAligner() {
 		try (CloseableIterator<IdsvVariantContext> it = getVcf()) {
 			while (it.hasNext()) {
 				IdsvVariantContext vc = it.next();
-				if (vc instanceof VariantContextDirectedEvidence) {
+				if (vc instanceof VariantContextDirectedEvidence && shouldAttemptAlignment(vc)) {
 					VariantContextDirectedEvidence e = (VariantContextDirectedEvidence)vc;
 					byte[] seq = e.getBreakendSequence();
 					byte[] qual = e.getBreakendQuality();

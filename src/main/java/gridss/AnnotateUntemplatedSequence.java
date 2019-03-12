@@ -33,6 +33,9 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
     public File INPUT;
 	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated VCF file")
     public File OUTPUT;
+	@Argument(doc="Overwrite existing annotation. Setting to 'true' will replace any existing BEALN annotations. " +
+			"Setting to 'false' will generate annotations only for records without an existing BEALN annotation. ")
+	public boolean OVERWRITE = false;
 	@Argument(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files."
 			+ " The aligner must support using \"-\" as the input filename when reading from stdin."
 			+ " The sort order of the input file will not be retained.", optional=true)
@@ -46,7 +49,7 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 		IOUtil.assertFileIsWritable(OUTPUT);
 		log.info("Annotating variant untemplated sequence in " + INPUT);
 		GenomicProcessingContext context = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
-		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(context, INPUT, ALIGNER_COMMAND_LINE, WORKER_THREADS)) {
+		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(context, INPUT, OVERWRITE, ALIGNER_COMMAND_LINE, WORKER_THREADS)) {
 			saveVcf(context, INPUT, OUTPUT, ann);
 			log.info("Annotated variants written to " + OUTPUT);
 		} catch (IOException e) {
