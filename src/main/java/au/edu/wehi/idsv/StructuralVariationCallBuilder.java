@@ -234,7 +234,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		BreakendSummary nominalPosition = parent.getBreakendSummary();
 		String untemplated;// = parent.getBreakpointSequenceString();
-		String homo = "";
+		String homo = parent.getAttributeAsString(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY, "");
 		if (isBreakend()) {
 			DirectedEvidence bestBreakend = supportingBreakend.stream()
 					.sorted(ByBestBreakendDesc)
