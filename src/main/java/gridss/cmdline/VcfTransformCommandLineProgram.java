@@ -49,6 +49,10 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		IOUtil.assertFileIsReadable(ASSEMBLY);
 		IOUtil.assertFileIsReadable(INPUT_VCF);
 		IOUtil.assertFileIsWritable(OUTPUT_VCF);
+		if (INPUT_VCF.equals(OUTPUT_VCF)) {
+			log.error("Input and output files much be different");
+			return 1;
+		}
 		log.info("Annotating variants in " + INPUT_VCF);
 		try (CloseableIterator<VariantContextDirectedEvidence> it = iterator(getBreakends(INPUT_VCF), threadpool)) {
 			saveVcf(OUTPUT_VCF, getAllCalls(INPUT_VCF, it));
