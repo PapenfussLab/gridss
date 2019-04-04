@@ -8,6 +8,7 @@ REFERENCE=hg19.fa
 OUTPUT=${INPUT/.bam/.sv.vcf}
 ASSEMBLY=${OUTPUT/.sv.vcf/.gridss.assembly.bam}
 GRIDSS_JAR=../target/gridss-2.2.1-gridss-jar-with-dependencies.jar
+WORKER_THREADS=16
 
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
@@ -68,5 +69,6 @@ java -ea -Xmx31g \
 	OUTPUT="$OUTPUT" \
 	ASSEMBLY="$ASSEMBLY" \
 	BLACKLIST="$BLACKLIST" \
+	WORKER_THREADS=$WORKER_THREADS \
 	2>&1 | tee -a gridss.$HOSTNAME.$$.log
 
