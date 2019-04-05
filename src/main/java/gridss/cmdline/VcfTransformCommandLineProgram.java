@@ -50,7 +50,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		IOUtil.assertFileIsReadable(INPUT_VCF);
 		IOUtil.assertFileIsWritable(OUTPUT_VCF);
 		if (INPUT_VCF.equals(OUTPUT_VCF)) {
-			log.error("Input and output files much be different");
+			log.error("Input and output files must be different.");
 			return 1;
 		}
 		log.info("Annotating variants in " + INPUT_VCF);
