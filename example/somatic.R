@@ -21,7 +21,7 @@ bedpe <- data.frame(
     chrom1=seqnames(gr),
     start1=start(gr) - 1,
     end1=end(gr),
-    chrom1=seqnames(partner(gr)),
+    chrom2=seqnames(partner(gr)),
     start2=start(partner(gr)) - 1,
     end2=end(partner(gr)),
     name=names(gr),
