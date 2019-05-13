@@ -1,13 +1,15 @@
 package au.edu.wehi.idsv.vcf;
 
-import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFSimpleHeaderLine;
-import htsjdk.variant.vcf.VCFStandardHeaderLines;
+import htsjdk.variant.vcf.*;
 
 public class GridssVcfConstants {
 	public static final String VCF42BREAKEND = ".";
+	public static final String GRIDSS_VERSION_VCF_HEADER =  "gridssVersion";
 	public static void addHeaders(VCFHeader header) {
+		VCFHeaderLine existingGridssVersionHeader = header.getOtherHeaderLine(GRIDSS_VERSION_VCF_HEADER);
+		header.getOtherHeaderLines().remove(existingGridssVersionHeader);
+		header.addMetaDataLine(new VCFHeaderLine(GRIDSS_VERSION_VCF_HEADER, new GridssVcfConstants().getClass().getPackage().getImplementationVersion()));
+
 		addInfoHeaders(header);
 		addFormatHeaders(header);
 		addFilterHeaders(header);
