@@ -24,12 +24,8 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import gridss.SoftClipsToSplitReads;
 import gridss.cmdline.CommandLineProgramHelper;
-import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -173,6 +169,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		log.info(String.format("Starting assembly on %s", chuckName));
 		Stopwatch timer = Stopwatch.createStarted();
 		SAMFileHeader header = getContext().getBasicSamHeader();
+		addPG(header);
 		// TODO: add assembly @PG header
 		File filteredout = FileSystemContext.getWorkingFileFor(output, "filtered.");
 		File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.");
@@ -209,6 +206,19 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			System.runFinalization();
 		}
 	}
+
+	private void addPG(SAMFileHeader header) {
+		int i = 0;
+		while (header.getProgramRecord(String.format("gridss%d", i)) != null) {
+			i++;
+		}
+		SAMProgramRecord pg = new SAMProgramRecord(String.format("gridss%d", i));
+		pg.setProgramName("gridss");
+		pg.setProgramVersion(this.getClass().getPackage().getImplementationVersion());
+		// TODO: walk the stack and extract the command line arguments
+		header.addProgramRecord(pg);
+	}
+
 	private QueryInterval[] getExpanded(QueryInterval[] intervals) {
 		QueryInterval[] expanded = QueryIntervalUtil.padIntervals(
 				getContext().getDictionary(),
