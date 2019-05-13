@@ -136,6 +136,7 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	public int getBreakpointEvidenceCountAssembly() { return getBreakpointEvidenceCountLocalAssembly() + getBreakpointEvidenceCountRemoteAssembly(); }
 	public int getBreakpointEvidenceCountLocalAssembly() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, 0); }
 	public int getBreakpointEvidenceCountRemoteAssembly() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, 0); }
+	public int getBreakpointEvidenceCountCompoundAssembly() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_COMPOUND, 0); }
 	public int getBreakpointEvidenceCountReadPair(int category) { return getInt(category, VcfFormatAttributes.BREAKPOINT_READPAIR_COUNT, 0); }
 	public int getBreakpointEvidenceCountSoftClip(int category) { return getInt(category, VcfFormatAttributes.BREAKPOINT_SPLITREAD_COUNT, 0); }
 	public int getBreakpointEvidenceCountAssemblyReadPair(int category) { return getInt(category, VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, 0); }
@@ -150,11 +151,13 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	
 	public int getBreakpointEvidenceCountReadPair() { return getInt(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT, 0); }
 	public int getBreakpointEvidenceCountSoftClip() { return getInt(VcfInfoAttributes.BREAKPOINT_SPLITREAD_COUNT, 0); }
+	public int getBreakpointEvidenceCountIndel() { return getInt(VcfInfoAttributes.BREAKPOINT_INDEL_COUNT, 0); }
 	public int getBreakpointEvidenceCountAssemblyReadPair() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, 0); }
 	public int getBreakpointEvidenceCountAssemblySoftClip() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT, 0); }
 	
 	public double getBreakpointEvidenceQualReadPair() { return getDouble(VcfInfoAttributes.BREAKPOINT_READPAIR_QUAL, 0); }
 	public double getBreakpointEvidenceQualSoftClip() { return getDouble(VcfInfoAttributes.BREAKPOINT_SPLITREAD_QUAL, 0); }
+	public double getBreakpointEvidenceQualIndel() { return getDouble(VcfInfoAttributes.BREAKPOINT_INDEL_QUAL, 0); }
 	
 	public int getBreakpointSupportingFragmentCount() { return getInt(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS, 0); }
 	

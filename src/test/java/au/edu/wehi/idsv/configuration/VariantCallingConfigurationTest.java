@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.BreakpointSummary;
@@ -11,6 +12,8 @@ import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfFilter;
+
+import java.util.Set;
 
 
 public class VariantCallingConfigurationTest extends TestHelper {
@@ -49,5 +52,16 @@ public class VariantCallingConfigurationTest extends TestHelper {
 			assertEquals(new BreakpointSummary(0, FWD, 100, 100-expectedMargin[i], 100+expectedMargin[i], 0, FWD, 100 + size[i], 100-expectedMargin[i] + size[i], 100+expectedMargin[i] + size[i]),
 					config.withMargin(new BreakpointSummary(0, FWD, 100, 100, 100, 0, FWD, 100 + size[i], 100 + size[i], 100 + size[i])));
 		}
+	}
+	@Test
+	public void fix_issue_205_indels_should_not_report_ASSEMBLY_ONLY() {
+		VariantContextDirectedBreakpoint bp = BP("bp", new BreakpointSummary(0, FWD, 1, 0, BWD, 10), "");
+		VariantContextBuilder b =  new IdsvVariantContextBuilder(getContext(), bp);
+		b.attribute("IC", 1);
+		b.attribute("AS", 1);
+		b.attribute("RAS", 1);
+		bp = (VariantContextDirectedBreakpoint)b.make();
+		Set<String> filters = new VariantCallingConfiguration(getDefaultConfig()).applyConfidenceFilter(getContext(), bp).getFilters();
+		assertFalse(filters.contains("ASSEMBLY_ONLY"));
 	}
 }
