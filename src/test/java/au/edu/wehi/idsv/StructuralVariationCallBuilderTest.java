@@ -728,6 +728,25 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals("9M1X", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
+	public void assembly_anchor_cigar_should_use_only_remote_assemblies() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 100, 1, BWD, 200), "");
+			phredScore(10);
+		}}.make());
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				SR(Read(1, 200, "3S7M"), Read(0, 98, "3M7S"))
+		);
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), BWD, support, fullSupport(support), 1, 200, 7, B("NNNNNNNNNN"), B("NNNNNNNNNN"));
+		SAMRecord beass = withMapq(44, Read(0, 98, "3M"))[0];
+		incorporateRealignment(AES(), ass, ImmutableList.of(beass));
+
+		builder.addEvidence(SingleReadEvidence.createEvidence(AES(), 1, beass).get(0));
+		VariantContextDirectedEvidence vc = builder.make();
+		assertEquals("2M1X", vc.getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
+	}
+	@Test
 	@Ignore("The assembler doesn't know which orientation it was assembling.")
 	public void spanning_assemblies_should_use_original_parent_assembly_direction_to_determine_local_remote_status() {
 		IndelEvidence r = IE(withMapq(40, Read(2, 90, "10M1I10M"))[0]);

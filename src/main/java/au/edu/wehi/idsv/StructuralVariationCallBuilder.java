@@ -277,10 +277,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		supportingSR.stream().flatMap(l -> l.stream()).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingIndel.stream().flatMap(l -> l.stream()).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingDP.stream().flatMap(l -> l.stream()).forEach(e -> processAnchor(allAnchoredBases, e.getLocalledMappedRead()));
-		supportingAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
+		//supportingAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingRAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingCAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		attribute(VcfInfoAttributes.SUPPORT_CIGAR, makeCigar(allAnchoredBases, nominalPosition).toString());
+		RangeSet<Integer> assemblyAnchoredBases = TreeRangeSet.create();
+		// TODO: implement https://github.com/PapenfussLab/gridss/issues/213 so we can include local assemblies
+		//supportingAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
+		supportingRAS.stream().forEach(e -> processAnchor(assemblyAnchoredBases, e.getSAMRecord()));
+		supportingCAS.stream().forEach(e -> processAnchor(assemblyAnchoredBases, e.getSAMRecord()));
+		attribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR, makeCigar(assemblyAnchoredBases, nominalPosition).toString());
+
 	}
 
 	private void updateAssemblySupportTracking() {

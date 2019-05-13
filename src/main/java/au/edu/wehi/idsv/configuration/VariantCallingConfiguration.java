@@ -170,8 +170,8 @@ public class VariantCallingConfiguration {
 				filters.add(VcfFilter.NO_ASSEMBLY.filter());
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
 				filters.add(VcfFilter.SINGLE_ASSEMBLY.filter());
-			} else if (v.getBreakpointEvidenceCountLocalAssembly() + v.getBreakpointEvidenceCountRemoteAssembly() > 0 &&
-					v.getBreakpointEvidenceCountReadPair() + v.getBreakpointEvidenceCountSoftClip() == 0) {
+			} else if (v.getBreakpointEvidenceCountLocalAssembly() + v.getBreakpointEvidenceCountRemoteAssembly() + v.getBreakpointEvidenceCountCompoundAssembly() > 0 &&
+					v.getBreakpointEvidenceCountReadPair() + v.getBreakpointEvidenceCountSoftClip() + v.getBreakpointEvidenceCountIndel() == 0) {
 				filters.add(VcfFilter.ASSEMBLY_ONLY.filter());
 			}
 			if (variant.getPhredScaledQual() < processContext.getVariantCallingParameters().breakpointLowQuality) {
