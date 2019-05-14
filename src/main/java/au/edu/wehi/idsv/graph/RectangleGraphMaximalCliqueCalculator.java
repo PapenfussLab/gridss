@@ -1,9 +1,11 @@
 package au.edu.wehi.idsv.graph;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.visualisation.TrackedState;
 import com.google.common.collect.ImmutableList;
 
 import au.edu.wehi.idsv.Defaults;
@@ -25,7 +27,7 @@ import au.edu.wehi.idsv.Defaults;
  * 
  * @author Daniel Cameron
  */
-public class RectangleGraphMaximalCliqueCalculator {
+public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 	private RectangleGraphNode lastNode = null;
 	private List<RectangleGraphNode> outBuffer;
 	private final PriorityQueue<RectangleGraphNode> activeEndingX = new PriorityQueue<RectangleGraphNode>(11, RectangleGraphNode.ByEndXStartYEndY); // sorted by endX
@@ -45,6 +47,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		activeScanlineCurrentPosition = activeScanlineStart;
 		assert(sanityCheckScanlineComplete());
 	}
+
 	/**
 	 * Scanline interval of the rectangle graph.
 	 * Scanline coordinates use half-open intervals.
@@ -379,5 +382,28 @@ public class RectangleGraphMaximalCliqueCalculator {
 		scanlineCompleteProcessing(1);
 		processEndXBefore(Long.MAX_VALUE);
 		return outBuffer;
+	}
+
+	@Override
+	public String[] trackedNames() {
+		return new String[] {
+			"outBufferSize",
+			"activeEndingXSize",
+			"activeScanlineEndingYSize",
+		};
+	}
+
+	@Override
+	public Object[] trackedState() {
+		return new Object[] {
+				outBuffer.size(),
+				activeEndingX.size(),
+				activeScanlineEndingY.size(),
+		};
+	}
+
+	@Override
+	public Collection<TrackedState> trackedObjects() {
+		return ImmutableList.of(this);
 	}
 }

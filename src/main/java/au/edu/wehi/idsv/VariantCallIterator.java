@@ -1,10 +1,13 @@
 package au.edu.wehi.idsv;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import au.edu.wehi.idsv.visualisation.StateTracker;
+import au.edu.wehi.idsv.visualisation.TrackedState;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableList;
@@ -33,6 +36,9 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private Iterator<? extends VariantContextDirectedEvidence> currentIterator;
 	private Iterator<DirectedEvidence> currentUnderlyingIterator;
 	private int currentDirectionOrdinal;
+	private StateTracker currentTracker;
+	private Collection<TrackedState> currentTrackedObjects;
+
 	public VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence) throws InterruptedException {
 		this.processContext = processContext;
 		this.idGenerator = new SequentialIdGenerator("gridss");
@@ -73,6 +79,10 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 					direction.getLeft(),
 					direction.getRight(),
 					idGenerator);
+			// TODO if
+			currentTracker = new StateTracker();
+			currentTrackedObjects = currentIterator.trackedObjects();
+			currentTracker.writeHeader(currentTrackedObjects);
 		} else {
 			if (processContext.getVariantCallingParameters().callBreakends) {
 				currentIterator = new BreakendMaximalEvidenceCliqueIterator(
@@ -80,7 +90,13 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 						currentUnderlyingIterator,
 						direction.getLeft(),
 						idGenerator);
+				// TODO track
 			} else {
+				if (currentIterator != null) {
+					currentTracker.close();
+					currentTracker = null;
+					currentTrackedObjects = null;
+				}
 				currentIterator = null;
 			}
 		}

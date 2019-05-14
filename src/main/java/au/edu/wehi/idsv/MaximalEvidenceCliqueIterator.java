@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv;
 
+import java.util.Collection;
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.visualisation.TrackedState;
 import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
 
@@ -19,7 +21,7 @@ import htsjdk.samtools.util.Log;
  * @author Daniel Cameron
  *
  */
-public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedBreakpoint> {
+public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedBreakpoint> implements TrackedState {
 	private static final Log log = Log.getInstance(MaximalEvidenceCliqueIterator.class);
 	public static final String BREAKPOINT_ID_SUFFIX_HIGH = "h";
 	public static final String BREAKPOINT_ID_SUFFIX_LOW = "o";
@@ -42,6 +44,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		this.targetHighDir = highDir;
 		this.idGenerator = idGenerator;
 	}
+
 	private class GraphNodeWindowedSortingIterator extends WindowedSortingIterator<RectangleGraphNode> {
 		public GraphNodeWindowedSortingIterator(final GenomicProcessingContext processContext, final int windowSize, final Iterator<RectangleGraphNode> it) {
 			super(it, new Function<RectangleGraphNode, Long>() {
@@ -155,5 +158,20 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 			return result;
 		}
 		return endOfData();
+	}
+
+	@Override
+	public String[] trackedNames() {
+		return calc.trackedNames();
+	}
+
+	@Override
+	public Object[] trackedState() {
+		return calc.trackedState();
+	}
+
+	@Override
+	public Collection<TrackedState> trackedObjects() {
+		return calc.trackedObjects();
 	}
 }

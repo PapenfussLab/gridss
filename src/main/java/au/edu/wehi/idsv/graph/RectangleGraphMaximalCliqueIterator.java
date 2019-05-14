@@ -1,9 +1,11 @@
 package au.edu.wehi.idsv.graph;
 
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
 
+import au.edu.wehi.idsv.visualisation.TrackedState;
 import com.google.common.collect.AbstractIterator;
 
 /**
@@ -11,7 +13,7 @@ import com.google.common.collect.AbstractIterator;
  * 
  * @author Daniel Cameron
  */
-public class RectangleGraphMaximalCliqueIterator extends AbstractIterator<RectangleGraphNode> {
+public class RectangleGraphMaximalCliqueIterator extends AbstractIterator<RectangleGraphNode> implements TrackedState {
 	private final Queue<RectangleGraphNode> buffer = new ArrayDeque<RectangleGraphNode>();
 	private RectangleGraphMaximalCliqueCalculator calc = new RectangleGraphMaximalCliqueCalculator();
 	private Iterator<RectangleGraphNode> it;
@@ -32,5 +34,20 @@ public class RectangleGraphMaximalCliqueIterator extends AbstractIterator<Rectan
 			return buffer.poll();
 		}
 		return endOfData();
+	}
+
+	@Override
+	public String[] trackedNames() {
+		return calc.trackedNames();
+	}
+
+	@Override
+	public Object[] trackedState() {
+		return calc.trackedState();
+	}
+
+	@Override
+	public Collection<TrackedState> trackedObjects() {
+		calc.trackedObjects();
 	}
 }
