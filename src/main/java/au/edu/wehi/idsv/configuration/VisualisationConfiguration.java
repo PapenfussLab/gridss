@@ -15,11 +15,12 @@ public class VisualisationConfiguration {
 		assemblyProgress = config.getBoolean("assemblyProgress");
 		assemblyContigMemoization = config.getBoolean("assemblyContigMemoization");
 		assemblyTelemetry = config.getBoolean("assemblyTelemetry");
+		maxCliqueTelemetry = config.getBoolean("maxCliqueTelemetry");
 		evidenceAllocation = config.getBoolean("evidenceAllocation");
 		buffers = config.getBoolean("buffers");
 		bufferTrackingItervalInSeconds = config.getFloat("bufferTrackingItervalInSeconds");
 		
-		if (!directory.exists() && (timeouts || assemblyGraph || assemblyGraphFullSize || assemblyProgress || evidenceAllocation || buffers)) {
+		if (!directory.exists() && (timeouts || assemblyGraph || assemblyGraphFullSize || assemblyProgress || evidenceAllocation || buffers || maxCliqueTelemetry)) {
 			directory.mkdir();
 		}
 	}
@@ -42,4 +43,5 @@ public class VisualisationConfiguration {
 	public boolean buffers;
 	public float bufferTrackingItervalInSeconds;
 	public boolean assemblyTelemetry;
+	public boolean maxCliqueTelemetry;
 }

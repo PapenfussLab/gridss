@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.PeekingIterator;
 
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
 /**
  * Duplicates the given iterator, feeding internal buffers from a background thread
@@ -33,6 +34,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 	private final List<BlockingQueue<Object>> queues = new ArrayList<BlockingQueue<Object>>();
 	private int iteratorsRequested = 0;
 	private FeedingThread thread;
+	private volatile Exception error = null;
 	
 	/**
 	 * Duplicates an iterator
@@ -82,6 +84,13 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 						log.error("Sanity check failure: end of stream writing should not have blocked.");
 					}
 				}
+			} catch (Exception e) {
+				log.error("Error traversing iterator", e);
+				error = e;
+				try {
+					eos();
+				} catch (InterruptedException e1) {
+				}
 			}
 		}
 		private void eos() throws InterruptedException {
@@ -109,6 +118,9 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 					log.debug("Interrupted waiting for next record");
 					throw new RuntimeException(e);
 				}
+			}
+			if (error != null) {
+				throw new RuntimeException(error);
 			}
 		}
 		@Override

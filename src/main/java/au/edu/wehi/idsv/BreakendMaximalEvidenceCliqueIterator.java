@@ -1,9 +1,12 @@
 package au.edu.wehi.idsv;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.visualisation.TrackedState;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
@@ -11,7 +14,7 @@ import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
-public class BreakendMaximalEvidenceCliqueIterator implements Iterator<VariantContextDirectedEvidence> {
+public class BreakendMaximalEvidenceCliqueIterator implements Iterator<VariantContextDirectedEvidence>, TrackedState {
 	public static final String BREAKEND_ID_SUFFIX = "b";
 	private final BreakendDirection direction;
 	private final ProcessingContext context;
@@ -81,5 +84,22 @@ public class BreakendMaximalEvidenceCliqueIterator implements Iterator<VariantCo
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)builder.make();
 		assert(v != null);
 		return v;
+	}
+
+	@Override
+	public String[] trackedNames() {
+		return new String[] {"activeByEndSize"};
+	}
+
+	@Override
+	public Object[] trackedState() {
+		return new Object[] {
+				activeByEnd.size(),
+		};
+	}
+
+	@Override
+	public Collection<TrackedState> trackedObjects() {
+		return ImmutableList.of(this);
 	}
 }

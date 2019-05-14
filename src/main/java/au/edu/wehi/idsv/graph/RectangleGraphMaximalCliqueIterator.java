@@ -48,6 +48,6 @@ public class RectangleGraphMaximalCliqueIterator extends AbstractIterator<Rectan
 
 	@Override
 	public Collection<TrackedState> trackedObjects() {
-		calc.trackedObjects();
+		return calc.trackedObjects();
 	}
 }

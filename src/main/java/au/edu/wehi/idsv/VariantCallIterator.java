@@ -1,13 +1,18 @@
 package au.edu.wehi.idsv;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
+import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.StateTracker;
 import au.edu.wehi.idsv.visualisation.TrackedState;
+import htsjdk.samtools.util.Log;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableList;
@@ -22,6 +27,7 @@ import htsjdk.samtools.util.CloserUtil;
  * @author Daniel Cameron
  */
 public class VariantCallIterator implements CloseableIterator<VariantContextDirectedEvidence> {
+	private static final Log log = Log.getInstance(VariantCallIterator.class);
 	private static final List<Pair<BreakendDirection, BreakendDirection>> DIRECTION_ORDER = ImmutableList.of(
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Forward),
 			Pair.of(BreakendDirection.Forward, BreakendDirection.Backward),
@@ -79,10 +85,6 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 					direction.getLeft(),
 					direction.getRight(),
 					idGenerator);
-			// TODO if
-			currentTracker = new StateTracker();
-			currentTrackedObjects = currentIterator.trackedObjects();
-			currentTracker.writeHeader(currentTrackedObjects);
 		} else {
 			if (processContext.getVariantCallingParameters().callBreakends) {
 				currentIterator = new BreakendMaximalEvidenceCliqueIterator(
@@ -90,10 +92,13 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 						currentUnderlyingIterator,
 						direction.getLeft(),
 						idGenerator);
-				// TODO track
 			} else {
 				if (currentIterator != null) {
-					currentTracker.close();
+					try {
+						currentTracker.close();
+					} catch (IOException e) {
+						log.debug("Telemetry failure", e);
+					}
 					currentTracker = null;
 					currentTrackedObjects = null;
 				}
@@ -112,6 +117,21 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 				}
 			});
 		}
+		if (currentIterator != null && processContext.getConfig().getVisualisation().maxCliqueTelemetry && currentIterator instanceof TrackedState) {
+			TrackedState ts = (TrackedState)currentIterator;
+			String positionComponent = (filterInterval == null || filterInterval.length == 0) ? "" : String.format("_%s_%d",
+					processContext.getDictionary().getSequence(filterInterval[0].referenceIndex).getSequenceName(),
+					filterInterval[0].start);
+			String filename = String.format("maxclique%s_%s%s.csv", positionComponent, direction.getLeft(), direction.getRight());
+			File file = new File(processContext.getConfig().getVisualisation().directory, filename);
+			try {
+				currentTracker = new StateTracker(file);
+				currentTrackedObjects = ts.trackedObjects();
+				currentTracker.writeHeader(currentTrackedObjects);
+			} catch (IOException e) {
+				log.debug("Telemetry failure", e);
+			}
+		}
 	}
 	@Override
 	public boolean hasNext() {
@@ -125,7 +145,15 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	@Override
 	public VariantContextDirectedEvidence next() {
 		if (!hasNext()) throw new NoSuchElementException();
-		return currentIterator.next();
+		VariantContextDirectedEvidence evidence = currentIterator.next();
+		if (currentTracker != null) {
+			try {
+				currentTracker.track(currentTrackedObjects);
+			} catch (IOException e) {
+				log.debug("Telemetry failure", e);
+			}
+		}
+		return evidence;
 	}
 	@Override
 	public void close() {
