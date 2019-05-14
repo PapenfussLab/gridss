@@ -14,16 +14,8 @@ import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.GridssVcfConstants;
 import gridss.cmdline.ReferenceCommandLineProgram;
-import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FailsVendorReadQualityFilter;
@@ -86,7 +78,20 @@ public class GenomicProcessingContext implements Closeable {
 		this.linear = new PaddedLinearGenomicCoordinate(this.dictionary, LINEAR_COORDINATE_CHROMOSOME_BUFFER, true);
 		this.basicHeader = new SAMFileHeader();
 		this.basicHeader.setSequenceDictionary(this.reference.getSequenceDictionary());
+		addGridssVersionPG(this.basicHeader);
+
 		this.blacklist = new IntervalBed(this.linear);
+	}
+	private void addGridssVersionPG(SAMFileHeader header) {
+		int i = 0;
+		while (header.getProgramRecord(String.format("gridss%d", i)) != null) {
+			i++;
+		}
+		SAMProgramRecord pg = new SAMProgramRecord(String.format("gridss%d", i));
+		pg.setProgramName("gridss");
+		pg.setProgramVersion(this.getClass().getPackage().getImplementationVersion());
+		// TODO: walk the stack and extract the command line arguments
+		header.addProgramRecord(pg);
 	}
 	/**
 	 * Load a reference genome with synchronized access to prevent threading issues
@@ -244,7 +249,7 @@ public class GenomicProcessingContext implements Closeable {
 	 * @return
 	 */
 	public SAMFileHeader getBasicSamHeader() {
-		return basicHeader;
+		return basicHeader.clone();
 	}
 
 	public ReferenceLookup getReference() {
