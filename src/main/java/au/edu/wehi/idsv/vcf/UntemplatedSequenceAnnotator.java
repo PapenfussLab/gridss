@@ -54,6 +54,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 		return new AutoClosingIterator<IdsvVariantContext>(idsvIt, it, vcfReader);
 	}
 	private ExternalProcessStreamingAligner createRecordAlignmentStream() {
+		log.debug("Started async external alignment feeder thread.");
 		aligner = new ExternalProcessStreamingAligner(context.getSamReaderFactory(), cmd, context.getReferenceFile(), threads);
 		feedingAligner = new Thread(() -> feedExternalAligner());
 		feedingAligner.setName("async-feedExternalAligner");
@@ -90,6 +91,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 				log.warn(e);
 			}
 		}
+		log.debug("Completed async external alignment feeder thread.");
 	}
 	@Override
 	public boolean hasNext() {

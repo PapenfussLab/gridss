@@ -133,41 +133,39 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 	 */
 	@Override
 	public synchronized void close() throws IOException {
-		if (aligner == null) {
-			// nothing to do
-			return;
-		}
-		log.info("Waiting for external aligner to complete all alignments.");
-		toExternalProgram.flush();
-		aligner.getOutputStream().flush();
-		toExternalProgram.close();
-		// and just to be sure we don't hit any more htsjdk bugs where they don't close the underlying stream
-		aligner.getOutputStream().close();
-		// wait for the aligner to complete all outstanding alignments
-		// This doesn't deadlock as buffer is unbounded in size so we're guaranteed to be able to
-		// read the entire output stream without blocking
-		while (outstandingReads.get() > 0) {
+		if (aligner != null) {
+			log.info("Waiting for external aligner to complete all alignments.");
+			toExternalProgram.flush();
+			aligner.getOutputStream().flush();
+			toExternalProgram.close();
+			// and just to be sure we don't hit any more htsjdk bugs where they don't close the underlying stream
+			aligner.getOutputStream().close();
+			// wait for the aligner to complete all outstanding alignments
+			// This doesn't deadlock as buffer is unbounded in size so we're guaranteed to be able to
+			// read the entire output stream without blocking
+			while (outstandingReads.get() > 0) {
+				try {
+					log.debug(String.format("%d alignments outstanding", outstandingReads.get()));
+					Thread.sleep(POLL_INTERVAL);
+				} catch (InterruptedException e) {
+					log.warn(e);
+				}
+			}
+			// reader thread will have completed when it hits then end of the output stream
+			ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference);
+			log.info("External alignments complete");
 			try {
-				log.debug(String.format("%d alignments outstanding", outstandingReads.get()));
-				Thread.sleep(POLL_INTERVAL);
+				reader.join();
 			} catch (InterruptedException e) {
 				log.warn(e);
-				return;
 			}
-		}
-		// reader thread will have completed when it hits then end of the output stream 
-		ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference);
-		log.info("External alignments complete");
-		try {
-			reader.join();
-		} catch (InterruptedException e) {
-			log.warn(e);
 		}
 		aligner = null;
 		reader = null;
 		toExternalProgram = null;
 		isClosed.set(true);
 	}
+
 	private void syncEnsureNext() {
 		while (!isClosed.get() && buffer.isEmpty()) {
 			try {
