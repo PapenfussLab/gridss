@@ -264,6 +264,9 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	if (INPUT_LABEL != null && INPUT_LABEL.stream().anyMatch(x -> x == null || x.equals(""))) {
     		return new String[] { "INPUT_LABEL must omitted or specified for every INPUT." };
     	}
+    	if (BLACKLIST != null && !BLACKLIST.exists()) {
+			return new String[] { "Missing BLACKLIST file " + BLACKLIST.getName() };
+		}
     	return null;
 	}
 	@Override

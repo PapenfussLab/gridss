@@ -193,7 +193,7 @@ public class GenomicProcessingContext implements Closeable {
 	/**
 	 * Applies filters such as duplicate removal that apply to all SAMRecord parsing
 	 * @param iterator raw reads
-	 * @param filterSecondaryAlignment should secondary alignment be filtered out
+	 * @param singleAlignmentPerRead should secondary and supplementary alignment be filtered out
 	 * @return iterator with filtered record excluded
 	 */
 	public CloseableIterator<SAMRecord> applyCommonSAMRecordFilters(final CloseableIterator<SAMRecord> iterator, final boolean singleAlignmentPerRead) {
@@ -223,7 +223,7 @@ public class GenomicProcessingContext implements Closeable {
 	 * Gets a VCF file ready to write variants to
 	 * A header based on this processing context will have already been written to the returned writer
 	 * It is the responsibility of the caller to close the returned @link {@link VariantContextWriter}
-	 * @param output file
+	 * @param file file
 	 * @return opened output VCF stream
 	 */
 	public VariantContextWriter getVariantContextWriter(File file, boolean createIndex) {
@@ -233,7 +233,7 @@ public class GenomicProcessingContext implements Closeable {
 	 * Gets a VCF file ready to write variants to
 	 * A header based on this processing context will have already been written to the returned writer
 	 * It is the responsibility of the caller to close the returned @link {@link VariantContextWriter}
-	 * @param output file
+	 * @param file file
 	 * @return opened output VCF stream
 	 */
 	public VariantContextWriter getVariantContextWriter(File file, VCFHeader vcfHeader, boolean createIndex) {
@@ -299,6 +299,9 @@ public class GenomicProcessingContext implements Closeable {
 	}
 	
 	public void setBlacklist(File blacklistFile) throws IOException {
+		if (!blacklistFile.exists()) {
+			throw new IllegalArgumentException(String.format("Missing file %s", blacklistFile));
+		}
 		this.blacklistFile = blacklistFile;
 		this.blacklist = new IntervalBed(getLinear(), blacklistFile);
 	}
