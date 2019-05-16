@@ -23,6 +23,10 @@ public class StateTracker implements Closeable {
     }
 
     public void track(Collection<TrackedState> obj) throws IOException {
+        long currentTime = System.nanoTime();
+        long deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        writer.write(Long.toString(deltaTime));
         for (TrackedState o : obj) {
             for (Object x : o.trackedState()) {
                 writer.write(",");

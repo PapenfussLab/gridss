@@ -94,7 +94,7 @@ public class BreakendMaximalEvidenceCliqueIterator implements Iterator<VariantCo
 	@Override
 	public Object[] trackedState() {
 		return new Object[] {
-				activeByEnd.size(),
+				activeByEnd == null ? 0 : activeByEnd.size(),
 		};
 	}
 

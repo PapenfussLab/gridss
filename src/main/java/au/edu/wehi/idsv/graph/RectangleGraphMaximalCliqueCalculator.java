@@ -396,9 +396,9 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 	@Override
 	public Object[] trackedState() {
 		return new Object[] {
-				outBuffer.size(),
-				activeEndingX.size(),
-				activeScanlineEndingY.size(),
+				outBuffer == null ? 0 : outBuffer.size(),
+				activeEndingX == null ? 0 : activeEndingX.size(),
+				activeScanlineEndingY == null ? 0 : activeScanlineEndingY.size(),
 		};
 	}
 
