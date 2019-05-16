@@ -1,17 +1,22 @@
 package au.edu.wehi.idsv;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
+import au.edu.wehi.idsv.util.DuplicatingIterable;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.StateTracker;
 import au.edu.wehi.idsv.visualisation.TrackedState;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableList;
@@ -27,105 +32,95 @@ import htsjdk.samtools.util.CloserUtil;
  */
 public class VariantCallIterator implements CloseableIterator<VariantContextDirectedEvidence> {
 	private static final Log log = Log.getInstance(VariantCallIterator.class);
-	private static final List<Pair<BreakendDirection, BreakendDirection>> DIRECTION_ORDER = ImmutableList.of(
-			Pair.of(BreakendDirection.Forward, BreakendDirection.Forward),
-			Pair.of(BreakendDirection.Forward, BreakendDirection.Backward),
-			Pair.of(BreakendDirection.Backward, BreakendDirection.Forward),
-			Pair.of(BreakendDirection.Backward, BreakendDirection.Backward),
-			Pair.of(BreakendDirection.Forward, null),
-			Pair.of(BreakendDirection.Backward, null));
+	private static final int ITERATOR_BUFFER_SIZE = 256;
+	private final VariantContextDirectedEvidence endOfStream;
 	private final ProcessingContext processContext;
-	private final VariantIdGenerator idGenerator;
-	private final Supplier<Iterator<DirectedEvidence>> iteratorGenerator;
+	private final DuplicatingIterable<DirectedEvidence> iterable;
 	private final QueryInterval[] filterInterval;
-	private Iterator<? extends VariantContextDirectedEvidence> currentIterator;
-	private Iterator<DirectedEvidence> currentUnderlyingIterator;
-	private int currentDirectionOrdinal;
-	private VariantContextDirectedEvidence lastElement;
-	private StateTracker currentTracker;
-	private Collection<TrackedState> currentTrackedObjects;
-	private PositionTrackedState currentPositionTrackedState = new PositionTrackedState();
-
-	public VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence) throws InterruptedException {
+	private final ArrayBlockingQueue<VariantContextDirectedEvidence> outBuffer = new ArrayBlockingQueue<>(ITERATOR_BUFFER_SIZE);
+	private final List<AsyncDirectionalIterator> async = new ArrayList<>();
+	private int activeIterators;
+	private VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence, QueryInterval[] interval, int intervalNumber) {
+		this.endOfStream = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext)
+				.id("sentinel")
+				.chr("placeholder")
+				.start(1)
+				.stop(1)
+				.alleles("N", "N.")
+				.make();
 		this.processContext = processContext;
-		this.idGenerator = new SequentialIdGenerator("gridss");
-		this.iteratorGenerator = () -> evidence.iterator();
-		this.filterInterval = null;
-		this.currentDirectionOrdinal = 0;
-		reinitialiseIterator();
-	}
-	public VariantCallIterator(AggregateEvidenceSource source) {
-		this.processContext = source.getContext();
-		this.idGenerator = new SequentialIdGenerator("gridss");
-		this.iteratorGenerator = () -> source.iterator();
-		this.filterInterval = null;
-		this.currentDirectionOrdinal = 0;
-		reinitialiseIterator();
-	}
-	public VariantCallIterator(AggregateEvidenceSource source, QueryInterval[] interval, int intervalNumber) {
-		this.processContext = source.getContext();
-		this.idGenerator = new SequentialIdGenerator(String.format("gridss%d_", intervalNumber));
-		int expandBy = source.getMaxConcordantFragmentSize() + 1;
-		QueryInterval[] expanded = QueryIntervalUtil.padIntervals(processContext.getDictionary(), interval, expandBy);
-		this.iteratorGenerator = () -> source.iterator(expanded);
+		boolean callBreakends = processContext.getVariantCallingParameters().callBreakends;
+		this.activeIterators = callBreakends ? 6 : 4;
+		this.iterable = new DuplicatingIterable<>(activeIterators, evidence.iterator(), ITERATOR_BUFFER_SIZE);
 		this.filterInterval = interval;
-		this.currentDirectionOrdinal = 0;
-		reinitialiseIterator();
-	}
-	private void reinitialiseIterator() {	
-		assert(currentIterator == null || !currentIterator.hasNext());
-		CloserUtil.close(currentIterator);
-		CloserUtil.close(currentUnderlyingIterator);
-		if (currentDirectionOrdinal >= DIRECTION_ORDER.size()) return;
-		currentUnderlyingIterator = iteratorGenerator.get();
-		Pair<BreakendDirection, BreakendDirection> direction = DIRECTION_ORDER.get(currentDirectionOrdinal);
-		if (direction.getRight() != null) {
-			currentIterator = new MaximalEvidenceCliqueIterator(
-					processContext,
-					currentUnderlyingIterator,
-					direction.getLeft(),
-					direction.getRight(),
-					idGenerator);
-		} else {
-			if (processContext.getVariantCallingParameters().callBreakends) {
-				currentIterator = new BreakendMaximalEvidenceCliqueIterator(
+		for (BreakendDirection localDir : BreakendDirection.values()) {
+			for (BreakendDirection remoteDir : BreakendDirection.values()) {
+				MaximalEvidenceCliqueIterator it = new MaximalEvidenceCliqueIterator(
 						processContext,
-						currentUnderlyingIterator,
-						direction.getLeft(),
-						idGenerator);
-			} else {
-				if (currentIterator != null) {
-					try {
-						currentTracker.close();
-					} catch (IOException e) {
-						log.debug("Telemetry failure", e);
-					}
-					currentTracker = null;
-					currentTrackedObjects = null;
-				}
-				currentIterator = null;
+						this.iterable.iterator(),
+						localDir,
+						remoteDir,
+						new SequentialIdGenerator(String.format("gridss%d%s%s_", Math.max(intervalNumber, 0), localDir.toChar(), remoteDir.toChar())));
+				async.add(new AsyncDirectionalIterator(it, localDir, remoteDir));
+			}
+			if (callBreakends) {
+				BreakendMaximalEvidenceCliqueIterator it = new BreakendMaximalEvidenceCliqueIterator(
+						processContext,
+						this.iterable.iterator(),
+						localDir,
+						new SequentialIdGenerator(String.format("gridss%d%s_", Math.max(intervalNumber, 0), localDir.toChar())));
+				async.add(new AsyncDirectionalIterator(it, localDir, null));
 			}
 		}
-		if (currentIterator != null && processContext.getConfig().getVisualisation().maxCliqueTelemetry && currentIterator instanceof TrackedState) {
-			TrackedState ts = (TrackedState)currentIterator;
+	}
+
+	public VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence) {
+		this(processContext, evidence, null, -1);
+	}
+	public VariantCallIterator(AggregateEvidenceSource source) {
+		this(source, null, -1);
+	}
+	public VariantCallIterator(AggregateEvidenceSource source, QueryInterval[] interval, int intervalNumber) {
+		this(source.getContext(),
+				source,
+				QueryIntervalUtil.padIntervals(source.getContext().getDictionary(), interval, source.getMaxConcordantFragmentSize() + 1),
+				intervalNumber);
+	}
+	private class AsyncDirectionalIterator<T extends VariantContextDirectedEvidence> implements TrackedState, Closeable {
+		private Iterator<T> it;
+		private StateTracker currentTracker = null;
+		private Collection<TrackedState> currentTrackedObjects = null;
+		private T lastElement = null;
+		private Thread thread;
+		private volatile boolean shouldAbortImmediately = false;
+		public AsyncDirectionalIterator(Iterator<T> iterator, BreakendDirection dir1, BreakendDirection dir2) {
+			this.it = iterator;
 			String positionComponent = (filterInterval == null || filterInterval.length == 0) ? "" : String.format("_%s_%d",
 					processContext.getDictionary().getSequence(filterInterval[0].referenceIndex).getSequenceName(),
 					filterInterval[0].start);
-			String filename = String.format("maxclique%s_%s%s.csv", positionComponent, direction.getLeft(), direction.getRight());
-			File file = new File(processContext.getConfig().getVisualisation().directory, filename);
-			try {
-				currentTracker = new StateTracker(file);
-				currentTrackedObjects = Lists.newArrayList(Iterables.concat(ts.trackedObjects(), currentPositionTrackedState.trackedObjects()));
-				currentTracker.writeHeader(currentTrackedObjects);
-			} catch (IOException e) {
-				log.debug("Telemetry failure", e);
+			if (processContext.getConfig().getVisualisation().maxCliqueTelemetry && it instanceof TrackedState) {
+				TrackedState ts = (TrackedState)it;
+				String filename = String.format("maxclique%s_%s%s.csv", positionComponent, dir1.toChar(), dir2 == null ? "" : dir2.toChar());
+				File file = new File(processContext.getConfig().getVisualisation().directory, filename);
+				try {
+					this.currentTracker = new StateTracker(file);
+					this.currentTrackedObjects = Lists.newArrayList(Iterables.concat(ts.trackedObjects(), this.trackedObjects()));
+					this.currentTracker.writeHeader(currentTrackedObjects);
+				} catch (IOException e) {
+					log.debug("Telemetry failure", e);
+				}
 			}
+			this.it = filterInterval == null ? this.it : wrapFilter(filterInterval, this.it);
+			this.thread = new Thread(() -> run());
+			this.thread.setDaemon(true);
+			this.thread.setName("CallVariants " + positionComponent + dir1.toChar() + (dir2 == null ? "" : dir2.toChar()));
+			this.thread.start();
 		}
-		if (currentIterator != null && filterInterval != null) {
-			currentIterator = Iterators.filter(currentIterator, v -> {
+		private Iterator<T> wrapFilter(QueryInterval[] filterInterval, Iterator<T> it) {
+			return Iterators.filter(it, v -> {
 				if (v instanceof DirectedBreakpoint) {
 					BreakpointSummary bs = ((DirectedBreakpoint)v).getBreakendSummary();
-					return QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex, bs.start) || 
+					return QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex, bs.start) ||
 							QueryIntervalUtil.overlaps(filterInterval, bs.referenceIndex2, bs.start2);
 				} else {
 					BreakendSummary be = v.getBreakendSummary();
@@ -133,36 +128,25 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 				}
 			});
 		}
-	}
-	@Override
-	public boolean hasNext() {
-		if (currentDirectionOrdinal >= DIRECTION_ORDER.size()) return false;
-		while (currentIterator != null && currentDirectionOrdinal < DIRECTION_ORDER.size() && !currentIterator.hasNext()) {
-			currentDirectionOrdinal++;
-			reinitialiseIterator();
-		}
-		return currentIterator != null && currentIterator.hasNext();
-	}
-	@Override
-	public VariantContextDirectedEvidence next() {
-		if (!hasNext()) throw new NoSuchElementException();
-		lastElement = currentIterator.next();
-		if (currentTracker != null) {
+		public void run() {
+			while (it.hasNext() && !shouldAbortImmediately) {
+				lastElement = it.next();
+				outBuffer.add(lastElement);
+				if (currentTracker != null) {
+					try {
+						currentTracker.track(currentTrackedObjects);
+					} catch (IOException e) {
+						log.debug("Telemetry failure", e);
+					}
+				}
+			}
+			outBuffer.add(endOfStream);
 			try {
-				currentTracker.track(currentTrackedObjects);
+				currentTracker.close();
 			} catch (IOException e) {
-				log.debug("Telemetry failure", e);
+				log.debug("Telemetry failure during close()", e);
 			}
 		}
-		return lastElement;
-	}
-	@Override
-	public void close() {
-		CloserUtil.close(currentIterator);
-		CloserUtil.close(currentUnderlyingIterator);
-	}
-
-	private class PositionTrackedState implements TrackedState {
 		@Override
 		public String[] trackedNames() {
 			return new String[] {
@@ -183,6 +167,49 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 		public Collection<TrackedState> trackedObjects() {
 			return ImmutableList.of(this);
 		}
+
+		@Override
+		public void close() {
+			shouldAbortImmediately = true;
+		}
+	}
+
+	private void ensureNext() {
+		while (activeIterators > 0) {
+			VariantContextDirectedEvidence nextElement = outBuffer.peek();
+			if (nextElement == endOfStream) {
+				activeIterators--;
+			} else {
+				return;
+			}
+		}
+	}
+
+	@Override
+	public boolean hasNext() {
+		ensureNext();
+		return activeIterators > 0;
+	}
+
+	@Override
+	public VariantContextDirectedEvidence next() {
+		ensureNext();
+		if (activeIterators == 0) {
+			throw new NoSuchElementException();
+		}
+		try {
+			return outBuffer.take();
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public void close() {
+		for (AsyncDirectionalIterator adi : async) {
+			adi.close();
+		}
+		CloserUtil.close(iterable);
 	}
 }
  
