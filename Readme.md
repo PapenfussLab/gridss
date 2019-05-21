@@ -12,6 +12,8 @@ If you have any trouble running GRIDSS, please raise an issue using the Issues t
 
 [Click here to download GRIDSS](https://github.com/PapenfussLab/gridss/releases)
 
+Detailed documentation is being developed [here](https://github.com/PapenfussLab/gridss/wiki/GRIDSS-Documentation)
+
 # Citation
 
 For citing GRIDSS and for an overview of the GRIDSS algorithms, refer to our open access article: http://genome.cshlp.org/content/early/2017/11/02/gr.222109.117.abstract
