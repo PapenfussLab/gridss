@@ -31,7 +31,11 @@ public class GridssConfiguration {
 	/**
 	 * Fall-back mapq when no aligner mapping quality is reported  
 	 */
-	public double fallbackMapq;
+	public int fallbackMapq;
+	/**
+	 * Fall-back base quality score when no Q2 tag is present
+	 */
+	public int fallbackBaseq;
 	/**
 	 * Minimum entropy of anchored sequence (in bits) (Shannon entropy)
 	 */
@@ -109,7 +113,8 @@ public class GridssConfiguration {
 		scoring =  new ScoringConfiguration(config);
 		adapters = new AdapterHelper(config.getStringArray("adapter"));
 		minMapq = config.getDouble("minMapq");
-		fallbackMapq = config.getDouble("fallbackMapq");
+		fallbackMapq = config.getInt("fallbackMapq");
+		fallbackBaseq = config.getInt("fallbackBaseq");
 		maxCoverage = config.getInt("maxCoverage");
 		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		dovetailMargin = config.getInt("dovetailMargin");
