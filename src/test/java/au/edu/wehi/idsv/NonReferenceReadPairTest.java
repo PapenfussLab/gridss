@@ -1,14 +1,12 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
 
 import htsjdk.samtools.SAMRecord;
+
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.Assert.*;
 
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int expectedFragmentSize) {
@@ -388,5 +386,22 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertEquals(0, NRRP(DP(0, 1, "1M", true, 1, 3, "1M", true)).getStrandBias(), 0);
 		assertEquals(0, NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).getStrandBias(), 0);
 		assertEquals(1, NRRP(DP(0, 1, "1M", false, 1, 3, "1M", true)).getStrandBias(), 0);
+	}
+	@Test
+	public void create_should_drop_reads_with_missing_R2() {
+		SAMRecord r = RP(0, 100, 300, 101)[0];
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(SES(), r);
+		assertNull(nrrp);
+	}
+	@Test
+	public void create_should_use_fallback_baseq_with_missing_Q2() {
+		SAMRecord r = RP(0, 100, 3000, 5)[0];
+		r.setProperPairFlag(false);
+		r.setAttribute("R2", "ACGTT");
+		r.setAttribute("Q2", null);
+		r.setMateNegativeStrandFlag(false);
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(SES(), r);
+		assertEquals("ACGTT", new String(nrrp.getNonReferenceRead().getReadBases(), StandardCharsets.US_ASCII));
+		assertArrayEquals(new byte[] { 20, 20, 20, 20, 20}, nrrp.getNonReferenceRead().getBaseQualities());
 	}
 }

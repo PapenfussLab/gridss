@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -84,8 +85,8 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	}
 	public static NonReferenceReadPair create(SAMEvidenceSource source, SAMRecord record) {
 		if (!record.getReadPairedFlag()) return null;
-		if (record.getAttribute(SAMTag.R2.name()) == null || record.getAttribute(SAMTag.Q2.name()) == null) {
-			String msg = String.format("Read %s at %s:%d is missing R2/Q2 attribute containing mate information required by GRIDSS. Ignoring read",
+		if (record.getAttribute(SAMTag.R2.name()) == null) {
+			String msg = String.format("Read %s at %s:%d is missing R2 attribute containing mate information required by GRIDSS. Ignoring read",
 					record.getReadName(), record.getReferenceName(), record.getAlignmentStart());
 			log.error(msg);
 			return null;
@@ -93,8 +94,10 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		SAMRecord remote = new SAMRecord(record.getHeader());
 		remote.setReadUnmappedFlag(record.getMateUnmappedFlag());
 		byte[] r2 = record.getStringAttribute(SAMTag.R2.name()).getBytes(StandardCharsets.US_ASCII);
-		byte[] q2 = record.getStringAttribute(SAMTag.Q2.name()).getBytes(StandardCharsets.US_ASCII); 
-		SAMUtils.fastqToPhred(q2);
+		byte[] q2 = record.hasAttribute(SAMTag.Q2.name()) ? record.getStringAttribute(SAMTag.Q2.name()).getBytes(StandardCharsets.US_ASCII) : null;
+		if (q2 != null) {
+			SAMUtils.fastqToPhred(q2);
+		}
 		if (!remote.getReadUnmappedFlag()) {
 			remote.setReferenceIndex(record.getMateReferenceIndex());
 			remote.setAlignmentStart(record.getMateAlignmentStart());
@@ -103,7 +106,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 			if (record.getMateNegativeStrandFlag()) {
 				remote.setReadNegativeStrandFlag(true);
 				SequenceUtil.reverseComplement(r2);
-				ArrayUtils.reverse(q2);
+				if (q2 != null) {
+					ArrayUtils.reverse(q2);
+				}
 			}
 		}
 		remote.setReadName(record.getReadName());
@@ -111,6 +116,10 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		remote.setProperPairFlag(record.getProperPairFlag());
 		remote.setSecondaryAlignment(record.isSecondaryAlignment());
 		remote.setReadBases(r2);
+		if (q2 == null) {
+			q2 = new byte[r2.length];
+			Arrays.fill(q2, (byte)source.getContext().getConfig().fallbackBaseq);
+		}
 		remote.setBaseQualities(q2);
 		if (record.getFirstOfPairFlag()) {
 			remote.setSecondOfPairFlag(true);
