@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -37,9 +39,10 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private final ProcessingContext processContext;
 	private final DuplicatingIterable<DirectedEvidence> iterable;
 	private final QueryInterval[] filterInterval;
-	private final ArrayBlockingQueue<VariantContextDirectedEvidence> outBuffer = new ArrayBlockingQueue<>(ITERATOR_BUFFER_SIZE);
+	private final BlockingDeque<VariantContextDirectedEvidence> outBuffer = new LinkedBlockingDeque<>(ITERATOR_BUFFER_SIZE);
 	private final List<AsyncDirectionalIterator> async = new ArrayList<>();
 	private int activeIterators;
+	private volatile Exception workerThreadException;
 	private VariantCallIterator(ProcessingContext processContext, Iterable<DirectedEvidence> evidence, QueryInterval[] interval, int intervalNumber) {
 		this.endOfStream = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext)
 				.id("sentinel")
@@ -78,7 +81,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 		this(processContext, evidence, null, -1);
 	}
 	public VariantCallIterator(AggregateEvidenceSource source) {
-		this(source, null, -1);
+		this(source.getContext(), source, null, -1);
 	}
 	public VariantCallIterator(AggregateEvidenceSource source, QueryInterval[] interval, int intervalNumber) {
 		this(source.getContext(),
@@ -86,7 +89,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 				QueryIntervalUtil.padIntervals(source.getContext().getDictionary(), interval, source.getMaxConcordantFragmentSize() + 1),
 				intervalNumber);
 	}
-	private class AsyncDirectionalIterator<T extends VariantContextDirectedEvidence> implements TrackedState, Closeable {
+	public class AsyncDirectionalIterator<T extends VariantContextDirectedEvidence> implements TrackedState, Closeable {
 		private Iterator<T> it;
 		private StateTracker currentTracker = null;
 		private Collection<TrackedState> currentTrackedObjects = null;
@@ -129,22 +132,28 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 			});
 		}
 		public void run() {
-			while (it.hasNext() && !shouldAbortImmediately) {
-				lastElement = it.next();
-				outBuffer.add(lastElement);
-				if (currentTracker != null) {
-					try {
-						currentTracker.track(currentTrackedObjects);
-					} catch (IOException e) {
-						log.debug("Telemetry failure", e);
+			try {
+				while (it.hasNext() && !shouldAbortImmediately) {
+					lastElement = it.next();
+					outBuffer.add(lastElement);
+					if (currentTracker != null) {
+						try {
+							currentTracker.track(currentTrackedObjects);
+						} catch (IOException e) {
+							log.debug("Telemetry failure", e);
+						}
 					}
 				}
-			}
-			outBuffer.add(endOfStream);
-			try {
-				currentTracker.close();
-			} catch (IOException e) {
-				log.debug("Telemetry failure during close()", e);
+				outBuffer.add(endOfStream);
+				if (currentTracker != null) {
+					try {
+						currentTracker.close();
+					} catch (IOException e) {
+						log.debug("Telemetry failure during close()", e);
+					}
+				}
+			} catch (Exception e) {
+				workerThreadException = e;
 			}
 		}
 		@Override
@@ -175,26 +184,35 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	}
 
 	private void ensureNext() {
-		while (activeIterators > 0) {
-			VariantContextDirectedEvidence nextElement = outBuffer.peek();
-			if (nextElement == endOfStream) {
-				activeIterators--;
-			} else {
-				return;
+		try {
+			while (activeIterators > 0 && workerThreadException == null) {
+				VariantContextDirectedEvidence nextElement = outBuffer.takeFirst();
+				if (nextElement != endOfStream) {
+					outBuffer.putFirst(nextElement);
+					return;
+				} else {
+					activeIterators--;
+				}
 			}
+			if (workerThreadException != null) {
+				throw new RuntimeException(workerThreadException);
+			}
+		} catch (InterruptedException e) {
+			log.error(e);
+			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
 	public boolean hasNext() {
 		ensureNext();
-		return activeIterators > 0;
+		return !outBuffer.isEmpty();
 	}
 
 	@Override
 	public VariantContextDirectedEvidence next() {
 		ensureNext();
-		if (activeIterators == 0) {
+		if (activeIterators == 0 && outBuffer.isEmpty()) {
 			throw new NoSuchElementException();
 		}
 		try {

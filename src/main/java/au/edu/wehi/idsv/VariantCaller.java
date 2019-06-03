@@ -47,12 +47,12 @@ public class VariantCaller {
 		List<Future<Void>> tasks = new ArrayList<>();
 		
 		for (int i = 0; i < chunks.size(); i++) {
-			QueryInterval[] chunck = chunks.get(i);
+			QueryInterval[] chunk = chunks.get(i);
 			File f = processContext.getFileSystemContext().getVariantCallChunkVcf(vcf, i);
 			int chunkNumber = i;
 			calledChunk.add(f);
 			if (!f.exists()) {
-				tasks.add(threadpool.submit(() -> { callChunk(f, es, chunkNumber, chunck); return null; }));
+				tasks.add(threadpool.submit(() -> { callChunk(f, es, chunkNumber, chunk); return null; }));
 			}
 		}
 		runTasks(tasks);

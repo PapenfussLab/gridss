@@ -68,8 +68,8 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 	public Set<String> TAGS = Sets.newHashSet(
 			SAMTag.NM.name(),
 			SAMTag.SA.name(),
-			SAMTag.Q2.name(),
 			SAMTag.R2.name(),
+			//SAMTag.Q2.name(), // dropping Q2 to improve performance
 			SAMTag.MC.name(),
 			SAMTag.MQ.name());
 	@Override
