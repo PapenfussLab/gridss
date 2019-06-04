@@ -19,7 +19,7 @@ import htsjdk.samtools.SAMRecord;
 
 public class SequentialEvidenceAllocatorTest extends TestHelper {
 	@Test
-	public void should_uniquely_assign() throws IOException, InterruptedException, ExecutionException {
+	public void should_uniquely_assign() {
 		final int fragSize = 4;
 		final int testSize = 64;
 		final List<SAMRecord> in = new ArrayList<SAMRecord>();
