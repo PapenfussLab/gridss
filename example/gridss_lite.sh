@@ -5,44 +5,216 @@
 # This pipeline trades slightly lower sensitivity for improved runtime performance
 # by only performing assembly around putative high confidence breaks
 #
-REFERENCE=hg19.fa
-INPUT=chr12.1527326.DEL1024.bam
-OUTPUT=${INPUT/.bam/.targeted.sv.vcf}
-ASSEMBLY=${INPUT/.bam/.targeted.assembly.bam}
-GRIDSS_JAR=../target/gridss-2.2.3-gridss-jar-with-dependencies.jar
+set -o errexit -o pipefail -o noclobber -o nounset
+! getopt --test > /dev/null 
+if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
+    echo '`getopt --test` failed in this environment.'
+    exit 1
+fi
+USAGE_MESSAGE="gridss_lite.sh --reference <reference.fa> --output <output.vcf> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap <threads * 4>g] [--blacklist <blacklist.bed>] [--firstpassqual <250>] input1.bam input2.bam ..."
 
-# Extract the reads flanking each breakpoint, not just overlapping.
-# 2k is chosen since it it (should) be larger than the fragment size
-# distribution and provides enough reference-supporting read pairs that
-# bias in insert size distribution of the extract subset isn't too different
-# to that of the full file.
-REGION_PADDING_SIZE=2000
+OPTIONS=r:o:a:t:j:w:b:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,padding:,metricsrecords:,jvmheap:,blacklist:,firstpassqual:
+! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+    # e.g. return value is 1
+    #  then getopt has complained about wrong arguments to stdout
+	echo $USAGE_MESSAGE 1>&2
+    exit 2
+fi
+eval set -- "$PARSED"
+workingdir="./"
+reference=""
+output_vcf=""
+threads=$(nproc)
+gridss_jar=""
+padding=2000
+metricsrecords=1000000
+firstpassqual=250
+cleanup="y"
+jvmheap=""
+blacklist=""
+while true; do
+    case "$1" in
+        -r|--reference)
+            reference="$2"
+            shift 2
+            ;;
+		-w|--workingdir)
+            workingdir="$2"
+            shift 2
+            ;;
+        -o|--output)
+            output_vcf="$2"
+            shift 2
+            ;;
+		-a|--assembly)
+            assembly="$2"
+            shift 2
+            ;;
+		-b|--blacklist)
+            blacklist="$2"
+            shift 2
+            ;;
+		-j|--jar)
+            gridss_jar="$2"
+            shift 2
+            ;;
+		--jvmheap)
+            jvmheap="$2"
+            shift 2
+            ;;
+		-t|--threads)
+			printf -v threads '%d\n' "$2" 2>/dev/null
+			shift 2
+			;;
+		--padding)
+			printf -v padding '%d\n' "$2" 2>/dev/null
+            shift 2
+            ;;
+		--metricsrecords)
+			printf -v metricsrecords '%d\n' "$2" 2>/dev/null
+            shift 2
+            ;;
+		--firstpassqual)
+			printf -v firstpassqual '%d\n' "$2" 2>/dev/null
+            shift 2
+            ;;
+		--)
+            shift
+            break
+            ;;
+        *)
+            echo "Programming error"
+            exit 3
+            ;;
+    esac
+done
+if [[ "$gridss_jar" == "" ]] ; then
+	gridss_jar=$(ls -1 ./gridss*gridss-jar-with-dependencies.jar | tail -1)
+fi
+if [[ ! -f $jar ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
+	exit 2
+fi
+echo "Using GRIDSS jar $gridss_jar" 1>&2
+if [[ "$workingdir" == "" ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
+	exit 2
+else
+	if [[ ! -d $workingdir ]] ;
+		if ! mkdir -p $workingdir ; then
+			echo Unable to create working directory $workingdir 1>&2
+			exit 2
+		fi
+	fi
+	echo "Using working directory $workingdir" 1>&2
+fi
+if [[ "$assembly" == "" ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Specify assembly bam location using the --assembly command line argument" 1>&2
+fi
+if [[ "$reference" == "" ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Specify reference location using the --reference command line argument" 1>&2
+fi
+if [[ ! -f "$reference" ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Missing reference genome $reference" 1>&2
+fi
+if [[ ! -f ${reference}.fai -a ! -f ${reference/.fa.fai} ]]  ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Unable to find fai index for reference genome." 1>&2
+	echo "Please create using `samtools faidx $reference`" 1>&2
+fi
+echo "Using reference genome $reference" 1>&2
+if [[ "$output_vcf" == "" ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Output VCF must be specified. Specify using the --output command line argument" 1>&2
+	exit 2
+fi 
+echo "Using output VCF $output_vcf" 1>&2
+if [[ "$threads" -lt 1 ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Illegal thread count: $threads. Specify an integer thread count using the --threads command line argument" 1>&2
+	exit 2
+fi
+if [[ "$threads" -gt 8 ]] ; then
+	echo "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parrallelism." 1>&2
+fi
+if [[ "$padding" -lt 1 ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Invalid region padding size $padding." 1>&2
+	exit 2
+fi
+if [[ "$metricsrecords" -lt 1 ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Invalid number of metrics records to approximate library distributions from." 1>&2
+	exit 2
+fi
+if [[ "$firstpassqual" -lt 1 ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Invalid first pass quality score threshold." 1>&2
+	exit 2
+fi
+echo "Using first pass quality score threshold of $firstpassqual" 1>&2
+if [[ "$blacklist" == "" ]] ; then
+	blacklist_arg=""
+	echo "Using no blacklist bed. The encode DAC blacklist is recommended for hg19." 1>&2
+elif [[ ! -f $blacklist ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "Missing blacklist file $blacklist" 1>&2
+	exit 2
+else
+	blacklist_arg="BLACKLIST=$blacklist"
+	echo "Using blacklist $blacklist" 1>&2
+fi
+if [[ "$jvmheap" == "" ]] ; then
+	jvmheap="$((threads * 4))g"
+fi
+echo "Using JVM maximum heap size of $jvmheap." 1>&2
+if [[ "$@" == "" ]] ; then
+	echo $USAGE_MESSAGE  1>&2
+	echo "At least one input bam must be specified." 1>&2
+fi
+input_args=""
+for F in $@ ; then
+	echo "Using input file $F" 1>&2
+	input_args="$input_args INPUT=$F"
+fi
 
-# Number of reads for which to calculate metrics for
-STOP_METRICS_AFTER=1000000
-JVM_ARGS="-ea \
-	-Dreference_fasta="$REFERENCE" \
+# Validate tools exist on path
+if ! which samtools >/dev/null; then echo "Unable to find samtools on \$PATH" ; exit 2; fi
+
+# TODO make this a proper driver script with command line arg parsing
+
+workingdir=$workingdir/$(basename ${output_vcf}.gridss.lite.working)
+mkdir -p $workingdir
+cd $workingdir
+
+logfile=$workingdir/gridss.lite.$hostname.$$.log
+
+jvmargs="-ea \
+	-Dreference_fasta="$reference" \
 	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
 	-Dsamjdk.buffer_size=4194304 \
 	-Dgridss.gridss.output_to_temp_file=true \
-	-cp $GRIDSS_JAR "
-# for each input file
-for F in $INPUT ; do
-	TARGETED_BAM=$(dirname $INPUT)/$(basename $INPUT .bam).targeted.bam
-	GRIDSS_WORKING_DIR=./$(basename $TARGETED_BAM).gridss.working
-	TMP_DIR=./$(basename $TARGETED_BAM).gridss.working
-	echo "Calculate metrics for $F based on first $STOP_METRICS_AFTER reads"
-	# estimate metrics
-	mkdir -p $GRIDSS_WORKING_DIR
-	java -Xmx8g $JVM_ARGS gridss.analysis.CollectGridssMetrics \
-			TMP_DIR=$GRIDSS_WORKING_DIR \
+	-cp $gridss_jar "
+for input in $@ ; do
+	input_working_dir=$workingdir/$(basename $input).gridss.working
+	echo "Calculating metrics for $input based on first $metricsrecords reads" 1>&2
+	mkdir -p $input_working_dir
+	java -Xmx2g $jvmargs gridss.analysis.CollectGridssMetrics \
+			TMP_DIR=$input_working_dir \
 			ASSUME_SORTED=true \
-			I=$F \
-			O=$GRIDSS_WORKING_DIR/$(basename $TARGETED_BAM) \
-			THRESHOLD_COVERAGE=25000 \
+			I=$input \
+			O=$input_working_dir/$(basename $input) \
+			THRESHOLD_COVERAGE=50000 \
 			FILE_EXTENSION=null \
 			GRIDSS_PROGRAM=null \
 			GRIDSS_PROGRAM=CollectCigarMetrics \
@@ -52,65 +224,63 @@ for F in $INPUT ; do
 			GRIDSS_PROGRAM=ReportThresholdCoverage \
 			PROGRAM=null \
 			PROGRAM=CollectInsertSizeMetrics \
-			STOP_AFTER=$STOP_METRICS_AFTER \
-			| tee log.$F.collectgridssmetrics.log 
-	java -Xmx8g $JVM_ARGS gridss.analysis.CollectStructuralVariantReadMetrics \
-			TMP_DIR=$TMP_DIR \
-			I=$F \
-			OUTPUT=$GRIDSS_WORKING_DIR/$(basename $TARGETED_BAM).sv_metrics \
-			INSERT_SIZE_METRICS=$GRIDSS_WORKING_DIR/$(basename $TARGETED_BAM).insert_size_metrics \
-			STOP_AFTER=$STOP_METRICS_AFTER \
-			| tee log.$F.collectsvmetrics.log
-	# If no split reads 
+			STOP_AFTER=$metricsrecords \
+			2>&1 | tee -a $logfile
+	java -Xmx2g $jvmargs gridss.analysis.CollectStructuralVariantReadMetrics \
+			TMP_DIR=$input_working_dir \
+			I=$input \
+			OUTPUT=$input_working_dir/$(basename $input).sv_metrics \
+			INSERT_SIZE_METRICS=$input_working_dir/$(basename $input).insert_size_metrics \
+			STOP_AFTER=$metricsrecords \
+			2>&1 | tee -a $logfile
+	if ! grep -e "^SA" $input_working_dir/$(basename $input).tag_metrics 2> /dev/null ; then
+		echo "Input file is missing SA tag. "  1>&2
+		echo "GRIDSS lite requires the input file to contain split read alignments"  1>&2
+		echo "such as those output by bwa mem."  1>&2
+		echo "gridss.SoftClipsToSplitReads can be used to convert soft clipped reads to split reads."  1>&2
+		exit 3
+	fi
+	samtools view -H $F | samtools view -b empty.bam
 done
 
-# gridss.AllocateEvidence
-# Generate BED file around all 300+ QUAL variant
+mkdir -p $workingdir/empty.bam.gridss.working
+ln -s empty.bam $workingdir/empty.bam.gridss.working/empty.sv.bam
+samtools index empty.bam
+samtools index empty.sv.bam
 
-
-wait
-for F in $INPUT ; do
-	echo "Extracting all reads from fragments overlapping $REGIONS_OF_INTEREST from $F"
-	
-	# IndexedExtractFullReads is much faster than ExtractFullReads when
-	# using a small region of interest. Unfortunately, if the regions of
-	# interest are all SVs, the insert size distribution will be biased
-	## Don't perform async read-ahead for gridss.IndexedExtractFullReads
-	## as there's not point in performing read-ahead of reads we're going
-	## ignore anyway
-	JVM_ARGS_SINGLE_THREADED="-ea \
-			-Dreference_fasta="$REFERENCE" \
-			-Dsamjdk.create_index=true \
-			-Dsamjdk.use_async_io_write_samtools=true \
-			-Dgridss.gridss.output_to_temp_file=true \
-			-cp $GRIDSS_JAR "
-	java -Xmx8g $JVM_ARGS_SINGLE_THREADED \
-		gridss.IndexedExtractFullReads \
-		B=$REGIONS_OF_INTEREST \
-		REGION_PADDING_SIZE=$REGION_PADDING_SIZE \
-		I=$F \
-		O=$TARGETED_BAM 2>&1 | tee log.$F.extract.log &
-	
-	# If you are extracting a large portion of genome then
-	# you should perform a full pass of the input file as it will
-	# be faster than doing millions of index seeks()
-	#java -Xmx8g $JVM_ARGS gridss.CollectGridssMetricsAndExtractFullReads \
-	#	REGION_PADDING_SIZE=$REGION_PADDING_SIZE \
-	#	REGION_BED=$REGIONS_OF_INTEREST \
-	#	I=$F \
-	#	O=$TARGETED_BAM 2>&1 | tee log.$F.extract.log &
+# First pass: call only from RP and SR
+java gridss.IdentifyVariants \
+java -Xmx$jvmheap $jvmarg gridss.IdentifyVariants \
+			TMP_DIR=$workingdir \
+			WORKING_DIR=$workingdir \
+			REFERENCE_SEQUENCE=$reference \
+			$input_args \
+			OUTPUT_VCF=$workingdir/$output.firstpass.vcf \
+			ASSEMBLY=empty.bam \
+			WORKER_THREADS=$threads \
+			$blacklist_arg \
+			2>&1 | tee -a $logfile
+# grab interesting calls
+awk "	{ if (\$6 >= $firstpassqual) { print \$1 \"\t\" \$2 - 1 \"\t\" \$2 } } " $workingdir/$output.firstpass.vcf | grep -v "^#" > $workingdir/$output.roi.bed
+input_args=""
+for $input in $@ ; do
+	# extract the reads flanking the interesting calls
+	java-Xmx$jvmheap $jvmarg
+		gridss.ExtractFullReads \
+		B$workingdir/$output.roi.bed \
+		REGION_PADDING_SIZE=$padding \
+		I=$input \
+		O=$workingdir/$(basename $input) \
+		2>&1 | tee -a $logfile
+	input_args="$input_args INPUT=$workingdir/$(basename $input)"
 done
-wait
-
-# Run GRIDSS on the extracted files
-# warning: if you haven't increased your OS file ulimit above 4096 then will probably crash. Refer to the GRIDSS README for more details
-java -Xmx31g $JVM_ARGS \
-	-cp $GRIDSS_JAR gridss.CallVariants \
-	TMP_DIR=. \
-	WORKING_DIR=. \
-	REFERENCE_SEQUENCE=$REFERENCE \
-	INPUT=$(dirname $INPUT)/$(basename $INPUT .bam).targeted.bam \
-	OUTPUT=$OUTPUT \
-	ASSEMBLY=$ASSEMBLY \
-	WORKER_THREADS=16 \
-	2>&1 | tee -a log.gridss.$HOSTNAME.$$.log
+java -Xmx$jvmheap $jvmarg gridss.CallVariants
+	TMP_DIR=$workingdir \
+	WORKING_DIR=$workingdir \
+	REFERENCE_SEQUENCE=$reference \
+	$input_args \
+	OUTPUT_VCF=$output \
+	ASSEMBLY=$assembly \
+	WORKER_THREADS=$threads \
+	$blacklist_arg \
+	2>&1 | tee -a $logfile
