@@ -135,7 +135,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 			try {
 				while (it.hasNext() && !shouldAbortImmediately) {
 					lastElement = it.next();
-					outBuffer.add(lastElement);
+					outBuffer.putLast(lastElement);
 					if (currentTracker != null) {
 						try {
 							currentTracker.track(currentTrackedObjects);
@@ -144,7 +144,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 						}
 					}
 				}
-				outBuffer.add(endOfStream);
+				outBuffer.putLast(endOfStream);
 				if (currentTracker != null) {
 					try {
 						currentTracker.close();
@@ -216,7 +216,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 			throw new NoSuchElementException();
 		}
 		try {
-			return outBuffer.take();
+			return outBuffer.takeFirst();
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}

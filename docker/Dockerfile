@@ -32,6 +32,20 @@ RUN chmod 777 /data
 USER gridss
 RUN mkdir /data/gridss
 WORKDIR /data/gridss
-RUN wget https://github.com/PapenfussLab/gridss/releases/download/v2.2.3/gridss-2.2.3-gridss-jar-with-dependencies.jar
+RUN wget https://github.com/PapenfussLab/gridss/releases/download/v2.3.0/gridss-2.3.0-gridss-jar-with-dependencies.jar
 
-ENTRYPOINT ["java", "-ea", "-Xmx16g", "-Dsamjdk.create_index=true", "-Dsamjdk.use_async_io_read_samtools=true", "-Dsamjdk.use_async_io_write_samtools=true", "-Dsamjdk.use_async_io_write_tribble=true", "-Dgridss.gridss.output_to_temp_file=true", "-cp", "/data/gridss/gridss-2.2.3-gridss-jar-with-dependencies.jar", "gridss.CallVariants", "WORKER_THREADS=6"]
+ENTRYPOINT ["java",
+	"-ea",
+	"-XX:+UnlockExperimentalVMOptions", 
+	"-XX:+UseCGroupMemoryLimitForHeap", 
+	"-XX:MaxRAMFraction=1",
+	-XshowSettings:vm",
+	"-Dsamjdk.create_index=true",
+	"-Dsamjdk.use_async_io_read_samtools=true",
+	"-Dsamjdk.use_async_io_write_samtools=true",
+	"-Dsamjdk.use_async_io_write_tribble=true",
+	"-Dgridss.gridss.output_to_temp_file=true",
+	"-Dsamjdk.buffer_size=4194304",
+	"-cp",
+	"/data/gridss/gridss-2.3.0-gridss-jar-with-dependencies.jar",
+	"gridss.CallVariants"]
