@@ -155,11 +155,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				}
 			}
 		}
-		log.info("Breakend assembly complete.");
 		if (firstException != null) {
 			log.error(firstException, "Fatal error during assembly ");
 			throw new RuntimeException(firstException);
 		}
+		log.info("Breakend assembly complete.");
 	}
 	private void assembleChunk(File output, int chunkNumber, QueryInterval[] qi) throws IOException {
 		AssemblyIdGenerator assemblyNameGenerator = new SequentialIdGenerator(String.format("asm%d-", chunkNumber));

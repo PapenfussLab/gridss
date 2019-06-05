@@ -85,15 +85,12 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	}
 	public static NonReferenceReadPair create(SAMEvidenceSource source, SAMRecord record) {
 		if (!record.getReadPairedFlag()) return null;
-		if (record.getAttribute(SAMTag.R2.name()) == null) {
-			String msg = String.format("Read %s at %s:%d is missing R2 attribute containing mate information required by GRIDSS. Ignoring read",
-					record.getReadName(), record.getReferenceName(), record.getAlignmentStart());
-			log.error(msg);
-			return null;
-		}
 		SAMRecord remote = new SAMRecord(record.getHeader());
 		remote.setReadUnmappedFlag(record.getMateUnmappedFlag());
-		byte[] r2 = record.getStringAttribute(SAMTag.R2.name()).getBytes(StandardCharsets.US_ASCII);
+		byte[] r2 = SAMRecord.NULL_SEQUENCE;
+		if (record.hasAttribute(SAMTag.R2.name())) {
+			r2 = record.getStringAttribute(SAMTag.R2.name()).getBytes(StandardCharsets.US_ASCII);
+		}
 		byte[] q2 = record.hasAttribute(SAMTag.Q2.name()) ? record.getStringAttribute(SAMTag.Q2.name()).getBytes(StandardCharsets.US_ASCII) : null;
 		if (q2 != null) {
 			SAMUtils.fastqToPhred(q2);
@@ -101,8 +98,14 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		if (!remote.getReadUnmappedFlag()) {
 			remote.setReferenceIndex(record.getMateReferenceIndex());
 			remote.setAlignmentStart(record.getMateAlignmentStart());
-			remote.setCigarString(record.getStringAttribute(SAMTag.MC.name()));
-			remote.setMappingQuality(record.getIntegerAttribute(SAMTag.MQ.name()));
+			remote.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
+			if (record.hasAttribute(SAMTag.MC.name())) {
+				remote.setCigarString(record.getStringAttribute(SAMTag.MC.name()));
+			}
+			remote.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
+			if (record.hasAttribute(SAMTag.MQ.name())) {
+				remote.setMappingQuality(record.getIntegerAttribute(SAMTag.MQ.name()));
+			}
 			if (record.getMateNegativeStrandFlag()) {
 				remote.setReadNegativeStrandFlag(true);
 				SequenceUtil.reverseComplement(r2);

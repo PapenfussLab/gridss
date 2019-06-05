@@ -582,6 +582,7 @@ public class SAMRecordUtil {
 	 * @return number of bits of entropy
 	 */
 	public static double entropy(SAMRecord read) {
+		if (read.getReadBases() == null || read.getReadBases().length == 0) return 4;
 		double bits = au.edu.wehi.idsv.util.SequenceUtil.shannonEntropy(read.getReadBases(), 0, read.getReadLength());
 		return bits;
 	}
