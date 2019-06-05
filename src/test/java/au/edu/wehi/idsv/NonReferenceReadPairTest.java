@@ -388,10 +388,13 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertEquals(1, NRRP(DP(0, 1, "1M", false, 1, 3, "1M", true)).getStrandBias(), 0);
 	}
 	@Test
-	public void create_should_drop_reads_with_missing_R2() {
+	public void create_should_retain_reads_with_missing_R2() {
 		SAMRecord r = RP(0, 100, 300, 101)[0];
+		r.setAttribute("R2", null);
+		r.setAttribute("Q2", null);
+		r.setProperPairFlag(false);
 		NonReferenceReadPair nrrp = NonReferenceReadPair.create(SES(), r);
-		assertNull(nrrp);
+		assertNotNull(nrrp);
 	}
 	@Test
 	public void create_should_use_fallback_baseq_with_missing_Q2() {

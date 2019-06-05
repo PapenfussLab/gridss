@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
+import htsjdk.samtools.util.Log;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
@@ -34,6 +35,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
  *
  */
 public class KmerEvidence extends PackedKmerList {
+	private static final Log log = Log.getInstance(KmerEvidence.class);
 	// TODO: turn into subclasses
 	// - soft clip can store end and BreakendSummary implicitly
 	// - read pair can store anchor position & direction instead of breakend & anchor
@@ -197,6 +199,12 @@ public class KmerEvidence extends PackedKmerList {
 			//          -----> 
 			startPosition = local.getUnclippedEnd() - maxFragSize + 1;
 			endPosition = local.getUnclippedEnd() - minFragSize + 1;
+		}
+		if (remote.getReadBases() == null || remote.getReadBases().length == 0) {
+			String msg = String.format("Read %s at %s:%d is missing R2 attribute containing mate information required by GRIDSS. Unable to assemble read",
+					local.getReadName(), local.getReferenceName(), local.getAlignmentStart());
+			log.error(msg);
+			return null;
 		}
 		return new KmerEvidence(pair, startPosition, endPosition, k, -1, -1, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendQual());
 	}

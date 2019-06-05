@@ -11,7 +11,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     echo '`getopt --test` failed in this environment.'
     exit 1
 fi
-USAGE_MESSAGE="gridss_lite.sh --reference <reference.fa> --output <output.vcf> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap <threads * 4>g] [--blacklist <blacklist.bed>] [--firstpassqual <250>] input1.bam input2.bam ..."
+USAGE_MESSAGE="gridss_lite.sh --reference <reference.fa> --output <output.vcf> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap <threads * 4>g] [--blacklist <blacklist.bed>] [--firstpassqual <250>] input1.bam [input2.bam [...]]"
 
 OPTIONS=r:o:a:t:j:w:b:
 LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,padding:,metricsrecords:,jvmheap:,blacklist:,firstpassqual:
@@ -29,7 +29,7 @@ output_vcf=""
 threads=$(nproc)
 gridss_jar=""
 padding=2000
-metricsrecords=1000000
+metricsrecords=10000000
 firstpassqual=250
 cleanup="y"
 jvmheap=""
@@ -93,7 +93,7 @@ done
 if [[ "$gridss_jar" == "" ]] ; then
 	gridss_jar=$(ls -1 ./gridss*gridss-jar-with-dependencies.jar | tail -1)
 fi
-if [[ ! -f $jar ]] ; then
+if [[ ! -f $gridss_jar ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
 	exit 2
@@ -104,7 +104,7 @@ if [[ "$workingdir" == "" ]] ; then
 	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
 	exit 2
 else
-	if [[ ! -d $workingdir ]] ;
+	if [[ ! -d $workingdir ]] ; then
 		if ! mkdir -p $workingdir ; then
 			echo Unable to create working directory $workingdir 1>&2
 			exit 2
@@ -124,7 +124,7 @@ if [[ ! -f "$reference" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Missing reference genome $reference" 1>&2
 fi
-if [[ ! -f ${reference}.fai -a ! -f ${reference/.fa.fai} ]]  ; then
+if [[ ! -f ${reference}.fai ]] && [[ ! -f ${reference/.fa/.fai} ]] && [[ ! -f ${reference/.faasta/.fai} ]]  ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Unable to find fai index for reference genome." 1>&2
 	echo "Please create using `samtools faidx $reference`" 1>&2
@@ -174,16 +174,16 @@ fi
 if [[ "$jvmheap" == "" ]] ; then
 	jvmheap="$((threads * 4))g"
 fi
-echo "Using JVM maximum heap size of $jvmheap." 1>&2
+echo "Using JVM maximum heap size of $jvmheap" 1>&2
 if [[ "$@" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "At least one input bam must be specified." 1>&2
 fi
 input_args=""
-for F in $@ ; then
+for F in $@ ; do
 	echo "Using input file $F" 1>&2
 	input_args="$input_args INPUT=$F"
-fi
+done
 
 # Validate tools exist on path
 if ! which samtools >/dev/null; then echo "Unable to find samtools on \$PATH" ; exit 2; fi
@@ -194,8 +194,9 @@ workingdir=$workingdir/$(basename ${output_vcf}.gridss.lite.working)
 mkdir -p $workingdir
 cd $workingdir
 
-logfile=$workingdir/gridss.lite.$hostname.$$.log
-
+logfile=$workingdir/gridss.lite.$HOSTNAME.$$.log
+firstpassvcf=$workingdir/$(basename $output_vcf).firstpass.vcf
+regionbed=$workingdir/$(basename $output_vcf).firstpass.bed
 jvmargs="-ea \
 	-Dreference_fasta="$reference" \
 	-Dsamjdk.create_index=true \
@@ -235,51 +236,68 @@ for input in $@ ; do
 			2>&1 | tee -a $logfile
 	if ! grep -e "^SA" $input_working_dir/$(basename $input).tag_metrics 2> /dev/null ; then
 		echo "Input file is missing SA tag. "  1>&2
-		echo "GRIDSS lite requires the input file to contain split read alignments"  1>&2
+		echo "GRIDSS lite requires the input file to contain split read alignments" 1>&2
 		echo "such as those output by bwa mem."  1>&2
 		echo "gridss.SoftClipsToSplitReads can be used to convert soft clipped reads to split reads."  1>&2
 		exit 3
 	fi
-	samtools view -H $F | samtools view -b empty.bam
+	if [[ ! -f $workingdir/empty.bam ]] ; then
+		samtools view -H $F | samtools view -b > $workingdir/empty.bam
+	fi
+	sv_bam=$input_working_dir/$(basename $input).sv.bam
+	ln -s $input $sv_bam
+	if [[ -f $input.bai ]] ; then
+		ln -s $input.bai $sv_bam.bai
+	elif [[ -f ${input/.bam/.bai} ]] ; then
+		ln -s ${input/.bam/.bai} $sv_bam.bai
+	else
+		echo "Cannot file .bai index for $input" 1>&2
+		exit 4
+	fi
 done
 
 mkdir -p $workingdir/empty.bam.gridss.working
-ln -s empty.bam $workingdir/empty.bam.gridss.working/empty.sv.bam
-samtools index empty.bam
-samtools index empty.sv.bam
+if [[ ! -f $workingdir/empty.bam.gridss.working/empty.bam.sv.bam ]] ; then
+	ln -s $workingdir/empty.bam $workingdir/empty.bam.gridss.working/empty.bam.sv.bam
+fi
+samtools index $workingdir/empty.bam
+samtools index $workingdir/empty.bam.gridss.working/empty.bam.sv.bam
 
+#TODO: R2 error should only be output when performing assembly
 # First pass: call only from RP and SR
-java gridss.IdentifyVariants \
-java -Xmx$jvmheap $jvmarg gridss.IdentifyVariants \
+java -Xmx$jvmheap $jvmargs gridss.IdentifyVariants \
 			TMP_DIR=$workingdir \
 			WORKING_DIR=$workingdir \
 			REFERENCE_SEQUENCE=$reference \
 			$input_args \
-			OUTPUT_VCF=$workingdir/$output.firstpass.vcf \
+			OUTPUT_VCF=$firstpassvcf \
 			ASSEMBLY=empty.bam \
 			WORKER_THREADS=$threads \
 			$blacklist_arg \
 			2>&1 | tee -a $logfile
 # grab interesting calls
-awk "	{ if (\$6 >= $firstpassqual) { print \$1 \"\t\" \$2 - 1 \"\t\" \$2 } } " $workingdir/$output.firstpass.vcf | grep -v "^#" > $workingdir/$output.roi.bed
+awk "	{ if (\$6 >= $firstpassqual) { print \$1 \"\t\" \$2 - 1 \"\t\" \$2 } } " $firstpassvcf | grep -v "^#" > $regionbed
 input_args=""
 for $input in $@ ; do
 	# extract the reads flanking the interesting calls
-	java-Xmx$jvmheap $jvmarg
+	java-Xmx$jvmheap $jvmargs
 		gridss.ExtractFullReads \
-		B$workingdir/$output.roi.bed \
+		B=$regionbed \
 		REGION_PADDING_SIZE=$padding \
 		I=$input \
 		O=$workingdir/$(basename $input) \
 		2>&1 | tee -a $logfile
+	# remove the syymlink so GRIDSS will create a targeted sv.bam
+	# with appropriate tags (e.g. R2)
+	rm $workingdir/$(basename $input).gridss.working/*.sv.ba*
 	input_args="$input_args INPUT=$workingdir/$(basename $input)"
 done
-java -Xmx$jvmheap $jvmarg gridss.CallVariants
+echo java -Xmx$jvmheap $jvmargs gridss.CallVariants
 	TMP_DIR=$workingdir \
 	WORKING_DIR=$workingdir \
 	REFERENCE_SEQUENCE=$reference \
 	$input_args \
-	OUTPUT_VCF=$output \
+	OUTPUT_VCF=$output_vcf \
 	ASSEMBLY=$assembly \
 	WORKER_THREADS=$threads \
 	$blacklist_arg \

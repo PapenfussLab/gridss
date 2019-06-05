@@ -320,6 +320,12 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(2, SAMRecordUtil.entropy(withSequence("ACGT", Read(0, 1, "3S1M"))[0]), 0);
 	}
 	@Test
+	public void entropy_of_unspecified_sequence_should_be_4() {
+		SAMRecord r = Read(0, 1, "3S1M");
+		r.setReadBases(null);
+		assertEquals(4, SAMRecordUtil.entropy(r), 0);
+	}
+	@Test
 	public void getAlignedPercentIdentity_should_match_only_mapped_bases() {
 		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAAAAA", Read(0, 1, "1S5M")))[0]), 0);
 		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NTAAAT", Read(0, 1, "2S3M1S")))[0]), 0);
