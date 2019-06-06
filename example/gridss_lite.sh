@@ -269,6 +269,7 @@ samtools index $workingdir/empty.bam.gridss.working/empty.bam.sv.bam
 #TODO: Use a configuration file to filter to Q250 instead of an awk script
 #TODO: Add timing to maximal clique chunk timing (cut/paste from assembly timing)
 # First pass: call only from RP and SR
+echo "variantcalling.minScore=$firstpassqual" > $workingdir/firstpass.properties
 java -Xmx$jvmheap $jvmargs gridss.IdentifyVariants \
 			TMP_DIR=$workingdir \
 			WORKING_DIR=$workingdir \
@@ -277,6 +278,7 @@ java -Xmx$jvmheap $jvmargs gridss.IdentifyVariants \
 			OUTPUT_VCF=$firstpassvcf \
 			ASSEMBLY=empty.bam \
 			WORKER_THREADS=$threads \
+			CONFIGURATION_FILE=$workingdir/firstpass.properties \
 			$blacklist_arg \
 			2>&1 | tee -a $logfile
 # grab interesting calls

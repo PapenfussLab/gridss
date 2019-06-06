@@ -94,8 +94,7 @@ public class IntervalBed {
 		if (interval == null) {
 			return false;
 		}
-		RangeSet<Long> hits = intervals.subRangeSet(interval);
-		return !hits.isEmpty();
+		return intervals.intersects(interval);
 	}
 	/**
 	 * Removes the given set of intervals
