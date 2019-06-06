@@ -333,9 +333,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 			int mateRef = r.getMateReferenceIndex();
 			int mateStart = r.getMateAlignmentStart();
 			int mateEnd = mateStart;
-			String mc = r.getStringAttribute(SAMTag.MC.name());
-			if (mc != null) {
-				Cigar mateCigar = TextCigarCodec.decode(mc);
+			Cigar mateCigar = SAMRecordUtil.getCachedMateCigar(r);
+			if (mateCigar != null) {
 				mateEnd += mateCigar.getReferenceLength() - 1;
 			}
 			if (getBlacklistedRegions().overlaps(mateRef, mateStart, mateEnd)) {

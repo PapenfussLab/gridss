@@ -266,11 +266,7 @@ public class SAMRecordUtil {
 		if (record.getReadUnmappedFlag()) return false;
 		if (!record.getReadPairedFlag()) return false;
 		if (record.getMateUnmappedFlag()) return false;
-		Cigar cigar2 = null;
-		String mc = record.getStringAttribute(SAMTag.MC.name());
-		if (mc != null) {
-			cigar2 = TextCigarCodec.decode(mc);
-		}
+		Cigar cigar2 = SAMRecordUtil.getCachedMateCigar(record);
 		return isDovetailing(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadNegativeStrandFlag(),
 				record.getCigar(), record.getMateReferenceIndex(), record.getMateAlignmentStart(),
 				record.getMateNegativeStrandFlag(), cigar2, expectedOrientation, margin);
@@ -382,7 +378,7 @@ public class SAMRecordUtil {
 			return r2end - r1start + 1;
 		}
 	}
-	
+
 	/**
 	 * Estimates the size of sequenced fragment
 	 * 
@@ -400,25 +396,25 @@ public class SAMRecordUtil {
 			return 0;
 		}
 		// Assuming FR orientation, adapter sequences have been removed
-		Cigar mc = SAMUtils.getMateCigar(record);
+		Cigar mc = SAMRecordUtil.getCachedMateCigar(record);
 		if (record.getReadNegativeStrandFlag()) {
 			// <--record
 			int r1end = record.getUnclippedEnd();
 			int r2start = mc == null ?
 					// if we don't have a mate cigar we'll just assume that there are is no clipping in the alignment
 					record.getMateAlignmentStart() :
-					SAMUtils.getMateUnclippedStart(record);
+					SAMUtils.getUnclippedStart(record.getMateAlignmentStart(), mc);
 			return r1end - r2start + 1;
 		} else {
 			int r1start = record.getUnclippedStart();
 			int r2end = mc == null ?
 					// no MC tag: we have to assume no clipping and the reads are the same length
 					record.getMateAlignmentStart() + CigarUtil.readLength(record.getCigar().getCigarElements()) + CigarUtil.countBases(record.getCigar(), CigarOperator.HARD_CLIP) - 1:
-					SAMUtils.getMateUnclippedEnd(record);
+					SAMUtils.getUnclippedEnd(record.getMateAlignmentStart() + mc.getReferenceLength() - 1, mc);
 			return r2end - r1start + 1;
 		}
 	}
-	
+
 	/**
 	 * Updates the two reads to indicate the form a read pair
 	 * 
@@ -889,6 +885,7 @@ public class SAMRecordUtil {
 			// resort so we match up the primary records last
 			currentSegment.sort(Comparator.comparing(SAMRecord::isSecondaryAlignment).reversed());
 			for (SAMRecord r : currentSegment) {
+				r.removeTransientAttribute(SAMTag.MC.name());
 				if (r.getSupplementaryAlignmentFlag()) {
 					SAMRecord primary = getPrimarySplitAlignmentFor(r, currentSegment);
 					SAMRecord mate = bestMateFor(primary, nextSegment);
@@ -938,6 +935,7 @@ public class SAMRecordUtil {
 			r.setAttribute(SAMTag.MQ.name(), null);
 			r.setAttribute(SAMTag.R2.name(), null);
 			r.setAttribute(SAMTag.Q2.name(), null);
+			r.removeTransientAttribute(SAMTag.MC.name());
 		}
 	}
 
@@ -1542,6 +1540,20 @@ public class SAMRecordUtil {
 			.filter(ce -> ce.getOperator() == CigarOperator.HARD_CLIP)
 			.mapToInt(ce -> ce.getLength()).sum();
 		return lengthWithHardClipping;
+	}
+	public static Cigar getCachedMateCigar(SAMRecord r) {
+		Object cached = r.getTransientAttribute(SAMTag.MC.name());
+		if (cached != null) {
+			return (Cigar)cached;
+		} else {
+			String s = r.getStringAttribute(SAMTag.MC.name());
+			if (s != null) {
+				Cigar cigar = TextCigarCodec.decode(s);
+				r.setTransientAttribute(cigar, SAMTag.MC.name());
+				return cigar;
+			}
+		}
+		return null;
 	}
 }
 

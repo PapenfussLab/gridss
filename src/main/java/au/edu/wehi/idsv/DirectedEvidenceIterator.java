@@ -35,11 +35,12 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 		}
 	}
 	private void addToBuffer(SAMRecord record) {
+		if (record.getMappingQuality() < source.getContext().getConfig().minMapq) {
+			return;
+		}
 		buffer.addAll(SingleReadEvidence.createEvidence(source, minIndelSize, record));
 		if (!record.getSupplementaryAlignmentFlag()) {
-			if (record.getReadPairedFlag()
-					&& !record.getReadUnmappedFlag()
-					&& !source.getReadPairConcordanceCalculator().isConcordant(record)) {
+			if (NonReferenceReadPair.meetsAnchorCriteria(source, record)) {
 				NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
 				if (nrrp != null) {
 					buffer.add(nrrp);

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import htsjdk.samtools.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -12,11 +13,6 @@ import com.google.common.collect.ImmutableList;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MathUtil;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SAMUtils;
-import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
@@ -99,8 +95,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 			remote.setReferenceIndex(record.getMateReferenceIndex());
 			remote.setAlignmentStart(record.getMateAlignmentStart());
 			remote.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
-			if (record.hasAttribute(SAMTag.MC.name())) {
-				remote.setCigarString(record.getStringAttribute(SAMTag.MC.name()));
+			Cigar mateCigar = SAMRecordUtil.getCachedMateCigar(record);
+			if (mateCigar != null) {
+				remote.setCigar(mateCigar);
 			}
 			remote.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
 			if (record.hasAttribute(SAMTag.MQ.name())) {
