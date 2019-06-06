@@ -40,6 +40,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private final DuplicatingIterable<DirectedEvidence> iterable;
 	private final QueryInterval[] filterInterval;
 	private final BlockingDeque<VariantContextDirectedEvidence> outBuffer = new LinkedBlockingDeque<>(ITERATOR_BUFFER_SIZE);
+	private VariantContextDirectedEvidence outBufferHeadNextValidRecord = null;
 	private final List<AsyncDirectionalIterator> async = new ArrayList<>();
 	private int activeIterators;
 	private volatile Exception workerThreadException;
@@ -184,42 +185,42 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	}
 
 	private void ensureNext() {
-		try {
-			while (activeIterators > 0 && workerThreadException == null) {
-				VariantContextDirectedEvidence nextElement = outBuffer.takeFirst();
-				if (nextElement != endOfStream) {
-					outBuffer.putFirst(nextElement);
-					return;
-				} else {
-					activeIterators--;
+		if (outBufferHeadNextValidRecord == null) {
+			try {
+				while (activeIterators > 0 && workerThreadException == null) {
+					VariantContextDirectedEvidence nextElement = outBuffer.takeFirst();
+					if (nextElement != endOfStream) {
+						outBufferHeadNextValidRecord = nextElement;
+						return;
+					} else {
+						activeIterators--;
+					}
 				}
+				if (workerThreadException != null) {
+					throw new RuntimeException(workerThreadException);
+				}
+			} catch (InterruptedException e) {
+				log.error(e);
+				throw new RuntimeException(e);
 			}
-			if (workerThreadException != null) {
-				throw new RuntimeException(workerThreadException);
-			}
-		} catch (InterruptedException e) {
-			log.error(e);
-			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
 	public boolean hasNext() {
 		ensureNext();
-		return !outBuffer.isEmpty();
+		return outBufferHeadNextValidRecord != null;
 	}
 
 	@Override
 	public VariantContextDirectedEvidence next() {
 		ensureNext();
-		if (activeIterators == 0 && outBuffer.isEmpty()) {
+		if (outBufferHeadNextValidRecord == null) {
 			throw new NoSuchElementException();
 		}
-		try {
-			return outBuffer.takeFirst();
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
+		VariantContextDirectedEvidence result = outBufferHeadNextValidRecord;
+		outBufferHeadNextValidRecord = null;
+		return result;
 	}
 
 	@Override
