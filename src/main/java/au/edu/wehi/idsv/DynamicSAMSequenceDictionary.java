@@ -19,7 +19,7 @@ public class DynamicSAMSequenceDictionary extends SAMSequenceDictionary {
 	public SAMSequenceRecord getSequence(String name) {
 		SAMSequenceRecord seq = super.getSequence(name); 
 		if (seq == null) {
-			addSequence(new SAMSequenceRecord(name, 0));
+			addSequence(name);
 		}
 		return super.getSequence(name);
 	}
@@ -27,8 +27,14 @@ public class DynamicSAMSequenceDictionary extends SAMSequenceDictionary {
 	public int getSequenceIndex(String sequenceName) {
 		int index = super.getSequenceIndex(sequenceName); 
 		if (index < 0) {
-			addSequence(new SAMSequenceRecord(sequenceName, 0));
+			addSequence(sequenceName);
 		}
 		return super.getSequenceIndex(sequenceName);
+	}
+	private synchronized void addSequence(String sequence) {
+		int index = super.getSequenceIndex(sequence);
+		if (index < 0) {
+			addSequence(new SAMSequenceRecord(sequence, 0));
+		}
 	}
 }
