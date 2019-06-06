@@ -40,7 +40,9 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 		}
 		buffer.addAll(SingleReadEvidence.createEvidence(source, minIndelSize, record));
 		if (!record.getSupplementaryAlignmentFlag()) {
-			if (NonReferenceReadPair.meetsAnchorCriteria(source, record)) {
+			if (record.getReadPairedFlag()
+					&& !record.getReadUnmappedFlag()
+					&& !source.getReadPairConcordanceCalculator().isConcordant(record)) {
 				NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
 				if (nrrp != null) {
 					buffer.add(nrrp);
