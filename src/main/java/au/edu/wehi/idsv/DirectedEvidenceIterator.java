@@ -35,7 +35,7 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 		}
 	}
 	private void addToBuffer(SAMRecord record) {
-		if (record.getMappingQuality() < source.getContext().getConfig().minMapq) {
+		if (record.getReadUnmappedFlag() || record.getMappingQuality() < source.getContext().getConfig().minMapq) {
 			return;
 		}
 		buffer.addAll(SingleReadEvidence.createEvidence(source, minIndelSize, record));

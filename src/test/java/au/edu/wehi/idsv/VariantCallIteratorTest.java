@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -19,7 +20,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 	public void margin_should_expand_and_contract_past_chromosome_end()  {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, BWD, 1, 0, FWD, POLY_A.length)));
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(2, result.size());
 		assertTrue(result.get(0) instanceof VariantContextDirectedBreakpoint);
@@ -31,7 +32,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(SR(withSequence("TTTT", Read(0, 10, "1M3S"))[0], withSequence("TTT", Read(1, 10, "3M"))[0]));
 		list.add(SR(withSequence("TTTT", Read(0, 11, "1M3S"))[0], withSequence("TTT", Read(1, 11, "3M"))[0]));
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(4, result.size());
 	}
@@ -40,7 +41,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 10, 10, 20, 1, BWD, 30, 30, 40)));
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 15, 15, 25, 1, BWD, 35, 35, 45)));
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(2, result.size());
 		assertEquals(new BreakpointSummary(0, FWD, 17, 15, 20, 1, BWD, 37, 35, 40), result.get(0).getBreakendSummary());
@@ -49,7 +50,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 	public void singleton_should_call_both_breakends() {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 15, 10, 20, 1, BWD, 30, 30, 40)));
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(2, result.size());
 		assertTrue(result.get(0) instanceof VariantContextDirectedBreakpoint);
@@ -60,7 +61,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 	public void should_rethrow_worker_thread_exceptions() {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, -1, -1, -1, 1, BWD, 30, 30, 40)));
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		Lists.newArrayList(ecp);
 	}
 	@Test
@@ -70,7 +71,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 10, 10, 20, 1, BWD, 30, 30, 40)));
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, BWD, 10, 10, 20, 1, FWD, 30, 30, 40)));
 		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, BWD, 10, 10, 20, 1, BWD, 30, 30, 40)));
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(4 * 2, result.size());
 	}
@@ -92,7 +93,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(SCE(FWD, Read(0, 1, "10M10S")));
 		list.add(SCE(BWD, Read(0, 100, "10S10M")));
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(2, result.size());
 	}
@@ -102,7 +103,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		for (int i = 0; i < 1024; i++) {
 			list.add(SCE(FWD, Read(0, i, "10M10S")));
 		}
-		VariantCallIterator ecp = new VariantCallIterator(getContext(), list);
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(1024, result.size());
 	}
