@@ -8,14 +8,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.*;
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import com.google.common.collect.*;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
-import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
@@ -27,7 +25,6 @@ import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
-import org.apache.commons.lang3.tuple.Pair;
 
 
 /**
