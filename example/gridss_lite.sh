@@ -98,12 +98,14 @@ if [[ ! -f $gridss_jar ]] ; then
 	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
 	exit 2
 fi
+gridss_jar=$(readlink -f $gridss_jar)
 echo "Using GRIDSS jar $gridss_jar" 1>&2
 if [[ "$workingdir" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
 	exit 2
 else
+	workingdir=$(readlink -f $workingdir)
 	if [[ ! -d $workingdir ]] ; then
 		if ! mkdir -p $workingdir ; then
 			echo Unable to create working directory $workingdir 1>&2
@@ -116,10 +118,12 @@ if [[ "$assembly" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Specify assembly bam location using the --assembly command line argument" 1>&2
 fi
+assembly=$(readlink -f $assembly)
 if [[ "$reference" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Specify reference location using the --reference command line argument" 1>&2
 fi
+reference=$(readlink -f $reference)
 if [[ ! -f "$reference" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Missing reference genome $reference" 1>&2
@@ -130,6 +134,7 @@ if [[ ! -f ${reference}.fai ]] && [[ ! -f ${reference/.fa/.fai} ]] && [[ ! -f ${
 	echo "Please create using `samtools faidx $reference`" 1>&2
 fi
 echo "Using reference genome $reference" 1>&2
+output_vcf=$(readlink -f $output_vcf)
 if [[ "$output_vcf" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Output VCF must be specified. Specify using the --output command line argument" 1>&2
@@ -144,6 +149,7 @@ fi
 if [[ "$threads" -gt 8 ]] ; then
 	echo "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parrallelism." 1>&2
 fi
+echo "Using no $threads worker threads." 1>&2
 if [[ "$padding" -lt 1 ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Invalid region padding size $padding." 1>&2
@@ -168,7 +174,7 @@ elif [[ ! -f $blacklist ]] ; then
 	echo "Missing blacklist file $blacklist" 1>&2
 	exit 2
 else
-	blacklist_arg="BLACKLIST=$blacklist"
+	blacklist_arg="BLACKLIST=$(readlink -f $blacklist)"
 	echo "Using blacklist $blacklist" 1>&2
 fi
 if [[ "$jvmheap" == "" ]] ; then
@@ -179,8 +185,13 @@ if [[ "$@" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "At least one input bam must be specified." 1>&2
 fi
-input_args=""
+input_files=""
 for F in $@ ; do
+	F=$(readlink -f $F)
+	input_files="$input_files $F"
+done
+input_args=""
+for F in $input_files ; do
 	echo "Using input file $F" 1>&2
 	input_args="$input_args INPUT=$F"
 done
@@ -206,7 +217,7 @@ jvmargs="-ea \
 	-Dsamjdk.buffer_size=4194304 \
 	-Dgridss.gridss.output_to_temp_file=true \
 	-cp $gridss_jar "
-for input in $@ ; do
+for input in $input_files ; do
 	input_working_dir=$workingdir/$(basename $input).gridss.working
 	echo "Calculating metrics for $input based on first $metricsrecords reads" 1>&2
 	mkdir -p $input_working_dir
@@ -277,29 +288,28 @@ java -Xmx$jvmheap $jvmargs gridss.IdentifyVariants \
 			CONFIGURATION_FILE=$workingdir/firstpass.properties \
 			$blacklist_arg \
 			2>&1 | tee -a $logfile
-# grab interesting calls
-awk "	{ if (\$6 >= $firstpassqual) { print \$1 \"\t\" \$2 - 1 \"\t\" \$2 } } " $firstpassvcf | grep -v "^#" > $regionbed
+# Convert to bed format
+grep -v "^#" < $firstpassvcf | awk '{print $1 "\t" $2 - 1 "\t" $2}' > $regionbed
 input_args=""
-for $input in $@ ; do
+for input in $input_files ; do
 	# extract the reads flanking the interesting calls
-	java-Xmx$jvmheap $jvmargs
-		gridss.ExtractFullReads \
+	java -Xmx$jvmheap $jvmargs gridss.ExtractFullReads \
 		B=$regionbed \
 		REGION_PADDING_SIZE=$padding \
 		I=$input \
 		O=$workingdir/$(basename $input) \
 		2>&1 | tee -a $logfile
-	# remove the syymlink so GRIDSS will create a targeted sv.bam
+	# remove the symlink so GRIDSS will create a targeted .sv.bam
 	# with appropriate tags (e.g. R2)
 	rm $workingdir/$(basename $input).gridss.working/*.sv.ba*
 	input_args="$input_args INPUT=$workingdir/$(basename $input)"
 done
-echo java -Xmx$jvmheap $jvmargs gridss.CallVariants
+java -Xmx$jvmheap $jvmargs gridss.CallVariants \
 	TMP_DIR=$workingdir \
 	WORKING_DIR=$workingdir \
 	REFERENCE_SEQUENCE=$reference \
 	$input_args \
-	OUTPUT_VCF=$output_vcf \
+	OUTPUT=$output_vcf \
 	ASSEMBLY=$assembly \
 	WORKER_THREADS=$threads \
 	$blacklist_arg \
