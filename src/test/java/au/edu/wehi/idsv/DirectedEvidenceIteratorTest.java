@@ -23,14 +23,14 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	@Test
 	public void should_not_return_both_soft_clip_and_split_read_for_same_read() {
 		SAMRecord r = sampleSplitRead();
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 0));
 		assertEquals(1, list.size());
 	}
 	@Test
 	public void should_ignore_unmapped_reads() {
 		SAMRecord r = sampleSplitRead();
 		r.setReadUnmappedFlag(true);
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 0));
 		assertEquals(0, list.size());
 	}
 	@Test
@@ -50,7 +50,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	@Test
 	public void should_return_indel() {
 		SAMRecord r = Read(0, 1, "10M5I5D10M5I10M");
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 0));
 		assertEquals(4, list.size());
 		assertEquals(IndelEvidence.class, list.get(0).getClass());
 	}
@@ -58,7 +58,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	public void should_ignore_unmapped_softclips() {
 		SAMRecord r = Read(0, 10, "10M5S");
 		r.setReadUnmappedFlag(true);
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 0));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 0));
 		assertEquals(0, list.size());
 	}
 	@Test
@@ -71,11 +71,11 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	@Test
 	public void should_filter_small_indels() {
 		SAMRecord r = Read(0, 10, "10M1D10M2D10M");
-		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 1));
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 1));
 		assertEquals(4, list.size());
-		list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 2));
+		list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 2));
 		assertEquals(2, list.size());
-		list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null, 3));
+		list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), SES(), 3));
 		assertEquals(0, list.size());
 	}
 }
