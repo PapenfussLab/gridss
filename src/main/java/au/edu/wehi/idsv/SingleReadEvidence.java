@@ -11,6 +11,8 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
@@ -62,11 +64,32 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			list.addAll(IndelEvidence.create(source, minIndelSize, record));
 		} catch (IllegalArgumentException iae) {
 			if (!MessageThrottler.Current.shouldSupress(log, "SingleReadEvidence.createEvidence() failure")) {
-				String msg = String.format("createEvidence(): Error processing %s from %s. Ignoring read. "
-						+ "This should not happen and may be caused by a internally inconsistent input file (e.g. SA tag does not match read alignment). "
-						+ "Please raise an issue at https://github.com/PapenfussLab/gridss/issues "
-						+ "and include this stack trace as well as offending SAM record.", record.getReadName(), source == null ? null : source.getFile());
-				log.error(iae, msg);
+				boolean sa_error_message_written = false;
+				int readLength = record.getReadLength();
+				for (ChimericAlignment ca : ChimericAlignment.getChimericAlignments(record)) {
+					if (!sa_error_message_written) {
+						int len = 0;
+						for (CigarElement ce : ca.cigar) {
+							if (ce.getOperator().consumesReadBases() || ce.getOperator() == CigarOperator.H) {
+								len += ce.getLength();
+							}
+						}
+						if (len != readLength) {
+							String msg = String.format("Data sanity check failure: split read alignment of %s from %s have different read lengths. "
+									+ " This is typically caused by GATK indel realignment stripping hard clipping from read alignments. "
+									+ " Ignoring read", record.getReadName(), source == null ? null : source.getFile());
+							log.error(msg);
+							sa_error_message_written = true;
+						}
+					}
+				}
+				if (!sa_error_message_written) {
+					String msg = String.format("createEvidence(): Error processing %s from %s. Ignoring read. "
+							+ "This should not happen and may be caused by a internally inconsistent input file (e.g. SA tag does not match read alignment). "
+							+ "Please raise an issue at https://github.com/PapenfussLab/gridss/issues "
+							+ "and include this stack trace as well as offending SAM record.";
+					log.error(iae, msg);
+				}
 			}
 		}
 		return list;
