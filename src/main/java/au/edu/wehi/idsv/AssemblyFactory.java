@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,7 +28,7 @@ public final class AssemblyFactory {
 	 * @param source assembly source
 	 * @param direction direction of breakend
 	 * @param evidence evidence supporting the assembly breakend
-	 * @param anchorReferenceIndex contig of anchored bases 
+	 * @param anchorReferenceIndex contig of anchored bases
 	 * @param anchorBreakendPosition genomic position of anchored base closest breakend
 	 * @param anchoredBaseCount number of anchored bases in assembly
 	 * @param baseCalls assembly base sequence as per a positive strand read over the anchor
@@ -44,7 +43,7 @@ public final class AssemblyFactory {
 			byte[] baseCalls, byte[] baseQuals) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition);
 		assert(breakend.direction != null);
-		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, source.getHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
 				baseCalls, baseQuals);
@@ -61,7 +60,7 @@ public final class AssemblyFactory {
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition);
 		assert(startAnchorBaseCount > 0);
 		assert(endAnchorBaseCount > 0);
-		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, processContext.getBasicSamHeader(), source, bp,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, source.getHeader(), source, bp,
 				startAnchorBaseCount,
 				endAnchorBaseCount,
 				baseCalls, baseQuals);
@@ -86,7 +85,7 @@ public final class AssemblyFactory {
 			BreakendSummary breakend,
 			List<DirectedEvidence> evidence, List<AssemblyEvidenceSupport> supportList,
 			byte[] baseCalls, byte[] baseQuals) {
-		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, supportList, source.getHeader(), source, breakend,
 				0, 0, baseCalls, baseQuals);
 		return r;
 	}
