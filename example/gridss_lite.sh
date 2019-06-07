@@ -264,6 +264,10 @@ samtools index $workingdir/empty.bam
 samtools index $workingdir/empty.bam.gridss.working/empty.bam.sv.bam
 
 #TODO: R2 error should only be output when performing assembly
+#TODO: Hard clip error should only be output when performing assembly
+#TODO: IdentifyVariants should write tmp file
+#TODO: Use a configuration file to filter to Q250 instead of an awk script
+#TODO: Add timing to maximal clique chunk timing (cut/paste from assembly timing)
 # First pass: call only from RP and SR
 java -Xmx$jvmheap $jvmargs gridss.IdentifyVariants \
 			TMP_DIR=$workingdir \
