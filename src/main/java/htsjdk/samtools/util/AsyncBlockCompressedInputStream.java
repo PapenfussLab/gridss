@@ -47,6 +47,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
             BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE,
             Math.max(1, Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE));
     private final InflaterFactory inflatorFactory;
+    private volatile boolean checkCrc = false;
 
     public AsyncBlockCompressedInputStream(final InputStream stream) {
         this(stream, BlockGunzipper.getDefaultInflaterFactory());
@@ -110,6 +111,12 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         super.close();
     }
 
+    @Override
+    public void setCheckCrcs(boolean check) {
+        this.checkCrc = check;
+        super.setCheckCrcs(check);
+    }
+
     private class AsyncBlockCompressedInputStreamTaskRunner extends AsyncReadTaskRunner<CompressionBlock, CompressionBlock> {
         public AsyncBlockCompressedInputStreamTaskRunner(int batchBufferSize, int batches) {
             super(batchBufferSize, batches);
@@ -133,6 +140,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         public CompressionBlock transform(CompressionBlock record) {
             BlockGunzipper inflator = mFreeInflators.poll();
             if (inflator == null) {
+                inflator.setCheckCrcs(AsyncBlockCompressedInputStream.this.checkCrc);
                 inflator = new BlockGunzipper(inflatorFactory);
             }
             try {
