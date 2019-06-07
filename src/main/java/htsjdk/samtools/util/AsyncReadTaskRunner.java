@@ -72,7 +72,6 @@ public abstract class AsyncReadTaskRunner<T, U> {
      */
     public void disableAsyncProcessing() {
         asyncEnabled = false;
-
     }
     /**
      * Stops async processing and discards the results from any
@@ -82,29 +81,22 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * The results of these tasks are discarded and any exceptions raised
      * during processing of these tasks are swallowed.
      */
-    public void flushAsyncProcessing() {
-        // Issue: AutoCloseable<> will call close() (thus this flush)
-        // on one of the scheduled transforms/read-ahead async threadpool
-        // worker threads.
-
-        // In this scenario, we should not ignore the returned results
-        // TODO: we need to make performReadAhead() iterator aware so we can a) handle the seek() from BAMFileIterator.query() correctly, b) not read-ahead too far
-        // TODO: we are batching records, and we need to seek() between records.
+    public synchronized void flushAsyncProcessing() {
         disableAsyncProcessing();
         while (!scheduledTransforms.isEmpty()) {
             try {
-                CompletableFuture<Deque<RecordOrException<T>>> task = scheduledTransforms.pollFirst();
+                CompletableFuture<Deque<RecordOrException<T>>> task = scheduledTransforms.removeFirst();
                 task.get();
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
-                log.debug(e);
+                log.warn(e);
             }
         }
         while(!scheduledReadaheads.isEmpty()) {
             try {
-                CompletableFuture<Deque<RecordOrException<U>>> task = scheduledReadaheads.pollFirst();
+                CompletableFuture<Deque<RecordOrException<U>>> task = scheduledReadaheads.removeFirst();
                 task.get();
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
-                log.debug(e);
+                log.warn(e);
             }
         }
     }
@@ -118,11 +110,6 @@ public abstract class AsyncReadTaskRunner<T, U> {
         eosReached = false;
     }
 
-    public void startAsyncProcessing() {
-        enableAsyncProcessing();
-        scheduleFutures();
-    }
-
     private RecordOrException<T> debug_lastRecord = null;
     /**
      * Returns the next record. Any exceptions encountered during the background
@@ -132,7 +119,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * Upon an exception being thrown, no guarantees are made about the position of the underlying stream/iterator.
      * @return next record. null indicates end of stream
      */
-    public T nextRecord() throws IOException {
+    public synchronized T nextRecord() throws IOException {
         if (scheduledTransforms.isEmpty()) {
             scheduleFutures();
         }
