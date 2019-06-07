@@ -87,7 +87,8 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 					String msg = String.format("createEvidence(): Error processing %s from %s. Ignoring read. "
 							+ "This should not happen and may be caused by a internally inconsistent input file (e.g. SA tag does not match read alignment). "
 							+ "Please raise an issue at https://github.com/PapenfussLab/gridss/issues "
-							+ "and include this stack trace as well as offending SAM record.";
+							+ "and include this stack trace as well as offending SAM record.",
+                            record.getReadName(), source == null ? null : source.getFile());
 					log.error(iae, msg);
 				}
 			}

@@ -47,8 +47,8 @@ public abstract class AsyncReadTaskRunner<T, U> {
     public static void setBlockingThreadpool(Executor blockingThreadpool) {
         AsyncReadTaskRunner.blockingThreadpool = blockingThreadpool;
     }
-    private final Deque<CompletableFuture<Deque<RecordOrException<U>>>> scheduledReadaheads = new ArrayDeque<>();
-    private final Deque<CompletableFuture<Deque<RecordOrException<T>>>> scheduledTransforms = new ArrayDeque<>();
+    private final BlockingDeque<CompletableFuture<Deque<RecordOrException<U>>>> scheduledReadaheads = new LinkedBlockingDeque<>();
+    private final BlockingDeque<CompletableFuture<Deque<RecordOrException<T>>>> scheduledTransforms = new LinkedBlockingDeque<>();
     private final int mTotalBatches;
     private final int mBatchBufferBudget;
     private volatile boolean asyncEnabled = true;
@@ -83,17 +83,28 @@ public abstract class AsyncReadTaskRunner<T, U> {
      * during processing of these tasks are swallowed.
      */
     public void flushAsyncProcessing() {
+        // Issue: AutoCloseable<> will call close() (thus this flush)
+        // on one of the scheduled transforms/read-ahead async threadpool
+        // worker threads.
+
+        // In this scenario, we should not ignore the returned results
+        // TODO: we need to make performReadAhead() iterator aware so we can a) handle the seek() from BAMFileIterator.query() correctly, b) not read-ahead too far
+        // TODO: we are batching records, and we need to seek() between records.
         disableAsyncProcessing();
         while (!scheduledTransforms.isEmpty()) {
             try {
-                scheduledTransforms.removeFirst().get();
+                CompletableFuture<Deque<RecordOrException<T>>> task = scheduledTransforms.pollFirst();
+                task.get();
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
+                log.debug(e);
             }
         }
         while(!scheduledReadaheads.isEmpty()) {
             try {
-                scheduledReadaheads.removeFirst().get();
+                CompletableFuture<Deque<RecordOrException<U>>> task = scheduledReadaheads.pollFirst();
+                task.get();
             } catch (InterruptedException | ExecutionException | RuntimeException e) {
+                log.debug(e);
             }
         }
     }
@@ -139,7 +150,7 @@ public abstract class AsyncReadTaskRunner<T, U> {
             raiseAsynchronousProcessingException(e);
         }
         if (batch.isEmpty()) {
-            throw new IllegalStateException("Aysnc processing returned zero records");
+            throw new IllegalStateException("Async processing returned zero records");
         }
         RecordOrException<T> record = batch.removeFirst();
         debug_lastRecord = record;
