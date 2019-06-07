@@ -140,10 +140,10 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         public CompressionBlock transform(CompressionBlock record) {
             BlockGunzipper inflator = mFreeInflators.poll();
             if (inflator == null) {
-                inflator.setCheckCrcs(AsyncBlockCompressedInputStream.this.checkCrc);
                 inflator = new BlockGunzipper(inflatorFactory);
             }
             try {
+                inflator.setCheckCrcs(AsyncBlockCompressedInputStream.this.checkCrc);
                 record.decompress(mFreeDecompressedBlockedBuffers.poll(), inflator);
             } finally {
                 mFreeInflators.add(inflator);
