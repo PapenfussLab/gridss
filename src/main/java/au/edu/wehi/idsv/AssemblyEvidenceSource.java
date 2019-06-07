@@ -50,6 +50,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private int cachedMaxReadLength = -1;
 	private int cachedMaxReadMappedLength = -1;
 	private AssemblyTelemetry telemetry;
+	private SAMFileHeader header;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -58,6 +59,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
 		this.throttled = new IntervalBed(getContext().getLinear());
+		this.header = processContext.getBasicSamHeader();
 	}
 	/**
 	 * Perform breakend assembly 
@@ -168,8 +170,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			getContext().getDictionary().getSequence(qi[qi.length-1].referenceIndex).getSequenceName(), qi[qi.length-1].end);
 		log.info(String.format("Starting assembly on %s", chuckName));
 		Stopwatch timer = Stopwatch.createStarted();
-		SAMFileHeader header = getContext().getBasicSamHeader();
-		// TODO: add assembly @PG header
 		File filteredout = FileSystemContext.getWorkingFileFor(output, "filtered.");
 		File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.");
 		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, tmpout)) {
@@ -428,4 +428,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 */
 	@Override
 	public boolean knownSingleEnded() { return true; }
+
+	public SAMFileHeader getHeader() {
+		return header;
+	}
 }

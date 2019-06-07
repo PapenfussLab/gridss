@@ -32,16 +32,9 @@ import gridss.analysis.CollectGridssMetrics;
 import gridss.analysis.StructuralVariantReadMetrics;
 import gridss.cmdline.CommandLineProgramHelper;
 import gridss.cmdline.ReferenceCommandLineProgram;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.QueryInterval;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
@@ -259,7 +252,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * of file handles. 
 	 * 
 	 * @param reader
-	 * @param interval
+	 * @param intervals
 	 * @return
 	 */
 	private SAMRecordIterator tryOpenReader(SamReader reader, QueryInterval[] intervals) {
@@ -301,7 +294,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {
-		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved 
+		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved
+		it = Iterators.filter(it, r -> !shouldFilterPreTransform(r));
 		it = Iterators.transform(it, r -> transform(r));
 		it = Iterators.filter(it, r -> !shouldFilter(r));		
 		Iterator<DirectedEvidence> eit = new DirectedEvidenceIterator(it, this, minIndelSize());
@@ -333,9 +327,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 			int mateRef = r.getMateReferenceIndex();
 			int mateStart = r.getMateAlignmentStart();
 			int mateEnd = mateStart;
-			String mc = r.getStringAttribute(SAMTag.MC.name());
-			if (mc != null) {
-				Cigar mateCigar = TextCigarCodec.decode(mc);
+			Cigar mateCigar = SAMRecordUtil.getCachedMateCigar(r);
+			if (mateCigar != null) {
 				mateEnd += mateCigar.getReferenceLength() - 1;
 			}
 			if (getBlacklistedRegions().overlaps(mateRef, mateStart, mateEnd)) {
@@ -353,6 +346,40 @@ public class SAMEvidenceSource extends EvidenceSource {
 					.collect(Collectors.joining(";")));
 		}
 		return r;
+	}
+
+	/**
+	 * Fast filtering logic to reduce the number of records that need to be converted
+	 * from SAMRecords to DirectedEvidence.
+	 * @param r
+	 * @return
+	 */
+	public boolean shouldFilterPreTransform(SAMRecord r) {
+		if (r.getReadUnmappedFlag() || r.getMappingQuality() < getContext().getConfig().minMapq) {
+			return true;
+		}
+		if (getContext().isFilterDuplicates() && r.getDuplicateReadFlag()) {
+			return true;
+		}
+		if (!isIndelOrClipped(r)) {
+			if (!r.getReadPairedFlag() || rpcc.isConcordant(r)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	private boolean isIndelOrClipped(SAMRecord r) {
+		for (CigarElement ce : r.getCigar()) {
+			switch (ce.getOperator()) {
+				case S:
+				case H:
+				case D:
+				case I:
+				case N:
+					return true;
+			}
+		}
+		return false;
 	}
 	public boolean shouldFilter(SAMRecord r) {
 		if (r.getReadUnmappedFlag()) {

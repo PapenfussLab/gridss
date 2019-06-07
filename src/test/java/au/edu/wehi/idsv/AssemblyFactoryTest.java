@@ -489,7 +489,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_breakpoint() {
-		SAMRecord r = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), new SequentialIdGenerator("asm"), 
+		SAMRecord r = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), new SequentialIdGenerator("asm"),
 				null,null,
 				0, 1, 1, 0, 2, 1,
 				B("NAAAN"), B("AAAAA"));

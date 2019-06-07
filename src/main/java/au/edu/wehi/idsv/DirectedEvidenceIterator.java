@@ -5,9 +5,11 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.PeekingIterator;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
@@ -33,11 +35,16 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 		}
 	}
 	private void addToBuffer(SAMRecord record) {
+		if (record.getReadUnmappedFlag() || record.getMappingQuality() < source.getContext().getConfig().minMapq) {
+			return;
+		}
 		buffer.addAll(SingleReadEvidence.createEvidence(source, minIndelSize, record));
 		if (!record.getSupplementaryAlignmentFlag()) {
-			NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
-			if (nrrp != null) {
-				buffer.add(nrrp);
+			if (NonReferenceReadPair.meetsAnchorCriteria(source, record)) {
+				NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
+				if (nrrp != null) {
+					buffer.add(nrrp);
+				}
 			}
 		}
 	}
