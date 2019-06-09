@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import java.util.List;
 
+import htsjdk.samtools.util.Log;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
@@ -15,6 +16,7 @@ import htsjdk.variant.variantcontext.VariantContext;
  *
  */
 public class VcfBreakendSummary {
+	private static final Log log = Log.getInstance(VcfBreakendSummary.class);
 	public final BreakendSummary location;
 	public final String breakpointSequence;
 	public final String anchorSequence;
@@ -122,8 +124,19 @@ public class VcfBreakendSummary {
 			}
 		}
 		if (remoteDirection != null) {
+			int remoteReferenceIndex = processContext.getDictionary().getSequenceIndex(remoteContig);
+			if (remoteReferenceIndex < 0) {
+				String msg = String.format("Breakpoint %s at %s:%d to non-reference contig: %s ('%s')",
+				variant.getID(),
+						variant.getContig(),
+						variant.getStart(),
+						remoteContig,
+						variant.getAlternateAllele(0));
+				log.error(msg);
+				throw new IllegalArgumentException(msg);
+			}
 			location = new BreakpointSummary(IdsvVariantContext.getReferenceIndex(processContext, variant), direction, localPosition, localPosition + ciStart, localPosition + ciEnd,
-					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition, remotePosition + rciStart, remotePosition + rciEnd);
+					remoteReferenceIndex, remoteDirection, remotePosition, remotePosition + rciStart, remotePosition + rciEnd);
 		} else {
 			location = new BreakendSummary(IdsvVariantContext.getReferenceIndex(processContext, variant), direction, localPosition, localPosition + ciStart, localPosition + ciEnd);
 		}

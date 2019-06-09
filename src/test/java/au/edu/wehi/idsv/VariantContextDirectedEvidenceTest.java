@@ -80,8 +80,8 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 		new VariantContextDirectedEvidence(pc, AES(), minimalVariant().chr("<contigNotInReference>").make());
 		assertEquals(seqCount + 1, pc.getDictionary().size());
 	}
-	@Test
-	public void should_extend_process_context_sequence_dictionary_when_encountering_named_contig_partner() {
+	@Test(expected=IllegalArgumentException.class)
+	public void should_not_extend_process_context_sequence_dictionary_when_encountering_named_contig_partner() {
 		GenomicProcessingContext pc = getContext();
 		int seqCount = pc.getDictionary().size();
 		new VariantContextDirectedEvidence(pc, AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<contigNotInReference>:1[").id("test").make());
