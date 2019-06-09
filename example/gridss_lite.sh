@@ -66,18 +66,22 @@ while true; do
             ;;
 		-t|--threads)
 			printf -v threads '%d\n' "$2" 2>/dev/null
+			printf -v threads '%d' "$2" 2>/dev/null
 			shift 2
 			;;
 		--padding)
 			printf -v padding '%d\n' "$2" 2>/dev/null
+			printf -v padding '%d' "$2" 2>/dev/null
             shift 2
             ;;
 		--metricsrecords)
 			printf -v metricsrecords '%d\n' "$2" 2>/dev/null
+			printf -v metricsrecords '%d' "$2" 2>/dev/null
             shift 2
             ;;
 		--firstpassqual)
 			printf -v firstpassqual '%d\n' "$2" 2>/dev/null
+			printf -v firstpassqual '%d' "$2" 2>/dev/null
             shift 2
             ;;
 		--)
@@ -149,7 +153,7 @@ fi
 if [[ "$threads" -gt 8 ]] ; then
 	echo "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parrallelism." 1>&2
 fi
-echo "Using no $threads worker threads." 1>&2
+echo "Using $threads worker threads." 1>&2
 if [[ "$padding" -lt 1 ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Invalid region padding size $padding." 1>&2
