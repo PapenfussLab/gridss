@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -11,6 +12,7 @@ public class Colo829BAMFileReaderTest {
     private static File TEST_FILE = new File("D:/colo829/chr1/colo829n_chr1.bam");
     private static File TEST_FILE_INDEX = new File("D:/colo829/chr1/colo829n_chr1.bai");
     @Test
+    @Ignore("requires colo829")
     public void index_read_should_match_read_counts() throws IOException {
         QueryInterval[] qi = new QueryInterval[1024];
         for (int i = 0; i < 1024; i++) {
