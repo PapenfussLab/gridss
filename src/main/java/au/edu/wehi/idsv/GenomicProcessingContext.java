@@ -74,7 +74,7 @@ public class GenomicProcessingContext implements Closeable {
 		if (this.reference.getSequenceDictionary() == null) {
 			throw new IllegalArgumentException("Missing sequence dictionary for reference genome. Please create using picard CreateSequenceDictionary.");
 		}
-		this.dictionary = new DynamicSAMSequenceDictionary(this.reference.getSequenceDictionary());
+		this.dictionary = this.reference.getSequenceDictionary(); // new DynamicSAMSequenceDictionary(this.reference.getSequenceDictionary());
 		this.linear = new PaddedLinearGenomicCoordinate(this.dictionary, LINEAR_COORDINATE_CHROMOSOME_BUFFER, true);
 		this.basicHeader = new SAMFileHeader();
 		this.basicHeader.setSequenceDictionary(this.reference.getSequenceDictionary());

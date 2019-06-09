@@ -61,7 +61,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		return this;
 	}
 	private String getBreakendString() {
-		return GridssVcfConstants.VCF42BREAKEND; // processContext.getConfig().getVariantCalling().placeholderBreakend ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
+		return GridssVcfConstants.VCF42BREAKEND;
 	}
 	protected void ensureGenotypeBuilders(ProcessingContext context) {
 		for (int i = 0; i < context.getCategoryCount(); i++) {
