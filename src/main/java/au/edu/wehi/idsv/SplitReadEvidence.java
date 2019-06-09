@@ -42,10 +42,6 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		if (aln.isEmpty()) return Collections.emptyList();
 		if (record.getCigar().getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				|| record.getCigar().getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-			if (!MessageThrottler.Current.shouldSupress(log, "hard clipped bases")) {
-				log.warn(String.format("Read %s is hard clipped. Please run %s to soften hard clips.",
-						record.getReadName(), ComputeSamTags.class.getName()));
-			}
 			record = record.deepCopy();
 			SAMRecordUtil.hardClipToN(record);
 		}

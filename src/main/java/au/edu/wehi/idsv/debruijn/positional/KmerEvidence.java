@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
+import au.edu.wehi.idsv.util.MessageThrottler;
+import gridss.ComputeSamTags;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -292,6 +294,12 @@ public class KmerEvidence extends PackedKmerList {
 	public static KmerEvidence create(int k, SingleReadEvidence sre) {
 		if (!sre.isBreakendExact()) {
 			throw new NotImplementedException("reassembly of XNX placeholder contigs");
+		}
+		if (sre.getSAMRecord().getTransientAttribute("HC") != null) {
+			if (!MessageThrottler.Current.shouldSupress(log, "hard clipped bases")) {
+				log.warn(String.format("Read %s is hard clipped. Please run %s to soften hard clips.",
+						sre.getSAMRecord().getReadName(), ComputeSamTags.class.getName()));
+			}
 		}
 		byte[] aseq = sre.getAnchorSequence();
 		byte[] beseq = sre.getBreakendSequence();

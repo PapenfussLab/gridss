@@ -304,6 +304,7 @@ for input in $input_files ; do
 	java -Xmx$jvmheap $jvmargs gridss.ExtractFullReads \
 		B=$regionbed \
 		REGION_PADDING_SIZE=$padding \
+		COMPRESSION_LEVEL=0 \
 		I=$input \
 		O=$workingdir/$(basename $input) \
 		2>&1 | tee -a $logfile
