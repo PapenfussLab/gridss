@@ -47,7 +47,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private VariantCallIterator(ProcessingContext processContext, Iterator<DirectedEvidence> evidence, QueryInterval[] interval, int intervalNumber) {
 		this.endOfStream = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext)
 				.id("sentinel")
-				.chr("placeholder")
+				.chr(processContext.getReference().getSequenceDictionary().getSequence(0).getSequenceName())
 				.start(1)
 				.stop(1)
 				.alleles("N", "N.")

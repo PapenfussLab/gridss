@@ -34,16 +34,6 @@ public class VariantCallingConfiguration {
 		requireAssemblyCategorySupport = config.getBoolean("requireAssemblyCategorySupport");
 		callBreakends = config.getBoolean("callBreakends");
 		includeSupportingReadNames = config.getBoolean("includeSupportingReadNames");
-//		switch (config.getString("format")) {
-//			case "vcf4.2":
-//				placeholderBreakend = false;
-//				break;
-//			case "vcf4.1":
-//				placeholderBreakend = true;
-//				break;
-//			default:
-//				throw new IllegalArgumentException(String.format("Unrecognised output format \"%s\"", config.getString("format")));
-//		}
 	}
 	/**
 	 * Minimum number of reads supporting variant either directly or indirectly through assembly

@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import au.edu.wehi.idsv.util.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -19,11 +20,6 @@ import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
-import au.edu.wehi.idsv.util.BufferedIterator;
-import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import gridss.ComputeSamTags;
 import gridss.ExtractSVReads;
@@ -338,6 +334,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (r.getAttribute(SAMTag.SA.name()) != null) {
 			SAMSequenceDictionary dict = getContext().getDictionary();
 			r.setAttribute(SAMTag.SA.name(), ChimericAlignment.getChimericAlignments(r).stream()
+					.filter(ca -> isInReference(r, ca, dict))
 					.filter(ca -> !getBlacklistedRegions().overlaps(
 							dict.getSequence(ca.rname).getSequenceIndex(),
 							ca.pos,
@@ -346,6 +343,16 @@ public class SAMEvidenceSource extends EvidenceSource {
 					.collect(Collectors.joining(";")));
 		}
 		return r;
+	}
+
+	private static boolean isInReference(SAMRecord r, ChimericAlignment ca, SAMSequenceDictionary dict) {
+		SAMSequenceRecord seq = dict.getSequence(ca.rname);
+		if (seq == null) {
+			if (!MessageThrottler.Current.shouldSupress(log, "SA contig")) {
+				log.error(String.format("Read %s contains split read (SA tag) reference to \"%s\" which does not exist in the reference. Ignoring"), r.getReadName(), ca.rname);
+			}
+		}
+		return seq != null;
 	}
 
 	/**
