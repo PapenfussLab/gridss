@@ -1094,13 +1094,14 @@ public class SAMRecordUtil {
 						SequenceUtil.reverseComplement(newseq);
 					}
 					r.setReadBases(newseq);
-				}
-				if (qual != null && qual != SAMRecord.NULL_QUALS) {
-					byte[] newqual = Arrays.copyOf(qual, qual.length);
-					if (r.getReadNegativeStrandFlag()) {
-						ArrayUtils.reverse(newqual);
+					r.setTransientAttribute("HC", null);
+					if (qual != null && qual != SAMRecord.NULL_QUALS) {
+						byte[] newqual = Arrays.copyOf(qual, qual.length);
+						if (r.getReadNegativeStrandFlag()) {
+							ArrayUtils.reverse(newqual);
+						}
+						r.setBaseQualities(newqual);
 					}
-					r.setBaseQualities(newqual);
 				}
 			} else {
 				if (!MessageThrottler.Current.shouldSupress(log, "softening hard clips")) {
@@ -1143,6 +1144,7 @@ public class SAMRecordUtil {
 			Arrays.fill(end, (byte) 0);
 			r.setBaseQualities(Bytes.concat(start, r.getBaseQualities(), end));
 		}
+		r.setTransientAttribute("HC", true);
 	}
 
 	/**
