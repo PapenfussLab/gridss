@@ -109,13 +109,13 @@ if [[ "$workingdir" == "" ]] ; then
 	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
 	exit 2
 else
-	workingdir=$(readlink -f $workingdir)
 	if [[ ! -d $workingdir ]] ; then
 		if ! mkdir -p $workingdir ; then
 			echo Unable to create working directory $workingdir 1>&2
 			exit 2
 		fi
 	fi
+	workingdir=$(readlink -f $workingdir)
 	echo "Using working directory $workingdir" 1>&2
 fi
 if [[ "$assembly" == "" ]] ; then
@@ -123,6 +123,7 @@ if [[ "$assembly" == "" ]] ; then
 	echo "Specify assembly bam location using the --assembly command line argument" 1>&2
 fi
 assembly=$(readlink -f $assembly)
+echo Using assembly output $assembly
 if [[ "$reference" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Specify reference location using the --reference command line argument" 1>&2
