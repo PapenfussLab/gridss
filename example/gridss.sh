@@ -74,15 +74,12 @@ while true; do
             ;;
     esac
 done
-if [[ "$gridss_jar" == "" ]] ; then
-	gridss_jar=$(ls -1 ./gridss*gridss-jar-with-dependencies.jar | tail -1)
-fi
 if [[ ! -f $gridss_jar ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
 	exit 2
 fi
-gridss_jar=$(readlink -f $gridss_jar)
+gridss_jar=$(readlink -f $gridss_jar || echo -n)
 echo "Using GRIDSS jar $gridss_jar" 1>&2
 if [[ "$workingdir" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
@@ -95,19 +92,19 @@ else
 			exit 2
 		fi
 	fi
-	workingdir=$(readlink -f $workingdir)
+	workingdir=$(readlink -f $workingdir || echo -n)
 	echo "Using working directory $workingdir" 1>&2
 fi
 if [[ "$assembly" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
-	echo "Specify assembly bam location using the --assembly command line argument" 1>&2
+	echo "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory." 1>&2
 fi
-assembly=$(readlink -f $assembly)
+assembly=$(readlink -f $assembly || echo -n)
 if [[ "$reference" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Specify reference location using the --reference command line argument" 1>&2
 fi
-reference=$(readlink -f $reference)
+reference=$(readlink -f $reference || echo -n)
 if [[ ! -f "$reference" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
 	echo "Missing reference genome $reference" 1>&2
@@ -123,10 +120,10 @@ if [[ ! -f ${reference}.bwt  ]] ; then
 	echo "Please create using `bwa index $reference`" 1>&2
 fi
 echo "Using reference genome $reference" 1>&2
-output_vcf=$(readlink -f $output_vcf)
+output_vcf=$(readlink -f $output_vcf || echo -n)
 if [[ "$output_vcf" == "" ]] ; then
 	echo $USAGE_MESSAGE  1>&2
-	echo "Output VCF must be specified. Specify using the --output command line argument" 1>&2
+	echo "Output VCF must be specified in a writable directory. Specify using the --output command line argument" 1>&2
 	exit 2
 fi 
 echo "Using output VCF $output_vcf" 1>&2
@@ -197,7 +194,6 @@ java -Xmx$jvmheap \
 	-Dsamjdk.buffer_size=4194304 \
 	-Dgridss.gridss.output_to_temp_file=true \
 	-cp $gridss_jar gridss.CallVariants \
-	COMPRESSION_LEVEL=0 \
 	TMP_DIR=$workingdir \
 	WORKING_DIR=$workingdir \
 	REFERENCE_SEQUENCE="$reference" \
