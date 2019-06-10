@@ -158,7 +158,7 @@ public class MemoizedTraverse {
 	 * @param tn path to remove
 	 * @param callStack explicit call stack to prevent stack overflow and
 	 * iterator invalidation issues caused by earlier recursive implementation
-	 * @param flag indicating whether the node has already been removed from
+	 * @param alreadyRemoved indicating whether the node has already been removed from
 	 * the memoization and frontier data structures
 	 * @return frontier reset count
 	 */

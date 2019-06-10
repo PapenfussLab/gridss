@@ -229,7 +229,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	/**
 	 * Removes a node from the graph.
 	 * 
-	 * @param node node to removed
+	 * @param node node to remove
 	 */
 	@Override
 	public void remove(KmerPathNode node) {
@@ -250,7 +250,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	/**
 	 * Removes a node from the graph.
 	 * 
-	 * @param node node to removed
+	 * @param nodes nodes to remove
 	 */
 	@Override
 	public void remove(Set<KmerPathNode> nodes) {
