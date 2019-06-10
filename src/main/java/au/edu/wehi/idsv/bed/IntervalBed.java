@@ -1,5 +1,16 @@
 package au.edu.wehi.idsv.bed;
 
+import au.edu.wehi.idsv.LinearGenomicCoordinate;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
+import htsjdk.samtools.QueryInterval;
+import htsjdk.samtools.util.Log;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.readers.LineIterator;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -7,23 +18,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
-
-import au.edu.wehi.idsv.LinearGenomicCoordinate;
-import htsjdk.samtools.QueryInterval;
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.tribble.bed.BEDFeature;
-import htsjdk.tribble.readers.LineIterator;
-
 /**
  * Minimal bed wrapper retaining only interval information
  * @author Daniel Cameron
  *
  */
 public class IntervalBed {
+	private static final Log log = Log.getInstance(IntervalBed.class);
 	private final LinearGenomicCoordinate linear;
 	private final RangeSet<Long> intervals;
 	public int size() {
@@ -57,11 +58,18 @@ public class IntervalBed {
 		RangeSet<Long> rs = TreeRangeSet.create();
 		BEDCodec codec = new BEDCodec();
 	    try (AbstractFeatureReader<BEDFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(bed.getPath(), codec, false)) {
+	    	int lineno = 0;
 			for (BEDFeature feat : reader.iterator()) {
+				lineno++;
 				String chr = feat.getContig();
 				int start = feat.getStart();
 				int end = feat.getEnd();
 				int referenceIndex = linear.getDictionary().getSequenceIndex(chr);
+				if (referenceIndex < 0) {
+					String msg = String.format("Error loading record %d of %s: '%s' not found in reference genome.");
+					log.error(msg);
+					throw new IllegalArgumentException(msg);
+				}
 				rs.add(Range.closedOpen(linear.getLinearCoordinate(referenceIndex, start), linear.getLinearCoordinate(referenceIndex, end) + 1));
 			}
         }
