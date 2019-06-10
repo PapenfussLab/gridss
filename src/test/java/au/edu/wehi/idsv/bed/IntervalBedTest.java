@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -32,6 +33,35 @@ public class IntervalBedTest extends TestHelper {
 		assertFalse(bed2.overlaps(1, 6, 6));
 		f.delete();
 		folder.delete();
+	}
+	@Test
+	public void should_adjust_for_zero_based_half_open_bed_intervals() throws IOException {
+		TemporaryFolder folder = new TemporaryFolder();
+		folder.create();
+		File f = folder.newFile("IntervalBedTest.bed");
+		Files.write(f.toPath(),B("polyA	1	10"));
+		IntervalBed bed = new IntervalBed(getContext().getLinear(), f);
+		assertFalse(bed.overlaps(0, 0, 0));
+		assertFalse(bed.overlaps(0, 1, 1));
+		assertTrue(bed.overlaps(0, 2, 2));
+		assertTrue(bed.overlaps(0, 9, 9));
+		assertTrue(bed.overlaps(0, 10, 10));
+		assertFalse(bed.overlaps(0, 11, 11));
+		f.delete();
+		folder.delete();
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void should_not_allow_unknown_contig() throws IOException {
+		TemporaryFolder folder = new TemporaryFolder();
+		folder.create();
+		File f = folder.newFile("IntervalBedTest.bed");
+		Files.write(f.toPath(),B("unknown_contig	1	10"));
+		try {
+			IntervalBed bed = new IntervalBed(getContext().getLinear(), f);
+		} finally {
+			f.delete();
+			folder.delete();
+		}
 	}
 	@Test
 	public void overlap_should_return_true_if_at_least_one_base_overlaps() {

@@ -15,7 +15,7 @@ public class MessageThrottler {
 		count++;
 		counts.put(messageName, count);
 		if (count == threshold) {
-			log.info(String.format("Supressing messages regarding %s", messageName));
+			log.info(String.format("Suppressing messages regarding %s", messageName));
 		}
 		return count > threshold;
 	}
