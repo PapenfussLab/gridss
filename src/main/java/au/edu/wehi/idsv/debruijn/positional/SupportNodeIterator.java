@@ -1,9 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -14,6 +11,8 @@ import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+
+import javax.naming.OperationNotSupportedException;
 
 /**
  * Transforms a breakend start DirectedEvidence iterator
@@ -37,7 +36,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 */
 	private final int emitOffset;
 	private final int maxSupportStartPositionOffset;
-	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByFirstStart);
+	private final Queue<KmerSupportNode> buffer = new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart); // new KmerSupportNodePriorityQueueByFirstStart();
 	private final EvidenceTracker tracker;
 	private final int disallowMismatch;
 	private int inputPosition = Integer.MIN_VALUE;
@@ -199,6 +198,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 			consumed++;
 		}
 	}
+
 	@Override
 	public void remove() {
 		throw new UnsupportedOperationException();
