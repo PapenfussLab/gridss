@@ -151,7 +151,7 @@ if [[ "$threads" -lt 1 ]] ; then
 	exit 2
 fi
 if [[ "$threads" -gt 8 ]] ; then
-	echo "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parrallelism." 1>&2
+	echo "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parallelism." 1>&2
 fi
 echo "Using $threads worker threads." 1>&2
 if [[ "$padding" -lt 1 ]] ; then
@@ -182,7 +182,11 @@ else
 	echo "Using blacklist $blacklist" 1>&2
 fi
 if [[ "$jvmheap" == "" ]] ; then
-	jvmheap="$((threads * 4))g"
+	if [[ $threads -gt 7 ]] ; then
+		jvmheap="31g"
+	else 
+		jvmheap="$((threads * 4))g"
+	fi
 fi
 echo "Using JVM maximum heap size of $jvmheap" 1>&2
 if [[ "$@" == "" ]] ; then
@@ -201,9 +205,10 @@ for F in $input_files ; do
 done
 
 # Validate tools exist on path
-if ! which samtools >/dev/null; then echo "Unable to find samtools on \$PATH" ; exit 2; fi
-
-# TODO make this a proper driver script with command line arg parsing
+if ! which samtools >/dev/null; then echo "Error: unable to find samtools on \$PATH" ; exit 2; fi
+if ! which bwa >/dev/null; then echo "Error: unable to find bwa on \$PATH" ; exit 2; fi
+if ! which java >/dev/null; then echo "Error: unable to find java on \$PATH" ; exit 2; fi
+if ! which Rscript >/dev/null; then echo "Error: unable to find Rscript on \$PATH" ; exit 2; fi
 
 workingdir=$workingdir/$(basename ${output_vcf}.gridss.lite.working)
 mkdir -p $workingdir
@@ -317,6 +322,7 @@ java -Xmx$jvmheap $jvmargs gridss.CallVariants \
 	TMP_DIR=$workingdir \
 	WORKING_DIR=$workingdir \
 	REFERENCE_SEQUENCE=$reference \
+	COMPRESSION_LEVEL=0 \
 	$input_args \
 	OUTPUT=$output_vcf \
 	ASSEMBLY=$assembly \
