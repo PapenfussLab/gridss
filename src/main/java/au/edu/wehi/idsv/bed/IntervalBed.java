@@ -66,7 +66,7 @@ public class IntervalBed {
 				int end = feat.getEnd();
 				int referenceIndex = linear.getDictionary().getSequenceIndex(chr);
 				if (referenceIndex < 0) {
-					String msg = String.format("Error loading record %d of %s: '%s' not found in reference genome.");
+					String msg = String.format("Error loading record %d of %s: '%s' not found in reference genome.", lineno, bed, chr);
 					log.error(msg);
 					throw new IllegalArgumentException(msg);
 				}
