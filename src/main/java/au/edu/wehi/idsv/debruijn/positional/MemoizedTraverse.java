@@ -15,6 +15,7 @@ import java.util.Stack;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.TraversalNodeByLastEndKmerSortedSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
@@ -41,7 +42,7 @@ public class MemoizedTraverse {
 	 * of each node. 
 	 */
 	private final IdentityHashMap<KmerPathNode, AbstractInt2ObjectSortedMap<TraversalNode>> memoized = new IdentityHashMap<>();
-	private final SortedSet<TraversalNode> frontier = new TreeSet<>(TraversalNode.ByLastEndKmer);
+	private final SortedSet<TraversalNode> frontier = new TraversalNodeByLastEndKmerSortedSet(16); //new TreeSet<>(TraversalNode.ByLastEndKmer);
 	private final MemoizationStats stats = new MemoizationStats();
 	/**
 	 * Removes all given nodes from the graph
@@ -107,7 +108,6 @@ public class MemoizedTraverse {
 	 * Finds all child paths coming from any of the given parents
 	 * @param toCheck nodes to check for children 
 	 * @param parents parents to identify
-	 * @param matches output collection of identified paths
 	 */
 	private Collection<TraversalNode> removeChildPaths(Iterable<KmerPathNode> toCheck, Set<KmerPathNode> parents) {
 		Collection<TraversalNode> matches = new ArrayList<>();

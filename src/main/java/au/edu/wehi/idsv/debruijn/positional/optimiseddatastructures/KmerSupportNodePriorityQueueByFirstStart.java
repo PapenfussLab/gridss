@@ -1,19 +1,20 @@
-package au.edu.wehi.idsv.debruijn.positional;
+package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
+import au.edu.wehi.idsv.debruijn.positional.KmerSupportNode;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 
 import java.util.*;
 
 /**
  * Optimised priority queue implementation that efficiently implements only the
  * operations used by SupportNodeIterator
+ *
+ * Alternate implementation include:
+ *  - IntSortedSet lookup backed by Int2ObjectHashMap
  */
 
 public class KmerSupportNodePriorityQueueByFirstStart implements Queue<KmerSupportNode> {
     private final int blockBits;
-    private static int BLOCK_SIZE = 4096;
     private Node head = null;
     private int recordCount = 0;
 
@@ -24,10 +25,11 @@ public class KmerSupportNodePriorityQueueByFirstStart implements Queue<KmerSuppo
     private static class Node {
         public Node next;
         public final int nodeIndex;
-        public final ArrayDeque<KmerSupportNode>[] position = new ArrayDeque[BLOCK_SIZE];
+        public final ArrayDeque<KmerSupportNode>[] position;
         public int firstOccupiedOffset;
         public int recordCount;
-        public Node(int index, int offset, KmerSupportNode n) {
+        public Node(int index, int offset, KmerSupportNode n, int blockBits) {
+            position = new ArrayDeque[1 << blockBits];
             nodeIndex = index;
             firstOccupiedOffset = offset;
             position[offset] = new ArrayDeque<>();
@@ -103,14 +105,14 @@ public class KmerSupportNodePriorityQueueByFirstStart implements Queue<KmerSuppo
     public boolean add(KmerSupportNode kmerSupportNode) {
         recordCount++;
         int position = kmerSupportNode.firstStart();
-        int nodeIndex = position / BLOCK_SIZE;
-        int nodeOffset = position % BLOCK_SIZE;
+        int nodeIndex = position >> blockBits;
+        int nodeOffset = position - (nodeIndex << blockBits);
         if (head == null) {
-            head = new Node(nodeIndex, nodeOffset, kmerSupportNode);
+            head = new Node(nodeIndex, nodeOffset, kmerSupportNode, blockBits);
         } else if (head.nodeIndex > nodeIndex) {
             // prepend this record before the current head
             Node oldHead = head;
-            head = new Node(nodeIndex, nodeOffset, kmerSupportNode);
+            head = new Node(nodeIndex, nodeOffset, kmerSupportNode, blockBits);
             head.next = oldHead;
         } else {
             Node node = head;
@@ -123,7 +125,7 @@ public class KmerSupportNodePriorityQueueByFirstStart implements Queue<KmerSuppo
             } else {
                 // node after the current one
                 Node oldNext = node.next;
-                node.next = new Node(nodeIndex, nodeOffset, kmerSupportNode);
+                node.next = new Node(nodeIndex, nodeOffset, kmerSupportNode, blockBits);
                 node.next.next = oldNext;
             }
         }
@@ -210,7 +212,7 @@ public class KmerSupportNodePriorityQueueByFirstStart implements Queue<KmerSuppo
                     nodeCount += q.size();
                     final Node nn = n;
                     final int ii = i;
-                    Iterables.all(q, x -> x.firstStart() == nn.nodeIndex * BLOCK_SIZE + ii);
+                    Iterables.all(q, x -> x.firstStart() == nn.nodeIndex * (1 << blockBits) + ii);
                     Set<KmerSupportNode> s = new HashSet<>(q);
                     assert(q.size() == s.size());
                 }

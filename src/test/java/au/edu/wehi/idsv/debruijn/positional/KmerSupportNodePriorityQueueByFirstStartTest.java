@@ -2,7 +2,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import org.junit.Ignore;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodePriorityQueueByFirstStart;
 import org.junit.Test;
 
 import java.util.PriorityQueue;
@@ -28,12 +28,7 @@ public class KmerSupportNodePriorityQueueByFirstStartTest extends TestHelper {
             assertEquals(pq.size(), optimisepq.size());
             assertEquals(pq.peek(), optimisepq.peek());
         }
-        while (!pq.isEmpty()) {
-            assertFalse(optimisepq.isEmpty());
-            assertEquals(pq.peek(), optimisepq.peek());
-            assertEquals(pq.poll(), optimisepq.poll());
-            assertEquals(pq.size(), optimisepq.size());
-        }
+        flush(pq, optimisepq);
         for (int i = 9000; i >= 1; i--) {
             KmerSupportNode ksn = ksnlist[i];
             pq.add(ksn);
@@ -41,12 +36,7 @@ public class KmerSupportNodePriorityQueueByFirstStartTest extends TestHelper {
             assertEquals(pq.size(), optimisepq.size());
             assertEquals(pq.peek(), optimisepq.peek());
         }
-        while (!pq.isEmpty()) {
-            assertFalse(optimisepq.isEmpty());
-            assertEquals(pq.peek(), optimisepq.peek());
-            assertEquals(pq.poll(), optimisepq.poll());
-            assertEquals(pq.size(), optimisepq.size());
-        }
+        flush(pq, optimisepq);
         for (int i = 1; i < 9000; i++) {
             KmerSupportNode ksn = ksnlist[i];
             pq.add(ksn);
@@ -68,29 +58,33 @@ public class KmerSupportNodePriorityQueueByFirstStartTest extends TestHelper {
                 assertEquals(pq.size(), optimisepq.size());
             }
         }
-        while (!pq.isEmpty()) {
-            assertFalse(optimisepq.isEmpty());
-            assertEquals(pq.peek(), optimisepq.peek());
-            assertEquals(pq.poll(), optimisepq.poll());
-            assertEquals(pq.size(), optimisepq.size());
-        }
+        flush(pq, optimisepq);
     }
     @Test
-    @Ignore("Class not yet in use")
     public void should_handle_negative_positions() {
         PriorityQueue<KmerSupportNode> pq = new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
-        KmerSupportNodePriorityQueueByFirstStart optimisepq = new KmerSupportNodePriorityQueueByFirstStart(4);
+        KmerSupportNodePriorityQueueByFirstStart optimisepq = new KmerSupportNodePriorityQueueByFirstStart(3);
         MockSAMEvidenceSource ses = SES();
-        KmerSupportNode[] ksnlist = new KmerSupportNode[9002];
-        for (int i = 1; i < 100; i++) {
-            KmerEvidence evidence = KmerEvidence.create(1, NRRP(ses, DP(0, i, "10M", false, 1, i, "10M", false)));
-            ksnlist[i] = evidence.node(0);
-            KmerSupportNode ksn = ksnlist[i];
+        KmerSupportNode[] ksnlist = new KmerSupportNode[500];
+        for (int i = 0; i < 500; i++) {
+            ksnlist[i] = KmerEvidence.create(1, NRRP(ses, DP(0, i, "10M", false, 1, i+1, "10M", false))).node(0);
+        }
+        Random rng = new Random(0);
+        for (int i = 0; i < 100000; i++) {
+            KmerSupportNode ksn = ksnlist[rng.nextInt(ksnlist.length)];
             pq.add(ksn);
             optimisepq.add(ksn);
             assertEquals(pq.size(), optimisepq.size());
             assertEquals(pq.peek(), optimisepq.peek());
+            if (rng.nextBoolean()) {
+                assertEquals(pq.poll(), optimisepq.poll());
+                assertEquals(pq.size(), optimisepq.size());
+            }
         }
+        flush(pq, optimisepq);
+    }
+
+    private void flush(PriorityQueue<KmerSupportNode> pq, KmerSupportNodePriorityQueueByFirstStart optimisepq) {
         while (!pq.isEmpty()) {
             assertFalse(optimisepq.isEmpty());
             assertEquals(pq.peek(), optimisepq.peek());
