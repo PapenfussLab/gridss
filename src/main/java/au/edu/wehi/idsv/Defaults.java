@@ -13,6 +13,7 @@ public class Defaults {
 	public static final boolean ASYNC_CACHE_REFERENCE;
 	public static final boolean ATTEMPT_ASSEMBLY_RECOVERY;
 	public static final boolean USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES;
+	public static final boolean TEMPSPAM;
 	static {
 		SANITY_CHECK_ASSEMBLY_GRAPH = Boolean.valueOf(System.getProperty("sanitycheck.assembly", "false"));
 		SANITY_CHECK_CLIQUE = Boolean.valueOf(System.getProperty("sanitycheck.clique", "false"));
@@ -24,5 +25,6 @@ public class Defaults {
 		ASYNC_CACHE_REFERENCE = !Boolean.valueOf(System.getProperty("reference.loading.sync", "false"));
 		ATTEMPT_ASSEMBLY_RECOVERY = Boolean.valueOf(System.getProperty("assembly.recover", "true"));
 		USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES = Boolean.valueOf(System.getProperty("assembly.optimised_data_structures", "true"));
+		TEMPSPAM = Boolean.valueOf(System.getProperty("TEMPSPAM", "true"));
 	}
 }

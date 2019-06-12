@@ -78,6 +78,9 @@ public class MemoizedContigCaller extends ContigCaller {
 				// at the ending reference node
 				assert(!tn.parent.node.isReference());
 			}
+			if (Defaults.TEMPSPAM) {
+				log.info(String.format("contigByScore: %d", tn.score));
+			}
 			contigByScore.add(tn);
 			if (tn.pathFirstStart() < contigByScoreBeforePosition_startPosition) {
 				contigByScoreBeforePosition.add(tn);

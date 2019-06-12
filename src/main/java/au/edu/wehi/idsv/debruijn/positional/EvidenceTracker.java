@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerEvidenceSet;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -90,7 +92,7 @@ public class EvidenceTracker {
 		return traverse(contig, true);
 	}
 	public Set<KmerEvidence> traverse(Collection<KmerPathSubnode> contig, boolean remove) {
-		Set<KmerEvidence> evidence = Collections.newSetFromMap(new IdentityHashMap<KmerEvidence, Boolean>());
+		Set<KmerEvidence> evidence = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerEvidenceSet() : Collections.newSetFromMap(new IdentityHashMap<KmerEvidence, Boolean>());
 		for (KmerPathSubnode sn : contig) {
 			int start = sn.firstStart();
 			int end = sn.firstEnd();
