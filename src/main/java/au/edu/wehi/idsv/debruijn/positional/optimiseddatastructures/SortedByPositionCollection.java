@@ -3,13 +3,6 @@ package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-/**
- * Collection data structure keyed by position optimised
- * for windowed linear traversal through the genome
- *
- * Alternate implementation include:
- *  - IntSortedSet lookup backed by Int2ObjectHashMap
- */
 public abstract class SortedByPositionCollection<T, TColl extends Collection<T>> extends SortedByPosition<T, TColl> implements Collection<T> {
     public SortedByPositionCollection(int blockBits) {
         super(blockBits);

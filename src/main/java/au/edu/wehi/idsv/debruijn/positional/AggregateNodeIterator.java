@@ -2,6 +2,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator.KmerNodeAggregator.KmerNodeAggregatorSnapshot;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartPriorityQueue;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeAggregatorSnapshotByEndPriorityQueue;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
@@ -11,6 +13,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.util.Iterator;
 import java.util.PriorityQueue;
+import java.util.Queue;
 
 /**
  * Transforms a start position sorted sequence of KmerNodes to a
@@ -20,9 +23,9 @@ import java.util.PriorityQueue;
  */
 public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 	private final PeekingIterator<? extends KmerNode> underlying;
-	private PriorityQueue<ImmutableKmerNode> outputSortBuffer = new PriorityQueue<ImmutableKmerNode>(1024, KmerNodeUtil.ByFirstStart);
+	private Queue<ImmutableKmerNode> outputSortBuffer = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerNodeByFirstStartPriorityQueue<>(16) : new PriorityQueue<ImmutableKmerNode>(1024, KmerNodeUtil.ByFirstStart);
 	private Long2ObjectOpenHashMap<KmerNodeAggregator> byKmer = new Long2ObjectOpenHashMap<KmerNodeAggregator>();
-	private PriorityQueue<KmerNodeAggregatorSnapshot> byEnd = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotEnd);
+	private Queue<KmerNodeAggregatorSnapshot> byEnd = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerNodeAggregatorSnapshotByEndPriorityQueue(16) : new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotEnd);
 	private int maxWidth = 0;
 	private int inputPosition = Integer.MIN_VALUE;
 	private long consumed = 0;
@@ -80,8 +83,7 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 		}
 	}
 	/**
-	 * Flush all aggregate nodes starting before the given position
-	 * @param position
+	 * Flush all fully constructed aggregate nodes
 	 */
 	private void flush() {
 		while (!byEnd.isEmpty() && byEnd.peek().snapshotEnd < inputPosition) {
@@ -110,7 +112,7 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 	 * @author Daniel Cameron
 	 *
 	 */
-	class KmerNodeAggregator implements Comparable<KmerNodeAggregator> {
+	public class KmerNodeAggregator implements Comparable<KmerNodeAggregator> {
 		public class KmerNodeAggregatorSnapshot {
 			public KmerNodeAggregatorSnapshot() {
 				this.snapshotEnd = KmerNodeAggregator.this.end();
@@ -174,7 +176,6 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 		/**
 		 * Process up to and including the given position
 		 * @param position final processing position
-		 * @param emitTo collection to emit aggregate records to
 		 */
 		public void advanceTo(int position) {
 			while (!active.isEmpty() && active.peek().firstEnd() <= position) {

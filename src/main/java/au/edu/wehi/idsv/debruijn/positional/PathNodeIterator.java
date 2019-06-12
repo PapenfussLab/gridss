@@ -2,6 +2,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartPriorityQueue;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByLastEndPriorityQueue;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -46,8 +48,8 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	 * - prev nodes must end before current not first kmer end position
 	 * - next nodes must start no later than our end position + 1
 	 */
-	private final PriorityQueue<KmerNode> activeNodes = new PriorityQueue<KmerNode>(KmerNodeUtil.ByLastEnd);
-	private final PriorityQueue<KmerPathNode> pathNodes = new PriorityQueue<KmerPathNode>(1024, KmerNodeUtil.ByFirstStart);
+	private final Queue<KmerNode> activeNodes = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerNodeByLastEndPriorityQueue<>(16) : new PriorityQueue<>(KmerNodeUtil.ByLastEnd);
+	private final Queue<KmerPathNode> pathNodes = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerNodeByFirstStartPriorityQueue<>(16) : new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
 	private int inputPosition = Integer.MIN_VALUE;
 	/**
 	 * Maximum width of a single node. This is calculated from the input sequence

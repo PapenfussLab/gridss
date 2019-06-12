@@ -13,11 +13,11 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class KmerSupportNodeByFirstStartPriorityQueueTest extends TestHelper {
+public class KmerNodeByFirstStartPriorityQueueTest extends TestHelper {
     @Test
     public void should_mimic_priority_queue() {
         PriorityQueue<KmerSupportNode> pq = new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
-        KmerSupportNodeByFirstStartPriorityQueue optimisepq = new KmerSupportNodeByFirstStartPriorityQueue(4);
+        KmerNodeByFirstStartPriorityQueue optimisepq = new KmerNodeByFirstStartPriorityQueue(4);
         MockSAMEvidenceSource ses = SES();
         KmerSupportNode[] ksnlist = new KmerSupportNode[9002];
         for (int i = 0; i < 9001; i++) {
@@ -66,7 +66,7 @@ public class KmerSupportNodeByFirstStartPriorityQueueTest extends TestHelper {
     @Test
     public void should_handle_negative_positions() {
         PriorityQueue<KmerSupportNode> pq = new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
-        KmerSupportNodeByFirstStartPriorityQueue optimisepq = new KmerSupportNodeByFirstStartPriorityQueue(3);
+        KmerNodeByFirstStartPriorityQueue optimisepq = new KmerNodeByFirstStartPriorityQueue(3);
         MockSAMEvidenceSource ses = SES();
         KmerSupportNode[] ksnlist = new KmerSupportNode[500];
         for (int i = 0; i < 500; i++) {
@@ -87,7 +87,7 @@ public class KmerSupportNodeByFirstStartPriorityQueueTest extends TestHelper {
         flush(pq, optimisepq);
     }
 
-    private void flush(PriorityQueue<KmerSupportNode> pq, KmerSupportNodeByFirstStartPriorityQueue optimisepq) {
+    private void flush(PriorityQueue<KmerSupportNode> pq, KmerNodeByFirstStartPriorityQueue optimisepq) {
         while (!pq.isEmpty()) {
             assertFalse(optimisepq.isEmpty());
             assertEquals(pq.peek(), optimisepq.peek());

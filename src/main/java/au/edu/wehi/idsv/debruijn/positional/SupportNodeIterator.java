@@ -4,7 +4,7 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodeByFirstStartPriorityQueue;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartPriorityQueue;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -35,7 +35,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 */
 	private final int emitOffset;
 	private final int maxSupportStartPositionOffset;
-	private final Queue<KmerSupportNode> buffer = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerSupportNodeByFirstStartPriorityQueue(16) : new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
+	private final Queue<KmerSupportNode> buffer = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerNodeByFirstStartPriorityQueue<>(16) : new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
 	private final EvidenceTracker tracker;
 	private final int disallowMismatch;
 	private int inputPosition = Integer.MIN_VALUE;
