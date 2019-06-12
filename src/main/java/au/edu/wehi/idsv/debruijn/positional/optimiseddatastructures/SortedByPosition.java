@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
-import au.edu.wehi.idsv.debruijn.positional.TraversalNode;
-import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.util.Log;
 
 import java.util.*;
@@ -60,17 +58,18 @@ public abstract class SortedByPosition<T, TColl> {
         if (offset < n.firstOccupiedOffset) {
             n.firstOccupiedOffset = offset;
         }
-        if (n.position[offset] == null) {
-            TColl coll = createAtPosition();
+        TColl coll = n.position[offset];
+        if (coll == null) {
+            coll = createAtPosition();
             assert(coll != null);
             n.position[offset] = coll;
         }
-        boolean added = addAtPosition(n.position[offset], obj);
-        if (added) {
-            this.recordCount++;
-            n.recordCount++;
-        }
-        return added;
+        int preAddSize = positionSize(coll);
+        boolean modified = addAtPosition(coll, obj);
+        int postAddSize = positionSize(coll);
+        recordCount += postAddSize - preAddSize;
+        n.recordCount += postAddSize - preAddSize;
+        return modified;
     }
     private Node<TColl> createNode(int index, int offset, T obj) {
         Node<TColl> n = new Node<>(index, blockBits);
