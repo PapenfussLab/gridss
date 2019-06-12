@@ -858,7 +858,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * defined interval, the node is split first by length, then by position, then the
 	 * weight of the resultant node is reduced
 	 *  
-	 * @param replacementNodeList collection to add any additional KmerPathNode created
+	 * @param outList collection to add any additional KmerPathNode created
 	 * @param node node to remove weight from
 	 * @param offset offset of evidence to remove
 	 * @param toRemove evidence to remove
@@ -1023,7 +1023,6 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		return true;
 	}
 	public boolean sanityCheck() {
-		//sanityCheck(25, 1000, 1000); int temphack = 42;// TEMPHACK 
 		assert(isValid());
 		assert(start <= end);
 		assert(totalWeight > 0);

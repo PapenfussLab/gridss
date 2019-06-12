@@ -53,13 +53,13 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * Path scores in order of descending score
 	 */
 	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
-	// We could convert this into an AbstractInt2IntSortedMap if we changed MemoizedContigTraverse
+	// We could convert this into an Int2IntSortedMap if we changed MemoizedContigTraverse
 	// to only call onFrontierRemove() on nodes that are actually in the frontier
 	private final SortedSet<TraversalNode> frontierByPathStart = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new TraversalNodeByPathFirstStartEndSubnodeSortedSet(16) : new TreeSet<>(TraversalNode.ByPathFirstStartScoreEndSubnode);
 	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
 	
 	private int contigByScoreBeforePosition_startPosition = Integer.MIN_VALUE;
-	private SortedSet<TraversalNode> contigByScoreBeforePosition = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);;
+	private SortedSet<TraversalNode> contigByScoreBeforePosition = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
 	/**
 	 * Scoring bonus for anchoring the start/end of a contig at a reference node. 
 	 */
@@ -77,9 +77,6 @@ public class MemoizedContigCaller extends ContigCaller {
 				// as they'll overwrite non-ref > ref paths terminating
 				// at the ending reference node
 				assert(!tn.parent.node.isReference());
-			}
-			if (Defaults.TEMPSPAM) {
-				log.info(String.format("contigByScore: %d", tn.score));
 			}
 			contigByScore.add(tn);
 			if (tn.pathFirstStart() < contigByScoreBeforePosition_startPosition) {

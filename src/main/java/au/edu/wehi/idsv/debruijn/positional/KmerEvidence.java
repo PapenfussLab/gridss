@@ -214,7 +214,7 @@ public class KmerEvidence extends PackedKmerList {
 		if (source != null) {
 			ProcessingContext context = source.getContext();
 			if (context != null) {
-				return context.getReference().getSequenceDictionary().getSequence(refIndex).getSequenceLength();
+				return context.getDictionary().getSequence(refIndex).getSequenceLength();
 			}
 		}
 		return Integer.MAX_VALUE;
