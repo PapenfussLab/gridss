@@ -143,7 +143,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 		RangeSet<Integer> rsPrev = prevPathRangesOfDegree(prevDegree);
 		if (rsPrev.isEmpty()) return ImmutableList.of();
 		RangeSet<Integer> rs = RangeUtil.intersect(rsNext, rsPrev);
-		if (rsPrev.isEmpty()) return ImmutableList.of();
+		if (rs.isEmpty()) return ImmutableList.of();
 		if (rs.encloses(Range.closed(start, end))) return ImmutableList.of(this);
 		List<KmerPathSubnode> list = new ArrayList<KmerPathSubnode>(rs.asRanges().size());
 		for (Range<Integer> range : rs.asRanges()) {
