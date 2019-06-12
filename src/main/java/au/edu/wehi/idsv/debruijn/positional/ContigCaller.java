@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Set;
-
-import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
 
 public abstract class ContigCaller {
 	public abstract ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition);

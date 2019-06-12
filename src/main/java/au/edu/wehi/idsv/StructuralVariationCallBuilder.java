@@ -1,5 +1,18 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import com.google.common.collect.*;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+
 import java.util.*;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
@@ -7,20 +20,6 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import com.google.common.collect.*;
-
-import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.vcf.VcfFilter;
-import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);

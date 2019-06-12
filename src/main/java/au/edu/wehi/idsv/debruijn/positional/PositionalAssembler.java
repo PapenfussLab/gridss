@@ -1,26 +1,20 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyIdGenerator;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Assemblies non-reference breakend contigs

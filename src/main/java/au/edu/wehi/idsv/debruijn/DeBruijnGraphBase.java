@@ -1,28 +1,16 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import au.edu.wehi.idsv.visualisation.DeBruijnGraphExporter;
 import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
-
-import au.edu.wehi.idsv.visualisation.DeBruijnGraphExporter;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /**
  * Basic De Bruijn graph implementation

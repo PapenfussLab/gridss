@@ -1,14 +1,14 @@
 package htsjdk.samtools.fastq;
 
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.IOUtil;
 
 /**
  * BasicFastqWriter that does not flush on very write() call.

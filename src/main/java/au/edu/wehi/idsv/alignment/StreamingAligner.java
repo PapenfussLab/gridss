@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.alignment;
 
-import java.io.IOException;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
+
+import java.io.IOException;
 
 public interface StreamingAligner {
 

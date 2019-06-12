@@ -3,34 +3,6 @@
  */
 package au.edu.wehi.idsv.sam;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.ImmutableRangeSet.Builder;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Range;
-import com.google.common.collect.Sets;
-import com.google.common.primitives.Booleans;
-import com.google.common.primitives.Bytes;
-
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
@@ -38,23 +10,21 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SAMUtils;
-import htsjdk.samtools.SamPairUtil;
+import com.google.common.collect.*;
+import com.google.common.collect.ImmutableRangeSet.Builder;
+import com.google.common.primitives.Booleans;
+import com.google.common.primitives.Bytes;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Daniel Cameron

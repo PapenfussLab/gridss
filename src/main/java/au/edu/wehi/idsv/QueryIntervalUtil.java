@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv;
 
-import java.util.stream.Stream;
-
 import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMSequenceDictionary;
+
+import java.util.stream.Stream;
 
 public class QueryIntervalUtil {
 	public static QueryInterval[] padIntervals(SAMSequenceDictionary dictionary, QueryInterval[] intervals, int padding) {

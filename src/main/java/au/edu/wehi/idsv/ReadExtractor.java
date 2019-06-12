@@ -9,7 +9,6 @@ import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.TextCigarCodec;
 
 import java.io.File;
-import java.io.IOError;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

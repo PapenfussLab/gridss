@@ -1,5 +1,9 @@
 package au.edu.wehi.idsv.visualisation;
 
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.debruijn.positional.*;
+import htsjdk.samtools.util.CloserUtil;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -9,14 +13,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.positional.ImmutableKmerNode;
-import au.edu.wehi.idsv.debruijn.positional.KmerNode;
-import au.edu.wehi.idsv.debruijn.positional.KmerNodeUtil;
-import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
-import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
-import htsjdk.samtools.util.CloserUtil;
 
 /**
  * Exports a positional graph to a collection of FASTG files

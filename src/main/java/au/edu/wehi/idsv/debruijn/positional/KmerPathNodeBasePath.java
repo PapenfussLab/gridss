@@ -1,18 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.util.RangeUtil;
+import com.google.common.collect.*;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
-
-import au.edu.wehi.idsv.util.RangeUtil;
 
 public abstract class KmerPathNodeBasePath {
 	private final TraversalNode root;

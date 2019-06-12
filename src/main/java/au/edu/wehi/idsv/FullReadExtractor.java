@@ -1,23 +1,14 @@
 package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
-import com.google.common.collect.Range;
-import gridss.ExtractFullReads;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static au.edu.wehi.idsv.sam.ChimericAlignment.getChimericAlignments;
-import static htsjdk.samtools.SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-import static htsjdk.samtools.SAMRecord.NO_ALIGNMENT_START;
 
 public class FullReadExtractor extends ReadExtractor {
     private static final Log log = Log.getInstance(FullReadExtractor.class);

@@ -1,14 +1,14 @@
 package au.edu.wehi.idsv.visualisation;
 
+import au.edu.wehi.idsv.BreakendDirection;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.Log;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.Log;
 
 public class AssemblyTelemetry implements Closeable {
 	private static final Log log = Log.getInstance(AssemblyTelemetry.class);

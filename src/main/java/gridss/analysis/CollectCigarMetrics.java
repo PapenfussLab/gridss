@@ -24,18 +24,8 @@
 
 package gridss.analysis;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.collect.Iterables;
-
 import au.edu.wehi.idsv.sam.CigarUtil;
+import com.google.common.collect.Iterables;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
@@ -43,7 +33,15 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.analysis.SinglePassSamProgram;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
 
 @CommandLineProgramProperties(
         summary = "Reads a SAM or BAM file and writes a file containing metrics about " +

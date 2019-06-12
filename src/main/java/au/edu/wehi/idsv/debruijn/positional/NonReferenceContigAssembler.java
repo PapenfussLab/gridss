@@ -1,15 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
 import au.edu.wehi.idsv.*;
-import com.google.common.collect.*;
-
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
@@ -20,11 +11,19 @@ import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.ContigStats;
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
+import com.google.common.collect.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 
 /**

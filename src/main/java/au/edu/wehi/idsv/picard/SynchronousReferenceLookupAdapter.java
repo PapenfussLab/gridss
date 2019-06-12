@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.picard;
 
-import java.io.IOException;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
+
+import java.io.IOException;
 
 public class SynchronousReferenceLookupAdapter implements ReferenceLookup {
 	private final ReferenceSequenceFile underlying;

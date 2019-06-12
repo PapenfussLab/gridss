@@ -1,20 +1,15 @@
 package au.edu.wehi.idsv.util;
 
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import com.google.common.base.Function;
+import com.google.common.collect.*;
+import com.google.common.primitives.Longs;
+import htsjdk.samtools.util.Log;
+
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
-
-import com.google.common.base.Function;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.PeekingIterator;
-import com.google.common.primitives.Longs;
-
-import au.edu.wehi.idsv.visualisation.TrackedBuffer;
-import htsjdk.samtools.util.Log;
 
 /**
  * Sorts a mostly-sorted input sequence.

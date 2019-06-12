@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv.visualisation;
 
+import au.edu.wehi.idsv.visualisation.TrackedBuffer.NamedTrackedBuffer;
+import htsjdk.samtools.util.CloserUtil;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,9 +12,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import au.edu.wehi.idsv.visualisation.TrackedBuffer.NamedTrackedBuffer;
-import htsjdk.samtools.util.CloserUtil;
 
 /**
  * Tracks intermediate buffer sizes for memory tracking purposes. 

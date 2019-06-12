@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NodeTraversalTracker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 
 public class HighestWeightSimilarPath<PN extends DeBruijnSequenceGraphNode> {
 	private final int maxDifference;

@@ -1,27 +1,15 @@
 package au.edu.wehi.idsv;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.List;
-
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.GridssVcfConstants;
+import com.google.common.collect.Lists;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.filter.AggregateFilter;
-import htsjdk.samtools.filter.DuplicateReadFilter;
-import htsjdk.samtools.filter.FailsVendorReadQualityFilter;
-import htsjdk.samtools.filter.FilteringSamIterator;
-import htsjdk.samtools.filter.SamRecordFilter;
-import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
+import htsjdk.samtools.filter.*;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
@@ -31,6 +19,12 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
 import picard.cmdline.CommandLineProgram;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
 
 public class GenomicProcessingContext implements Closeable {
 	private static final Log log = Log.getInstance(GenomicProcessingContext.class);

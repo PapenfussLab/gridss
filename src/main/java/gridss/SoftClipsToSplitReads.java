@@ -1,26 +1,24 @@
 package gridss;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.SplitReadRealigner;
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
 import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.StandardOptionDefinitions;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
 @CommandLineProgramProperties(
         summary = "Uses an external aligner to identify split reads by iterative alignment of soft clipped bases. "

@@ -1,15 +1,9 @@
 package au.edu.wehi.idsv.metrics;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import com.google.common.collect.Iterables;
-
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import com.google.common.collect.Iterables;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.IdsvMetrics;
 import gridss.analysis.MapqMetrics;
@@ -26,6 +20,11 @@ import picard.analysis.CollectInsertSizeMetrics;
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.directed.InsertSizeMetricsCollector;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Collects metrics required by gridss

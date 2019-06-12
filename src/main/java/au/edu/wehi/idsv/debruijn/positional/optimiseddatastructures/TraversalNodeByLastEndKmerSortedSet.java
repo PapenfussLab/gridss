@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
 import au.edu.wehi.idsv.debruijn.positional.TraversalNode;
-import au.edu.wehi.idsv.util.MessageThrottler;
-import gridss.ComputeSamTags;
-import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.SortedSet;
+import java.util.Spliterator;
 import java.util.stream.Stream;
 
 public class TraversalNodeByLastEndKmerSortedSet extends SortedByPosition<TraversalNode, Long2ObjectRBTreeMap<TraversalNode>> implements SortedSet<TraversalNode> {

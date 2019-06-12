@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * List helper utility functions

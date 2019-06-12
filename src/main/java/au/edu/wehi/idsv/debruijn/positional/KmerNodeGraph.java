@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.Collection;
-import java.util.List;
-
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.graph.DirectedAcyclicGraph;
+
+import java.util.Collection;
+import java.util.List;
 
 public class KmerNodeGraph implements DeBruijnGraph<KmerNode>, DirectedAcyclicGraph<KmerNode> {
 	private int k;

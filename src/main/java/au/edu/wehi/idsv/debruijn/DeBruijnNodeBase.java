@@ -1,20 +1,19 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
-
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.util.ArrayHelper;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Ints;
 import gnu.trove.iterator.TLongIntIterator;
 import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
+
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DeBruijnNodeBase {
 	private long nodeKmer;

@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.util.IntervalUtil;
+import com.google.common.collect.RangeSet;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
-
-import com.google.common.collect.RangeSet;
-
-import au.edu.wehi.idsv.util.IntervalUtil;
 
 
 public class KmerPathNodePath extends KmerPathNodeBasePath {

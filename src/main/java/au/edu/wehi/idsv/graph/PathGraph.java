@@ -1,34 +1,16 @@
 package au.edu.wehi.idsv.graph;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Set;
-import java.util.SortedSet;
-
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
-
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 import htsjdk.samtools.util.Log;
+
+import java.util.*;
 
 /**
  * Compressed graph in which each node is a path with no branches 

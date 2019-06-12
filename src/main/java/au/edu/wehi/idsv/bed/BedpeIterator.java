@@ -1,20 +1,12 @@
 package au.edu.wehi.idsv.bed;
 
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Iterator;
-
-import org.apache.commons.io.LineIterator;
-
 import com.google.common.collect.Iterators;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Log;
+import org.apache.commons.io.LineIterator;
+
+import java.io.*;
+import java.util.Iterator;
 
 /**
  * Very basic parser that iterates over a BEDPE file

@@ -2,7 +2,9 @@ package gridss;
 
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.bed.IntervalBed;
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;

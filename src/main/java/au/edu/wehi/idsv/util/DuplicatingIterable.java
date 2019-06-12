@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv.util;
 
+import com.google.common.collect.PeekingIterator;
+import htsjdk.samtools.util.Log;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -7,11 +10,6 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.common.collect.PeekingIterator;
-
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
 
 /**
  * Duplicates the given iterator, feeding internal buffers from a background thread

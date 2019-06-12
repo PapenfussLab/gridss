@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.graph;
 
+import au.edu.wehi.idsv.visualisation.TrackedState;
+import com.google.common.collect.AbstractIterator;
+
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
-
-import au.edu.wehi.idsv.visualisation.TrackedState;
-import com.google.common.collect.AbstractIterator;
 
 /**
  * Streaming maximal clique caller wrapper

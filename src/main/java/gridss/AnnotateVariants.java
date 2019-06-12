@@ -1,25 +1,18 @@
 package gridss;
 
+import au.edu.wehi.idsv.*;
+import com.google.common.io.Files;
+import gridss.cmdline.VcfTransformCommandLineProgram;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
-
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.io.Files;
-
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import gridss.cmdline.VcfTransformCommandLineProgram;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.Log;
 
 @CommandLineProgramProperties(
         summary = "Annotates breakpoint variant calls",  

@@ -1,22 +1,21 @@
 package au.edu.wehi.idsv;
 
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-import au.edu.wehi.idsv.sam.ChimericAlignment;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
-
 import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public abstract class SingleReadEvidence implements DirectedEvidence {
 	private static final Log log = Log.getInstance(SingleReadEvidence.class);

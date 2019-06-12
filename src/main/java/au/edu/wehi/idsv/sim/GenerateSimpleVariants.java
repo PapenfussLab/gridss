@@ -1,16 +1,14 @@
 package au.edu.wehi.idsv.sim;
 
-import java.util.List;
-import java.util.Locale;
-
+import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.vcf.SvType;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.util.IOUtil;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.vcf.SvType;
-import htsjdk.samtools.util.IOUtil;
+import java.util.List;
+import java.util.Locale;
 
 @CommandLineProgramProperties(
         summary = "Create a fasta containing structural variants of the requested types. Can simulate, insertion of random sequence, deletion, inversion, and tandem duplication.",  

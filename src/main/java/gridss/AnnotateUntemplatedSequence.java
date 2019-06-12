@@ -1,12 +1,5 @@
 package gridss;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-
-import org.broadinstitute.barclay.argparser.Argument;
-
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
@@ -21,7 +14,13 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
+import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.StandardOptionDefinitions;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 
 public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(AnnotateUntemplatedSequence.class);

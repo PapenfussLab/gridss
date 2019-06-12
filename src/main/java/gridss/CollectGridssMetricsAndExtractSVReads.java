@@ -1,17 +1,16 @@
 package gridss;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.Set;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import gridss.analysis.CollectGridssMetrics;
 import gridss.cmdline.CommandLineProgramHelper;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.SinglePassSamProgram;
+
+import java.io.File;
+import java.util.Collection;
+import java.util.Set;
 
 /**
  * Class that is designed to instantiate and execute multiple metrics programs that extend

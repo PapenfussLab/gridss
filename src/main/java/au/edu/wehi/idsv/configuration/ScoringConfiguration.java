@@ -1,16 +1,9 @@
 package au.edu.wehi.idsv.configuration;
 
-import java.util.List;
-
+import au.edu.wehi.idsv.model.*;
 import org.apache.commons.configuration.Configuration;
 
-import au.edu.wehi.idsv.model.EmpiricalLlrModel;
-import au.edu.wehi.idsv.model.EmpiricalReferenceLikelihoodModel;
-import au.edu.wehi.idsv.model.ExclusionModel;
-import au.edu.wehi.idsv.model.FastEmpiricalReferenceLikelihoodModel;
-import au.edu.wehi.idsv.model.MapqModel;
-import au.edu.wehi.idsv.model.ReadCountModel;
-import au.edu.wehi.idsv.model.VariantScoringModel;
+import java.util.List;
 
 public class ScoringConfiguration {
 	public static final String CONFIGURATION_PREFIX = "scoring";

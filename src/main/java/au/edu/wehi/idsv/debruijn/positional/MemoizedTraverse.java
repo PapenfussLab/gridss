@@ -1,32 +1,22 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.Stack;
-import java.util.TreeSet;
-import java.util.stream.Stream;
-
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.TraversalNodeByLastEndKmerSortedSet;
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
-
 import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.TraversalNodeByLastEndKmerSortedSet;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
+import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Stream;
 
 /**
  * Helper class to track memoization of nodes during positional graph traversal

@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
-import java.util.Comparator;
-import java.util.Iterator;
-
+import au.edu.wehi.idsv.util.WindowedSortingIterator;
 import com.google.common.base.Function;
 
-import au.edu.wehi.idsv.util.WindowedSortingIterator;
+import java.util.Comparator;
+import java.util.Iterator;
 
 /**
  * Sorts directed evidence within from a sequence where the sequence position of

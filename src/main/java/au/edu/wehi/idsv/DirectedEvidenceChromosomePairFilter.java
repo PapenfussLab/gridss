@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
-import java.util.Iterator;
-import java.util.Set;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Sets;
+
+import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Filters directed evidence to only contain evidence involving the

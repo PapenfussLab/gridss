@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.graph;
 
-import java.util.Comparator;
-import java.util.Iterator;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+
+import java.util.Comparator;
+import java.util.Iterator;
 
 /**
  * Merges GraphNodes with the same coordinates

@@ -1,23 +1,7 @@
 package gridss;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
+import au.edu.wehi.idsv.*;
 import com.google.common.collect.Iterators;
-
-import au.edu.wehi.idsv.CoverageCalculationMethod;
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.GcBiasAdjuster;
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.IntervalCoverageAccumulator;
-import au.edu.wehi.idsv.PrecomputedGcBiasAdjuster;
-import au.edu.wehi.idsv.ReadGcSummary;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import gridss.cmdline.GcSinglePassSamProgram;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -27,6 +11,12 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
 
 @CommandLineProgramProperties(
 		summary = "Computes reference genome coverage for a given BAM",

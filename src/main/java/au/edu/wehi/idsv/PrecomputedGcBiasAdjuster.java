@@ -1,11 +1,12 @@
 package au.edu.wehi.idsv;
+
+import htsjdk.samtools.util.Log;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
-
-import htsjdk.samtools.util.Log;
 
 /**
  * Performs GC bias adjustments according to the given file.

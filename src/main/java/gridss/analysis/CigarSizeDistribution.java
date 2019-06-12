@@ -1,11 +1,10 @@
 package gridss.analysis;
 
-import java.util.List;
-
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
 import htsjdk.samtools.CigarOperator;
+
+import java.util.List;
 
 /**
  * Distribution of cigar operators

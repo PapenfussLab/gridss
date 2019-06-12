@@ -1,10 +1,9 @@
 package scambler;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.debruijn.PackedSequence;
 import htsjdk.samtools.SAMRecord;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class Read {
 	private final SAMRecord read;

@@ -1,19 +1,18 @@
 package au.edu.wehi.idsv.validation;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-
-import com.google.common.collect.AbstractIterator;
-
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import com.google.common.collect.AbstractIterator;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Pass-through iterator that tracks evidence

@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv;
 
-import java.util.List;
-
-import htsjdk.samtools.util.Log;
-import org.apache.commons.lang3.StringUtils;
-
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
 
 /**
  * Extracts breakend/breakpoint information from a VCF variant

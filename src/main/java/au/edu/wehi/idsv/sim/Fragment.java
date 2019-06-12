@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.sim;
 
-import java.nio.charset.StandardCharsets;
-
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import htsjdk.samtools.util.SequenceUtil;
+
+import java.nio.charset.StandardCharsets;
 
 public class Fragment {
 	private int start;

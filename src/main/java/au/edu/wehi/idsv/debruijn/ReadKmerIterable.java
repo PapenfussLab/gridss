@@ -1,14 +1,12 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.util.Collections;
-import java.util.Iterator;
-
-import org.apache.commons.lang3.ArrayUtils;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.primitives.UnsignedBytes;
-
 import htsjdk.samtools.util.SequenceUtil;
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.Collections;
+import java.util.Iterator;
 
 public class ReadKmerIterable implements Iterable<ReadKmer> {
 	private final byte[] qual;

@@ -1,11 +1,8 @@
 package au.edu.wehi.idsv;
 
-import java.util.List;
-
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
 import htsjdk.samtools.SAMRecord;
 
 public class SoftClipEvidence extends SingleReadEvidence {

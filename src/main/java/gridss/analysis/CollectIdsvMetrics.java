@@ -1,10 +1,5 @@
 package gridss.analysis;
 
-import java.io.File;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -13,7 +8,11 @@ import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.IOUtil;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.analysis.SinglePassSamProgram;
+
+import java.io.File;
 
 @CommandLineProgramProperties(
 		summary = "Reads a SAM or BAM file and writes a file containing metrics " +

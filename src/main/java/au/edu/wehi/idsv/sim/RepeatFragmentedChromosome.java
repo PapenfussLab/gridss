@@ -1,19 +1,18 @@
 package au.edu.wehi.idsv.sim;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
-
-import au.edu.wehi.idsv.GenomicProcessingContext;
 import htsjdk.samtools.util.Log;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class RepeatFragmentedChromosome extends FragmentedChromosome {
 	private static final Log log = Log.getInstance(RepeatFragmentedChromosome.class);

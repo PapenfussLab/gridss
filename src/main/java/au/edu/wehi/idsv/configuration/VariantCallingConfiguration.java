@@ -1,20 +1,13 @@
 package au.edu.wehi.idsv.configuration;
 
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.vcf.VcfFilter;
+import com.google.common.collect.Lists;
+import org.apache.commons.configuration.Configuration;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-
-import org.apache.commons.configuration.Configuration;
-
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.IdsvVariantContextBuilder;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class VariantCallingConfiguration {
 	public static final String CONFIGURATION_PREFIX = "variantcalling";

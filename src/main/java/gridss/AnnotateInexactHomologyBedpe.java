@@ -1,26 +1,24 @@
 package gridss;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.broadinstitute.barclay.argparser.Argument;
-
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.BreakpointHomology;
 import au.edu.wehi.idsv.bed.BedpeIterator;
 import au.edu.wehi.idsv.bed.BedpeRecord;
 import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.util.ParallelTransformIterator;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.StandardOptionDefinitions;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class AnnotateInexactHomologyBedpe extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(AnnotateInexactHomologyBedpe.class);

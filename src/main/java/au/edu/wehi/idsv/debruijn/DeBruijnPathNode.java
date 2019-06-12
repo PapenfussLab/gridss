@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.util.Collection;
-
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.WeightedDirectedGraph;
+
+import java.util.Collection;
 
 public class DeBruijnPathNode<T> extends PathNode<T> implements DeBruijnSequenceGraphNode {
 	private int refCount = 0;

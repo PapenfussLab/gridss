@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv.configuration;
 
-import java.io.File;
-
 import org.apache.commons.configuration.Configuration;
+
+import java.io.File;
 
 public class VisualisationConfiguration {
 	public static final String CONFIGURATION_PREFIX = "visualisation";

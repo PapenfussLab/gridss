@@ -1,10 +1,11 @@
 package au.edu.wehi.idsv.alignment;
 
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.Flushable;
-import java.io.IOException;
+import htsjdk.samtools.*;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.fastq.NonFlushingBasicFastqWriter;
+import htsjdk.samtools.util.Log;
+
+import java.io.*;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.Iterator;
 import java.util.List;
@@ -14,15 +15,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.fastq.NonFlushingBasicFastqWriter;
-import htsjdk.samtools.util.Log;
 
 /**
  * Performs alignment of the given records using an external alignment tools.

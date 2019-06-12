@@ -1,21 +1,15 @@
 package au.edu.wehi.idsv.sam;
 
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakendSummary;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Ints;
+import htsjdk.samtools.*;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.TextCigarCodec;
 
 /**
  * SA Z Other canonical alignments in a chimeric alignment, formatted as a semicolon-delimited

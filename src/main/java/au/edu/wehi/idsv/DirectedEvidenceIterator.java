@@ -1,17 +1,14 @@
 package au.edu.wehi.idsv;
 
+import com.google.common.collect.PeekingIterator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import com.google.common.collect.PeekingIterator;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 
 public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvidence>, PeekingIterator<DirectedEvidence> {
 	private final SAMEvidenceSource source;

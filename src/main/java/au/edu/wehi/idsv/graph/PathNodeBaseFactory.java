@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv.graph;
 
-import java.util.Collection;
-
 import com.google.common.collect.ImmutableList;
+
+import java.util.Collection;
 
 public class PathNodeBaseFactory<T> implements PathNodeFactory<T, PathNode<T>> {
 	public final WeightedDirectedGraph<T> graph;

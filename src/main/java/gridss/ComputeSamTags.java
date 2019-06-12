@@ -1,39 +1,29 @@
 package gridss;
 
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.sam.NmTagIterator;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.TemplateTagsIterator;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.FileHelper;
+import com.google.common.collect.Sets;
+import gridss.cmdline.ReferenceCommandLineProgram;
+import htsjdk.samtools.*;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import picard.cmdline.StandardOptionDefinitions;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.collect.Sets;
-
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.picard.ReferenceLookup;
-import au.edu.wehi.idsv.sam.NmTagIterator;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
-import au.edu.wehi.idsv.sam.TemplateTagsIterator;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.FileHelper;
-import gridss.cmdline.ReferenceCommandLineProgram;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
 		summary = "Populates computed SAM tags. "

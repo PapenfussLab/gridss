@@ -1,28 +1,23 @@
 package au.edu.wehi.idsv.vcf;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVariantContext> {
 	public static final byte DEFAULT_QUAL_SCORE = 20;

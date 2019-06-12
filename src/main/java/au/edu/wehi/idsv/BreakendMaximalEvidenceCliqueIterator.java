@@ -1,18 +1,17 @@
 package au.edu.wehi.idsv;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
-
+import au.edu.wehi.idsv.graph.ScalingHelper;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.visualisation.TrackedState;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
-import au.edu.wehi.idsv.graph.ScalingHelper;
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.PriorityQueue;
 
 public class BreakendMaximalEvidenceCliqueIterator implements Iterator<VariantContextDirectedEvidence>, TrackedState {
 	public static final String BREAKEND_ID_SUFFIX = "b";

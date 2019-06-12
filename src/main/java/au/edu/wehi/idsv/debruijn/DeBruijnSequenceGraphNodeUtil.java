@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv.debruijn;
 
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -7,9 +10,6 @@ import java.util.PrimitiveIterator.OfLong;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
-
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
 
 
 public class DeBruijnSequenceGraphNodeUtil {

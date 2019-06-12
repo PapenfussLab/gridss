@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv.util;
 
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.PeekingIterator;
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.PeekingIterator;
-
-import au.edu.wehi.idsv.visualisation.TrackedBuffer;
-import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
-import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
 
 /**
  * Randomly filters sorted records to limit the record density

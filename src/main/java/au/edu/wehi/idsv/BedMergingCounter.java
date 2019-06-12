@@ -2,11 +2,13 @@ package au.edu.wehi.idsv;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
-import htsjdk.samtools.util.Log;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class BedMergingCounter {
     private static final BreakendSummary SENTINEL = new BreakendSummary(Integer.MAX_VALUE, BreakendDirection.Forward, 1);

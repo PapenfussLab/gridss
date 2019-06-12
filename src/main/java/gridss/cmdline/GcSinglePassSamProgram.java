@@ -24,11 +24,6 @@
 
 package gridss.cmdline;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-
-import org.broadinstitute.barclay.argparser.Argument;
-
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -37,7 +32,11 @@ import gridss.analysis.InsertSizeDistribution;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.Argument;
 import picard.analysis.SinglePassSamProgram;
+
+import java.io.File;
+import java.io.FileNotFoundException;
 
 public abstract class GcSinglePassSamProgram extends SinglePassSamProgram {
 	private static final Log log = Log.getInstance(GcSinglePassSamProgram.class);

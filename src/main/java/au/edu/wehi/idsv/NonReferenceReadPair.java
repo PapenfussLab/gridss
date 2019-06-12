@@ -1,21 +1,18 @@
 package au.edu.wehi.idsv;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-
-import htsjdk.samtools.*;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.MathUtil;
+import com.google.common.collect.ImmutableList;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.

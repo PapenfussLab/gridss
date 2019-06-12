@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
+
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
 
 /**
  * Extracts split read fastq records from the given alignments 

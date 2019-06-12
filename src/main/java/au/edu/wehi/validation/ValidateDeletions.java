@@ -1,5 +1,10 @@
 package au.edu.wehi.validation;
 
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import picard.cmdline.CommandLineProgram;
+import picard.cmdline.StandardOptionDefinitions;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -7,12 +12,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import picard.cmdline.CommandLineProgram;
-import picard.cmdline.StandardOptionDefinitions;
 
 /**
  * Validations deletion calls with long read support

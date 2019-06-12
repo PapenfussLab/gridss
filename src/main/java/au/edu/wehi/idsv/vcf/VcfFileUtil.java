@@ -1,11 +1,5 @@
 package au.edu.wehi.idsv.vcf;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.concurrent.Callable;
-
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
@@ -23,6 +17,12 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFRecordCodec;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.Callable;
 
 public class VcfFileUtil {
 	private static final Log log = Log.getInstance(VcfFileUtil.class);

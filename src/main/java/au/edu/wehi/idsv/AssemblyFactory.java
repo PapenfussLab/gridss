@@ -1,23 +1,18 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.SamTags;
+import au.edu.wehi.idsv.util.MessageThrottler;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
+import com.google.common.primitives.Bytes;
+import htsjdk.samtools.*;
+import htsjdk.samtools.util.Log;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Range;
-import com.google.common.primitives.Bytes;
-
-import au.edu.wehi.idsv.sam.SamTags;
-import au.edu.wehi.idsv.util.MessageThrottler;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
 
 public final class AssemblyFactory {
 	private static final Log log = Log.getInstance(AssemblyFactory.class);

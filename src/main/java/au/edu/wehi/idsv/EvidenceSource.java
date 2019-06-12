@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-
 import htsjdk.samtools.SAMFileHeader.SortOrder;
+
+import java.io.File;
 
 public abstract class EvidenceSource {
 	public abstract int getMaxConcordantFragmentSize();

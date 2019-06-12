@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv.util;
 
+import com.google.common.collect.Ordering;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
-
-import com.google.common.collect.Ordering;
 
 /**
  * Performs a given transformation operation over all elements of an iterator.

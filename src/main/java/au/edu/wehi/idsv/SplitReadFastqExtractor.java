@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Extracts split read fastq records from the given alignments 

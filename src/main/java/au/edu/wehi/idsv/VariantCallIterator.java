@@ -1,32 +1,23 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.util.DuplicatingIterable;
+import au.edu.wehi.idsv.visualisation.StateTracker;
+import au.edu.wehi.idsv.visualisation.TrackedState;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.QueryInterval;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
-import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
-import au.edu.wehi.idsv.util.DuplicatingIterable;
-import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
-import au.edu.wehi.idsv.visualisation.StateTracker;
-import au.edu.wehi.idsv.visualisation.TrackedState;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-import org.apache.commons.lang3.tuple.Pair;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-
-import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 /**
  * Calls breakpoints from the given evidence
  * 

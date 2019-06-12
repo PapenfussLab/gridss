@@ -1,17 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import au.edu.wehi.idsv.util.*;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
@@ -20,7 +8,12 @@ import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.*;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import gridss.ComputeSamTags;
 import gridss.ExtractSVReads;
 import gridss.SoftClipsToSplitReads;
@@ -35,6 +28,12 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import picard.cmdline.CommandLineProgram;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Structural variation evidence based on read pairs from a single SAM/BAM.  

@@ -29,7 +29,10 @@ import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**

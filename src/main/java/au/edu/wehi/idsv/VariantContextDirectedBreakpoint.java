@@ -1,14 +1,12 @@
 package au.edu.wehi.idsv;
 
-import org.apache.commons.lang3.NotImplementedException;
-
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
-
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 import htsjdk.variant.variantcontext.VariantContext;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvidence implements DirectedBreakpoint {
 	/** */

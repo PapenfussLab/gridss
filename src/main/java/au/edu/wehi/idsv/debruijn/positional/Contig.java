@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.ArrayDeque;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+
+import java.util.ArrayDeque;
 
 public class Contig {
 	public Contig(TraversalNode node, boolean hasReferenceSuccessor) {

@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import com.google.common.collect.Lists;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 

@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.graph;
 
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Longs;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
-
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Longs;
 
 /**
  * Calculates the maximum clique of an interval graph

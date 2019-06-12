@@ -1,23 +1,12 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TreeSet;
-
+import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
-
-import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
@@ -25,6 +14,10 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Calls simple variants from breakends

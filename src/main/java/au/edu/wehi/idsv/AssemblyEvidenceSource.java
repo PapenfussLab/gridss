@@ -1,19 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.MoreExecutors;
-
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
@@ -22,6 +8,10 @@ import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 import gridss.SoftClipsToSplitReads;
 import gridss.cmdline.CommandLineProgramHelper;
 import htsjdk.samtools.*;
@@ -30,6 +20,15 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import picard.sam.GatherBamFiles;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Structural variant supporting contigs generated from assembly

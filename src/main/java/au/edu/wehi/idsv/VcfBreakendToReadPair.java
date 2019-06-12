@@ -1,16 +1,8 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Locale;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
+import au.edu.wehi.idsv.util.FileHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -20,8 +12,14 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.FixMateInformation;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
 
 @CommandLineProgramProperties(
         summary = "Converts VCF breakend calls to BAM format for visualisation. "

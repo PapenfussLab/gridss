@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+
 import java.util.Collection;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
 /**
  * Total support for the given kmer over the given interval

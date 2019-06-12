@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.alignment;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.util.concurrent.TimeUnit;
-
-import htsjdk.samtools.util.Log;
 
 class ExternalProcessHelper {
 	/**

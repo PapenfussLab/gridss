@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import au.edu.wehi.idsv.sam.CigarUtil;
 import com.google.common.collect.ImmutableSet;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Read alignment based support for a small structural variant

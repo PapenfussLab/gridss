@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.util.List;
-
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.graph.PathNode;
+
+import java.util.List;
 
 /**
  * Does not perform any algorithm tracking

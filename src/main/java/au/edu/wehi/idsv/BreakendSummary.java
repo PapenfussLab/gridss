@@ -1,18 +1,17 @@
 package au.edu.wehi.idsv;
 
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
-
+import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.MathUtil;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.math.IntMath;
-
-import au.edu.wehi.idsv.util.IntervalUtil;
-import au.edu.wehi.idsv.util.MathUtil;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMSequenceDictionary;
+
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Positional location of a breakpoint that is consistent with the given evidence

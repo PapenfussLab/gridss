@@ -1,21 +1,19 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-
-import com.google.common.util.concurrent.MoreExecutors;
-
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
+import com.google.common.util.concurrent.MoreExecutors;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 
 /**

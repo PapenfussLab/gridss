@@ -1,33 +1,26 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.List;
-
-import au.edu.wehi.idsv.util.MessageThrottler;
-import gridss.ComputeSamTags;
-import htsjdk.samtools.util.Log;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.tuple.Pair;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.EvidenceSource;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SingleReadEvidence;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
+import gridss.ComputeSamTags;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.List;
 
 /**
  * Minimal evidence for incorporating soft clip and

@@ -1,15 +1,10 @@
 package scambler;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
-
 import au.edu.wehi.idsv.Defaults;
 import scambler.SgNode.TransitiveReductionMark;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Streaming implementation of Myer 2005 String Graph transitive reduction algorithm

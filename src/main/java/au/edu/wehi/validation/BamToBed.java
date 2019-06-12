@@ -1,30 +1,19 @@
 package au.edu.wehi.validation;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
+import au.edu.wehi.idsv.sam.CigarUtil;
+import htsjdk.samtools.*;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.tribble.bed.SimpleBEDFeature;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import picard.cmdline.CommandLineProgram;
+import picard.cmdline.StandardOptionDefinitions;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import au.edu.wehi.idsv.sam.ChimericAlignment;
-import au.edu.wehi.idsv.sam.CigarUtil;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.tribble.bed.SimpleBEDFeature;
-import picard.cmdline.CommandLineProgram;
-import picard.cmdline.StandardOptionDefinitions;
 
 /**
  * Validations deletion calls with long read support

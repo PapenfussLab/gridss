@@ -1,11 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.List;
-
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
@@ -14,12 +8,17 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.vcf.GridssVcfConstants;
 import au.edu.wehi.idsv.visualisation.BufferTracker;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import com.google.common.collect.Lists;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Processing context for the given record

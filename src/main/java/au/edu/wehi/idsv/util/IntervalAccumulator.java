@@ -1,13 +1,7 @@
 package au.edu.wehi.idsv.util;
 
-import it.unimi.dsi.fastutil.ints.Int2DoubleMap;
+import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.ints.Int2DoubleMap.Entry;
-import it.unimi.dsi.fastutil.ints.Int2DoubleRBTreeMap;
-import it.unimi.dsi.fastutil.ints.Int2DoubleSortedMap;
-import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.IntBidirectionalIterator;
-import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
 
 /**

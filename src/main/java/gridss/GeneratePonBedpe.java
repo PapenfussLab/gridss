@@ -1,6 +1,5 @@
 package gridss;
 
-import au.edu.wehi.idsv.BedpeMergingCounter;
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
@@ -12,7 +11,6 @@ import com.google.common.collect.Iterators;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.PeekableIterator;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -28,7 +26,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 

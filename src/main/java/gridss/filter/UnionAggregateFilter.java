@@ -1,9 +1,9 @@
 package gridss.filter;
 
-import java.util.List;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.SamRecordFilter;
+
+import java.util.List;
 
 /**
  * Filters records only if they are filtered by all filters

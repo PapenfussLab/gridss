@@ -24,12 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BinaryCodec;
-import htsjdk.samtools.util.CigarUtil;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.CoordMath;
-import htsjdk.samtools.util.RuntimeEOFException;
-import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,11 +32,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**

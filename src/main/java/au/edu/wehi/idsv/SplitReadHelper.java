@@ -1,31 +1,20 @@
 package au.edu.wehi.idsv;
 
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.ArrayUtils;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.SequenceUtil;
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Helper class for split read identification and manipulation

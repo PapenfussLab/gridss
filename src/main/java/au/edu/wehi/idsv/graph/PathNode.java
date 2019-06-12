@@ -1,15 +1,10 @@
 package au.edu.wehi.idsv.graph;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
+import au.edu.wehi.idsv.util.FirstOverflowList;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 
-import au.edu.wehi.idsv.util.FirstOverflowList;
+import java.util.*;
 
 public class PathNode<T> implements WeightedSequenceGraphNode {
 	/**

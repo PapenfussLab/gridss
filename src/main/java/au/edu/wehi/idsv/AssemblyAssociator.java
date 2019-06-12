@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * Maps reads to their associated assemblies.

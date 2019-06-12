@@ -1,13 +1,12 @@
 package gridss.cmdline;
 
-import java.io.File;
-
-import org.broadinstitute.barclay.argparser.Argument;
-
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import gridss.analysis.InsertSizeDistribution;
 import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.Argument;
+
+import java.io.File;
 
 /**
  * Base class used to transform a VCF breakpoint call set given the full evidence available.

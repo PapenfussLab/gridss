@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv;
 
-import java.util.Collection;
-import java.util.List;
-
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
+
+import java.util.Collection;
 
 
 public interface DirectedEvidence {

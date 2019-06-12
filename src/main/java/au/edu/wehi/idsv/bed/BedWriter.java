@@ -1,14 +1,9 @@
 package au.edu.wehi.idsv.bed;
 
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-
 import htsjdk.samtools.SAMSequenceDictionary;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Writes to a BED file

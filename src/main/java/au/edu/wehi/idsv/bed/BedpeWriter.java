@@ -1,22 +1,17 @@
 package au.edu.wehi.idsv.bed;
 
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.SAMSequenceDictionary;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Outputs variant calls to BEDPE

@@ -2,7 +2,8 @@ package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
 import au.edu.wehi.idsv.debruijn.positional.KmerSupportNode;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 /**
  * Optimised priority queue implementation that efficiently implements only the

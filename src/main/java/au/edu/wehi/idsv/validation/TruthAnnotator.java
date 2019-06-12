@@ -1,27 +1,19 @@
 package au.edu.wehi.idsv.validation;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.IdsvVariantContextBuilder;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Annotates breakends based on a reference truth file

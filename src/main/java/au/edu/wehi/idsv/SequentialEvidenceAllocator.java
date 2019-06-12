@@ -1,40 +1,20 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.TreeRangeMap;
-
 import au.edu.wehi.idsv.util.RangeUtil;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import com.google.common.collect.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.IntervalTree;
 import htsjdk.samtools.util.IntervalTree.Node;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Adds evidence supporting to each variant call. Both the variant calls and

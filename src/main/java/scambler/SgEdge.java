@@ -1,14 +1,13 @@
 package scambler;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import au.edu.wehi.idsv.debruijn.PackedSequence;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 
-import au.edu.wehi.idsv.debruijn.PackedSequence;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * String Graph edge

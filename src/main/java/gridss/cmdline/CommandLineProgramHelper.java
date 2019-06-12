@@ -1,10 +1,10 @@
 package gridss.cmdline;
 
+import picard.cmdline.CommandLineProgram;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-import picard.cmdline.CommandLineProgram;
 
 public class CommandLineProgramHelper {
 	/**

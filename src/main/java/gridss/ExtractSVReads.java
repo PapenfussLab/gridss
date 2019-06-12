@@ -1,14 +1,5 @@
 package gridss;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -17,23 +8,20 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
 import gridss.analysis.CollectStructuralVariantReadMetrics;
 import gridss.cmdline.ProcessStructuralVariantReadsCommandLineProgram;
-import gridss.filter.ClippedReadFilter;
-import gridss.filter.FixedFilter;
-import gridss.filter.IndelReadFilter;
-import gridss.filter.OneEndAnchoredReadFilter;
-import gridss.filter.ReadPairConcordanceFilter;
-import gridss.filter.SplitReadFilter;
-import gridss.filter.UnionAggregateFilter;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMFileHeader;
+import gridss.filter.*;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @CommandLineProgramProperties(
 		summary = "Extracts reads and read pairs supporting putative structural variations. "

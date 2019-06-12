@@ -1,20 +1,15 @@
 package au.edu.wehi.idsv.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.LinearGenomicCoordinate;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.util.MathUtil;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * variant/reference Log-likelihood statistical model

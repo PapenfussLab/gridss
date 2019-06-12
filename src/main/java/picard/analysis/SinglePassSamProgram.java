@@ -37,7 +37,6 @@ import picard.PicardException;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
 
-import javax.management.InstanceNotFoundException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,9 +44,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Super class that is designed to provide some consistent structure between subclasses that

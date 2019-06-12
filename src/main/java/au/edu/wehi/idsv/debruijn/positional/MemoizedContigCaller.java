@@ -1,27 +1,19 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.SanityCheckFailureException;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.TraversalNodeByPathFirstStartEndSubnodeSortedSet;
+import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
+import com.google.common.collect.ImmutableSet;
+import htsjdk.samtools.util.Log;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.NavigableSet;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.TraversalNodeByPathFirstStartEndSubnodeSortedSet;
-import com.google.common.collect.ImmutableSet;
-
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.SanityCheckFailureException;
-import au.edu.wehi.idsv.util.IntervalUtil;
-import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
-import htsjdk.samtools.util.Log;
 
 
 /**

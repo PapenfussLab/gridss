@@ -1,18 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.PeekingIterator;
-import com.google.common.io.Files;
-
 import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -21,21 +8,19 @@ import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
-import htsjdk.samtools.SAMFileHeader;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.PeekingIterator;
+import com.google.common.io.Files;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.fastq.AsyncFastqWriter;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.fastq.FastqWriter;
-import htsjdk.samtools.fastq.FastqWriterFactory;
-import htsjdk.samtools.fastq.NonFlushingBasicFastqWriter;
+import htsjdk.samtools.fastq.*;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class SplitReadRealigner {
 	private static final Log log = Log.getInstance(SplitReadRealigner.class);

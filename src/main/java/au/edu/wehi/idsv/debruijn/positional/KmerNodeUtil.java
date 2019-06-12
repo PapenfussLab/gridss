@@ -3,7 +3,6 @@ package au.edu.wehi.idsv.debruijn.positional;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
-
 import it.unimi.dsi.fastutil.Hash;
 
 /**

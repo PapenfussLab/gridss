@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.util.CloseableIterator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AggregateEvidenceSource extends EvidenceSource implements Iterable<DirectedEvidence> {
 	private List<SAMEvidenceSource> all;

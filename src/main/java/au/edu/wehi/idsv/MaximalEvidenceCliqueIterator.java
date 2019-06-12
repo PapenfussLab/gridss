@@ -1,12 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.util.Collection;
-import java.util.Iterator;
-
-import au.edu.wehi.idsv.visualisation.TrackedState;
-import com.google.common.base.Function;
-import com.google.common.collect.AbstractIterator;
-
 import au.edu.wehi.idsv.graph.RectangleGraphMaximalCliqueIterator;
 import au.edu.wehi.idsv.graph.RectangleGraphNode;
 import au.edu.wehi.idsv.graph.RectangleGraphNodeMergingIterator;
@@ -15,7 +8,13 @@ import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.util.WindowedSortingIterator;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import au.edu.wehi.idsv.visualisation.TrackedState;
+import com.google.common.base.Function;
+import com.google.common.collect.AbstractIterator;
 import htsjdk.samtools.util.Log;
+
+import java.util.Collection;
+import java.util.Iterator;
 /**
  * Maximal clique summary evidence iterator 
  * @author Daniel Cameron

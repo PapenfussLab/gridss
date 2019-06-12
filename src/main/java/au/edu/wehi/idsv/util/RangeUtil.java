@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.util;
 
-import java.util.Comparator;
-import java.util.Map.Entry;
-
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+
+import java.util.Comparator;
+import java.util.Map.Entry;
 
 public class RangeUtil {
 	public static RangeSet<Integer> intersect(RangeSet<Integer> rs1, RangeSet<Integer> rs2) {

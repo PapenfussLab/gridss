@@ -1,7 +1,8 @@
 package htsjdk.samtools.util;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.*;
 
 /**

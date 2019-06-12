@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.util;
 
+import com.google.common.io.Files;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.io.Files;
 
 public abstract class FileHelper {
 	/**

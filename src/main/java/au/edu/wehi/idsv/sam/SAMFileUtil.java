@@ -1,41 +1,22 @@
 package au.edu.wehi.idsv.sam;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.concurrent.Callable;
-import java.util.function.Function;
-
-import com.google.common.collect.PeekingIterator;
-
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-import htsjdk.samtools.BAMRecordCodec;
-import htsjdk.samtools.SAMFileHeader;
+import com.google.common.collect.PeekingIterator;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordComparator;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.SortingCollection;
+import htsjdk.samtools.util.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 public class SAMFileUtil {
 	private static final Log log = Log.getInstance(SAMFileUtil.class);

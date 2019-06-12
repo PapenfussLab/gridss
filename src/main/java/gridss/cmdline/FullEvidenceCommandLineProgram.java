@@ -1,11 +1,10 @@
 package gridss.cmdline;
 
-import java.io.File;
-
-import org.broadinstitute.barclay.argparser.Argument;
-
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.CommandLineProgram;
+
+import java.io.File;
 
 public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileCommandLineProgram {
 	@Argument(doc="Breakend assemblies which have undergone split read identification", optional=false)

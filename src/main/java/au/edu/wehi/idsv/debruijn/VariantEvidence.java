@@ -1,17 +1,13 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.util.BitSet;
-import java.util.List;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.LinearGenomicCoordinate;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SingleReadEvidence;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
+
+import java.util.BitSet;
+import java.util.List;
 
 /**
  * Helper wrapper exposing information on both the raw evidence read and

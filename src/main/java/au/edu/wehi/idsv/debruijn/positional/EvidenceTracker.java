@@ -1,18 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.ListIterator;
-import java.util.Set;
-
 import au.edu.wehi.idsv.util.IntervalUtil;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+
+import java.util.*;
 
 /**
  * Tracks evidence provided to a given graph by wrapping a source iterator

@@ -1,26 +1,19 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-
+import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.SortedMultiset;
 import com.google.common.collect.TreeMultiset;
-
-import au.edu.wehi.idsv.util.IntervalUtil;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * Corrects misassembly due to incorporation of read pair evidence at multiple positions

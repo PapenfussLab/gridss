@@ -24,12 +24,6 @@
 
 package gridss.analysis;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.PaddedLinearGenomicCoordinate;
@@ -39,7 +33,12 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.analysis.SinglePassSamProgram;
+
+import java.io.File;
+import java.io.IOException;
 
 @CommandLineProgramProperties(
         summary = "Reads a SAM or BAM file and writes a BED file containing the regions in which coverage equals or exceeds the given threshold",

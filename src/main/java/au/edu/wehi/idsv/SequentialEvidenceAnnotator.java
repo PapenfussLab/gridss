@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.Executor;
-
 import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
 import au.edu.wehi.idsv.util.ParallelTransformIterator;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.util.Log;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * Annotates each variant call based on supporting evidence. Both the variant calls and

@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv.graph;
 
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.visualisation.TrackedState;
+import com.google.common.collect.ImmutableList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
-
-import au.edu.wehi.idsv.visualisation.TrackedState;
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.Defaults;
 
 /**
  * Calculates all maximal cliques of a rectangle graph

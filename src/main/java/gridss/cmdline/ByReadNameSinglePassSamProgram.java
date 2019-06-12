@@ -1,37 +1,22 @@
 package gridss.cmdline;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-
-import org.broadinstitute.barclay.argparser.Argument;
-
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import htsjdk.samtools.SAMFileHeader;
+import com.google.common.collect.ImmutableList;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequence;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.*;
+import org.broadinstitute.barclay.argparser.Argument;
 import picard.PicardException;
 import picard.analysis.SinglePassSamProgram;
 import picard.cmdline.StandardOptionDefinitions;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
 
 /**
  * 

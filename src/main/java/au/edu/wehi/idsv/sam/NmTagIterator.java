@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.sam;
 
-import java.util.Iterator;
-
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import htsjdk.samtools.SAMRecord;
+
+import java.util.Iterator;
 
 /**
  * Ensures that every aligned record has an associated NM tag 

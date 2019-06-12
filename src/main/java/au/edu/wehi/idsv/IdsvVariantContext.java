@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
-
-import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.VariantContext;
 

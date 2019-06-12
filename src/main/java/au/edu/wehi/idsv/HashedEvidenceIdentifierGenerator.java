@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-
 import htsjdk.samtools.SAMRecord;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 /**
  * Generates evidence ID using hashes to reduce evidenceID size

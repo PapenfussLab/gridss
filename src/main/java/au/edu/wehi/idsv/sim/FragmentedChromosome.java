@@ -1,16 +1,15 @@
 package au.edu.wehi.idsv.sim;
 
+import au.edu.wehi.idsv.GenomicProcessingContext;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import htsjdk.samtools.util.Log;
 
 /**
  * 

@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.sim;
 
-import java.io.File;
-import java.util.Locale;
-
+import au.edu.wehi.idsv.GenomicProcessingContext;
+import htsjdk.samtools.util.IOUtil;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import htsjdk.samtools.util.IOUtil;
+import java.io.File;
+import java.util.Locale;
 
 /**
  * Simulates chromothripsis through random translocation

@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
 import com.google.common.base.Function;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Lazy iterator that iterates over all per chromosome evidence

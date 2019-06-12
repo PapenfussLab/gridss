@@ -1,15 +1,11 @@
 package gridss;
 
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.SequentialCoverageAnnotator;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.*;
 import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 public class AnnotateReferenceCoverage extends VcfTransformCommandLineProgram {
 	/**

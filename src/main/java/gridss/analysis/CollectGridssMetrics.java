@@ -1,21 +1,19 @@
 package gridss.analysis;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.NotImplementedException;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import picard.analysis.CollectMultipleMetrics;
+import picard.analysis.MetricAccumulationLevel;
+import picard.analysis.SinglePassSamProgram;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.apache.commons.lang3.NotImplementedException;
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
-import picard.analysis.CollectMultipleMetrics;
-import picard.analysis.MetricAccumulationLevel;
-import picard.analysis.SinglePassSamProgram;
 
 /**
  * Class that is designed to instantiate and execute multiple metrics programs that extend

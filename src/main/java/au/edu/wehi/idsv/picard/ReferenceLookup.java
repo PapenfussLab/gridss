@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.picard;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public interface ReferenceLookup extends ReferenceSequenceFile {
 	public byte getBase(int referenceIndex, int position);

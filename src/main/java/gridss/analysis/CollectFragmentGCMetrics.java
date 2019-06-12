@@ -24,12 +24,6 @@
 
 package gridss.analysis;
 
-import java.io.File;
-import java.util.Set;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
 import gridss.cmdline.GcSinglePassSamProgram;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -37,9 +31,14 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.IOUtil;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.PicardException;
 import picard.analysis.MetricAccumulationLevel;
 import picard.util.RExecutor;
+
+import java.io.File;
+import java.util.Set;
 
 /**
  * Command line program to read non-duplicate insert sizes, create a Histogram

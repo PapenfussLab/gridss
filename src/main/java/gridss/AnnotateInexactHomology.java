@@ -1,8 +1,5 @@
 package gridss;
 
-import java.util.Iterator;
-import java.util.concurrent.ExecutorService;
-
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.alignment.BreakpointHomology;
@@ -10,6 +7,9 @@ import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.ParallelTransformIterator;
 import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
+
+import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
 
 public class AnnotateInexactHomology extends VcfTransformCommandLineProgram {
 	@Override

@@ -1,5 +1,22 @@
 package gridss.cmdline;
 
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import htsjdk.samtools.*;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
+import org.apache.commons.configuration.ConfigurationException;
+import org.broadinstitute.barclay.argparser.Argument;
+import picard.cmdline.CommandLineProgram;
+import picard.cmdline.StandardOptionDefinitions;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -9,29 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import org.apache.commons.configuration.ConfigurationException;
-import org.broadinstitute.barclay.argparser.Argument;
-
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.alignment.AlignerFactory;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SequenceUtil;
-import picard.cmdline.CommandLineProgram;
-import picard.cmdline.StandardOptionDefinitions;
 
 public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(MultipleSamFileCommandLineProgram.class);

@@ -1,15 +1,15 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-
 import au.edu.wehi.idsv.bed.BedWriter;
 import au.edu.wehi.idsv.util.IntervalAccumulator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import it.unimi.dsi.fastutil.ints.Int2DoubleMap.Entry;
 import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
 
 /**
  * Calculate binned coverage

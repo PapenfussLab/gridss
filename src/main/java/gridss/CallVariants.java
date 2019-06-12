@@ -1,5 +1,21 @@
 package gridss;
 
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.util.FileHelper;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import gridss.cmdline.FullEvidenceCommandLineProgram;
+import gridss.cmdline.MultipleSamFileCommandLineProgram;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import picard.analysis.InsertSizeMetrics;
+import picard.cmdline.StandardOptionDefinitions;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -7,24 +23,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.util.FileHelper;
-import gridss.cmdline.FullEvidenceCommandLineProgram;
-import gridss.cmdline.MultipleSamFileCommandLineProgram;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import picard.analysis.InsertSizeMetrics;
-import picard.cmdline.StandardOptionDefinitions;
 
 /**
  * Extracts structural variation evidence and assembles breakends

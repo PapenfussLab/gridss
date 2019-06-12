@@ -1,22 +1,11 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.io.BufferedWriter;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-
 import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
-import au.edu.wehi.idsv.debruijn.positional.CollapseIterator;
-import au.edu.wehi.idsv.debruijn.positional.EvidenceTracker;
-import au.edu.wehi.idsv.debruijn.positional.MemoizedContigCaller;
-import au.edu.wehi.idsv.debruijn.positional.NonReferenceContigAssembler;
-import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
-import au.edu.wehi.idsv.debruijn.positional.PathSimplificationIterator;
-import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
+import au.edu.wehi.idsv.debruijn.positional.*;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
+
+import java.io.*;
 
 /**
  * Tracks information associated with positional de Bruijn graph calling

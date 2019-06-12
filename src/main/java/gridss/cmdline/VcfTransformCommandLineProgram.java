@@ -1,25 +1,10 @@
 package gridss.cmdline;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-
-import htsjdk.variant.vcf.VCFHeader;
-import org.broadinstitute.barclay.argparser.Argument;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-
-import au.edu.wehi.idsv.DirectEvidenceWindowedSortingIterator;
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.VariantContextWindowedSortingIterator;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -27,7 +12,15 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
+import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.StandardOptionDefinitions;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Base class used to transform a VCF breakpoint call set given the full evidence available.

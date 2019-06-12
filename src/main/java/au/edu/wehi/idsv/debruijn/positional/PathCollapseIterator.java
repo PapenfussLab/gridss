@@ -1,13 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
@@ -15,6 +7,8 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathNodeBasePath.TraversalNode;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.SequenceUtil;
+
+import java.util.*;
 
 /**
  * Graph simplifier that merging similar paths

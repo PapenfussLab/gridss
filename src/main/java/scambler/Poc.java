@@ -1,34 +1,23 @@
 package scambler;
 
-import java.io.File;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Doubles;
-
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.visualisation.GexfHelper;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Doubles;
 import htsjdk.samtools.SAMRecord;
-import it.uniroma1.dis.wsngroup.gexf4j.core.Edge;
-import it.uniroma1.dis.wsngroup.gexf4j.core.EdgeType;
-import it.uniroma1.dis.wsngroup.gexf4j.core.Gexf;
-import it.uniroma1.dis.wsngroup.gexf4j.core.Graph;
-import it.uniroma1.dis.wsngroup.gexf4j.core.IDType;
-import it.uniroma1.dis.wsngroup.gexf4j.core.Mode;
-import it.uniroma1.dis.wsngroup.gexf4j.core.Node;
+import it.uniroma1.dis.wsngroup.gexf4j.core.*;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.Attribute;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeClass;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeList;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeType;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.GexfImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
+
+import java.io.File;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Proof of concept static graph implementation

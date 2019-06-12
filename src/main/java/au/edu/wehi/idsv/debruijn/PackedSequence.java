@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.math.RoundingMode;
-
+import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.math.IntMath;
 
-import au.edu.wehi.idsv.util.IntervalUtil;
+import java.math.RoundingMode;
 
 /**
  * Compresses the given sequence by representing in 2-bit format

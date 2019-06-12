@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.visualisation;
 
+import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
+
 import java.io.File;
 import java.util.List;
 import java.util.Set;
-
-import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 
 public interface DeBruijnPathGraphExporter<T, PN extends DeBruijnPathNode<T>> {
 

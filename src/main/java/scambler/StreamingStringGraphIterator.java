@@ -1,14 +1,10 @@
 package scambler;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.PriorityQueue;
-
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import htsjdk.samtools.SAMRecord;
+
+import java.util.*;
 
 public class StreamingStringGraphIterator implements Iterator<SgNode> {
 	private final OverlapLookup lookup;

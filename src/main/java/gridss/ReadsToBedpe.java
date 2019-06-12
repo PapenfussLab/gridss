@@ -1,5 +1,19 @@
 package gridss;
 
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.MathUtil;
+import com.google.common.collect.Iterators;
+import htsjdk.samtools.*;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import picard.cmdline.CommandLineProgram;
+import picard.cmdline.StandardOptionDefinitions;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -8,35 +22,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.collect.Iterators;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.DirectedBreakpoint;
-import au.edu.wehi.idsv.IndelEvidence;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
-import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.SplitReadEvidence;
-import au.edu.wehi.idsv.StringEvidenceIdentifierGenerator;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.MathUtil;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import picard.cmdline.CommandLineProgram;
-import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
 		summary = "Converts split reads and indel-containing reads to BEDPE notation.",

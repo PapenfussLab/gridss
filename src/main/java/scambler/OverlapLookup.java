@@ -1,10 +1,10 @@
 package scambler;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import au.edu.wehi.idsv.debruijn.PackedSequence;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class OverlapLookup {
 	private final int MAX_MISMATCHES = 0;

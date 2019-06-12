@@ -1,15 +1,10 @@
 package au.edu.wehi.idsv;
 
+import gridss.analysis.*;
+
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
-
-import gridss.analysis.CollectCigarMetrics;
-import gridss.analysis.CollectIdsvMetrics;
-import gridss.analysis.CollectMapqMetrics;
-import gridss.analysis.CollectStructuralVariantReadMetrics;
-import gridss.analysis.CollectTagMetrics;
-import gridss.analysis.ReportThresholdCoverage;
 
 public class FileSystemContext {
 	private final File tempDir;

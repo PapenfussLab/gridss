@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.ArrayDeque;
-
+import au.edu.wehi.idsv.SanityCheckFailureException;
+import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
-import au.edu.wehi.idsv.SanityCheckFailureException;
-import au.edu.wehi.idsv.util.IntervalUtil;
+import java.util.ArrayDeque;
 
 public class TraversalNode {
 	public final KmerPathSubnode node;

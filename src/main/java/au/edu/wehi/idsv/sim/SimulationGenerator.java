@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.sim;
 
-import java.io.File;
-
-import org.broadinstitute.barclay.argparser.Argument;
-
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.GenomicProcessingContext;
+import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
+
+import java.io.File;
 
 public abstract class SimulationGenerator extends CommandLineProgram {
     @Argument(doc="Reference used for alignment", shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)

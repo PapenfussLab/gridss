@@ -24,9 +24,6 @@
 
 package gridss.analysis;
 
-import java.util.List;
-import java.util.Set;
-
 import au.edu.wehi.idsv.ReadGcSummary;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import htsjdk.samtools.SAMReadGroupRecord;
@@ -37,6 +34,9 @@ import htsjdk.samtools.util.Histogram;
 import picard.analysis.MetricAccumulationLevel;
 import picard.metrics.MultiLevelCollector;
 import picard.metrics.PerUnitMetricCollector;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * Collects InserSizeMetrics on the specified accumulationLevels using

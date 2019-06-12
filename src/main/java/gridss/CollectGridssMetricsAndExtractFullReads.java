@@ -2,7 +2,6 @@ package gridss;
 
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import gridss.analysis.CollectGridssMetrics;
-import gridss.analysis.CollectIdsvMetrics;
 import gridss.analysis.CollectStructuralVariantReadMetrics;
 import gridss.cmdline.CommandLineProgramHelper;
 import org.broadinstitute.barclay.argparser.Argument;

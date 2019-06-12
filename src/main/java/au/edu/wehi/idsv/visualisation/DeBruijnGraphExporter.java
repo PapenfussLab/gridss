@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.io.File;
-
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
+
+import java.io.File;
 
 /**
  * Exports the generated de Bruijn graphs for visualisation

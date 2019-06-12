@@ -1,18 +1,17 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.*;
-
 import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodeByFirstStartPriorityQueue;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SingleReadEvidence;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodeByFirstStartPriorityQueue;
 import au.edu.wehi.idsv.util.MessageThrottler;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+
+import java.util.*;
 
 /**
  * Transforms a breakend start DirectedEvidence iterator

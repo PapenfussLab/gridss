@@ -1,12 +1,11 @@
 package scambler;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
 
-import au.edu.wehi.idsv.LinearGenomicCoordinate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SgNode {
 	/**

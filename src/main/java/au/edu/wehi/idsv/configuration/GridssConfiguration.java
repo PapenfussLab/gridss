@@ -1,17 +1,15 @@
 package au.edu.wehi.idsv.configuration;
 
-import java.io.File;
-import java.net.URL;
-
+import au.edu.wehi.idsv.AdapterHelper;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.util.Log;
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.AdapterHelper;
-import htsjdk.samtools.util.Log;
+import java.io.File;
+import java.net.URL;
 
 /**
  * Configuration settings container for gridss

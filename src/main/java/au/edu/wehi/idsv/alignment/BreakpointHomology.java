@@ -1,15 +1,6 @@
 package au.edu.wehi.idsv.alignment;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.IdsvVariantContextBuilder;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
@@ -17,8 +8,11 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.SequenceUtil;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Determines the length of any inexact breakpoint homology

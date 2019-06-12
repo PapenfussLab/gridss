@@ -1,16 +1,10 @@
 package au.edu.wehi.idsv.sam;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
-
 import htsjdk.samtools.SAMRecord;
+
+import java.util.*;
 
 /**
  * Ensures that every aligned record has an associated NM tag 

@@ -1,37 +1,27 @@
 package gridss;
 
-import java.io.File;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-
-import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-
-import au.edu.wehi.idsv.AssemblyAssociator;
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DirectedEvidenceOrder;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.SequentialEvidenceAllocator;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
-import au.edu.wehi.idsv.StructuralVariationCallBuilder;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+
+import java.io.File;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 @CommandLineProgramProperties(
         summary = "Evidence reallocation is required to ensure that any given read/read pair/assembly "

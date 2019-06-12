@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
 import au.edu.wehi.idsv.debruijn.positional.TraversalNode;
-import htsjdk.samtools.util.Log;
 
 import java.util.Comparator;
 import java.util.Iterator;
