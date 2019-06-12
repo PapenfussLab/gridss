@@ -328,24 +328,15 @@ public class KmerEvidence extends PackedKmerList {
 	}
 	@Override
 	public int hashCode() {
-		return evidence.getEvidenceID().hashCode();
+		return evidence.getEvidenceID().hashCode() + start;
+	}
+	public boolean equals(KmerEvidence other) {
+		// Need start in the equality check since discordant read pairs have both reads added
+		return start == other.start &&
+				evidence.getEvidenceID().equals(other.evidence.getEvidenceID());
 	}
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		KmerEvidence other = (KmerEvidence) obj;
-		String id = evidence.getEvidenceID();
-		String oid = other.evidence.getEvidenceID();
-		if (id == null) {
-			if (oid != null)
-				return false;
-		} else if (!id.equals(oid))
-			return false;
-		return true;
+		return this == obj || (obj instanceof KmerEvidence && equals((KmerEvidence)obj));
 	}
 }

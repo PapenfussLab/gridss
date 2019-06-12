@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerEvidenceSet;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -92,24 +91,20 @@ public class EvidenceTracker {
 		return traverse(contig, true);
 	}
 	public Set<KmerEvidence> traverse(Collection<KmerPathSubnode> contig, boolean remove) {
-		Set<KmerEvidence> evidence = Collections.newSetFromMap(new IdentityHashMap<KmerEvidence, Boolean>());
-		Set<KmerEvidence> test =  new KmerEvidenceSet();
+		Set<KmerEvidence> evidence = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new ObjectOpenHashSet<>() : Collections.newSetFromMap(new IdentityHashMap<KmerEvidence, Boolean>());
 		for (KmerPathSubnode sn : contig) {
 			int start = sn.firstStart();
 			int end = sn.firstEnd();
 			for (int i = 0; i < sn.length(); i++) {
-				toCollection(evidence, test, sn.kmer(i), start + i, end + i, remove);
+				toCollection(evidence, sn.kmer(i), start + i, end + i, remove);
 			}
 			LongArrayList collapsed = sn.node().collapsedKmers();
 			IntArrayList collapsedOffset = sn.node().collapsedKmerOffsets();
 			for (int i = 0; i < collapsed.size(); i++) {
 				int offset = collapsedOffset.getInt(i);
-				toCollection(evidence, test, collapsed.getLong(i), start + offset, end + offset, remove);
+				toCollection(evidence, collapsed.getLong(i), start + offset, end + offset, remove);
 			}
 		}
-		assert(evidence.size() == test.size());
-		assert(evidence.containsAll(test));
-		assert(test.containsAll(evidence));
 		if (remove) {
 			for (KmerEvidence e : evidence) {
 				// remove any leftover evidence kmers not on the called path   
@@ -126,7 +121,7 @@ public class EvidenceTracker {
 	 * @param start
 	 * @param end
 	 */
-	private void toCollection(Collection<KmerEvidence> collection, Collection<KmerEvidence> test, long kmer, int start, int end, boolean remove) {
+	private void toCollection(Collection<KmerEvidence> collection, long kmer, int start, int end, boolean remove) {
 		LinkedList<KmerSupportNode> list = lookup.get(kmer);
 		if (list != null) {
 			ListIterator<KmerSupportNode> it = list.listIterator();
@@ -138,7 +133,6 @@ public class EvidenceTracker {
 					}
 					KmerEvidence e = n.evidence();
 					collection.add(e);
-					test.add(e);
 				}
 			}
 		}

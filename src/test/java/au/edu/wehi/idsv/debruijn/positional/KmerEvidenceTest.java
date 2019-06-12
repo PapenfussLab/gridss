@@ -1,13 +1,8 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.stream.IntStream;
 
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -16,6 +11,8 @@ import org.junit.Test;
 import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
+
+import static org.junit.Assert.*;
 
 
 public class KmerEvidenceTest extends TestHelper {
@@ -341,5 +338,13 @@ public class KmerEvidenceTest extends TestHelper {
 	public void read_pair_createAnchor_should_place_read_at_mapped_position() {
 		assertEquals(100, KmerEvidence.createAnchor(1, NRRP(SES(2, 10), OEA(0, 100, "1M", false)), 0, null).startPosition());
 		assertEquals(100, KmerEvidence.createAnchor(1, NRRP(SES(2, 10), OEA(0, 100, "1M", false)), 0, null).endPosition());
+	}
+	@Test
+	public void anchor_should_not_be_equal() {
+		NonReferenceReadPair rp = NRRP(SES(), OEA(0, 100, "1M2I3M", false));
+		KmerEvidence evidence = KmerEvidence.create(1, rp);
+		KmerEvidence anchor = KmerEvidence.createAnchor(1, rp, 0, null);
+		assertFalse(evidence.equals(anchor));
+		assertNotEquals(evidence.hashCode(), anchor.hashCode());
 	}
 }
