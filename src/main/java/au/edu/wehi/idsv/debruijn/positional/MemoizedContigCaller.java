@@ -14,6 +14,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.TraversalNodeByPathFirstStartEndSubnodeSortedSet;
 import com.google.common.collect.ImmutableSet;
 
 import au.edu.wehi.idsv.Defaults;
@@ -62,7 +63,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
 	// We could convert this into an AbstractInt2IntSortedMap if we changed MemoizedContigTraverse
 	// to only call onFrontierRemove() on nodes that are actually in the frontier
-	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartEndSubnode);
+	private final SortedSet<TraversalNode> frontierByPathStart = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new TraversalNodeByPathFirstStartEndSubnodeSortedSet(16) : new TreeSet<>(TraversalNode.ByPathFirstStartScoreEndSubnode);
 	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
 	
 	private int contigByScoreBeforePosition_startPosition = Integer.MIN_VALUE;
@@ -195,8 +196,8 @@ public class MemoizedContigCaller extends ContigCaller {
 	}
 	/**
 	 * Visits the given frontier node.
-	 * 
-	 * @param node node to visit
+	 *
+	 * @param toVisit node to visit
 	 */
 	private void visit(TraversalNode toVisit, int unprocessedPosition) {
 		TraversalNode node = toVisit;

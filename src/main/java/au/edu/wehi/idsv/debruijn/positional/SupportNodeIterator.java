@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.*;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodePriorityQueueByFirstStart;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -37,7 +38,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 */
 	private final int emitOffset;
 	private final int maxSupportStartPositionOffset;
-	private final Queue<KmerSupportNode> buffer = new KmerSupportNodePriorityQueueByFirstStart(14); //new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
+	private final Queue<KmerSupportNode> buffer = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerSupportNodePriorityQueueByFirstStart(16) : new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
 	private final EvidenceTracker tracker;
 	private final int disallowMismatch;
 	private int inputPosition = Integer.MIN_VALUE;

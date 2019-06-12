@@ -39,10 +39,10 @@ public class MemoizedTraverse {
 	 * Since a positional de Bruijn graph is a directed acyclic graph,
 	 * we can calculate maximal weighted paths by a positional traverse
 	 * (BFS in position space) of the graph, caching the best predecessor
-	 * of each node. 
+	 * of each node.
 	 */
 	private final IdentityHashMap<KmerPathNode, AbstractInt2ObjectSortedMap<TraversalNode>> memoized = new IdentityHashMap<>();
-	private final SortedSet<TraversalNode> frontier = new TraversalNodeByLastEndKmerSortedSet(16); //new TreeSet<>(TraversalNode.ByLastEndKmer);
+	private final SortedSet<TraversalNode> frontier = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new TraversalNodeByLastEndKmerSortedSet(16) : new TreeSet<>(TraversalNode.ByLastEndKmer);
 	private final MemoizationStats stats = new MemoizationStats();
 	/**
 	 * Removes all given nodes from the graph
