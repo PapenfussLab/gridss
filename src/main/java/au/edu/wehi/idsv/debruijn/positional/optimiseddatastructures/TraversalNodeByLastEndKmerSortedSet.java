@@ -3,9 +3,11 @@ package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 import au.edu.wehi.idsv.debruijn.positional.TraversalNode;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import gridss.ComputeSamTags;
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class TraversalNodeByLastEndKmerSortedSet extends SortedByPosition<TraversalNode, Long2ObjectRBTreeMap<TraversalNode>> implements SortedSet<TraversalNode> {
     public TraversalNodeByLastEndKmerSortedSet(int blockBits) {
@@ -49,6 +51,11 @@ public class TraversalNodeByLastEndKmerSortedSet extends SortedByPosition<Traver
     }
 
     @Override
+    protected int positionSize(Long2ObjectRBTreeMap<TraversalNode> coll) {
+        return coll.size();
+    }
+
+    @Override
     protected boolean containsAtPosition(Long2ObjectRBTreeMap<TraversalNode> coll, TraversalNode obj) {
         return coll.get(obj.node.lastKmer()) != null;
     }
@@ -77,12 +84,12 @@ public class TraversalNodeByLastEndKmerSortedSet extends SortedByPosition<Traver
     }
 
     @Override
-    public Iterator<TraversalNode> iterator()  {
+    public Spliterator<TraversalNode> spliterator()    {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Spliterator<TraversalNode> spliterator()    {
-        throw new UnsupportedOperationException();
+    protected Stream<TraversalNode> positionStream(Long2ObjectRBTreeMap<TraversalNode> coll) {
+        return coll.values().stream();
     }
 }

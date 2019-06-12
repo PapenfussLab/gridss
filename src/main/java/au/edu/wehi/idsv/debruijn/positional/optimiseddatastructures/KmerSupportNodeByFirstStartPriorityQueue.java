@@ -12,8 +12,8 @@ import java.util.*;
  *  - IntSortedSet lookup backed by Int2ObjectHashMap
  */
 
-public class KmerSupportNodePriorityQueueByFirstStart extends SortedByPosition<KmerSupportNode, ArrayDeque<KmerSupportNode>> implements Queue<KmerSupportNode> {
-    public KmerSupportNodePriorityQueueByFirstStart(int blockBits) {
+public class KmerSupportNodeByFirstStartPriorityQueue extends SortedByPositionCollection<KmerSupportNode, ArrayDeque<KmerSupportNode>> implements Queue<KmerSupportNode> {
+    public KmerSupportNodeByFirstStartPriorityQueue(int blockBits) {
         super(blockBits);
     }
 
@@ -38,33 +38,7 @@ public class KmerSupportNodePriorityQueueByFirstStart extends SortedByPosition<K
     }
 
     @Override
-    protected boolean addAtPosition(ArrayDeque<KmerSupportNode> existing, KmerSupportNode toAdd) {
-        existing.addLast(toAdd);
-        return true;
-    }
-
-    @Override
-    protected boolean removeAtPosition(ArrayDeque<KmerSupportNode> kmerSupportNodes, KmerSupportNode obj) {
-        return kmerSupportNodes.remove(obj);
-    }
-
-    @Override
-    protected boolean positionIsEmpty(ArrayDeque<KmerSupportNode> kmerSupportNodes) {
-        return kmerSupportNodes.isEmpty();
-    }
-
-    @Override
-    protected boolean containsAtPosition(ArrayDeque<KmerSupportNode> kmerSupportNodes, KmerSupportNode obj) {
-        return kmerSupportNodes.contains(obj);
-    }
-
-    @Override
     public boolean offer(KmerSupportNode kmerSupportNode) {
         return add(kmerSupportNode);
-    }
-
-    @Override
-    public Iterator<KmerSupportNode> iterator()   {
-        throw new UnsupportedOperationException();
     }
 }

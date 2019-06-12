@@ -1,20 +1,23 @@
-package au.edu.wehi.idsv.debruijn.positional;
+package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
 import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodePriorityQueueByFirstStart;
+import au.edu.wehi.idsv.debruijn.positional.KmerEvidence;
+import au.edu.wehi.idsv.debruijn.positional.KmerNodeUtil;
+import au.edu.wehi.idsv.debruijn.positional.KmerSupportNode;
 import org.junit.Test;
 
 import java.util.PriorityQueue;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
-public class KmerSupportNodePriorityQueueByFirstStartTest extends TestHelper {
+public class KmerSupportNodeByFirstStartPriorityQueueTest extends TestHelper {
     @Test
     public void should_mimic_priority_queue() {
         PriorityQueue<KmerSupportNode> pq = new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
-        KmerSupportNodePriorityQueueByFirstStart optimisepq = new KmerSupportNodePriorityQueueByFirstStart(4);
+        KmerSupportNodeByFirstStartPriorityQueue optimisepq = new KmerSupportNodeByFirstStartPriorityQueue(4);
         MockSAMEvidenceSource ses = SES();
         KmerSupportNode[] ksnlist = new KmerSupportNode[9002];
         for (int i = 0; i < 9001; i++) {
@@ -47,7 +50,7 @@ public class KmerSupportNodePriorityQueueByFirstStartTest extends TestHelper {
             assertEquals(pq.size(), optimisepq.size());
         }
         Random rng = new Random(0);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             KmerSupportNode ksn = ksnlist[1 + rng.nextInt(8999)];
             pq.add(ksn);
             optimisepq.add(ksn);
@@ -63,14 +66,14 @@ public class KmerSupportNodePriorityQueueByFirstStartTest extends TestHelper {
     @Test
     public void should_handle_negative_positions() {
         PriorityQueue<KmerSupportNode> pq = new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
-        KmerSupportNodePriorityQueueByFirstStart optimisepq = new KmerSupportNodePriorityQueueByFirstStart(3);
+        KmerSupportNodeByFirstStartPriorityQueue optimisepq = new KmerSupportNodeByFirstStartPriorityQueue(3);
         MockSAMEvidenceSource ses = SES();
         KmerSupportNode[] ksnlist = new KmerSupportNode[500];
         for (int i = 0; i < 500; i++) {
             ksnlist[i] = KmerEvidence.create(1, NRRP(ses, DP(0, i, "10M", false, 1, i+1, "10M", false))).node(0);
         }
         Random rng = new Random(0);
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             KmerSupportNode ksn = ksnlist[rng.nextInt(ksnlist.length)];
             pq.add(ksn);
             optimisepq.add(ksn);
@@ -84,7 +87,7 @@ public class KmerSupportNodePriorityQueueByFirstStartTest extends TestHelper {
         flush(pq, optimisepq);
     }
 
-    private void flush(PriorityQueue<KmerSupportNode> pq, KmerSupportNodePriorityQueueByFirstStart optimisepq) {
+    private void flush(PriorityQueue<KmerSupportNode> pq, KmerSupportNodeByFirstStartPriorityQueue optimisepq) {
         while (!pq.isEmpty()) {
             assertFalse(optimisepq.isEmpty());
             assertEquals(pq.peek(), optimisepq.peek());

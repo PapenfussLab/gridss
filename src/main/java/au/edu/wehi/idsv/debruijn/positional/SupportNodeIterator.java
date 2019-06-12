@@ -3,7 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 import java.util.*;
 
 import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodePriorityQueueByFirstStart;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerSupportNodeByFirstStartPriorityQueue;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
@@ -13,8 +13,6 @@ import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
-
-import javax.naming.OperationNotSupportedException;
 
 /**
  * Transforms a breakend start DirectedEvidence iterator
@@ -38,7 +36,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 */
 	private final int emitOffset;
 	private final int maxSupportStartPositionOffset;
-	private final Queue<KmerSupportNode> buffer = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerSupportNodePriorityQueueByFirstStart(16) : new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
+	private final Queue<KmerSupportNode> buffer = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerSupportNodeByFirstStartPriorityQueue(16) : new PriorityQueue<>(1024, KmerNodeUtil.ByFirstStart);
 	private final EvidenceTracker tracker;
 	private final int disallowMismatch;
 	private int inputPosition = Integer.MIN_VALUE;

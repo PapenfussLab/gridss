@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
 import au.edu.wehi.idsv.debruijn.positional.TraversalNode;
-import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.util.Log;
 
 import java.util.Comparator;
@@ -9,10 +8,7 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-public class TraversalNodeByPathFirstStartEndSubnodeSortedSet extends SortedByPosition<TraversalNode, SortedSet<TraversalNode>> implements SortedSet<TraversalNode> {
-    private static final Log log = Log.getInstance(TraversalNodeByPathFirstStartEndSubnodeSortedSet.class);
-
-
+public class TraversalNodeByPathFirstStartEndSubnodeSortedSet extends SortedByPositionCollection<TraversalNode, SortedSet<TraversalNode>> implements SortedSet<TraversalNode> {
     public TraversalNodeByPathFirstStartEndSubnodeSortedSet(int blockBits) {
         super(blockBits);
     }
@@ -42,26 +38,6 @@ public class TraversalNodeByPathFirstStartEndSubnodeSortedSet extends SortedByPo
     }
 
     @Override
-    protected boolean addAtPosition(SortedSet<TraversalNode> existing, TraversalNode toAdd) {
-        return existing.add(toAdd);
-    }
-
-    @Override
-    protected boolean removeAtPosition(SortedSet<TraversalNode> traversalNodes, TraversalNode obj) {
-        return traversalNodes.remove(obj);
-    }
-
-    @Override
-    protected boolean positionIsEmpty(SortedSet<TraversalNode> traversalNodes) {
-        return traversalNodes.isEmpty();
-    }
-
-    @Override
-    protected boolean containsAtPosition(SortedSet<TraversalNode> traversalNodes, TraversalNode obj) {
-        return traversalNodes.contains(obj);
-    }
-
-    @Override
     public Comparator<? super TraversalNode> comparator()   {
         throw new UnsupportedOperationException();
     }
@@ -84,13 +60,5 @@ public class TraversalNodeByPathFirstStartEndSubnodeSortedSet extends SortedByPo
     @Override
     public TraversalNode last()   {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterator<TraversalNode> iterator() {
-        if (!MessageThrottler.Current.shouldSupress(log, "performance:TraversalNodeByLastEndKmerSortedSet")) {
-            log.warn("TraversalNodeByLastEndKmerSortedSet.iterator() call. This is inefficient and should be no be called in production code.");
-        }
-        return getCollectionsInOrder().stream().flatMap(ss -> ss.stream()).iterator();
     }
 }

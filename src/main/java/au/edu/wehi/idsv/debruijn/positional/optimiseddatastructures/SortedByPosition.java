@@ -1,9 +1,10 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
+import au.edu.wehi.idsv.debruijn.positional.TraversalNode;
+import au.edu.wehi.idsv.util.MessageThrottler;
+import htsjdk.samtools.util.Log;
+
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -14,6 +15,8 @@ import java.util.stream.Stream;
  *  - IntSortedSet lookup backed by Int2ObjectHashMap
  */
 public abstract class SortedByPosition<T, TColl> {
+    private static final Log log = Log.getInstance(TraversalNodeByLastEndKmerSortedSet.class);
+    private static final boolean SANITY_CHECKS = false;
     private final int blockBits;
     private Node<TColl> head = null;
     private int recordCount = 0;
@@ -113,6 +116,8 @@ public abstract class SortedByPosition<T, TColl> {
      */
     protected abstract boolean positionIsEmpty(TColl coll);
 
+    protected abstract int positionSize(TColl coll);
+
     protected abstract boolean containsAtPosition(TColl coll, T obj);
 
     public int size() {
@@ -150,7 +155,7 @@ public abstract class SortedByPosition<T, TColl> {
                 node.next.next = oldNext;
             }
         }
-        assert(sanityCheck());
+        if (SANITY_CHECKS) assert(sanityCheck());
         return recordCount != preCount;
     }
 
@@ -186,14 +191,14 @@ public abstract class SortedByPosition<T, TColl> {
                 }
             }
         }
-        assert(sanityCheck());
+        if (SANITY_CHECKS) assert(sanityCheck());
         return result;
     }
 
     public void clear() {
         recordCount = 0;
         head = null;
-        assert(sanityCheck());
+        if (SANITY_CHECKS) assert(sanityCheck());
     }
 
     protected T removeFirstEntry(boolean throwIfEmpty) {
@@ -216,7 +221,7 @@ public abstract class SortedByPosition<T, TColl> {
                 head = head.next;
             }
         }
-        assert(sanityCheck());
+        if (SANITY_CHECKS) assert(sanityCheck());
         return result;
     }
 
@@ -297,27 +302,12 @@ public abstract class SortedByPosition<T, TColl> {
         for (Object o : c) {
             changed |= remove(o);
         }
-        assert(sanityCheck());
+        if (SANITY_CHECKS) assert(sanityCheck());
         return changed;
     }
 
     public boolean retainAll(Collection<?> c)  {
         throw new UnsupportedOperationException();
-    }
-    public boolean sanityCheck() {
-        Node n = head;
-        int count = 0;
-        while (n != null) {
-            if (n.next != null) {
-                assert (n.nodeIndex < n.next.nodeIndex);
-            }
-            assert(n.recordCount > 0);
-            count += n.recordCount;
-            assert(n.recordCount == 0 || Stream.of(n.position).anyMatch(x -> x != null && !positionIsEmpty((TColl)x)));
-            n = n.next;
-        }
-        assert(recordCount == count);
-        return true;
     }
 
     protected List<TColl> getCollectionsInOrder() {
@@ -330,5 +320,35 @@ public abstract class SortedByPosition<T, TColl> {
             }
         }
         return list;
+    }
+
+    public Iterator<T> iterator() {
+        log.warn("SortedByPosition.iterator() call. This is inefficient and should be no be called in production code.");
+        return getCollectionsInOrder().stream()
+                .flatMap(coll -> positionStream(coll))
+                .iterator();
+    }
+    protected Stream<T> positionStream(TColl coll) {
+        throw new UnsupportedOperationException();
+    }
+
+    public boolean sanityCheck() {
+        Node n = head;
+        int count = 0;
+        while (n != null) {
+            if (n.next != null) {
+                assert (n.nodeIndex < n.next.nodeIndex);
+            }
+            assert(n.recordCount > 0);
+            count += n.recordCount;
+            assert(n.recordCount == Stream.of(n.position)
+                    .filter(x -> x != null)
+                    .flatMap(x -> positionStream((TColl)x))
+                    .count());
+            assert(n.recordCount == 0 || Stream.of(n.position).anyMatch(x -> x != null && !positionIsEmpty((TColl)x)));
+            n = n.next;
+        }
+        assert(recordCount == count);
+        return true;
     }
 }
