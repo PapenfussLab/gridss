@@ -46,6 +46,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			if (node != rootCandidate.node()) { // don't collapse self loops
 				IntegerIntervalSet iis = rootCandidate.prevPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES);
 				for (int i = 0; i < iis.size(); i++) {
+				//for (Range<Integer> r : rootCandidate.prevPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES).asRanges()) {
 					KmerPathSubnode leafStart = new KmerPathSubnode(startCandidate.node(), iis.intervalStart(i) - startCandidate.length(), iis.intervalEnd(i) - startCandidate.length());
 					Set<KmerPathNode> visited = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
 					visited.add(leafStart.node());
@@ -62,6 +63,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			if (node != rootCandidate.node()) { // don't collapse self loops
 				IntegerIntervalSet iis = rootCandidate.nextPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES);
 				for (int i = 0; i < iis.size(); i++) {
+				//for (Range<Integer> r : rootCandidate.nextPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES).asRanges()) {
 					KmerPathSubnode leafStart = new KmerPathSubnode(startCandidate.node(), iis.intervalStart(i) + rootCandidate.length(), iis.intervalEnd(i) + rootCandidate.length());
 					Set<KmerPathNode> visited = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
 					visited.add(leafStart.node());
@@ -82,27 +84,31 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 		KmerPathSubnode node = tn.node;
 		IntegerIntervalSet iis = node.prevPathRangesOfDegree(KmerPathSubnode.NO_EDGES);
 		for (int i = 0; i < iis.size(); i++) {
+		// for (Range<Integer> range : node.prevPathRangesOfDegree(KmerPathSubnode.NO_EDGES).asRanges()) {
 			// Terminal leaf
 			TraversalNode terminalNode = new TraversalNode(tn, iis.intervalStart(i), iis.intervalEnd(i));
 			if (memoizedCollapse(visited, terminalNode, false, null)) return true;
 		}
 		iis = node.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
 		for (int i = 0; i < iis.size(); i++) {
+		//for (Range<Integer> range : node.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE).asRanges()) {
 			KmerPathSubnode sn = new KmerPathSubnode(node.node(), iis.intervalStart(i), iis.intervalEnd(i));
 			KmerPathSubnode adjNode = sn.prev().get(0);
 			if (tn.pathLength + adjNode.length() <= maxCollapseLength && !visited.contains(adjNode.node())) {
-				IntegerIntervalSet adjRanges = adjNode.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
-				for (int j = 0; j < adjRanges.size(); j++) {
-					KmerPathSubnode adjsn = new KmerPathSubnode(adjNode.node(), adjRanges.intervalStart(j), adjRanges.intervalEnd(j));
+				IntegerIntervalSet adjiis = adjNode.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
+				for (int j = 0; j < adjiis.size(); j++) {
+				//for (Range<Integer> adjRange : adjNode.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE).asRanges()) {
+					KmerPathSubnode adjsn = new KmerPathSubnode(adjNode.node(), adjiis.intervalStart(j), adjiis.intervalEnd(j));
 					TraversalNode adjTraveral = new TraversalNode(tn, adjsn);
 					visited.add(adjNode.node());
 					if (backwardLeafTraverse(visited, adjTraveral, maxCollapseLength)) return true;
 					visited.remove(adjNode.node());
 				}
-				adjRanges = adjNode.nextPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES);
-				for (int j = 0; j < adjRanges.size(); j++) {
+				adjiis = adjNode.nextPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES);
+				for (int j = 0; j < adjiis.size(); j++) {
+				//for (Range<Integer> adjRange : adjNode.nextPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES).asRanges()) {
 					// End of bubble
-					KmerPathSubnode adjsn = new KmerPathSubnode(adjNode.node(), adjRanges.intervalStart(j), adjRanges.intervalEnd(j));
+					KmerPathSubnode adjsn = new KmerPathSubnode(adjNode.node(), adjiis.intervalStart(j), adjiis.intervalEnd(j));
 					TraversalNode adjTraveral = new TraversalNode(tn, adjsn);
 					visited.add(adjNode.node());
 					if (memoizedCollapse(visited, adjTraveral, false, adjTraveral.node.node())) return true;
@@ -116,18 +122,21 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 		KmerPathSubnode node = tn.node;
 		IntegerIntervalSet iis = node.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES);
 		for (int i = 0; i < iis.size(); i++) {
+		//for (Range<Integer> range : node.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES).asRanges()) {
 			// Terminal leaf
 			TraversalNode terminalNode = new TraversalNode(tn, iis.intervalStart(i), iis.intervalEnd(i));
 			if (memoizedCollapse(visited, terminalNode, true, null)) return true;
 		}
 		iis = node.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
 		for (int i = 0; i < iis.size(); i++) {
+		// for (Range<Integer> range : node.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE).asRanges()) {
 			KmerPathSubnode sn = new KmerPathSubnode(node.node(), iis.intervalStart(i), iis.intervalEnd(i));
 			KmerPathSubnode adjNode = sn.next().get(0);
 			if (tn.pathLength + adjNode.length() <= maxCollapseLength && !visited.contains(adjNode.node())) {
-				IntegerIntervalSet adjRanges = adjNode.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
-				for (int j = 0; j < adjRanges.size(); j++) {
-					KmerPathSubnode adjsn = new KmerPathSubnode(adjNode.node(), adjRanges.intervalStart(j), adjRanges.intervalEnd(j));
+				IntegerIntervalSet adjiis = adjNode.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
+				for (int j = 0; j < adjiis.size(); j++) {
+				//for (Range<Integer> adjRange : adjNode.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE).asRanges()) {
+					KmerPathSubnode adjsn = new KmerPathSubnode(adjNode.node(), adjiis.intervalStart(j), adjiis.intervalEnd(j));
 					TraversalNode adjTraveral = new TraversalNode(tn, adjsn);
 					visited.add(adjNode.node());
 					if (forwardLeafTraverse(visited, adjTraveral, maxCollapseLength)) return true;

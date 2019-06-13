@@ -1,7 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
+
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Integer closed interval set
@@ -127,6 +132,14 @@ public class IntegerIntervalSet {
             }
         }
         return out;
+    }
+
+    public Set<Range<Integer>> asRanges() {
+        RangeSet<Integer> rs = TreeRangeSet.create();
+        for (int i = 0; i < size(); i++) {
+            rs.add(Range.closed(intervalStart(i), intervalEnd(i)));
+        }
+        return rs.asRanges();
     }
 
     @Override
