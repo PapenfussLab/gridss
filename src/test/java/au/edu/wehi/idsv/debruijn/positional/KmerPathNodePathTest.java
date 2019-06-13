@@ -139,14 +139,14 @@ public class KmerPathNodePathTest extends TestHelper {
 		expected.add(Range.closed(1, 1));
 		expected.add(Range.closed(3, 4));
 		expected.add(Range.closed(7, 9));
-		assertEquals(expected, path.headNode().terminalRanges());
+		assertEquals(expected, RS(path.headNode().terminalRanges()));
 		
 		expected = TreeRangeSet.create();
 		expected.add(Range.closed(-1, -1));
 		expected.add(Range.closed(1, 1));
 		expected.add(Range.closed(5, 5));
 		expected.add(Range.closed(7, 7));
-		assertEquals(expected, path.headNode().terminalLeafAnchorRanges());
+		assertEquals(expected, RS(path.headNode().terminalLeafAnchorRanges()));
 		
 		assertEquals(1, path.headNode().firstTerminalLeaf().node().firstStart());
 	}
@@ -189,6 +189,6 @@ public class KmerPathNodePathTest extends TestHelper {
 		KmerPathNode.addEdge(input.get(2), input.get(4));
 		
 		KmerPathNodePath p = new KmerPathNodePath(new KmerPathSubnode(input.get(1)), true, 1000);
-		assertEquals(0, p.terminalLeafRanges().asRanges().size());
+		assertEquals(0, p.terminalLeafRanges().size());
 	}
 }

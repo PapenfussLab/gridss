@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.util.RangeUtil;
 import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
@@ -43,7 +44,7 @@ public abstract class KmerPathNodeBasePath {
 		 * Returns the first kmer terminal ranges of this node 
 		 * @return first kmer positions of this node that have no successors
 		 */
-		public RangeSet<Integer> terminalRanges() {
+		public IntegerIntervalSet terminalRanges() {
 			return traversingForward() ? node.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES) : node.prevPathRangesOfDegree(KmerPathSubnode.NO_EDGES);
 		}
 		/**
@@ -62,21 +63,21 @@ public abstract class KmerPathNodeBasePath {
 		 *  
 		 * @return intervals for which this path is a terminal leaf. Intervals are for position of the path anchor kmer
 		 */
-		public RangeSet<Integer> terminalLeafAnchorRanges() {
-			RangeSet<Integer> ranges = toAnchorPosition(terminalRanges());
+		public IntegerIntervalSet terminalLeafAnchorRanges() {
+			IntegerIntervalSet ranges = toAnchorPosition(terminalRanges());
 			TraversalNode tn = this;
 			KmerPathSubnode sn = node;
 			while (tn != null && !ranges.isEmpty()) {
 				if (tn != this) {
 					// only a single successor
-					RangeSet<Integer> singleSuccessor = traversingForward() ? sn.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE) : sn.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
+					IntegerIntervalSet singleSuccessor = traversingForward() ? sn.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE) : sn.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
 					singleSuccessor = tn.toAnchorPosition(singleSuccessor);
-					ranges = RangeUtil.intersect(ranges, singleSuccessor);
+					ranges = IntegerIntervalSet.intersect(ranges, singleSuccessor);
 				}
 				// only a single ancestor
-				RangeSet<Integer> singleAncestor = traversingForward() ? sn.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE) : sn.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
+				IntegerIntervalSet singleAncestor = traversingForward() ? sn.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE) : sn.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
 				singleAncestor = tn.toAnchorPosition(singleAncestor);
-				ranges = RangeUtil.intersect(ranges, singleAncestor);
+				ranges = IntegerIntervalSet.intersect(ranges, singleAncestor);
 				tn = tn.parent;
 				if (tn != null) {
 					sn = traversingForward() ? tn.node.givenNext(sn) :  tn.node.givenPrev(sn);
@@ -108,14 +109,13 @@ public abstract class KmerPathNodeBasePath {
 		}
 		/**
 		 * Translates a path position of the first kmer of this to the corresponding
-		 * position of the first kmer of the path root  
-		 * @param pos node first kmer position
-		 * @return root first kmer position 
+		 * interval of the first kmer of the path root
+		 * @return root first kmer interval
 		 */
-		private RangeSet<Integer> toAnchorPosition(RangeSet<Integer> rs) {
-			RangeSet<Integer> rootRanges = TreeRangeSet.create();
-			for (Range<Integer> r : rs.asRanges()) {
-				rootRanges.add(Range.closed(firstNodeKmerToAnchorPosition(r.lowerEndpoint()), firstNodeKmerToAnchorPosition(r.upperEndpoint())));
+		private IntegerIntervalSet toAnchorPosition(IntegerIntervalSet rs) {
+			IntegerIntervalSet rootRanges = new IntegerIntervalSet(rs.size());
+			for (int i = 0; i < rs.size(); i++) {
+				rootRanges.append(firstNodeKmerToAnchorPosition(rs.intervalStart(i)), firstNodeKmerToAnchorPosition(rs.intervalEnd(i)));
 			}
 			return rootRanges;
 		}
@@ -147,11 +147,10 @@ public abstract class KmerPathNodeBasePath {
 			}
 		}
 		public TraversalNode firstTerminalLeaf() {
-			RangeSet<Integer> rs = terminalLeafAnchorRanges();
+			IntegerIntervalSet rs = terminalLeafAnchorRanges();
 			if (rs == null || rs.isEmpty()) return null;
-			Range<Integer> firstRange = rs.asRanges().iterator().next();
-			int start = firstRange.lowerEndpoint();
-			int end = firstRange.upperEndpoint();
+			int start = rs.intervalStart(0);
+			int end = rs.intervalEnd(0);
 			start = anchorTofirstNodeKmerPosition(start);
 			end = anchorTofirstNodeKmerPosition(end);
 			return new TraversalNode(parent, new KmerPathSubnode(node().node(), start, end));

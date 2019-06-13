@@ -503,7 +503,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * Note: PositionalDeBruijnGraphPathNodeGraphSimplifier relies on the fact that the node
 	 * is truncated at the start, not the end.
 	 * 
-	 * @param length length of node to split out
+	 * @param firstNodeLength length of node to split out
 	 * @return new predecessor node
 	 */
 	public KmerPathNode splitAtLength(int firstNodeLength) {
@@ -576,7 +576,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	/**
 	 * Splits at the given internal start position
 	 * 
-	 * @param internalStart start position to split at
+	 * @param newStartPosition start position to split at
 	 * @return new node ending immediately before the given position
 	 */
 	public KmerPathNode splitAtStartPosition(int newStartPosition) {

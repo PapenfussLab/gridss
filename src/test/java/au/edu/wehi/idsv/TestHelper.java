@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.*;
 import org.apache.commons.configuration.Configuration;
@@ -1278,4 +1279,25 @@ public class TestHelper {
 				.map(e -> new AssemblyEvidenceSupport(e, Range.closed(-100000, 100000)))
 				.collect(Collectors.toList());
 	}
+    public IntegerIntervalSet IIS(RangeSet<Integer> rs) {
+		IntegerIntervalSet iis = new IntegerIntervalSet();
+		for (Range<Integer> r : rs.asRanges()) {
+			iis.append(r.lowerEndpoint(), r.upperEndpoint());
+		}
+		return iis;
+	}
+    public RangeSet<Integer> RS(int... pairs) {
+        RangeSet<Integer> rs = TreeRangeSet.create();
+        for (int i = 0; i < pairs.length; i += 2) {
+            rs.add(Range.closed(pairs[i], pairs[i + 1]));
+        }
+        return rs;
+    }
+    public RangeSet<Integer> RS(IntegerIntervalSet iis) {
+        RangeSet<Integer> rs = TreeRangeSet.create();
+        for (int i = 0; i < iis.size(); i++) {
+            rs.add(Range.closed(iis.intervalStart(i), iis.intervalEnd(i)));
+        }
+        return rs;
+    }
 }

@@ -1,15 +1,33 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * Integer closed interval set
  */
 public class IntegerIntervalSet {
-    private static boolean SANITY_CHECK_ARRAY_BOUNDS = true;
-    private static int DEFAULT_SIZE = SANITY_CHECK_ARRAY_BOUNDS ? 0 : 8;
-    private int[] backing = new int[DEFAULT_SIZE];
+    private static int DEFAULT_SIZE = 8;
+    private int[] backing;
     private int count = 0;
     public IntegerIntervalSet() {
+        backing = new int[DEFAULT_SIZE];
     }
+    public IntegerIntervalSet(int[] pairedArray) {
+        if ((pairedArray.length & 1) == 1) throw new IllegalArgumentException("Array does not contains integer pairs");
+        for (int i = 1; i < pairedArray.length; i++) {
+            if (pairedArray[i-1] > pairedArray[i]) {
+                throw new IllegalArgumentException("Interval pairs are not sorted in ascending order");
+            }
+        }
+        this.backing = pairedArray;
+        this.count = pairedArray.length;
+    }
+
+    public IntegerIntervalSet(int size) {
+        backing = new int[2 * size];
+    }
+
     public void add(int low, int high) {
         int startOffset = 0;
         while (startOffset < count && intervalEnd(startOffset) < low) {
@@ -47,8 +65,10 @@ public class IntegerIntervalSet {
     }
 
     private void ensureSize(int size) {
-        if (count < size) {
-            resizeArray(SANITY_CHECK_ARRAY_BOUNDS ? (2 * size) : (2 * count));
+        if ((backing.length >> 1) < size) {
+            int[] arr = new int[2 * backing.length];
+            System.arraycopy(backing, 0, arr, 0, 2 * count);
+            backing = arr;
         }
     }
 
@@ -60,12 +80,6 @@ public class IntegerIntervalSet {
         backing[2 * count] = low;
         backing[2 *count + 1] = high;
         count++;
-    }
-
-    private void resizeArray(int targetSize) {
-        int[] arr = new int[targetSize];
-        System.arraycopy(backing, 0, arr, 0, 2 * count);
-        backing = arr;
     }
 
     public boolean encloses(int low, int high) {
@@ -88,8 +102,31 @@ public class IntegerIntervalSet {
     public boolean isEmpty() {
         return count == 0;
     }
-    public IntegerIntervalSet intersect(IntegerIntervalSet set) {
-        throw new RuntimeException("NYI");
+    public static IntegerIntervalSet intersect(IntegerIntervalSet set1, IntegerIntervalSet set2) {
+        IntegerIntervalSet out = new IntegerIntervalSet();
+        int offset1 = 0;
+        int offset2 = 0;
+        while(offset1 < set1.count && offset2 < set2.count) {
+            int start1 = set1.intervalStart(offset1);
+            int end1 = set1.intervalEnd(offset1);
+            int start2 = set2.intervalStart(offset2);
+            int end2 = set2.intervalEnd(offset2);
+            if (end1 < start2) {
+                offset1++;
+            } else if (end2 < start1) {
+                offset2++;
+            } else {
+                int start = Math.max(start1, start2);
+                int end = Math.min(end1, end2);
+                out.append(start, end);
+                if (end1 < end2) {
+                    offset1++;
+                } else {
+                    offset2++;
+                }
+            }
+        }
+        return out;
     }
 
     @Override
@@ -104,5 +141,29 @@ public class IntegerIntervalSet {
             sb.append(", ");
         }
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IntegerIntervalSet)) return false;
+        IntegerIntervalSet that = (IntegerIntervalSet) o;
+        return count == that.count &&
+                arraysEqualUntil(backing, that.backing, count);
+    }
+    private static boolean arraysEqualUntil(int[] a, int[] b, int n) {
+        for (int i = 0; i < n; i++) {
+            if (a[n] != b[n]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = count;
+        result = 31 * result + Arrays.hashCode(backing);
+        return result;
     }
 }

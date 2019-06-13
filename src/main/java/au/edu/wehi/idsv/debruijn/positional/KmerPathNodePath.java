@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.RangeSet;
 
@@ -82,10 +83,10 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 	public Deque<KmerPathNode> currentPath() {
 		return path;
 	}
-	public RangeSet<Integer> terminalRanges() {
+	public IntegerIntervalSet terminalRanges() {
 		return headNode().terminalRanges();
 	}
-	public RangeSet<Integer> terminalLeafRanges() {
+	public IntegerIntervalSet terminalLeafRanges() {
 		return headNode().terminalLeafAnchorRanges();
 	}
 	public void greedyTraverse(boolean allowReference, boolean allowNonReference) {
