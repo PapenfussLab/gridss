@@ -1,6 +1,9 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartEndKmerReferenceNavigablePartiallyOrderedSet;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByLastEndStartKmerReferenceNavigablePartiallyOrderedSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -30,8 +33,8 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 	protected final int k;
 	private final int maxCollapseLength;
 	protected final int maxBasesMismatch;
-	private final NavigableSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartEndKmerReference);
-	private final NavigableSet<KmerPathNode> unprocessed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastEndStartKmerReference);
+	private final NavigableSet<KmerPathNode> processed = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerNodeByFirstStartEndKmerReferenceNavigablePartiallyOrderedSet<KmerPathNode>(16) : new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartEndKmerReference);
+	private final NavigableSet<KmerPathNode> unprocessed = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new KmerNodeByLastEndStartKmerReferenceNavigablePartiallyOrderedSet<>(16) : new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastEndStartKmerReference);
 	private final int processOffset;
 	private int lastEmitPosition = Integer.MIN_VALUE / 2; // moved away from MIN_VALUE to prevent underflow the calculating collapse window size
 	protected int inputPosition = Integer.MIN_VALUE / 2;
@@ -178,8 +181,8 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 	}
 	/**
 	 * Trims common path prefix and suffix nodes from both paths 
-	 * @param path1
-	 * @param path2
+	 * @param sourcePath
+	 * @param targetPath
 	 */
 	private void trimCommon(List<KmerPathSubnode> sourcePath, List<KmerPathSubnode> targetPath) {
 		while (!sourcePath.isEmpty() && !targetPath.isEmpty() && sourcePath.get(0).equals(targetPath.get(0))) {

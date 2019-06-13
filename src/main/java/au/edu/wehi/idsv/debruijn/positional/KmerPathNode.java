@@ -565,6 +565,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	}
 	private static void replaceFirst(List<KmerPathNode> list, KmerPathNode existing, KmerPathNode replaceWith) {
 		if (list == null) return;
+		// ASSEMBLY OPTIMISATION TODO: shuffle the nodes between the insertion and removal offsets
+		// This allows us to retain the sort order
 		for (int i = 0; i < list.size(); i++) {
 			if (list.get(i) == existing) { 
 				list.set(i, replaceWith);
