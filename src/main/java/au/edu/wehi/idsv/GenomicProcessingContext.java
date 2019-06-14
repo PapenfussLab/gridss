@@ -100,7 +100,8 @@ public class GenomicProcessingContext implements Closeable {
 				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Allocate more heap memory to the JVM..");
 				throw new RuntimeException("Not enough memory to cache reference fasta.");
 			}
-			return new TwoBitBufferedReferenceSequenceFile(underlying);
+			File cacheFile = new File(referenceFile.getAbsolutePath() + ".gridsscache");
+			return new TwoBitBufferedReferenceSequenceFile(underlying, cacheFile);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Unabled load fasta " + referenceFile, e);
 		}

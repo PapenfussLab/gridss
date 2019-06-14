@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.math.IntMath;
 
+import java.io.Serializable;
 import java.math.RoundingMode;
 
 /**
@@ -10,7 +11,7 @@ import java.math.RoundingMode;
  * @author Daniel Cameron
  *
  */
-public class PackedSequence {
+public class PackedSequence implements Serializable {
 	private static final int BITS_PER_BASE = 2;
 	private static final int BASES_PER_WORD = Long.SIZE / BITS_PER_BASE;
 	private static final int ARRAY_SHIFT = Long.SIZE - 1 - Long.numberOfLeadingZeros(BASES_PER_WORD);
@@ -23,6 +24,10 @@ public class PackedSequence {
 	 */
 	private final long[] packed;
 	private final int baseCount;
+	public PackedSequence(long[] packed, int baseCount) {
+		this.packed = packed;
+		this.baseCount = baseCount;
+	}
 	public PackedSequence(byte[] bases, boolean reverse, boolean complement) {
 		packed = new long[IntMath.divide(bases.length, BASES_PER_WORD, RoundingMode.CEILING)];
 		baseCount = bases.length;
@@ -207,5 +212,8 @@ public class PackedSequence {
 	}
 	public int length() {
 		return baseCount;
+	}
+	public long[] asLongArray() {
+		return packed;
 	}
 }

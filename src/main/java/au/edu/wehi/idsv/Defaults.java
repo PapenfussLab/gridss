@@ -11,6 +11,7 @@ public class Defaults {
 	public static final boolean SINGLE_THREAD_LIBSSW;
 	public static final boolean NO_LIBSSW;
 	public static final boolean ASYNC_CACHE_REFERENCE;
+	public static final boolean CACHE_REFERENCE;
 	public static final boolean ATTEMPT_ASSEMBLY_RECOVERY;
 	public static final boolean USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES;
 	static {
@@ -22,6 +23,7 @@ public class Defaults {
 		SINGLE_THREAD_LIBSSW = Boolean.valueOf(System.getProperty("sswjni.sync", "false"));
 		NO_LIBSSW = Boolean.valueOf(System.getProperty("sswjni.disable", "false"));
 		ASYNC_CACHE_REFERENCE = !Boolean.valueOf(System.getProperty("reference.loading.sync", "false"));
+		CACHE_REFERENCE = !Boolean.valueOf(System.getProperty("reference.cache", "true"));
 		ATTEMPT_ASSEMBLY_RECOVERY = Boolean.valueOf(System.getProperty("assembly.recover", "true"));
 		USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES = Boolean.valueOf(System.getProperty("assembly.optimised_data_structures", "true"));
 	}
