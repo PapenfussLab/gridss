@@ -49,6 +49,10 @@ public abstract class CollapseIteratorTest extends TestHelper {
 		CollapseIterator pcit = create(pnList.iterator(), k, maxPathCollapseLength, maxBasesMismatch, false, 0);
 		ArrayList<KmerPathNode> result = Lists.newArrayList(pcit);
 		assertEquals(pnTotalWeight, totalWeight(result));
+		for (int i = 1; i < result.size(); i++) {
+			assertTrue(result.get(i - 1).firstStart() <= result.get(i).firstStart());
+		}
+		result.sort(KmerNodeUtil.ByFirstStartEndKmerReference);
 		return result;
 	}
 	@Test
