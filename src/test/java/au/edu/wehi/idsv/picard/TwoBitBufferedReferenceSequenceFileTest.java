@@ -51,12 +51,24 @@ public class TwoBitBufferedReferenceSequenceFileTest extends TestHelper {
 		b.close();
 	}
 	@Test
+	public void should_lazily_cache() throws IOException {
+		TemporaryFolder testFolder = new TemporaryFolder();
+		testFolder.create();
+		File file = new File(testFolder.getRoot(), "TwoBitBufferedReferenceSequenceFileTest.gridsscache");
+		assertFalse(file.exists());
+		TwoBitBufferedReferenceSequenceFile a = new TwoBitBufferedReferenceSequenceFile(SMALL_FA, file);
+		assertFalse(file.exists());
+		a.getBase(0, 1);
+		assertTrue(file.exists());
+	}
+	@Test
 	public void should_round_trip_through_cache() throws IOException {
 		TemporaryFolder testFolder = new TemporaryFolder();
 		testFolder.create();
 		File file = new File(testFolder.getRoot(), "TwoBitBufferedReferenceSequenceFileTest.gridsscache");
 		assertFalse(file.exists());
 		TwoBitBufferedReferenceSequenceFile a = new TwoBitBufferedReferenceSequenceFile(SMALL_FA, file);
+		a.getBase(0, 1);
 		assertTrue(file.exists());
 		TwoBitBufferedReferenceSequenceFile b = new TwoBitBufferedReferenceSequenceFile(SMALL_FA, file);
 		for (int i = 0; i < SMALL_FA.getSequenceDictionary().size(); i++) {
