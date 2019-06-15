@@ -10,7 +10,6 @@ import com.google.common.io.Files;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 import java.io.File;

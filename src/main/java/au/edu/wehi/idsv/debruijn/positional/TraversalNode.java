@@ -205,4 +205,14 @@ public class TraversalNode {
 					.result();
 		}
 	};
+	public static Ordering<TraversalNode> BySubnode = new Ordering<TraversalNode>() {
+		@Override
+		public int compare(TraversalNode left, TraversalNode right) {
+			return ComparisonChain.start()
+					.compare(left.node.firstStart(), right.node.firstStart())
+					.compare(left.node.firstEnd(), right.node.firstEnd())
+					.compare(left.node.firstKmer(), right.node.firstKmer())
+					.result();
+		}
+	};
 }
