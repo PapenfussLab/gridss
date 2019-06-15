@@ -13,6 +13,7 @@ import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -785,13 +786,51 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		return null;
 	}
 	/**
+	 * Determines which kmers are fully removed
+	 * @param node node to remove from
+	 * @param toRemove support to remove
+	 * @return Returns a triplet indicating
+	 * a) whether the entire node is to be removed
+	 * then for each kmer
+	 * b) whether all the support being removed is full width
+	 * b) the total weight of the full width support
+	 */
+	private static Pair<Boolean, Pair<boolean[], int[]>> fullWidthRemovals(KmerPathNode node, List<? extends List<? extends KmerNode>> toRemove) {
+		boolean allRemoved = true;
+		int[] fullWidthRemoveWeight = new int[node.length()];
+		boolean[] allRemovalsAreFullWidth = new boolean[node.length()];
+		int scopeStart = node.firstStart();
+		int scopeEnd = node.firstEnd();
+		for (int i = 0; i < fullWidthRemoveWeight.length; i++) {
+			int weight = 0;
+			if (toRemove.size() > i) {
+				allRemovalsAreFullWidth[i] = true;
+				List<? extends KmerNode> list = toRemove.get(i);
+				if (list != null) {
+					for (KmerNode kn : list) {
+						if (kn.firstStart() <= scopeStart && kn.firstEnd() >= scopeEnd) {
+							weight += kn.weight();
+						} else {
+							// early out: if any of our support is not full then we're not full
+							allRemovalsAreFullWidth[i] = false;
+							break;
+						}
+					}
+				}
+			}
+			fullWidthRemoveWeight[i] = weight;
+			allRemoved &= weight == node.weight(i);
+			scopeStart++;
+			scopeEnd++;
+		}
+		return Pair.of(allRemoved, Pair.of(allRemovalsAreFullWidth, fullWidthRemoveWeight));
+	}
+	/**
 	 * Removes supporting evidence from the given node
-	 * @param node node to remove support 
-	 * @param toRemove supporting evidence to remove. Each node 
+	 * @param node node to remove support
+	 * @param toRemove supporting evidence to remove. Each node
 	 * @return
 	 */
-	private static final AtomicInteger fullNode = new AtomicInteger();
-	private static final AtomicInteger partialNode = new AtomicInteger();
 	public static ArrayDeque<KmerPathNode> removeWeight(KmerPathNode node, List<? extends List<? extends KmerNode>> toRemove) {
 		//KmerPathNode debugClonePathNode = new KmerPathNode(node.pathKmers(), node.firstStart(), node.firstEnd(), true, node.weight);
 		//ArrayList<? extends List<? extends KmerNode>> debugCloneToRemove = Lists.newArrayList(toRemove);
@@ -828,35 +867,39 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			}
 			assert(deltaWeight <= preWeight);
 		}
-		int weightToRemove = 0;
+		int totalWeightToRemove = 0;
 		for (List<? extends KmerNode> x : toRemove) {
 			if (x != null) {
+				int kmerWeightToRemove = 0;
 				for (KmerNode kn : x) {
-					weightToRemove += kn.weight();
+					kmerWeightToRemove += kn.weight();
 				}
+				totalWeightToRemove += kmerWeightToRemove;
 			}
-		}
-		if (weightToRemove == node.weight()) {
-			int count = fullNode.addAndGet(1);
-			if (count % 1000 == 0) {
-				Log.getInstance(KmerPathNode.class).warn("removals: Full= " + count + " partial=" + partialNode.get());
-			}
-		} else {
-			partialNode.addAndGet(1);
 		}
 		ArrayDeque<KmerPathNode> replacement = new ArrayDeque<KmerPathNode>();
+		Pair<Boolean, Pair<boolean[], int[]>> fullRemovals = fullWidthRemovals(node, toRemove);
+		if (fullRemovals.getLeft()) {
+			// entire node is to be removed
+			// TODO: OPT: debug the NPE we get when we uncomment this
+			//node.remove();
+			//return replacement;
+		}
 		while (!toRemove.isEmpty()) {
 			int index = toRemove.size() - 1;
 			List<? extends KmerNode> collection = toRemove.get(index);
 			toRemove.remove(index);
 			if (collection != null) {
-				// TODO: this sort takes 9% of runtime
-				collection.sort(KmerNodeUtil.ByLastStart);
-				node = removeWeight(replacement, node, index, collection);
-				if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
-					assert(replacement.stream().allMatch(n -> n.isValid()));
-					if (node != null) {
-						assert(node.sanityCheck());
+				if (fullRemovals.getRight().getLeft()[index]) {
+					node = removeWeight(replacement, node, index, fullRemovals.getRight().getRight()[index]);
+				} else {
+					collection.sort(KmerNodeUtil.ByLastStart);
+					node = removeWeight(replacement, node, index, collection);
+					if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
+						assert (replacement.stream().allMatch(n -> n.isValid()));
+						if (node != null) {
+							assert (node.sanityCheck());
+						}
 					}
 				}
 			}
