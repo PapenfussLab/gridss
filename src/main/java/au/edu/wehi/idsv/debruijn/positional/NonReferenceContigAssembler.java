@@ -60,9 +60,11 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * expensive approach overall
 	 */
 	private static final boolean SIMPLIFY_AFTER_REMOVAL = false;
+	// TODO: OPT: don't use ArrayList<>() as child structure
+	// sort by end position so we can do fast overlap calculations
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
-	private TreeSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
-	private SortedSet<KmerPathNode> nonReferenceGraphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
+	private TreeSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer); // TODO: OPT: replace data structure
+	private SortedSet<KmerPathNode> nonReferenceGraphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer); // TODO: OPT: replace data structure
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
 	private final AssemblyIdGenerator assemblyNameGenerator;
@@ -691,6 +693,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
 		Collection<KmerPathNodeKmerNode> kpnknList = graphByKmerNode.get(support.lastKmer());
 		if (kpnknList != null) {
+			// TODO: secondary sort order on graphByKmerNode so we can subset this iterator to only
+			// the overlapping nodes
 			for (KmerPathNodeKmerNode n : kpnknList) {
 				if (IntervalUtil.overlapsClosed(support.lastStart(), support.lastEnd(), n.lastStart(), n.lastEnd())) {
 					updateRemovalList(toRemove, n, support);

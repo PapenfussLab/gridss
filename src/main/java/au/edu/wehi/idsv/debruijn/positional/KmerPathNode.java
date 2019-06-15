@@ -9,11 +9,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Total support for the given kmer over the given interval
@@ -788,6 +790,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * @param toRemove supporting evidence to remove. Each node 
 	 * @return
 	 */
+	private static final AtomicInteger fullNode = new AtomicInteger();
+	private static final AtomicInteger partialNode = new AtomicInteger();
 	public static ArrayDeque<KmerPathNode> removeWeight(KmerPathNode node, List<? extends List<? extends KmerNode>> toRemove) {
 		//KmerPathNode debugClonePathNode = new KmerPathNode(node.pathKmers(), node.firstStart(), node.firstEnd(), true, node.weight);
 		//ArrayList<? extends List<? extends KmerNode>> debugCloneToRemove = Lists.newArrayList(toRemove);
@@ -824,12 +828,29 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			}
 			assert(deltaWeight <= preWeight);
 		}
+		int weightToRemove = 0;
+		for (List<? extends KmerNode> x : toRemove) {
+			if (x != null) {
+				for (KmerNode kn : x) {
+					weightToRemove += kn.weight();
+				}
+			}
+		}
+		if (weightToRemove == node.weight()) {
+			int count = fullNode.addAndGet(1);
+			if (count % 1000 == 0) {
+				Log.getInstance(KmerPathNode.class).warn("removals: Full= " + count + " partial=" + partialNode.get());
+			}
+		} else {
+			partialNode.addAndGet(1);
+		}
 		ArrayDeque<KmerPathNode> replacement = new ArrayDeque<KmerPathNode>();
 		while (!toRemove.isEmpty()) {
 			int index = toRemove.size() - 1;
 			List<? extends KmerNode> collection = toRemove.get(index);
 			toRemove.remove(index);
 			if (collection != null) {
+				// TODO: this sort takes 9% of runtime
 				collection.sort(KmerNodeUtil.ByLastStart);
 				node = removeWeight(replacement, node, index, collection);
 				if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
