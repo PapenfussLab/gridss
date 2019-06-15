@@ -7,7 +7,7 @@ library(StructuralVariantAnnotation)
 library(stringr)
 #' Simple SV type classifier
 simpleEventType <- function(gr) {
-	return(ifelse(seqnames(gr) != seqnames(partner(gr)), "ITX", # inter-chromosomosal
+	return(ifelse(seqnames(gr) != seqnames(partner(gr)), "CTX", # inter-chromosomosal
 								ifelse(gr$insLen >= abs(gr$svLen) * 0.7, "INS", # TODO: improve classification of complex events
 											 ifelse(strand(gr) == strand(partner(gr)), "INV",
 											 			 ifelse(xor(start(gr) < start(partner(gr)), strand(gr) == "-"), "DEL",
