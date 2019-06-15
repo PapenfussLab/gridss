@@ -339,7 +339,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	}
 	private void ensureContigByScoreBeforePosition(int contigStartsBefore) {
 		if (contigByScoreBeforePosition_startPosition != contigStartsBefore) {
-			contigByScoreBeforePosition = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
+			contigByScoreBeforePosition = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new TraversalNodeByScoreDescPathFirstIdentity() : new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
 			contigByScore.stream()
 				.filter(n -> n.pathFirstStart() < contigStartsBefore)
 				.collect(Collectors.toCollection(() -> contigByScoreBeforePosition));
