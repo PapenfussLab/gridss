@@ -24,8 +24,7 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	private static final Log log = Log.getInstance(TwoBitBufferedReferenceSequenceFile.class);
 	private final ReferenceSequenceFile underlying;
 	private final PackedReferenceSequence[] referenceIndexLookup;
-	private final File cacheFile;
-	private boolean attemptedSave = false;
+	private File cacheFile;
 	/**
 	 * Cached contigs
 	 */
@@ -148,8 +147,7 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 				log.info("Loading reference genome from cache " + cacheFile);
 				load(cacheFile);
 				log.info("Loading reference genome complete");
-			} else if (!attemptedSave) {
-				attemptedSave = true;
+			} else {
 				if (!cacheFile.getParentFile().canWrite()) {
 					log.warn("Cannot write to " + cacheFile + " not persisting 2bit compressed reference genome cache");
 				} else {
@@ -158,6 +156,8 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 					log.info("Saving reference genome cache complete");
 				}
 			}
+			// Only attempt load/save once
+			cacheFile = null;
 		}
 		return cacheLoad(contig);
 	}
