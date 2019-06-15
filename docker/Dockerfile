@@ -6,7 +6,7 @@ FROM ubuntu:16.04
 LABEL base.image="biocontainers:latest"
 LABEL version="1"
 LABEL software="GRIDSS"
-LABEL software.version="2.2.3"
+LABEL software.version="2.4.0"
 LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
 LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
@@ -32,10 +32,9 @@ RUN chmod 777 /data
 USER gridss
 RUN mkdir /data/gridss
 WORKDIR /data/gridss
-RUN wget https://github.com/PapenfussLab/gridss/releases/download/v2.3.0/gridss-2.3.0-gridss-jar-with-dependencies.jar
+RUN wget https://github.com/PapenfussLab/gridss/releases/download/v2.4.0/gridss-2.4.0-gridss-jar-with-dependencies.jar
 
 ENTRYPOINT ["java",
-	"-ea",
 	"-XX:+UnlockExperimentalVMOptions", 
 	"-XX:+UseCGroupMemoryLimitForHeap", 
 	"-XX:MaxRAMFraction=1",

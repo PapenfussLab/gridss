@@ -28,7 +28,7 @@ REFERENCE=hg19.fa
 INPUT=chr12.1527326.DEL1024.bam
 OUTPUT=${INPUT/.bam/.targeted.sv.vcf}
 ASSEMBLY=${INPUT/.bam/.targeted.assembly.bam}
-GRIDSS_JAR=../target/gridss-2.3.0-gridss-jar-with-dependencies.jar
+GRIDSS_JAR=../target/gridss-2.4.0-gridss-jar-with-dependencies.jar
 
 # Extract the reads flanking each breakpoint, not just overlapping.
 # 2k is chosen since it it (should) be larger than the fragment size
