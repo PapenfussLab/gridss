@@ -72,7 +72,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		if (tracker != null && tracker.isTracked(de.getEvidenceID())) {
 			if (!MessageThrottler.Current.shouldSupress(log, "assembly duplicated reads")) {
 				log.warn(String.format("Attempting to add %s to assembly when already present. "
-						+ "Possible causes are: duplicate read name, alignment with multimapping aligner which writes read alignments as distinct pairs. ",
+						+ "Possible causes are: duplicate read name, alignment with multi-mapping aligner which writes read alignments as distinct pairs. ",
 						de.getEvidenceID()));
 			}
 			return;

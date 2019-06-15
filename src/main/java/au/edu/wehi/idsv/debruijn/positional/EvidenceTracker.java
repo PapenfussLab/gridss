@@ -23,13 +23,12 @@ public class EvidenceTracker {
 	private long evidenceTotal = 0;
 	/**
 	 * Tracks evidence emitted from the given iterator
-	 * @param it iterator to track
 	 */
 	public EvidenceTracker() {
 	}
 	/**
 	 * Tracks the given evidence
-	 * @param evidence
+	 * @param support
 	 */
 	public KmerSupportNode track(KmerSupportNode support) {
 		long kmer = support.lastKmer();

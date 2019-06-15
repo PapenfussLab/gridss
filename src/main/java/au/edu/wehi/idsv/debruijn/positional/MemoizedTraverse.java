@@ -10,6 +10,7 @@ import com.google.common.io.Files;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 import java.io.File;
@@ -30,8 +31,11 @@ public class MemoizedTraverse {
 	 * we can calculate maximal weighted paths by a positional traverse
 	 * (BFS in position space) of the graph, caching the best predecessor
 	 * of each node.
+	 *
+	 * Int2ObjectSortedMap is sorted by TraversalNode.firstEnd
 	 */
 	private final IdentityHashMap<KmerPathNode, AbstractInt2ObjectSortedMap<TraversalNode>> memoized = new IdentityHashMap<>();
+	// TODO: track anchored and unanchored paths in different frontiers - only call unanchored when no anchored paths nearby
 	private final SortedSet<TraversalNode> frontier = Defaults.USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES ? new TraversalNodeByLastEndKmerSortedSet(16) : new TreeSet<>(TraversalNode.ByLastEndKmer);
 	private final MemoizationStats stats = new MemoizationStats();
 	/**
@@ -166,23 +170,26 @@ public class MemoizedTraverse {
 		int frontierResetCount = addAlternatePathsToFrontier(tn);
 		// check if this path continues on to any children
 		for (KmerPathNode child : tn.node.node().next()) {
-			for (TraversalNode childtn : memoized(child)) {
-				if (childtn.parent == null) continue;
-				// can't use reference equality since
-				// the parent node could have been split
-				// on an unrelated path.
-				// Also, reference nodes nodes are special cases
-				// and are memoized only as terminal nodes
-				// with a starting node traversal object recreated
-				// for each traversal
-				if (childtn.parent.node.node() == tn.node.node() &&
-						// need to compare against the child internal since childtn.parent
-						// could have an outdated overlapping interval whilest the actual
-						// memoized parent interval was split and does not require updating
-						IntervalUtil.overlapsClosed(childtn.node.firstStart(), childtn.node.firstEnd(),
-								tn.node.lastStart() + 1, tn.node.lastEnd() + 1)
-						) {
-					callStack.push(childtn);
+			AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(child);
+			if (cache != null) {
+				// skip values that end before we start
+				for (TraversalNode childtn : cache.tailMap(tn.node.lastStart() + 1).values()) {
+					// can't use reference equality since
+					// the parent node could have been split
+					// on an unrelated path.
+					// Also, reference nodes nodes are special cases
+					// and are memoized only as terminal nodes
+					// with a starting node traversal object recreated
+					// for each traversal
+					// need to compare against the child internal since childtn.parent
+					// could have an outdated overlapping interval whilest the actual
+					// memoized parent interval was split and does not require updating
+					if (childtn.node.firstStart() > tn.node.lastEnd() + 1) {
+						break;
+					}
+					if (childtn.parent != null && childtn.parent.node.node() == tn.node.node()) {
+						callStack.push(childtn);
+					}
 				}
 			}
 		}
@@ -204,13 +211,14 @@ public class MemoizedTraverse {
 		KmerPathNode parent = tn.parent == null ? null : tn.parent.node.node();
 		for (KmerPathNode prev : tn.node.node().prev()) {
 			if (prev != parent) {
-				for (TraversalNode altParent : memoized(prev)) {
-					// only recalculate if the interval for the alternate path
-					// overlaps us
-					if (IntervalUtil.overlapsClosed(tn.node.firstStart(), tn.node.firstEnd(),
-							altParent.node.lastStart() + 1, altParent.node.lastEnd() + 1)) {
+				int parentLength = prev.length();
+				AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(prev);
+				if (cache != null) {
+					for (TraversalNode altParent : cache.tailMap(tn.node.firstStart() - parentLength).values()) {
+						if (altParent.node.lastStart() + 1 > tn.node.firstEnd()) {
+							break;
+						}
 						addFrontier(altParent);
-						count++;
 					}
 				}
 			}
@@ -229,8 +237,7 @@ public class MemoizedTraverse {
 	}
 	/**
 	 * Memoize the given score for the given position
-	 * @param score initial score
-	 * @param start starting node
+	 * @param node starting node
 	 * @return previously memoized values invalidated by this memoization  
 	 */
 	public void memoize(TraversalNode node) {

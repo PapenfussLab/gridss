@@ -145,15 +145,15 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	private synchronized PackedReferenceSequence addToCache(String contig) {
 		if (cacheFile != null) {
 			if (cacheFile.exists()) {
-				log.info("Loading reference genome from cache " + cache);
+				log.info("Loading reference genome from cache " + cacheFile);
 				load(cacheFile);
 				log.info("Loading reference genome complete");
 			} else if (!attemptedSave) {
 				attemptedSave = true;
 				if (!cacheFile.getParentFile().canWrite()) {
-					log.warn("Cannot write to " + cache + " not persisting 2bit compressed reference genome cache");
+					log.warn("Cannot write to " + cacheFile + " not persisting 2bit compressed reference genome cache");
 				} else {
-					log.info("Saving reference genome cache to " + cache);
+					log.info("Saving reference genome cache to " + cacheFile);
 					save(cacheFile);
 					log.info("Saving reference genome cache complete");
 				}
