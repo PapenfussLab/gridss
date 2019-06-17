@@ -34,11 +34,15 @@ RUN mkdir /data/gridss
 WORKDIR /data/gridss
 RUN wget https://github.com/PapenfussLab/gridss/releases/download/v2.4.0/gridss-2.4.0-gridss-jar-with-dependencies.jar
 
+# TODO: check java version in container.
+# Must be at least java 8 191
+# -XX:ActiveProcessorCount
+# -XX:MaxRAMPercentage
 ENTRYPOINT ["java",
 	"-XX:+UnlockExperimentalVMOptions", 
 	"-XX:+UseCGroupMemoryLimitForHeap", 
 	"-XX:MaxRAMFraction=1",
-	-XshowSettings:vm",
+	"-XshowSettings:vm",
 	"-Dsamjdk.create_index=true",
 	"-Dsamjdk.use_async_io_read_samtools=true",
 	"-Dsamjdk.use_async_io_write_samtools=true",
@@ -46,5 +50,5 @@ ENTRYPOINT ["java",
 	"-Dgridss.gridss.output_to_temp_file=true",
 	"-Dsamjdk.buffer_size=4194304",
 	"-cp",
-	"/data/gridss/gridss-2.3.0-gridss-jar-with-dependencies.jar",
+	"/data/gridss/gridss-2.4.0-gridss-jar-with-dependencies.jar",
 	"gridss.CallVariants"]

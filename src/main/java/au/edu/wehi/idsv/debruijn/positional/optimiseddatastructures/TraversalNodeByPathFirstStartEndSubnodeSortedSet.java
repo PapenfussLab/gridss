@@ -33,6 +33,7 @@ public class TraversalNodeByPathFirstStartEndSubnodeSortedSet extends SortedByPo
 
     @Override
     protected SortedSet<TraversalNode> createAtPosition() {
+
         return new TreeSet<>(TraversalNode.ByScoreEndSubnode);
     }
 
