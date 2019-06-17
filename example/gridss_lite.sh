@@ -209,13 +209,14 @@ done
 if ! which samtools >/dev/null; then echo "Error: unable to find samtools on \$PATH" ; exit 2; fi
 if ! which bwa >/dev/null; then echo "Error: unable to find bwa on \$PATH" ; exit 2; fi
 if ! which java >/dev/null; then echo "Error: unable to find java on \$PATH" ; exit 2; fi
-if ! which Rscript >/dev/null; then echo "Error: unable to find Rscript on \$PATH" ; exit 2; fi
+if ! which /usr/bin/time >/dev/null; then echo "Error: unable to find /usr/bin/time" ; exit 2; fi
 
 workingdir=$workingdir/$(basename ${output_vcf}.gridss.lite.working)
 mkdir -p $workingdir
 cd $workingdir
 
 logfile=$workingdir/gridss.lite.$HOSTNAME.$$.log
+timinglogfile=$workingdir/gridss.timing.$HOSTNAME.$$.log
 firstpassvcf=$workingdir/$(basename $output_vcf).firstpass.vcf
 regionbed=$workingdir/$(basename $output_vcf).firstpass.bed
 jvmargs="-ea \
@@ -231,7 +232,8 @@ for input in $input_files ; do
 	input_working_dir=$workingdir/$(basename $input).gridss.working
 	echo "Calculating metrics for $input based on first $metricsrecords reads" 1>&2
 	mkdir -p $input_working_dir
-	java -Xmx2g $jvmargs gridss.analysis.CollectGridssMetrics \
+	echo "gridss.analysis.CollectGridssMetrics (first pass) $input" >> $timinglogfile 
+	/usr/bin/time -a -o $timinglogfile java -Xmx2g $jvmargs gridss.analysis.CollectGridssMetrics \
 			TMP_DIR=$input_working_dir \
 			ASSUME_SORTED=true \
 			I=$input \
@@ -248,7 +250,8 @@ for input in $input_files ; do
 			PROGRAM=CollectInsertSizeMetrics \
 			STOP_AFTER=$metricsrecords \
 			2>&1 | tee -a $logfile
-	java -Xmx2g $jvmargs gridss.analysis.CollectStructuralVariantReadMetrics \
+	echo "gridss.analysis.CollectStructuralVariantReadMetrics $input" >> $timinglogfile 
+	/usr/bin/time -a -o $timinglogfile java -Xmx2g $jvmargs gridss.analysis.CollectStructuralVariantReadMetrics \
 			TMP_DIR=$input_working_dir \
 			I=$input \
 			OUTPUT=$input_working_dir/$(basename $input).sv_metrics \
@@ -291,7 +294,8 @@ samtools index $workingdir/empty.bam.gridss.working/empty.bam.sv.bam
 #TODO: Add timing to maximal clique chunk timing (cut/paste from assembly timing)
 # First pass: call only from RP and SR
 echo "variantcalling.minScore=$firstpassqual" > $workingdir/firstpass.properties
-java -Xmx$jvmheap $jvmargs gridss.IdentifyVariants \
+echo "gridss.analysis.IdentifyVariants (first pass)" >> $timinglogfile 
+/usr/bin/time -a -o $timinglogfile java -Xmx$jvmheap $jvmargs gridss.IdentifyVariants \
 			TMP_DIR=$workingdir \
 			WORKING_DIR=$workingdir \
 			REFERENCE_SEQUENCE=$reference \
@@ -307,7 +311,8 @@ grep -v "^#" < $firstpassvcf | awk '{print $1 "\t" $2 - 1 "\t" $2}' > $regionbed
 input_args=""
 for input in $input_files ; do
 	# extract the reads flanking the interesting calls
-	java -Xmx$jvmheap $jvmargs gridss.ExtractFullReads \
+	echo "gridss.analysis.ExtractFullReads (second pass)" >> $timinglogfile 
+	/usr/bin/time -a -o $timinglogfile java -Xmx$jvmheap $jvmargs gridss.ExtractFullReads \
 		B=$regionbed \
 		REGION_PADDING_SIZE=$padding \
 		COMPRESSION_LEVEL=0 \
@@ -319,7 +324,8 @@ for input in $input_files ; do
 	rm $workingdir/$(basename $input).gridss.working/*.sv.ba*
 	input_args="$input_args INPUT=$workingdir/$(basename $input)"
 done
-java -Xmx$jvmheap $jvmargs gridss.CallVariants \
+echo "gridss.analysis.CallVariants" >> $timinglogfile
+/usr/bin/time -a -o $timinglogfile java -Xmx$jvmheap $jvmargs gridss.CallVariants \
 	TMP_DIR=$workingdir \
 	WORKING_DIR=$workingdir \
 	REFERENCE_SEQUENCE=$reference \

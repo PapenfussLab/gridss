@@ -4,6 +4,7 @@
 #
 # This script is a simple wrapper around the all-in-one gridss.CallVariants entry point
 #
+# Example ./gridss.sh  -t 1 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -o gridss.full.chr12.1527326.DEL1024.vcf -a gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.4.0-gridss-jar-with-dependencies.jar chr12.1527326.DEL1024.bam
 set -o errexit -o pipefail -o noclobber -o nounset
 ! getopt --test > /dev/null 
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -174,9 +175,11 @@ done
 if ! which bwa >/dev/null; then echo "Error: unable to find bwa on \$PATH" ; exit 2; fi
 if ! which java >/dev/null; then echo "Error: unable to find java on \$PATH" ; exit 2; fi
 if ! which Rscript >/dev/null; then echo "Error: unable to find Rscript on \$PATH" ; exit 2; fi
+if ! which /usr/bin/time >/dev/null; then echo "Error: unable to find /usr/bin/time" ; exit 2; fi
 
 mkdir -p $workingdir
 logfile=$workingdir/gridss.lite.$HOSTNAME.$$.log
+timinglogfile=$workingdir/gridss.timing.$HOSTNAME.$$.log
 
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
@@ -185,7 +188,8 @@ unset DISPLAY # Prevents errors attempting to connecting to an X server when sta
 # -Dgridss.gridss.output_to_temp_file=true allows GRIDSS to continue where it left off without data errors due to truncated files
 # -Dsamjdk.create_index=true is required for multi-threaded operation
 # -Dsamjdk.use_async_io allow for async read/write on background threads which improves BAM I/O performancce
-java -Xmx$jvmheap \
+echo "gridss.analysis.CallVariants" >> $timinglogfile
+/usr/bin/time -a -o $timinglogfile java -Xmx$jvmheap \
 	-Dreference_fasta="$reference" \
 	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
