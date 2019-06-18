@@ -6,3 +6,4 @@ chr12.*
 hg19.*
 hg38.*
 .idea
+/example/*.log

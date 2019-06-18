@@ -266,7 +266,7 @@ for input in $input_files ; do
 		exit 3
 	fi
 	if [[ ! -f $workingdir/empty.bam ]] ; then
-		samtools view -H $input | samtools view -b > $workingdir/empty.bam
+		samtools view -H $input | samtools view -b - > $workingdir/empty.bam
 	fi
 	sv_bam=$input_working_dir/$(basename $input).sv.bam
 	ln -s $input $sv_bam
