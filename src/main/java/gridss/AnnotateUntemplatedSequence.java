@@ -10,6 +10,7 @@ import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -35,9 +36,11 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 	@Argument(doc="Overwrite existing annotation. Setting to 'true' will replace any existing BEALN annotations. " +
 			"Setting to 'false' will generate annotations only for records without an existing BEALN annotation. ")
 	public boolean OVERWRITE = false;
-	@Argument(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files."
+	@Argument(doc="Command line arguments to run external aligner. "
+			+ "Aligner output must be written to stdout and the records MUST match the input fastq order."
 			+ " The aligner must support using \"-\" as the input filename when reading from stdin."
-			+ " The sort order of the input file will not be retained.", optional=true)
+			+ "Java argument formatting is used with %1$s being the fastq file to align, "
+			+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
 	public List<String> ALIGNER_COMMAND_LINE = new SoftClipsToSplitReads().ALIGNER_COMMAND_LINE;
 	public static void main(String[] argv) {
         System.exit(new AnnotateUntemplatedSequence().instanceMain(argv));
@@ -46,10 +49,10 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 	public int doWork() {
 		IOUtil.assertFileIsReadable(INPUT);
 		IOUtil.assertFileIsWritable(OUTPUT);
+		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		log.info("Annotating variant untemplated sequence in " + INPUT);
-		GenomicProcessingContext context = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
-		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(context, INPUT, OVERWRITE, ALIGNER_COMMAND_LINE, WORKER_THREADS)) {
-			saveVcf(context, INPUT, OUTPUT, ann);
+		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(REFERENCE_SEQUENCE, INPUT, OVERWRITE, ALIGNER_COMMAND_LINE, WORKER_THREADS)) {
+			saveVcf(INPUT, OUTPUT, ann);
 			log.info("Annotated variants written to " + OUTPUT);
 		} catch (IOException e) {
 			log.error(e);
@@ -57,8 +60,8 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 		}
 		return 0;
 	}
-	protected void saveVcf(GenomicProcessingContext context, File input, File output, Iterator<IdsvVariantContext> calls) throws IOException {
-		VCFHeader header = null;
+	protected void saveVcf(File input, File output, Iterator<VariantContext> calls) throws IOException {
+		VCFHeader header;
 		try (VCFFileReader vcfReader = new VCFFileReader(input, false)) {
 			header = vcfReader.getFileHeader();
 		}
@@ -72,7 +75,7 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 		try (VariantContextWriter vcfWriter = builder.build()) {
 			vcfWriter.writeHeader(header);
 			while (calls.hasNext()) {
-				IdsvVariantContext record = calls.next();
+				VariantContext record = calls.next();
 				vcfWriter.add(record);
 				writeProgress.record(record.getContig(), record.getStart());
 			}

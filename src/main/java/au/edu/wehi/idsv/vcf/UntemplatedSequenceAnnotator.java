@@ -1,39 +1,44 @@
 package au.edu.wehi.idsv.vcf;
 
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.IdsvVariantContextBuilder;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
+import joptsimple.internal.Strings;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVariantContext> {
+public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantContext> {
 	public static final byte DEFAULT_QUAL_SCORE = 20;
 	private static final Log log = Log.getInstance(UntemplatedSequenceAnnotator.class);
-	private final GenomicProcessingContext context;
+	private static final Pattern breakendRegex = Pattern.compile("^(.(?<leftins>.*))?[\\[\\]].*[\\[\\]]((?<rightins>.*).)?$");
+	private final File referenceFile;
 	private final File vcf;
 	private final boolean overwrite;
 	private final List<String> cmd;
 	private final int threads;
-	private CloseableIterator<IdsvVariantContext> vcfStream;
+	private CloseableIterator<VariantContext> vcfStream;
 	private PeekingIterator<SAMRecord> samStream;
 	private ExternalProcessStreamingAligner aligner;
 	private Thread feedingAligner;
-	private IdsvVariantContext nextRecord = null;
-	public UntemplatedSequenceAnnotator(GenomicProcessingContext context, File vcf, boolean overwrite, List<String> aligner_command_line, int threads) {
-		this.context = context;
+	private VariantContext nextRecord = null;
+	public UntemplatedSequenceAnnotator(File referenceFile, File vcf, boolean overwrite, List<String> aligner_command_line, int threads) {
+		this.referenceFile = referenceFile;
 		this.vcf = vcf;
 		this.overwrite = overwrite;
 		this.cmd = aligner_command_line;
@@ -42,15 +47,14 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 		createRecordAlignmentStream();
 		this.samStream = Iterators.peekingIterator(this.aligner);
 	}
-	private CloseableIterator<IdsvVariantContext> getVcf() {
+	private CloseableIterator<VariantContext> getVcf() {
 		VCFFileReader vcfReader = new VCFFileReader(vcf, false);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
-		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(context, null, variant));
-		return new AutoClosingIterator<IdsvVariantContext>(idsvIt, it, vcfReader);
+		return new AutoClosingIterator<VariantContext>(it, vcfReader);
 	}
 	private ExternalProcessStreamingAligner createRecordAlignmentStream() {
 		log.debug("Started async external alignment feeder thread.");
-		aligner = new ExternalProcessStreamingAligner(context.getSamReaderFactory(), cmd, context.getReferenceFile(), threads);
+		aligner = new ExternalProcessStreamingAligner(SamReaderFactory.make(), cmd, referenceFile, threads);
 		feedingAligner = new Thread(() -> feedExternalAligner());
 		feedingAligner.setName("async-feedExternalAligner");
 		feedingAligner.start();
@@ -59,20 +63,37 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 	private boolean shouldAttemptAlignment(VariantContext v) {
 		return overwrite || !v.hasAttribute(VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute());
 	}
+	private static String getBreakendSequence(VariantContext seq) {
+		if (seq.getAlternateAlleles().size() != 1) return null;
+		Allele allele = seq.getAlternateAllele(0);
+		String alt = allele.getDisplayString();
+		if (alt.charAt(0) == '.' || alt.charAt(alt.length() - 1) == '.') {
+			return alt.substring(1, alt.length() - 1);
+		} else if (alt.charAt(0) == '[' || alt.charAt(0) == ']' || alt.charAt(alt.length() - 1) == '[' || alt.charAt(alt.length() - 1) == ']') {
+			Matcher matcher = breakendRegex.matcher(alt);
+			if (matcher.matches()) {
+				String leftIns = matcher.group("leftins");
+				if (!Strings.isNullOrEmpty(leftIns)) {
+					return leftIns;
+				}
+				String rightIns = matcher.group("rightins");
+				return rightIns;
+			}
+		}
+		return null;
+	}
+
 	private void feedExternalAligner() {
-		try (CloseableIterator<IdsvVariantContext> it = getVcf()) {
+		try (CloseableIterator<VariantContext> it = getVcf()) {
 			while (it.hasNext()) {
-				IdsvVariantContext vc = it.next();
-				if (vc instanceof VariantContextDirectedEvidence && shouldAttemptAlignment(vc)) {
-					VariantContextDirectedEvidence e = (VariantContextDirectedEvidence)vc;
-					byte[] seq = e.getBreakendSequence();
-					byte[] qual = e.getBreakendQuality();
-					if (seq != null && seq.length > 0) {
-						if (qual == null) {
-							qual = new byte[seq.length];
-							Arrays.fill(qual, DEFAULT_QUAL_SCORE);
-						}
-						FastqRecord fq = new FastqRecord(e.getID(), seq, null, qual);
+				VariantContext vc = it.next();
+				if (shouldAttemptAlignment(vc)) {
+					String seqstr = getBreakendSequence(vc);
+					if (!Strings.isNullOrEmpty(seqstr)) {
+						byte[] seq = seqstr.getBytes(StandardCharsets.UTF_8);
+						byte[] qual = new byte[seq.length];
+						Arrays.fill(qual, DEFAULT_QUAL_SCORE);
+						FastqRecord fq = new FastqRecord(vc.getID(), seq, null, qual);
 						aligner.asyncAlign(fq);
 					}
 				}
@@ -94,10 +115,10 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 		return nextRecord != null;
 	}
 	@Override
-	public IdsvVariantContext next() {
+	public VariantContext next() {
 		ensureNext();
 		if (!hasNext()) throw new NoSuchElementException();
-		IdsvVariantContext result = nextRecord;
+		VariantContext result = nextRecord;
 		nextRecord = null;
 		return result;
 	}
@@ -128,7 +149,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<IdsvVaria
 			}
 		}
 		if (alignments.size() > 0) {
-			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context, nextRecord);
+			VariantContextBuilder builder = new VariantContextBuilder(nextRecord);
 			builder.attribute(VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute(), writeAlignmentAnnotation(alignments));
 			nextRecord = builder.make();
 		}
