@@ -124,9 +124,14 @@ if [[ ! -f ${reference}.bwt  ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Unable to find bwa index ${reference}.bwt for reference genome." 1>&2
 	echo "Please create using `bwa index $reference`" 1>&2
-	exit 8exit 3
+	exit 8
 fi
 echo "Using reference genome $reference" 1>&2
+if [[ "$output_vcf" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "Output VCF not specified. Use --output to specify output file." 1>&2
+	exit 9
+fi
 output_vcf=$(readlink -f $output_vcf || echo -n)
 if [[ "$output_vcf" == "" ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2

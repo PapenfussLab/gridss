@@ -144,6 +144,11 @@ if [[ ! -f ${reference}.fai ]] && [[ ! -f ${reference/.fa/.fai} ]] && [[ ! -f ${
 	exit 6
 fi
 echo "Using reference genome $reference" 1>&2
+if [[ "$output_vcf" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "Output VCF not specified. Use --output to specify output file." 1>&2
+	exit 7
+fi
 output_vcf=$(readlink -f $output_vcf)
 if [[ "$output_vcf" == "" ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
