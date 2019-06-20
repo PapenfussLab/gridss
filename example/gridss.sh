@@ -215,7 +215,7 @@ echo "gridss.analysis.CallVariants" >> $timinglogfile
 	$input_args \
 	OUTPUT="$output_vcf" \
 	ASSEMBLY="$assembly" \
-	BLACKLIST="$blacklist" \
+	$blacklist_arg \
 	WORKER_THREADS=$threads \
 	2>&1 | tee -a $logfile
 
