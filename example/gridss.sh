@@ -197,7 +197,7 @@ if ! which Rscript >/dev/null; then echo "Error: unable to find Rscript on \$PAT
 if ! which /usr/bin/time >/dev/null; then echo "Error: unable to find /usr/bin/time" ; exit 2; fi
 
 mkdir -p $workingdir
-logfile=$workingdir/gridss.lite.$HOSTNAME.$$.log
+logfile=$workingdir/gridss.full.$HOSTNAME.$$.log
 timinglogfile=$workingdir/gridss.timing.$HOSTNAME.$$.log
 
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
