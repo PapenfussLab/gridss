@@ -19,7 +19,7 @@ LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,padding:,metrics
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
     #  then getopt has complained about wrong arguments to stdout
-	echo $USAGE_MESSAGE 1>&2
+	echo "$USAGE_MESSAGE" 1>&2
     exit 2
 fi
 eval set -- "$PARSED"
@@ -98,14 +98,14 @@ if [[ "$gridss_jar" == "" ]] ; then
 	gridss_jar=$(ls -1 ./gridss*gridss-jar-with-dependencies.jar | tail -1)
 fi
 if [[ ! -f $gridss_jar ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
 	exit 2
 fi
 gridss_jar=$(readlink -f $gridss_jar)
 echo "Using GRIDSS jar $gridss_jar" 1>&2
 if [[ "$workingdir" == "" ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
 	exit 2
 else
@@ -119,35 +119,35 @@ else
 	echo "Using working directory $workingdir" 1>&2
 fi
 if [[ "$assembly" == "" ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Specify assembly bam location using the --assembly command line argument" 1>&2
 fi
 assembly=$(readlink -f $assembly)
 echo Using assembly output $assembly
 if [[ "$reference" == "" ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Specify reference location using the --reference command line argument" 1>&2
 fi
 reference=$(readlink -f $reference)
 if [[ ! -f "$reference" ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing reference genome $reference" 1>&2
 fi
 if [[ ! -f ${reference}.fai ]] && [[ ! -f ${reference/.fa/.fai} ]] && [[ ! -f ${reference/.faasta/.fai} ]]  ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Unable to find fai index for reference genome." 1>&2
 	echo "Please create using `samtools faidx $reference`" 1>&2
 fi
 echo "Using reference genome $reference" 1>&2
 output_vcf=$(readlink -f $output_vcf)
 if [[ "$output_vcf" == "" ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Output VCF must be specified. Specify using the --output command line argument" 1>&2
 	exit 2
 fi 
 echo "Using output VCF $output_vcf" 1>&2
 if [[ "$threads" -lt 1 ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Illegal thread count: $threads. Specify an integer thread count using the --threads command line argument" 1>&2
 	exit 2
 fi
@@ -156,17 +156,17 @@ if [[ "$threads" -gt 8 ]] ; then
 fi
 echo "Using $threads worker threads." 1>&2
 if [[ "$padding" -lt 1 ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Invalid region padding size $padding." 1>&2
 	exit 2
 fi
 if [[ "$metricsrecords" -lt 1 ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Invalid number of metrics records to approximate library distributions from." 1>&2
 	exit 2
 fi
 if [[ "$firstpassqual" -lt 1 ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Invalid first pass quality score threshold." 1>&2
 	exit 2
 fi
@@ -175,7 +175,7 @@ if [[ "$blacklist" == "" ]] ; then
 	blacklist_arg=""
 	echo "Using no blacklist bed. The encode DAC blacklist is recommended for hg19." 1>&2
 elif [[ ! -f $blacklist ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing blacklist file $blacklist" 1>&2
 	exit 2
 else
@@ -191,7 +191,7 @@ if [[ "$jvmheap" == "" ]] ; then
 fi
 echo "Using JVM maximum heap size of $jvmheap" 1>&2
 if [[ "$@" == "" ]] ; then
-	echo $USAGE_MESSAGE  1>&2
+	echo "$USAGE_MESSAGE"  1>&2
 	echo "At least one input bam must be specified." 1>&2
 fi
 input_files=""
