@@ -101,8 +101,16 @@ if [[ "$assembly" == "" ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory." 1>&2
 	exit 4
+else
+	mkdir -p $(dirname $assembly) || echo "Unable to create directory $(dirname $assembly)" 1>&2
 fi
 assembly=$(readlink -f $assembly || echo -n)
+if [[ "$assembly" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory." 1>&2
+	exit 4
+fi
+echo "Using assembly bam $assembly" 1>&2
 if [[ "$reference" == "" ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Specify reference location using the --reference command line argument" 1>&2
@@ -215,7 +223,7 @@ echo "gridss.analysis.CallVariants" >> $timinglogfile
 	$input_args \
 	OUTPUT="$output_vcf" \
 	ASSEMBLY="$assembly" \
-	$blacklist_arg \
+	 $blacklist_arg  \
 	WORKER_THREADS=$threads \
 	2>&1 | tee -a $logfile
 
