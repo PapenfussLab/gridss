@@ -11,7 +11,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     echo '`getopt --test` failed in this environment.'
     exit 1
 fi
-USAGE_MESSAGE="gridss.sh --reference <reference.fa> --output <output.vcf> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap <threads * 4>g] [--blacklist <blacklist.bed>] input1.bam [input2.bam [...]]"
+USAGE_MESSAGE="Usage: gridss.sh --reference <reference.fa> --output <output.vcf> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap <threads * 4>g] [--blacklist <blacklist.bed>] input1.bam [input2.bam [...]]"
 
 OPTIONS=r:o:a:t:j:w:b:
 LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:
@@ -26,6 +26,7 @@ eval set -- "$PARSED"
 workingdir="./"
 reference=""
 output_vcf=""
+assembly=""
 threads=$(nproc)
 gridss_jar=""
 jvmheap=""
