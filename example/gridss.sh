@@ -122,7 +122,7 @@ if [[ ! -f "$reference" ]] ; then
 	echo "Missing reference genome $reference" 1>&2
 	exit 6
 fi
-if [[ ! -f ${reference}.fai ]] && [[ ! -f ${reference/.fa/.fai} ]] && [[ ! -f ${reference/.faasta/.fai} ]]  ; then
+if [[ ! -f ${reference}.fai ]] && [[ ! -f ${reference/.fa/.fai} ]] && [[ ! -f ${reference/.fasta/.fai} ]]  ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Unable to find fai index for reference genome." 1>&2
 	echo "Please create using `samtools faidx $reference`" 1>&2
