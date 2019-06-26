@@ -34,7 +34,7 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	}
 	public TwoBitBufferedReferenceSequenceFile(ReferenceSequenceFile underlying, File cache) {
 		if (underlying.getSequenceDictionary() == null) {
-			throw new IllegalArgumentException("Reference genome does not have an index. Create using `samtools index`.");
+			throw new IllegalArgumentException("Reference genome does not have an index. Create using `samtools faidx`.");
 		}
 		this.underlying = underlying;
 		this.referenceIndexLookup = new PackedReferenceSequence[underlying.getSequenceDictionary().getSequences().size()];
