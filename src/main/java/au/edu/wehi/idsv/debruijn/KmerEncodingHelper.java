@@ -4,6 +4,7 @@ import com.google.common.primitives.Bytes;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,6 +33,10 @@ public class KmerEncodingHelper {
 	 */
 	private static final long[] usedBits = new long[MAX_K + 1];
 	private static final byte[] ENCODED_TO_PICARD_LOOKUP = { 'T', 'C', 'A', 'G' };
+	private static final byte[] BYTE_TO_ENCODED = new byte[256];
+	private static final BitSet IS_AMBIGUOUS_BITSET = new BitSet(256);
+	private static final boolean[] IS_AMBIGUOUS_LOOKUP = new boolean[256];
+
 	static {
 		long usedMask = 0;
 		long complementMask = 0;
@@ -43,14 +48,24 @@ public class KmerEncodingHelper {
 			usedMask <<= 2;
 			usedMask |= 3;
 		}
+		for (int i = 0; i < 256; i++) {
+			BYTE_TO_ENCODED[i] = (byte)picardBaseToEncoded_case((byte)i);
+			IS_AMBIGUOUS_LOOKUP[i] = isAmbiguous_case((byte)i);
+			IS_AMBIGUOUS_BITSET.set(i, isAmbiguous_case((byte)i));
+		}
 	}
 	/**
-	 * Converts a base to 2bit representation
-	 * @see http://genome.ucsc.edu/FAQ/FAQformat#format7
+	 * Converts a base to 2bit representation as per http://genome.ucsc.edu/FAQ/FAQformat#format7
 	 * @param base ASCII byte representation of base
 	 * @return 2bit representation of base
 	 */
 	public static int picardBaseToEncoded(byte base) {
+		return picardBaseToEncoded_lookup(base);
+	}
+	private static int picardBaseToEncoded_lookup(byte base) {
+		return BYTE_TO_ENCODED[base];
+	}
+	private static int picardBaseToEncoded_case(byte base) {
 		switch (base) {
 			case 'G':
 			case 'g':
@@ -70,6 +85,15 @@ public class KmerEncodingHelper {
 		}
 	}
 	public static boolean isAmbiguous(byte base) {
+		return isAmbiguous_bitset(base);
+	}
+	private static boolean isAmbiguous_bitset(byte base) {
+		return IS_AMBIGUOUS_BITSET.get(base);
+	}
+	private static boolean isAmbiguous_lookup(byte base) {
+		return IS_AMBIGUOUS_LOOKUP[base];
+	}
+	private static boolean isAmbiguous_case(byte base) {
 		switch (base) {
 			case 'G':
 			case 'g':
@@ -141,10 +165,11 @@ public class KmerEncodingHelper {
 		}
 	}
 	/**
-	 * Converts a 2bit encoded kmer into picard bases  
-	 * @param base
-	 * @see http://genome.ucsc.edu/FAQ/FAQformat#format7
-	 * @return 2bit
+	 * Converts a 2bit encoded kmer into picard bases
+	 * http://genome.ucsc.edu/FAQ/FAQformat#format7
+	 * @param k number of bases to decode
+	 * @param encoded encoded bases
+	 * @return ASCII bytes of the encoded bases
 	 */
 	public static byte[] encodedToPicardBases(int k, long encoded) {
 		assertValid(k, encoded);
