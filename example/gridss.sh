@@ -283,7 +283,6 @@ echo "$(date)	Running GRIDSS. The full log is in $logfile"
 
 jvm_args="
 	-Dreference_fasta=$reference \
-	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
@@ -383,6 +382,7 @@ if [[ $do_preprocess == true ]] ; then
 			echo "$(date)	SoftClipsToSplitReads/bwa	$f" | tee -a $timinglogfile
 			{ /usr/bin/time -a -o $timinglogfile \
 				java -Xmx3g $jvm_args \
+					-Dsamjdk.create_index=true \
 					-Dgridss.gridss.output_to_temp_file=true \
 					-cp $gridss_jar gridss.SoftClipsToSplitReads \
 					TMP_DIR=$workingdir \
@@ -439,12 +439,14 @@ if [[ $do_assemble == true ]] ; then
 				GRIDSS_PROGRAM=CollectIdsvMetrics \
 				GRIDSS_PROGRAM=ReportThresholdCoverage \
 				PROGRAM=null \
-				PROGRAM=CollectInsertSizeMetrics \
+				PROGRAM=CollectAlignmentSummaryMetrics \
 		; } 1>&2 2>> $logfile
 		echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
 		{ /usr/bin/time -a -o $timinglogfile \
 			java -Xmx6g $jvm_args \
 				-Dgridss.async.buffersize=16 \
+				-Dsamjdk.create_index=true \
+				-Dgridss.gridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.SoftClipsToSplitReads \
 				TMP_DIR=$workingdir \
 				WORKING_DIR=$workingdir \
