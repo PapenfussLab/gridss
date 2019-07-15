@@ -520,4 +520,4 @@ if [[ $do_call == true ]] ; then
 	fi
 	echo "$(date)	Complete calling	$output_vcf" | tee -a $timinglogfile
 fi
-echo "$(date)	Run complete"
+echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
