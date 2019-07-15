@@ -4,7 +4,7 @@
 #
 # This script is a simple wrapper around the all-in-one gridss.CallVariants entry point
 #
-# Example ./gridss.sh  -t 1 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -o gridss.full.chr12.1527326.DEL1024.vcf -a gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.4.0-gridss-jar-with-dependencies.jar chr12.1527326.DEL1024.bam
+# Example ./gridss.sh  -t 1 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -o gridss.full.chr12.1527326.DEL1024.vcf -a gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.5.0-gridss-jar-with-dependencies.jar chr12.1527326.DEL1024.bam
 set -o errexit -o pipefail -o noclobber -o nounset
 ! getopt --test > /dev/null 
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -12,7 +12,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 USAGE_MESSAGE="
-Usage: gridss.sh --reference <reference.fa> --output <output.vcf> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 28g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] input1.bam [input2.bam [...]]
+Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 28g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 
 	-r/--reference: reference genome to use. Must have a .fai index file and a bwa index.
 	-o/--output: output VCF.
@@ -21,15 +21,16 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf> --assembly <as
 	-j/--jar: location of GRIDSS jar
 	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. Defaults to the current directory.
 	-b/--blacklist: BED file containing regions to ignore
-	-s/--steps: processing steps to run. Defaults to all steps.
+	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators
 	-c/--configuration: configuration file use to override default GRIDSS settings.
+	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 	--jvmheap: size of JVM heap for assembly and variant calling. Defaults to 27.5g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8.
 	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored.
 	"
 	
 
-OPTIONS=r:o:a:t:j:w:b:s:c:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:
+OPTIONS=r:o:a:t:j:w:b:s:c:l:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -38,7 +39,7 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     exit 2
 fi
 eval set -- "$PARSED"
-workingdir="./"
+workingdir="."
 reference=""
 output_vcf=""
 assembly=""
@@ -47,13 +48,18 @@ gridss_jar=""
 jvmheap="28g"
 blacklist=""
 metricsrecords=10000000
-steps="All"
+steps="all"
 config_file=""
 maxcoverage=50000
+labels=""
 while true; do
     case "$1" in
         -r|--reference)
             reference="$2"
+            shift 2
+            ;;
+		-l|--labels)
+            labels="$2"
             shift 2
             ;;
 		-s|--steps)
@@ -144,6 +150,7 @@ if [[ ! -d $workingdir ]] ; then
 		exit 2
 	fi
 fi
+workingdir=$(dirname $workingdir/placeholder)
 echo "Using working directory $workingdir" 1>&2
 ##### --reference
 if [[ ! -f "$reference" ]] ; then
@@ -160,7 +167,7 @@ fi
 if [[ ! -f ${reference}.bwt  ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Unable to find bwa index ${reference}.bwt for reference genome." 1>&2
-	echo "Please create using `bwa index $reference`" 1>&2
+	echo "Please create using bwa index $reference" 1>&2
 	exit 8
 fi
 echo "Using reference genome $reference" 1>&2
@@ -236,6 +243,11 @@ for f in $@ ; do
 	echo "Using input file $f" 1>&2
 	input_args="$input_args INPUT=$f"
 done
+if [[ "$labels" != "" ]] ; then
+	for label in $(echo $labels | tr , " ") ; do
+		input_args="$input_args INPUT_LABEL=$label"
+	done
+fi
 
 # Validate tools exist on path
 for tool in bwa Rscript /usr/bin/time sambamba java ; do
@@ -244,12 +256,17 @@ for tool in bwa Rscript /usr/bin/time sambamba java ; do
 done
 
 # check java version is ok by testing for GRIDSS usage message
-if java -cp $gridss_jar gridss.Echo 2>&1 | grep "USAGE:" >/dev/null ; then
+if java -cp $gridss_jar gridss.Echo ; then
 	java -version 2>&1
 else
 	echo "Unable to run GRIDSS jar. GRIDSS requires java 1.8 or later." 2>&1
 	java -version 2>&1
 	exit 14
+fi
+
+if ! java -Xmx$jvmheap -cp $gridss_jar gridss.Echo ; then
+	echo "Failure invoking java with --jvmheap parameter of \"$jvmheap\". Specify a JVM heap size (e.g. \"31g\") that is valid for this machine."
+	exit 15
 fi
 
 
@@ -262,78 +279,243 @@ ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 echo "Max file handles: $(ulimit -n)" 1>&2 
 
-COMMON_JVM_ARGS="-Dreference_fasta=$reference \
+echo "$(date)	Running GRIDSS. The full log is in $logfile"
+
+jvm_args="
+	-Dreference_fasta=$reference \
 	-Dsamjdk.create_index=true \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
-	-Dsamjdk.buffer_size=4194304 \
-	-Dgridss.gridss.output_to_temp_file=true"
-	
-for f in $@ ; do
-	echo "Pre-processing $F"
-	dir=$workingdir/$(basename $f).gridss.working
-	prefix=$workingdir/$(basename $f).gridss.working/$(basename $f)
-	tmp_prefix=$workingdir/$(basename $f).gridss.working/tmp.$(basename $f)
-	if ! mkdir -p $dir ; then
-		echo Unable to create directory $dir 1>&2
-		exit 2
+	-Dsamjdk.buffer_size=4194304"
+
+if [[ $do_preprocess == true ]] ; then
+	for f in $@ ; do
+		echo "$(date)	Start pre-processing	$f"
+		dir=$workingdir/$(basename $f).gridss.working
+		prefix=$workingdir/$(basename $f).gridss.working/$(basename $f)
+		tmp_prefix=$workingdir/$(basename $f).gridss.working/tmp.$(basename $f)
+		if ! mkdir -p $dir ; then
+			echo Unable to create directory $dir 1>&2
+			exit 2
+		fi
+		if [[ ! -f $prefix.sv.bam ]] ; then
+			echo "$(date)	CollectInsertSizeMetrics	$f	first $metricsrecords records" | tee -a $timinglogfile
+			{ /usr/bin/time -a -o $timinglogfile java -Xmx256m $jvm_args \
+				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
+				TMP_DIR=$dir \
+				ASSUME_SORTED=true \
+				I=$f \
+				O=$tmp_prefix \
+				THRESHOLD_COVERAGE=$maxcoverage \
+				FILE_EXTENSION=null \
+				GRIDSS_PROGRAM=null \
+				PROGRAM=null \
+				PROGRAM=CollectInsertSizeMetrics \
+				STOP_AFTER=$metricsrecords \
+			; } 1>&2 2>> $logfile
+			echo "$(date)	CollectGridssMetricsAndExtractSVReads|sambamba	$f" | tee -a $timinglogfile
+			{ /usr/bin/time -a -o $timinglogfile \
+				java -Xmx512m $jvm_args \
+					-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
+					TMP_DIR=$dir \
+					ASSUME_SORTED=true \
+					I=$f \
+					O=$prefix \
+					THRESHOLD_COVERAGE=$maxcoverage \
+					FILE_EXTENSION=null \
+					GRIDSS_PROGRAM=null \
+					GRIDSS_PROGRAM=CollectCigarMetrics \
+					GRIDSS_PROGRAM=CollectMapqMetrics \
+					GRIDSS_PROGRAM=CollectTagMetrics \
+					GRIDSS_PROGRAM=CollectIdsvMetrics \
+					GRIDSS_PROGRAM=ReportThresholdCoverage \
+					PROGRAM=null \
+					PROGRAM=CollectInsertSizeMetrics \
+					SV_OUTPUT=/dev/stdout \
+					COMPRESSION_LEVEL=0 \
+					METRICS_OUTPUT=$prefix.sv_metrics \
+					INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
+					UNMAPPED_READS=false \
+					MIN_CLIP_LENGTH=5 \
+					INCLUDE_DUPLICATES=true \
+			| /usr/bin/time -a -o $timinglogfile \
+				sambamba sort \
+					--sort-picard \
+					--tmpdir $dir \
+					-m 8GB \
+					-o $tmp_prefix.namedsorted.bam \
+					-t $threads \
+					/dev/stdin \
+			; } 1>&2 2>> $logfile
+			rm $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
+			echo "$(date)	ComputeSamTags|sambamba	$f" | tee -a $timinglogfile
+			{ /usr/bin/time -a -o $timinglogfile \
+				java -Xmx3g $jvm_args \
+					-cp $gridss_jar gridss.ComputeSamTags \
+					TMP_DIR=$dir \
+					WORKING_DIR=$workingdir \
+					REFERENCE_SEQUENCE=$reference \
+					COMPRESSION_LEVEL=0 \
+					I=$tmp_prefix.namedsorted.bam \
+					O=/dev/stdout \
+					RECALCULATE_SA_SUPPLEMENTARY=true \
+					SOFTEN_HARD_CLIPS=true \
+					FIX_MATE_INFORMATION=true \
+					FIX_DUPLICATE_FLAG=true \
+					TAGS=null \
+					TAGS=NM \
+					TAGS=SA \
+					TAGS=R2 \
+					TAGS=Q2 \
+					TAGS=MC \
+					TAGS=MQ \
+					ASSUME_SORTED=true \
+			| /usr/bin/time -a -o $timinglogfile \
+				sambamba sort \
+					--tmpdir $dir \
+					-m 8GB \
+					-o $tmp_prefix.coordinate.bam \
+					-t $threads \
+					/dev/stdin \
+			; } 1>&2 2>> $logfile
+			rm $tmp_prefix.namedsorted.bam
+			echo "$(date)	SoftClipsToSplitReads/bwa	$f" | tee -a $timinglogfile
+			{ /usr/bin/time -a -o $timinglogfile \
+				java -Xmx3g $jvm_args \
+					-Dgridss.gridss.output_to_temp_file=true \
+					-cp $gridss_jar gridss.SoftClipsToSplitReads \
+					TMP_DIR=$workingdir \
+					WORKING_DIR=$workingdir \
+					REFERENCE_SEQUENCE=$reference \
+					I=$tmp_prefix.coordinate.bam \
+					O=$prefix.sv.bam \
+					WORKER_THREADS=$threads \
+			; } 1>&2 2>> $logfile
+			rm $tmp_prefix.coordinate.bam $tmp_prefix.coordinate.bam.bai
+			echo "$(date)	Complete pre-processing	$f"
+		else
+			echo "$(date)	Skipping pre-processing as $prefix.sv.bam already exists. $f"
+		fi
+	done
+else
+	echo "$(date)	Skipping pre-processing."
+fi
+if [[ $do_assemble == true ]] ; then
+	echo "$(date)	Start assembly	$assembly" | tee -a $timinglogfile
+	if [[ ! -f $assembly ]] ; then
+		echo "$(date)	AssembleBreakends	$assembly" | tee -a $timinglogfile
+		{ /usr/bin/time -a -o $timinglogfile \
+			java -Xmx$jvmheap $jvm_args \
+				-Dgridss.gridss.output_to_temp_file=true \
+				-cp $gridss_jar gridss.AssembleBreakends \
+				TMP_DIR=$workingdir \
+				WORKING_DIR=$workingdir \
+				REFERENCE_SEQUENCE=$reference \
+				WORKER_THREADS=$threads \
+				O=$assembly \
+				$input_args \
+				$blacklist_arg \
+				$config_args \
+		; } 1>&2 2>> $logfile
+	else
+		echo "$(date)	Skipping assembly as $assembly already exists.	$assembly"
 	fi
+	prefix=$workingdir/$(basename $assembly).gridss.working/$(basename $assembly)
 	if [[ ! -f $prefix.sv.bam ]] ; then
-		echo "$(date)	Running	CollectInsertSizeMetrics	$f	$metricsrecords records" >> $timinglogfile
-		/usr/bin/time -a -o $timinglogfile java -Xmx256m $JVM_ARGS gridss.analysis.CollectGridssMetrics \
-			ASSUME_SORTED=true \
-			I=$f \
-			O=$tmp_prefix \
-			THRESHOLD_COVERAGE=$maxcoverage \
-			FILE_EXTENSION=null \
-			GRIDSS_PROGRAM=null \
-			PROGRAM=null \
-			PROGRAM=CollectInsertSizeMetrics \
-			STOP_AFTER=$metricsrecords 2>&1 | tee -a $logfile
-		exit
-		echo "$(date)	Running	CollectGridssMetricsAndExtractSVReads|sambamba	$f" >> $timinglogfile
-		/usr/bin/time -a -o $timinglogfile java -Xmx512m $JVM_ARGS gridss.analysis.CollectGridssMetricsAndExtractSVReads \
-			TMP_DIR=$gridss_dir \
-			ASSUME_SORTED=true \
-			I=$bam \
-			O=$prefix \
-			THRESHOLD_COVERAGE=$maxcoverage \
-			FILE_EXTENSION=null \
-			GRIDSS_PROGRAM=null \
-			GRIDSS_PROGRAM=CollectCigarMetrics \
-			GRIDSS_PROGRAM=CollectMapqMetrics \
-			GRIDSS_PROGRAM=CollectTagMetrics \
-			GRIDSS_PROGRAM=CollectIdsvMetrics \
-			GRIDSS_PROGRAM=ReportThresholdCoverage \
-			PROGRAM=null \
-			PROGRAM=CollectInsertSizeMetrics \
-			SV_OUTPUT=/dev/stdout \
-			COMPRESSION_LEVEL=0 \
-			METRICS_OUTPUT=$prefix.sv_metrics \
-			INSERT_SIZE_METRICS=$tmp_prefix \
-			UNMAPPED_READS=false \
-			MIN_CLIP_LENGTH=5 \
-			INCLUDE_DUPLICATES=true | \
-		sambamba sort --sort-picard --tmpdir $dir -m 8GB -o $tmp_prefix.coordinate.bam -t $threads - 2>&1 | tee -a $logfile
+		echo "$(date)	CollectGridssMetrics	$assembly" | tee -a $timinglogfile
+		{ /usr/bin/time -a -o $timinglogfile \
+			java -Xmx256m $jvm_args \
+				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
+				I=$assembly \
+				O=$prefix \
+				THRESHOLD_COVERAGE=$maxcoverage \
+				TMP_DIR=$workingdir \
+				FILE_EXTENSION=null \
+				GRIDSS_PROGRAM=null \
+				GRIDSS_PROGRAM=CollectCigarMetrics \
+				GRIDSS_PROGRAM=CollectMapqMetrics \
+				GRIDSS_PROGRAM=CollectTagMetrics \
+				GRIDSS_PROGRAM=CollectIdsvMetrics \
+				GRIDSS_PROGRAM=ReportThresholdCoverage \
+				PROGRAM=null \
+				PROGRAM=CollectInsertSizeMetrics \
+		; } 1>&2 2>> $logfile
+		echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
+		{ /usr/bin/time -a -o $timinglogfile \
+			java -Xmx6g $jvm_args \
+				-Dgridss.async.buffersize=16 \
+				-cp $gridss_jar gridss.SoftClipsToSplitReads \
+				TMP_DIR=$workingdir \
+				WORKING_DIR=$workingdir \
+				REFERENCE_SEQUENCE=$reference \
+				WORKER_THREADS=$threads \
+				I=$assembly \
+				O=$prefix.sv.bam \
+				REALIGN_ENTIRE_READ=true \
+		; } 1>&2 2>> $logfile
 	fi
-done
-
-# -Dreference_fasta is only required for CRAM input files
-# -Dgridss.gridss.output_to_temp_file=true allows GRIDSS to continue where it left off without data errors due to truncated files
-# -Dsamjdk.create_index=true is required for multi-threaded operation
-# -Dsamjdk.use_async_io allow for async read/write on background threads which improves BAM I/O performancce
-echo "gridss.analysis.CallVariants" >> $timinglogfile
-/usr/bin/time -a -o $timinglogfile java -Xmx$jvmheap \
-	 \
-	-cp $gridss_jar gridss.CallVariants \
-	TMP_DIR=$workingdir \
-	WORKING_DIR=$workingdir \
-	REFERENCE_SEQUENCE="$reference" \
-	$input_args \
-	OUTPUT="$output_vcf" \
-	ASSEMBLY="$assembly" \
-	 $blacklist_arg  \
-	WORKER_THREADS=$threads \
-	2>&1 | tee -a $logfile
-
+	echo "$(date)	Complete assembly	$assembly"
+else
+	echo "$(date)	Skipping assembly	$assembly"
+fi
+if [[ $do_call == true ]] ; then
+	echo "$(date)	Start calling	$output_vcf" | tee -a $timinglogfile
+	if [[ ! -f $output_vcf ]] ; then
+		dir=$workingdir/$(basename $output_vcf).gridss.working
+		prefix=$dir/$(basename $output_vcf)
+		if ! mkdir -p $dir ; then
+			echo Unable to create directory $dir 1>&2
+			exit 2
+		fi
+		echo "$(date)	IdentifyVariants	$output_vcf" | tee -a $timinglogfile
+		{ /usr/bin/time -a -o $timinglogfile \
+			java -Xmx$jvmheap $jvm_args \
+				-Dgridss.output_to_temp_file=true \
+				-cp $gridss_jar gridss.IdentifyVariants \
+				TMP_DIR=$workingdir \
+				WORKING_DIR=$workingdir \
+				REFERENCE_SEQUENCE=$reference \
+				WORKER_THREADS=$threads \
+				$input_args \
+				$blacklist_arg \
+				$config_args \
+				ASSEMBLY=$assembly \
+				OUTPUT_VCF=$prefix.unallocated.vcf \
+		; } 1>&2 2>> $logfile
+		echo "$(date)	AnnotateVariants	$output_vcf" | tee -a $timinglogfile
+		{ /usr/bin/time -a -o $timinglogfile \
+			java -Xmx$jvmheap $jvm_args \
+				-Dgridss.output_to_temp_file=true \
+				-cp $gridss_jar gridss.AnnotateVariants \
+				TMP_DIR=$workingdir \
+				WORKING_DIR=$workingdir \
+				REFERENCE_SEQUENCE=$reference \
+				WORKER_THREADS=$threads \
+				$input_args \
+				$blacklist_arg \
+				$config_args \
+				ASSEMBLY=$assembly \
+				INPUT_VCF=$prefix.unallocated.vcf \
+				OUTPUT_VCF=$prefix.allocated.vcf \
+		; } 1>&2 2>> $logfile
+		rm $prefix.unallocated.vcf
+		echo "$(date)	AnnotateUntemplatedSequence	$output_vcf" | tee -a $timinglogfile
+		{ /usr/bin/time -a -o $timinglogfile \
+			java -Xmx1g $jvm_args \
+				-Dgridss.output_to_temp_file=true \
+				-cp $gridss_jar gridss.AnnotateUntemplatedSequence \
+				TMP_DIR=$workingdir \
+				WORKING_DIR=$workingdir \
+				REFERENCE_SEQUENCE=$reference \
+				WORKER_THREADS=$threads \
+				INPUT=$prefix.allocated.vcf \
+				OUTPUT=$output_vcf \
+		; } 1>&2 2>> $logfile
+		rm $prefix.allocated.vcf
+	else
+		echo "$(date)	Skipping variant calling	$output_vcf"
+	fi
+	echo "$(date)	Complete calling	$output_vcf" | tee -a $timinglogfile
+fi
+echo "$(date)	Run complete"
