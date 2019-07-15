@@ -20,4 +20,9 @@ CMD=$(echo docker run \
 	--assembly /data/output/${OUTPUT/.vcf.gz/}.assembly.bam \
 	/data/input/$(basename $INPUT)
 )
+echo Linux:
+echo $CMD
+echo
+echo WSL:
 echo ${CMD//\/mnt\/d/d:/}
+echo

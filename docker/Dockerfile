@@ -6,7 +6,7 @@ FROM ubuntu:18.04
 LABEL base.image="ubuntu:18.04"
 LABEL version="1"
 LABEL software="GRIDSS"
-LABEL software.version="2.4.0"
+LABEL software.version="2.5.0"
 LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
 LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
@@ -30,10 +30,10 @@ RUN chgrp users /data
 RUN chmod 777 /data
 
 RUN mkdir /data/gridss
-ADD https://github.com/PapenfussLab/gridss/releases/download/v2.4.0/gridss-2.4.0-gridss-jar-with-dependencies.jar /data/gridss/
-ADD https://github.com/PapenfussLab/gridss/releases/download/v2.4.0/gridss.sh /data/gridss/
-ADD https://github.com/PapenfussLab/gridss/releases/download/v2.4.0/gridss_lite.sh /data/gridss/
+ADD https://github.com/PapenfussLab/gridss/releases/download/v2.5.0/gridss-2.5.0-gridss-jar-with-dependencies.jar /data/gridss/
+ADD https://github.com/PapenfussLab/gridss/releases/download/v2.5.0/gridss.sh /data/gridss/
+ADD https://github.com/PapenfussLab/gridss/releases/download/v2.5.0/gridss_lite.sh /data/gridss/
 RUN chmod +x  /data/gridss/gridss*.sh
 WORKDIR /data/gridss/
 
-ENTRYPOINT ["/data/gridss/gridss.sh", "--jar", "/data/gridss/gridss-2.4.0-gridss-jar-with-dependencies.jar"]
+ENTRYPOINT ["/data/gridss/gridss.sh", "--jar", "/data/gridss/gridss-2.5.0-gridss-jar-with-dependencies.jar"]
