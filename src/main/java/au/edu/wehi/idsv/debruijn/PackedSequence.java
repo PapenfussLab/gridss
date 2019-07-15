@@ -76,7 +76,7 @@ public class PackedSequence implements Serializable {
 	}
 	/**
 	 * Concatenates the given sequences
-	 * @param seq
+	 * @param seq1
 	 * @param seq2
 	 */
 	public PackedSequence(PackedSequence seq1, PackedSequence seq2) {
@@ -192,6 +192,39 @@ public class PackedSequence implements Serializable {
 	public static int overlapLength(PackedSequence s1, PackedSequence s2, int start2RelativeToStart1) {
 		return IntervalUtil.overlapsWidthClosed(0, s1.baseCount - 1, start2RelativeToStart1, s2.baseCount - 1 + start2RelativeToStart1);
 	}
+
+	/**
+	 *
+	 * @param psFixed sequence to compare starting at the first base
+	 * @param psOffset sequence to compare starting at the offsetBases base
+	 * @param offsetBases number of bases to offset the comparison from the start of the fixed sequence. Cannot be negative
+	 * @return
+	 */
+	private static int optimised_overlapMatches(PackedSequence psFixed, PackedSequence psOffset, int offsetBases) {
+		// TODO: Java support for SIMD
+		int overlapLength = psFixed.baseCount - offsetBases;
+		assert (offsetBases >= 0);
+		assert (overlapLength <= 0);
+		if (overlapLength <= BASES_PER_WORD) {
+			// Less than a single word to compare
+			long bases = psOffset.get2BitBases(offsetBases);
+			long matchVector = ~(psFixed.packed[0] ^ bases);
+			matchVector &= matchVector >>> 1;
+			long mask = MATCH_MASK;
+			mask <<= 2 * (BASES_PER_WORD - overlapLength); // ignore the LSB bases
+			matchVector &= mask;
+			return Long.bitCount(matchVector);
+		}
+		while (overlapLength >= BASES_PER_WORD) {
+			// TODO full word comparison
+		}
+		// TODO compare remaining bases in final word
+		throw new IllegalStateException("NYI");
+	}
+	// TODO: optimise:
+	// - function is symmetric so arg order doesn't matter
+	// - fix one sequence, loop over the full length
+	//
 	/**
 	 * Returns the 32 bases starting with the base at the given offset
 	 * @param start 0-based offset of sequence to extract
