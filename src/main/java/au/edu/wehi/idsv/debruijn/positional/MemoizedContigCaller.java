@@ -372,8 +372,8 @@ public class MemoizedContigCaller extends ContigCaller {
 		return null;
 	}
 	@Override
-	public int tracking_memoizedNodeCount() {
-		return frontier.tracking_memoizedNodeCount();
+	public int memoizedNodeCount() {
+		return frontier.memoizedNodeCount();
 	}
 	@Override
 	public int tracking_frontierSize() {

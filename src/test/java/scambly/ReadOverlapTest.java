@@ -1,12 +1,14 @@
 package scambly;
 
 import au.edu.wehi.idsv.TestHelper;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore("Unfinished prototype")
 public class ReadOverlapTest extends TestHelper {
     public Read R(int length, int start, int end) {
         return new Read(getContext().getLinear(), Read(0, 1, String.format("%dM", length)), start, end);

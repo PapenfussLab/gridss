@@ -55,7 +55,7 @@ public abstract class ContigCallerTest extends TestHelper {
 		// highest scoring path goes through the most nodes:
 		// [1-1][1-*] -> [2-2][2-*] -> [3-3][3-*] -> [4-4][4-*] -> [5-5][4-*] 
 		ArrayDeque<KmerPathSubnode> contig = caller.bestContig(Integer.MAX_VALUE);
-		assertEquals(list.size(), caller.tracking_memoizedNodeCount());
+		assertEquals(list.size(), caller.memoizedNodeCount());
 		assertEquals(0, caller.tracking_frontierSize());
 		assertEquals(5, contig.size());
 	}
@@ -85,7 +85,7 @@ public abstract class ContigCallerTest extends TestHelper {
 		list.sort(KmerNodeUtil.ByFirstStart);
 		ContigCaller caller = getCaller(list, 3);
 		caller.bestContig(Integer.MAX_VALUE);
-		assertEquals(list.size(), caller.tracking_memoizedNodeCount());
+		assertEquals(list.size(), caller.memoizedNodeCount());
 		assertEquals(0, caller.tracking_frontierSize());
 	}
 	@Test

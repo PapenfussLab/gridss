@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.util;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.PeekingIterator;
+import htsjdk.samtools.SAMRecord;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
 
@@ -45,9 +46,13 @@ public abstract class DensityThrottlingIterator<T> implements PeekingIterator<T>
 		this.maxDensity = targetDensity;
 	}
 	protected abstract long getPosition(T record);
+	protected abstract boolean excludedFromThrottling(T record);
 	private void ensureNext() {
 		while (nextRecord == null && underlying.hasNext()) {
 			nextRecord = underlying.next();
+			if (excludedFromThrottling(nextRecord)) {
+				return;
+			}
 			long position = getPosition(nextRecord);
 			// remove records
 			while (!inWindow.isEmpty() && inWindow.firstLong() <= position - windowSize) {
@@ -64,7 +69,7 @@ public abstract class DensityThrottlingIterator<T> implements PeekingIterator<T>
 			}
 		}
 	}
-	protected boolean isFiltered(long position, T record) {
+	private boolean isFiltered(long position, T record) {
 		if (isBelowUnconditionalAcceptanceThreshold()) {
 			// accept all record under the threshold
 			return false;
@@ -79,6 +84,9 @@ public abstract class DensityThrottlingIterator<T> implements PeekingIterator<T>
 	}
 	public boolean isBelowUnconditionalAcceptanceThreshold() {
 		return emittedInWindow.size() / windowSize < acceptDensity;
+	}
+	public double currentDensity() {
+		return inWindow.size() / windowSize;
 	}
 	@Override
 	public boolean hasNext() {

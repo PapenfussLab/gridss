@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.sam.SamTags;
@@ -32,18 +33,20 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	private NonReferenceContigAssembler currentAssembler = null;
 	private String currentContig = "";
 	private AssemblyChunkTelemetry telemetry = null;
-	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction) {
+	private final IntervalBed excludedRegions;
+	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction, IntervalBed excludedRegions) {
 		this.context = context;
 		this.source = source;
 		this.assemblyNameGenerator = assemblyNameGenerator;
 		this.direction = direction;
+		this.excludedRegions = excludedRegions;
 		if (direction != null) {
 			backingIterator = Iterators.filter(backingIterator, x -> x.getBreakendSummary() != null && x.getBreakendSummary().direction == this.direction);
 		}
 		this.it = Iterators.peekingIterator(backingIterator);
 	}
-	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> it) {
-		this(context, source, assemblyNameGenerator, it, null);
+	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> it, IntervalBed excludedRegions) {
+		this(context, source, assemblyNameGenerator, it, null, excludedRegions);
 	}
 	@Override
 	public boolean hasNext() {
@@ -152,7 +155,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward, excludedRegions);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s_%d-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), firstPosition, direction);

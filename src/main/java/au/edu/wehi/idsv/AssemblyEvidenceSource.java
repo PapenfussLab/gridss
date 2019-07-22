@@ -66,6 +66,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 * @throws IOException 
 	 */
 	public void assembleBreakends(ExecutorService threadpool) throws IOException {
+		IntervalBed excludedRegions = new IntervalBed(getContext().getLinear());
 		source.stream().forEach(ses -> ses.assertPreprocessingComplete());
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
@@ -83,9 +84,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			int chunkNumber = i;
 			assembledChunk.add(f);
 			if (!f.exists()) {
-				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunkNumber, chunk); return null; }));
+				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunkNumber, chunk, excludedRegions); return null; }));
 			}
-			
 		}
 		runTasks(tasks);
 		if (telemetry != null) {
@@ -162,7 +162,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		log.info("Breakend assembly complete.");
 	}
-	private void assembleChunk(File output, int chunkNumber, QueryInterval[] qi) throws IOException {
+	private void assembleChunk(File output, int chunkNumber, QueryInterval[] qi, IntervalBed excludedRegions) throws IOException {
 		AssemblyIdGenerator assemblyNameGenerator = new SequentialIdGenerator(String.format("asm%d-", chunkNumber));
 		String chuckName = String.format("chunk %d (%s:%d-%s:%d)", chunkNumber,
 			getContext().getDictionary().getSequence(qi[0].referenceIndex).getSequenceName(), qi[0].start,
@@ -175,12 +175,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			if (getContext().getAssemblyParameters().writeFiltered) {
 				try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, filteredout)) {
 					for (BreakendDirection direction : BreakendDirection.values()) {
-						assembleChunk(writer, filteredWriter, chunkNumber, qi, direction, assemblyNameGenerator);
+						assembleChunk(writer, filteredWriter, chunkNumber, qi, direction, assemblyNameGenerator, excludedRegions);
 					}
 				}
 			} else {
 				for (BreakendDirection direction : BreakendDirection.values()) {
-					assembleChunk(writer, null, chunkNumber, qi, direction, assemblyNameGenerator);
+					assembleChunk(writer, null, chunkNumber, qi, direction, assemblyNameGenerator, excludedRegions);
 				}
 			}
 		} catch (Exception e) {
@@ -213,11 +213,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				(int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1);
 		return expanded;
 	}
-	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, int chunkNumber, QueryInterval[] intervals, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
+	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, int chunkNumber, QueryInterval[] intervals, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator, IntervalBed excludedRegions) {
 		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input);
-			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
+			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction, excludedRegions);
 			if (telemetry != null) {
 				assembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
 			}
@@ -417,7 +417,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			CloseableIterator<DirectedEvidence> it = mergedIterator(source, false);
 			Iterator<DirectedEvidence> throttledIt = throttled(it);
 			ProgressLoggingDirectedEvidenceIterator<DirectedEvidence> loggedIt = new ProgressLoggingDirectedEvidenceIterator<>(getContext(), throttledIt, progressLog);
-			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, new SequentialIdGenerator("asm"), loggedIt, direction);
+			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, new SequentialIdGenerator("asm"), loggedIt, direction, new IntervalBed(getContext().getLinear()));
 	    	list.add(evidenceIt);
 		}
 		return Iterators.concat(list.iterator());

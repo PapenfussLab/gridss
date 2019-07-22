@@ -32,7 +32,7 @@ public abstract class ContigCaller {
 		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
 	}
 	public abstract boolean sanityCheck();
-	public abstract int tracking_memoizedNodeCount();
+	public abstract int memoizedNodeCount();
 	public abstract int tracking_frontierSize();
 	public abstract MemoizationStats tracking_lastRemoval();
 }

@@ -20,6 +20,11 @@ public class DensityThrottlingIteratorTest {
 		protected long getPosition(Integer record) {
 			return record;
 		}
+
+		@Override
+		protected boolean excludedFromThrottling(Integer record) {
+			return false;
+		}
 	}
 	@Test
 	public void should_accept_all_up_to_accept_threshold() {

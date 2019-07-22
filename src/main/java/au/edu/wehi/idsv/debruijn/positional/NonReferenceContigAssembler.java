@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
@@ -38,6 +39,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * Debugging tracker to ensure memoization export files have unique names
 	 */
 	private static final AtomicInteger pathExportCount = new AtomicInteger();
+	private final IntervalBed excludedRegions;
 	private long telemetryLastflushContigs = System.nanoTime();
 	private long telemetryLastflushReferenceNodes = System.nanoTime();
 	private long telemetryLastloadGraphs = System.nanoTime();
@@ -82,6 +84,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private RangeSet<Integer> toFlush = TreeRangeSet.create();
 	private MemoizedContigCaller bestContigCaller;
 	private int contigsCalled = 0;
+	private int contigsCalledInSafetyMode = 0;
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
 	private AssemblyChunkTelemetry telemetry = null;
@@ -136,7 +139,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			AssemblyEvidenceSource source,
 			AssemblyIdGenerator assemblyNameGenerator,
 			EvidenceTracker tracker,
-			String contigName, BreakendDirection preferredContigDirection) {
+			String contigName,
+			BreakendDirection preferredContigDirection,
+			IntervalBed excludedRegions) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
 		this.maxAnchorLength = maxAnchorLength;
@@ -147,6 +152,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		this.evidenceTracker = tracker;
 		this.contigName = contigName;
 		this.preferredContigDirection = preferredContigDirection;
+		this.excludedRegions = excludedRegions;
 		initialiseBestCaller();
 	}
 	private void initialiseBestCaller() {
@@ -314,6 +320,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			loadUntil += minDistanceFromNextPositionForEvidenceToBeFullyLoaded();
 		}
 		advanceUnderlying(loadUntil);
+		// We made some progress! Exit safety mode
+		contigsCalledInSafetyMode = 0;
 	}
 	/**
 	 * Ensures that portions of the graph exceeding the maximum density are flushed
@@ -338,6 +346,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			Set<KmerEvidence> evidenceToRemove = evidenceTracker.untrack(toRemove);
 			if (!evidenceToRemove.isEmpty()) { // it could all overlap our previous flush range
 				removeFromGraph(evidenceToRemove);
+			}
+			if (excludedRegions != null) {
+				excludedRegions.addInterval(referenceIndex, flushOnOrAfter, flushBefore - 1);
 			}
 		}
 	}
@@ -550,7 +561,26 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
-			removeFromGraph(evidence);
+			if (bestContigCaller.memoizedNodeCount() >= aes.getContext().getAssemblyParameters().positional.safetyModePathCountThreshold) {
+				contigsCalledInSafetyMode++;
+				log.warn(String.format("Safety mode initiated at %s:%d"));
+				// Local graph path complexity is too high.
+				bestContigCaller = null; // restart memoization from scratch (saves having to do node by node removals)
+				if (contigsCalledInSafetyMode >= aes.getContext().getAssemblyParameters().positional.safetyModeContigsToCall) {
+					// abort assembly - flush out everything that at least a contig length from the next position
+					Collection<KmerPathSubnode> toRemove = graphByPosition
+							.stream()
+							.filter(x -> x.lastEnd() + x.length() < nextPosition() - maxExpectedBreakendLength())
+							.map(x -> new KmerPathSubnode(x, x.firstStart(), x.firstEnd()))
+							.collect(Collectors.toList());
+					removeFromGraph(evidenceTracker.untrack(toRemove));
+				} else {
+					// remove as normal
+					removeFromGraph(evidence);
+				}
+			} else {
+				removeFromGraph(evidence);
+			}
 			if (Defaults.SANITY_CHECK_MEMOIZATION) {
 				bestContigCaller.sanityCheck(graphByPosition);
 			}

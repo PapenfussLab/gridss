@@ -429,7 +429,7 @@ public class MemoizedTraverse {
 	public String toString() {
 		return String.format("%d nodes memoized, %d in frontier", memoized.size(), frontier.size());
 	}
-	public int tracking_memoizedNodeCount() {
+	public int memoizedNodeCount() {
 		return memoized.size();
 	}
 	public int tracking_frontierSize() {

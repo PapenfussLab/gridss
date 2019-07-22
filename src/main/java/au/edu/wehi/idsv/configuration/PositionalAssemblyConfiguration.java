@@ -12,6 +12,8 @@ public class PositionalAssemblyConfiguration {
 		maximumNodeDensity = config.getFloat("maximumNodeDensity");
 		trimSelfIntersectingReads = config.getBoolean("trimSelfIntersectingReads");
 		forceFullMemoizationRecalculationAt = config.getFloat("forceFullMemoizationRecalculationAt");
+		safetyModePathCountThreshold = config.getInt("safetyModePathCountThreshold");
+		safetyModeContigsToCall = config.getInt("safetyModeContigsToCall");
 		if (retainWidthMultiple < 1) {
 			throw new IllegalArgumentException("retainWidthMultiple must be at least 1");
 		}
@@ -59,4 +61,12 @@ public class PositionalAssemblyConfiguration {
 	 * be removed.
 	 */
 	public float forceFullMemoizationRecalculationAt;
+	/**
+	 * Number of contigs called in safety mode
+	 */
+	public final int safetyModeContigsToCall;
+	/**
+	 * Number of memoized paths to enter safety mode
+	 */
+	public final int safetyModePathCountThreshold;
 }

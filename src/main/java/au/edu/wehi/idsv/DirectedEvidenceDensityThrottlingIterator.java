@@ -3,8 +3,13 @@ package au.edu.wehi.idsv;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.util.DensityThrottlingIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Iterator;
 
 /**
@@ -14,11 +19,16 @@ import java.util.Iterator;
  */
 public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottlingIterator<DirectedEvidence> {
 	private static final Log log = Log.getInstance(DirectedEvidenceDensityThrottlingIterator.class);
+	private static final boolean DEBUG_DENSITY_WIG = Boolean.valueOf(System.getProperty("gridss.writeDensityWigs", "false"));
 	private final LinearGenomicCoordinate lgc;
 	private final SAMSequenceDictionary dictionary;
 	private final IntervalBed throttled;
 	private DirectedEvidence tresholdStart = null;
-	public DirectedEvidenceDensityThrottlingIterator(IntervalBed throttled, SAMSequenceDictionary dictionary, LinearGenomicCoordinate lgc, Iterator<DirectedEvidence> it, int windowSize, double acceptDensity, double maxDensity) {
+	private int lastReferenceIndex = -1;
+	private int lastPosition = -1;
+	private double lastDensity = 0;
+	private PrintWriter wigWriter;
+	public DirectedEvidenceDensityThrottlingIterator(IntervalBed throttled, SAMSequenceDictionary dictionary, LinearGenomicCoordinate lgc, Iterator<DirectedEvidence> it, int windowSize, double acceptDensity, double maxDensity){
 		super(it, windowSize, acceptDensity, maxDensity);
 		this.lgc = lgc;
 		this.dictionary = dictionary;
@@ -28,9 +38,46 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	protected long getPosition(DirectedEvidence record) {
 		return lgc.getLinearCoordinate(record.getBreakendSummary().referenceIndex, record.getBreakendSummary().start);
 	}
+
+	@Override
+	protected boolean excludedFromThrottling(DirectedEvidence record) {
+		return false;
+	}
+
+	@Override
+	public boolean hasNext() {
+		boolean x = super.hasNext();
+		if (!x && wigWriter != null && lastPosition != -1) {
+			wigWriter.println(String.format("%d\t%.2f", lastPosition, lastDensity));
+			CloserUtil.close(wigWriter);
+			wigWriter = null;
+		}
+		return x;
+	}
+
 	@Override
 	public DirectedEvidence next() {
 		DirectedEvidence evidence = super.next();
+		if (DEBUG_DENSITY_WIG) {
+			if (evidence.getBreakendSummary().referenceIndex != lastReferenceIndex) {
+				lastReferenceIndex = evidence.getBreakendSummary().referenceIndex;
+				CloserUtil.close(wigWriter);
+				try {
+					wigWriter = new PrintWriter(File.createTempFile("assembly_density_" + dictionary.getSequence(lastReferenceIndex).getSequenceName() + "_", ".wig", new File(".")));
+					wigWriter.println("variableStep	chrom=" + dictionary.getSequence(lastReferenceIndex).getSequenceName());
+					lastPosition = evidence.getBreakendSummary().start;
+					lastDensity =  currentDensity();
+				} catch (IOException e) {
+					log.error(e);
+					wigWriter = null;
+				}
+			}
+			if (evidence.getBreakendSummary().start != lastPosition) {
+				wigWriter.println(String.format("%d	%.3f", lastPosition, lastDensity));
+				lastPosition = evidence.getBreakendSummary().start;
+				lastDensity = currentDensity();
+			}
+		}
 		if (!isBelowUnconditionalAcceptanceThreshold() && tresholdStart == null) {
 			tresholdStart = evidence;
 		} else if (isBelowUnconditionalAcceptanceThreshold() && tresholdStart != null) {			

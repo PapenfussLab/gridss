@@ -168,7 +168,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Integer.toString(caller.tracking_frontierSize()));
 			writer.write(',');
-			writer.write(Integer.toString(caller.tracking_memoizedNodeCount()));
+			writer.write(Integer.toString(caller.memoizedNodeCount()));
 			writer.write(',');
 			writer.write(Integer.toString(assembler.tracking_activeNodes()));
 			writer.write(',');
