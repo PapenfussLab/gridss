@@ -40,6 +40,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 */
 	private static final AtomicInteger pathExportCount = new AtomicInteger();
 	private final IntervalBed excludedRegions;
+	private final IntervalBed safetyRegions;
 	private long telemetryLastflushContigs = System.nanoTime();
 	private long telemetryLastflushReferenceNodes = System.nanoTime();
 	private long telemetryLastloadGraphs = System.nanoTime();
@@ -141,7 +142,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			EvidenceTracker tracker,
 			String contigName,
 			BreakendDirection preferredContigDirection,
-			IntervalBed excludedRegions) {
+			IntervalBed excludedRegions,
+			IntervalBed safetyRegions) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
 		this.maxAnchorLength = maxAnchorLength;
@@ -153,6 +155,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		this.contigName = contigName;
 		this.preferredContigDirection = preferredContigDirection;
 		this.excludedRegions = excludedRegions;
+		this.safetyRegions = safetyRegions;
 		initialiseBestCaller();
 	}
 	private void initialiseBestCaller() {
@@ -573,7 +576,12 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 							.filter(x -> x.lastEnd() + x.length() < nextPosition() - maxExpectedBreakendLength())
 							.map(x -> new KmerPathSubnode(x, x.firstStart(), x.firstEnd()))
 							.collect(Collectors.toList());
-					removeFromGraph(evidenceTracker.untrack(toRemove));
+					Set<KmerEvidence> evidenceToRemove = evidenceTracker.untrack(toRemove);
+					removeFromGraph(evidenceToRemove);
+					safetyRegions.addInterval(
+							referenceIndex,
+							evidenceToRemove.stream().mapToInt(ke -> ke.startPosition()).min().orElse(0),
+							evidenceToRemove.stream().mapToInt(ke -> ke.endPosition()).max().orElse(0));
 				} else {
 					// remove as normal
 					removeFromGraph(evidence);
