@@ -62,7 +62,7 @@ public class AsyncBufferedIteratorTest {
 		abi.next(); assertFalse(it.isClosed);
 		abi.next(); assertFalse(it.isClosed);
 		abi.next(); // next 4 records removed
-		Thread.sleep(1); // let the consumer thread fill up the newly opened buffer slot with the final two records
+		Thread.sleep(10); // let the consumer thread fill up the newly opened buffer slot with the final two records
 		assertTrue(it.isClosed); // should have now closed
 		abi.close();
 	}
