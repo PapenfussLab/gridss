@@ -23,16 +23,29 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	private final LinearGenomicCoordinate lgc;
 	private final SAMSequenceDictionary dictionary;
 	private final IntervalBed throttled;
+	private final boolean throttleReadPairs;
+	private final boolean throttleSingleReads;
 	private DirectedEvidence tresholdStart = null;
 	private int lastReferenceIndex = -1;
 	private int lastPosition = -1;
 	private double lastDensity = 0;
 	private PrintWriter wigWriter;
-	public DirectedEvidenceDensityThrottlingIterator(IntervalBed throttled, SAMSequenceDictionary dictionary, LinearGenomicCoordinate lgc, Iterator<DirectedEvidence> it, int windowSize, double acceptDensity, double maxDensity){
+	public DirectedEvidenceDensityThrottlingIterator(
+			IntervalBed throttled,
+			SAMSequenceDictionary dictionary,
+			LinearGenomicCoordinate lgc,
+			Iterator<DirectedEvidence> it,
+			int windowSize,
+			double acceptDensity,
+			double maxDensity,
+			boolean throttleReadPairs,
+			boolean throttleSingleReads){
 		super(it, windowSize, acceptDensity, maxDensity);
 		this.lgc = lgc;
 		this.dictionary = dictionary;
 		this.throttled = throttled;
+		this.throttleReadPairs = throttleReadPairs;
+		this.throttleSingleReads = throttleSingleReads;
 	}
 	@Override
 	protected long getPosition(DirectedEvidence record) {
@@ -41,7 +54,8 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 
 	@Override
 	protected boolean excludedFromThrottling(DirectedEvidence record) {
-		return false;
+		return (!throttleReadPairs && record instanceof NonReferenceReadPair) ||
+				(!throttleSingleReads && record instanceof SingleReadEvidence);
 	}
 
 	@Override

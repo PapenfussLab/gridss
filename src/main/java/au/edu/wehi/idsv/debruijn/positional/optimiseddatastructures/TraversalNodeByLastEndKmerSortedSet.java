@@ -60,6 +60,11 @@ public class TraversalNodeByLastEndKmerSortedSet extends SortedByPosition<Traver
     }
 
     @Override
+    public Spliterator<TraversalNode> spliterator() {
+        return java.util.Spliterators.spliterator(iterator(), size(), Spliterator.SIZED);
+    }
+
+    @Override
     public Comparator<? super TraversalNode> comparator()   {
         throw new UnsupportedOperationException();
     }
@@ -79,11 +84,6 @@ public class TraversalNodeByLastEndKmerSortedSet extends SortedByPosition<Traver
 
     @Override
     public TraversalNode last()  {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Spliterator<TraversalNode> spliterator()    {
         throw new UnsupportedOperationException();
     }
 

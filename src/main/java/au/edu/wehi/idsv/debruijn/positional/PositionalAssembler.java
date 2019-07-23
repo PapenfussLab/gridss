@@ -34,19 +34,21 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	private String currentContig = "";
 	private AssemblyChunkTelemetry telemetry = null;
 	private final IntervalBed excludedRegions;
-	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction, IntervalBed excludedRegions) {
+	private final IntervalBed safetyRegions;
+	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction, IntervalBed excludedRegions, IntervalBed safetyRegions) {
 		this.context = context;
 		this.source = source;
 		this.assemblyNameGenerator = assemblyNameGenerator;
 		this.direction = direction;
 		this.excludedRegions = excludedRegions;
+		this.safetyRegions = safetyRegions;
 		if (direction != null) {
 			backingIterator = Iterators.filter(backingIterator, x -> x.getBreakendSummary() != null && x.getBreakendSummary().direction == this.direction);
 		}
 		this.it = Iterators.peekingIterator(backingIterator);
 	}
-	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> it, IntervalBed excludedRegions) {
-		this(context, source, assemblyNameGenerator, it, null, excludedRegions);
+	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> it, IntervalBed excludedRegions, IntervalBed safetyRegions) {
+		this(context, source, assemblyNameGenerator, it, null, excludedRegions, safetyRegions);
 	}
 	@Override
 	public boolean hasNext() {
@@ -155,7 +157,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward, excludedRegions);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward, excludedRegions, safetyRegions);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s_%d-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), firstPosition, direction);
