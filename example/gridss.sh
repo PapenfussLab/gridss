@@ -132,13 +132,19 @@ if [[ "$steps" == *"call"* ]] ; then
 	do_call=true
 fi
 ##### --jar
+echo "Using GRIDSS jar \"$gridss_jar\"" 1>&2
+if [[ "$gridss_jar" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "GRIDSS jar must be specified. Specify using the --jar command line argument" 1>&2
+	exit 3
+fi
 if [[ ! -f $gridss_jar ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
 	exit 2
 fi
-echo "Using GRIDSS jar $gridss_jar" 1>&2
 ##### --workingdir
+echo "Using working directory \"$workingdir\"" 1>&2
 if [[ "$workingdir" == "" ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
@@ -151,9 +157,14 @@ if [[ ! -d $workingdir ]] ; then
 	fi
 fi
 workingdir=$(dirname $workingdir/placeholder)
-echo "Using working directory $workingdir" 1>&2
 ##### --reference
-if [[ ! -f "$reference" ]] ; then
+echo "Using reference genome \"$reference\"" 1>&2
+if [[ "$reference" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "Reference genome must be specified. Specify using the --reference command line argument" 1>&2
+	exit 6
+fi
+if [ ! -f $reference ] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing reference genome $reference. Specify reference location using the --reference command line argument" 1>&2
 	exit 6
@@ -170,7 +181,6 @@ if [[ ! -f ${reference}.bwt  ]] ; then
 	echo "Please create using bwa index $reference" 1>&2
 	exit 8
 fi
-echo "Using reference genome $reference" 1>&2
 
 ##### --assembly
 if [[ $do_assemble == "true" ]] ; then
