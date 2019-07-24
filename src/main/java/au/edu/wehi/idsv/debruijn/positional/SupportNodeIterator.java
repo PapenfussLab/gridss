@@ -62,7 +62,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		this.includePairAnchors = includePairAnchors;
 		this.disallowMismatch = disallowMismatch;
 		this.maxSupportStartPositionOffset = maxSupportStartPositionOffset;
-		this.emitOffset = maxSupportStartPositionOffset + 1;
+		this.emitOffset = maxSupportStartPositionOffset + 1 + maxSupportStartPositionOffset; // Need to adjust for evidence in SAMRecord sort order
 		if (underlying.hasNext()) {
 			firstReferenceIndex = underlying.peek().getBreakendSummary().referenceIndex;
 		}

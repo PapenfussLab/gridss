@@ -10,7 +10,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -74,7 +77,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
 			   OEA(1, 4, "100M", false));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
 	}
 	@Test
@@ -95,7 +98,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		}
 		createInput(in);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(new QueryInterval[] {new QueryInterval(1, 20, 30)}));
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(new QueryInterval[] {new QueryInterval(1, 20, 30)}, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertTrue(list.stream().allMatch(e ->
 			e.getBreakendSummary().overlaps(new BreakendSummary(1, FWD, 20, 20, 30)) ||
 			e.getBreakendSummary().overlaps(new BreakendSummary(1, BWD, 20, 20, 30))));
@@ -104,7 +107,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_set_evidence_source_to_self() {
 		createInput(Read(0, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(1, list.size());
 		assertEquals(source, list.get(0).getEvidenceSource());
 	}
@@ -125,7 +128,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   OEA(1, 4, "100M", false),
 			   OEA(1, 4, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		List<DirectedEvidence> sorted = Lists.newArrayList(result);
 		Collections.sort(sorted, DirectedEvidenceOrder.ByNatural);
 		assertEquals(sorted, result);
@@ -145,7 +148,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 					.align(inputRecords.get(1), 2, 10, false, "15M")
 					.align(inputRecords.get(2), 1, 10, false, "15M"), input, input, true);
 		
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(6, result.size());
 		assertTrue(result.get(0) instanceof SplitReadEvidence);
 		assertTrue(result.get(1) instanceof SplitReadEvidence);
@@ -156,7 +159,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(withReadName("r1", Read(0, 1, "15S15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(2, result.size());
 	}
 	@Test
@@ -175,7 +178,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 					.align(inputRecords.get(2), BWD, 1, 100, false, "15M")
 				, input, input, true);
 		
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(6 + 5, result.size());
 		// 4 split reads = 8 breakends
 		assertEquals(5 * 2, result.stream().filter(e -> e instanceof SplitReadEvidence).count());
@@ -193,7 +196,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		aligner.align(inputRecords.get(0), FWD, 1, 10, false, "15M");
 		new SplitReadRealigner(getCommandlineContext()).createSupplementaryAlignments(aligner, input, input, true);
 		
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(result.get(0).getBreakendSummary(), ((BreakpointSummary)result.get(1).getBreakendSummary()).remoteBreakpoint());
 	}
 	@Test
@@ -216,7 +219,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(22, source.getMaxConcordantFragmentSize());
 		assertEquals(5, source.getMaxReadLength());
 		
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(4 * 2, list.size()); // 4 discordant pairs
 	}
 	@Test
@@ -232,7 +235,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(FixedSizeReadPairConcordanceCalculator.class, source.getReadPairConcordanceCalculator().getClass());
 		assertEquals(15, source.getMaxConcordantFragmentSize());
 		assertEquals(1, source.getMaxReadLength());
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(2 * 2, list.size());
 	}
 
@@ -255,9 +258,25 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		in.addAll(Lists.newArrayList(OEA(0, 58, "17S1M", false)));
 		createInput(in.toArray(new SAMRecord[0]));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 0, 43);
-		List<DirectedEvidence> results = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(new BreakendSummary(0, BWD, 37, 17, 58), results.get(0).getBreakendSummary());
 		assertEquals(new BreakendSummary(0, FWD, 30, 18, 42), results.get(1).getBreakendSummary());
+	}
+	@Test
+	public void iterator_should_respect_evidence_sort_order() {
+		List<SAMRecord> in = new ArrayList<SAMRecord>();
+		for (int i = 1; i < 58; i++) {
+			in.addAll(Lists.newArrayList(RP(0, i, 18)));
+			in.addAll(Lists.newArrayList(OEA(0, i, "18M", true)));
+		}
+		in.addAll(Lists.newArrayList(OEA(0, 58, "17S1M", false)));
+		createInput(in.toArray(new SAMRecord[0]));
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 0, 43);
+		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.SAMRecordStartPosition));
+		List<SAMRecord> records = results.stream()
+				.map(e -> (e instanceof NonReferenceReadPair ? ((NonReferenceReadPair) e).getLocalledMappedRead() : ((SingleReadEvidence) e).getSAMRecord()))
+				.collect(Collectors.toList());
+		assertTrue(Ordering.from(new SAMRecordCoordinateComparator()).isOrdered(records));
 	}
 	@Test
 	public void iterator_should_sort_sc_with_indel() throws IOException {
@@ -270,7 +289,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getSoftClipParameters().minLength = 1;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0, 0, 15);
-		List<DirectedEvidence> results = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		for (int i = 1; i < results.size(); i++) {
 			assertTrue(results.get(i-1).getBreakendSummary().start <= results.get(i).getBreakendSummary().start);
 		}
@@ -297,7 +316,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		}
 		createInput(in);
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(in.size(), result.size());
 		// should be sorted correctly
 	}
@@ -308,7 +327,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(
 				SR(withMapq(10, Read(0, 1, "50M50S"))[0], withMapq(5, Read(1, 1, "50M"))[0]).getSAMRecord());
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(1, list.size());
 		assertTrue(list.get(0) instanceof SoftClipEvidence);
 	}
@@ -459,7 +478,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
 		Files.copy(new File("src/test/resources/indelerror.bam"), input);
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
-		Lists.newArrayList(source.iterator());
+		Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 	}
 	@Test
 	public void should_filter_reads_aligning_outside_contig_bounds() {

@@ -82,7 +82,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 				DP(0, 1, "1M", true, 1, 100, "1M", false));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		VariantCallIterator ecp = new VariantCallIterator(
-				new AggregateEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), null),
+				new AggregateEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), null, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition),
 				new QueryInterval[] {new QueryInterval(0, 1, 10) },
 				0);
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);

@@ -56,7 +56,7 @@ public class Manual extends IntermediateFilesTest {
 		//while (it.hasNext()) {
 		//	it.next();
 		//}
-		Iterator<DirectedEvidence> allIt = SAMEvidenceSource.mergedIterator(samEvidence, false);
+		Iterator<DirectedEvidence> allIt = SAMEvidenceSource.mergedIterator(samEvidence, false, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
 		while (allIt.hasNext()) {
 			allIt.next();
 		}
@@ -69,7 +69,7 @@ public class Manual extends IntermediateFilesTest {
 		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, sam, null, 0);
 		List<SAMRecord> reads = getRecords(new File("W:/debug/test.bam.gridss.working/test.bam.sv.bam"));
-		List<SplitReadEvidence> list = ses.iterator().stream()
+		List<SplitReadEvidence> list = ses.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition).stream()
 			.filter(e -> e instanceof SplitReadEvidence)
 			.map(e -> (SplitReadEvidence)e)
 			.filter(e -> e.getSAMRecord().getReadName().equals("variant.chr12-art1000553"))
@@ -85,7 +85,7 @@ public class Manual extends IntermediateFilesTest {
 		File ref = Hg38Tests.findHg38Reference();
 		ProcessingContext pc = new ProcessingContext(getFSContext(), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, sam, null, 0, 0.995);
-		List<DirectedEvidence> list = ses.iterator().stream()
+		List<DirectedEvidence> list = ses.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition).stream()
 			.collect(Collectors.toList());
 		List<DirectedEvidence> reads = list.stream().filter(e -> e instanceof DiscordantReadPair)
 			.map(e -> (DiscordantReadPair)e)

@@ -90,7 +90,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
-		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(4, list.size());
 		for (int i = 0; i <= 3; i++) {
 			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
@@ -107,7 +107,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
-		List<DirectedEvidence> contigs = Lists.newArrayList(aes.iterator());
+		List<DirectedEvidence> contigs = Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(0, contigs.size());
 	}
 	@Test
@@ -278,7 +278,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
-		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(100, list.size());
 	}
 	@Test
@@ -297,7 +297,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ExecutorService threadpool = Executors.newFixedThreadPool(8);
 		aes.assembleBreakends(threadpool);
 		threadpool.shutdown();
-		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(100, list.size());
 	}
 	@Test
@@ -333,7 +333,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		}
 		createInput(in);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), input);
-		Lists.newArrayList(aes.iterator());
+		Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 	}
 	@Test
 	public void fragmentSize_should_be_source_min() {
@@ -349,7 +349,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		r.setAttribute("OA", "polyA,1000,-,300M,0,0");
 		createInput(r);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
-		ArrayList<DirectedEvidence> result = Lists.newArrayList(aes.iterator());
+		ArrayList<DirectedEvidence> result = Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		Assert.assertEquals(0, result.size());
 	}
 	@Test
@@ -358,7 +358,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		r.setAttribute("OA", "polyA,150,+,200M100S,0,0");
 		createInput(r);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
-		ArrayList<DirectedEvidence> result = Lists.newArrayList(aes.iterator());
+		ArrayList<DirectedEvidence> result = Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		Assert.assertEquals(1, result.size());
 	}
 }

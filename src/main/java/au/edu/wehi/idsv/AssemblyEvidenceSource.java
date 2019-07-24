@@ -211,7 +211,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, int chunkNumber, QueryInterval[] intervals, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator,
 							   IntervalBed excludedRegions, IntervalBed safetyRegions, IntervalBed downsampledRegions) {
 		QueryInterval[] expanded = getExpanded(intervals);
-		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
+		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded, EvidenceSortOrder.SAMRecordStartPosition)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input, downsampledRegions);
 			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction, excludedRegions, safetyRegions);
 			if (telemetry != null) {
@@ -319,6 +319,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				getContext().getDictionary(),
 				getContext().getLinear(),
 				it,
+				EvidenceSortOrder.SAMRecordStartPosition,
 				Math.max(ap.downsampling.minimumDensityWindowSize, getMaxConcordantFragmentSize()),
 				ap.downsampling.acceptDensityPortion * ap.downsampling.targetEvidenceDensity,
 				ap.downsampling.targetEvidenceDensity,
@@ -411,7 +412,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		ProgressLogger progressLog = new ProgressLogger(log);
 		List<Iterator<SAMRecord>> list = new ArrayList<>();
 		for (BreakendDirection direction : BreakendDirection.values()) {
-			CloseableIterator<DirectedEvidence> it = mergedIterator(source, false);
+			CloseableIterator<DirectedEvidence> it = mergedIterator(source, false, EvidenceSortOrder.SAMRecordStartPosition);
 			Iterator<DirectedEvidence> throttledIt = throttled(it, new IntervalBed(getContext().getLinear()));
 			ProgressLoggingDirectedEvidenceIterator<DirectedEvidence> loggedIt = new ProgressLoggingDirectedEvidenceIterator<>(getContext(), throttledIt, progressLog);
 			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, new SequentialIdGenerator("asm"), loggedIt, direction, new IntervalBed(getContext().getLinear()), new IntervalBed(getContext().getLinear()));

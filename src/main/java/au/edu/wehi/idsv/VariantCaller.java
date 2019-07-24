@@ -39,7 +39,7 @@ public class VariantCaller {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
 		}
-		AggregateEvidenceSource es = new AggregateEvidenceSource(processContext, samEvidence, assemblyEvidence);
+		AggregateEvidenceSource es = new AggregateEvidenceSource(processContext, samEvidence, assemblyEvidence, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
 		List<QueryInterval[]> chunks = processContext.getReference().getIntervals(processContext.getConfig().chunkSize, processContext.getConfig().chunkSequenceChangePenalty);
 		List<File> calledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();

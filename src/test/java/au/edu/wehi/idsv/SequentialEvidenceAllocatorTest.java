@@ -38,7 +38,7 @@ public class SequentialEvidenceAllocatorTest extends TestHelper {
 			}
 		}
 		ses.evidence.sort(DirectedEvidenceOrder.ByNatural);
-		AggregateEvidenceSource es = new AggregateEvidenceSource(pc, ImmutableList.of(ses), null);
+		AggregateEvidenceSource es = new AggregateEvidenceSource(pc, ImmutableList.of(ses), null, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
 		VariantCallIterator processor = new VariantCallIterator(es);
 		ArrayList<VariantContextDirectedEvidence> calls = Lists.newArrayList(processor);
 		calls.sort(VariantContextDirectedEvidence.ByBreakendStartEnd);

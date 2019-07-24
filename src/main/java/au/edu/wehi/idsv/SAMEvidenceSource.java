@@ -50,6 +50,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private IdsvSamFileMetrics metrics;
 	private StructuralVariantReadMetrics svMetrics;
 	private ReadPairConcordanceCalculator rpcc;
+	public enum EvidenceSortOrder {
+		SAMRecordStartPosition,
+		EvidenceStartPosition
+	}
 	public SAMEvidenceSource(ProcessingContext processContext, File file, File nameSorted, int sourceCategory) {
 		this(processContext, file, nameSorted, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, 0, 0, 0);
 	}
@@ -228,7 +232,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			FileHelper.delete(withsplitreadsFile, true);
 		}
 	}
-	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval[] intervals) {
+	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval[] intervals, EvidenceSortOrder eso) {
 		SamReader reader = getReader();
 		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
 		QueryInterval[] expandedIntervals = QueryIntervalUtil.padIntervals(getContext().getDictionary(), intervals, getMaxConcordantFragmentSize() + 1);
@@ -236,7 +240,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		IntervalBed queryInterval = new IntervalBed(getContext().getLinear(), expandedIntervals);
 		queryInterval.remove(getBlacklistedRegions());
 		SAMRecordIterator it = tryOpenReader(reader, queryInterval.asQueryInterval());
-		Iterator<DirectedEvidence> eit = asEvidence(it);
+		Iterator<DirectedEvidence> eit = asEvidence(it, eso);
 		eit = Iterators.filter(eit, e -> QueryIntervalUtil.overlaps(intervals, e.getBreakendSummary()));
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
@@ -264,11 +268,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return it;
 	}
-	public CloseableIterator<DirectedEvidence> iterator() {
+	public CloseableIterator<DirectedEvidence> iterator(EvidenceSortOrder eso) {
 		SamReader reader = getReader();
 		SAMRecordIterator it = reader.iterator();
 		it.assertSorted(SortOrder.coordinate);
-		Iterator<DirectedEvidence> eit = asEvidence(it);
+		Iterator<DirectedEvidence> eit = asEvidence(it, eso);
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	private SamReader getReader() {
@@ -288,18 +292,27 @@ public class SAMEvidenceSource extends EvidenceSource {
 			throw new IllegalStateException(String.format("Missing required file %s. See GRIDSS pipeline examples and documentation.", svFile));
 		}
 	}
-	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {
+	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it, EvidenceSortOrder eso) {
 		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved
 		it = Iterators.filter(it, r -> !shouldFilterPreTransform(r));
 		it = Iterators.transform(it, r -> transform(r));
 		it = Iterators.filter(it, r -> !shouldFilter(r));		
 		Iterator<DirectedEvidence> eit = new DirectedEvidenceIterator(it, this, minIndelSize());
 		eit = Iterators.filter(eit, e -> !shouldFilter(e));
-		eit = new DirectEvidenceWindowedSortingIterator<DirectedEvidence>(getContext(), getSortWindowSize(), eit);
-		if (Defaults.SANITY_CHECK_ITERATORS) {
-			// Can't enforce pairing as there may actually be duplicates depending on how multi-mapping alignment was performed
-			//eit = new PairedEvidenceTracker<DirectedEvidence>(getFile().getName(), eit);
-			eit = new OrderAssertingIterator<DirectedEvidence>(eit, DirectedEvidenceOrder.ByNatural);
+		switch (eso) {
+			case SAMRecordStartPosition:
+				// already sorted by coordinate
+				break;
+			case EvidenceStartPosition:
+				eit = new DirectEvidenceWindowedSortingIterator<DirectedEvidence>(getContext(), getSortWindowSize(), eit);
+				if (Defaults.SANITY_CHECK_ITERATORS) {
+					// Can't enforce pairing as there may actually be duplicates depending on how multi-mapping alignment was performed
+					//eit = new PairedEvidenceTracker<DirectedEvidence>(getFile().getName(), eit);
+					eit = new OrderAssertingIterator<DirectedEvidence>(eit, DirectedEvidenceOrder.ByNatural);
+				}
+				break;
+			default:
+				throw new IllegalArgumentException("Sort order must be specified");
 		}
 		return eit;
 	}
@@ -361,6 +374,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * @return
 	 */
 	public boolean shouldFilterPreTransform(SAMRecord r) {
+		if (r == null) {
+			return true;
+		}
 		if (r.getReadUnmappedFlag() || r.getMappingQuality() < getContext().getConfig().minMapq) {
 			return true;
 		}
@@ -368,7 +384,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			return true;
 		}
 		if (!isIndelOrClipped(r)) {
-			if (!r.getReadPairedFlag() || rpcc.isConcordant(r)) {
+			if (!r.getReadPairedFlag() || (rpcc != null && rpcc.isConcordant(r))) {
 				return true;
 			}
 		}
@@ -388,6 +404,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return false;
 	}
 	public boolean shouldFilter(SAMRecord r) {
+		if (r == null) {
+			return true;
+		}
 		if (r.getReadUnmappedFlag()) {
 			return true;
 		}
@@ -533,10 +552,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public GenomicProcessingContext getProcessContext() {
 		return getContext();
 	}
-	public static CloseableIterator<DirectedEvidence> mergedIterator(List<SAMEvidenceSource> source, boolean parallel) {
+	public static CloseableIterator<DirectedEvidence> mergedIterator(List<SAMEvidenceSource> source, boolean parallel, EvidenceSortOrder eso) {
 		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 		for (SAMEvidenceSource bam : source) {
-			CloseableIterator<DirectedEvidence> it = bam.iterator();
+			CloseableIterator<DirectedEvidence> it = bam.iterator(eso);
 			if (parallel) {
 				it = new AsyncBufferedIterator<>(it, bam.getFile() == null ? "" : bam.getFile().getName());
 			}
@@ -545,10 +564,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
 		return merged;
 	}
-	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source, final QueryInterval[] intervals) {
+	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source, final QueryInterval[] intervals, EvidenceSortOrder eso) {
 		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 		for (SAMEvidenceSource bam : source) {
-			CloseableIterator<DirectedEvidence> it = bam.iterator(intervals);
+			CloseableIterator<DirectedEvidence> it = bam.iterator(intervals, eso);
 			toMerge.add(it);
 		}
 		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);

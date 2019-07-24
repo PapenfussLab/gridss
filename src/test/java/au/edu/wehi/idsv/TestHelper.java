@@ -974,12 +974,12 @@ public class TestHelper {
 		@Override
 		public IdsvSamFileMetrics getMetrics() { return metrics; }
 		@Override
-		public CloseableIterator<DirectedEvidence> iterator() {
-			return new AutoClosingIterator<DirectedEvidence>(evidence.iterator());
+		public CloseableIterator<DirectedEvidence> iterator(SAMEvidenceSource.EvidenceSortOrder eso) {
+			return new AutoClosingIterator<>(evidence.iterator());
 		}
 		@Override
-		public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] qi) {
-			return new AutoClosingIterator<DirectedEvidence>(
+		public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] qi, SAMEvidenceSource.EvidenceSortOrder eso) {
+			return new AutoClosingIterator<>(
 					Iterators.filter(evidence.iterator(), de -> 
 						de != null &&
 						de.getBreakendSummary() != null &&
@@ -1002,11 +1002,11 @@ public class TestHelper {
 		@Override
 		public int getMaxConcordantFragmentSize() { return fragSize; }
 		@Override
-		public CloseableIterator<DirectedEvidence> iterator() {
+		public CloseableIterator<DirectedEvidence> iterator(SAMEvidenceSource.EvidenceSortOrder eso) {
 			return new AutoClosingIterator<>(assemblies.iterator());
 		}
 		@Override
-		public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] qi) {
+		public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] qi, SAMEvidenceSource.EvidenceSortOrder eso) {
 			return new AutoClosingIterator<>(assemblies.stream().filter(
 					e -> QueryIntervalUtil.overlaps(qi, e.getBreakendSummary())).iterator());
 		}

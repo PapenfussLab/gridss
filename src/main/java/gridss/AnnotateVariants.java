@@ -25,7 +25,7 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		log.info("Writing breakend assembly support.");
 		File tmp = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(file) : file;
 		try (BufferedOutputStream writer = new BufferedOutputStream(new FileOutputStream(tmp))) {
-			try (CloseableIterator<DirectedEvidence> it = assemblyEvidence.iterator()) {
+			try (CloseableIterator<DirectedEvidence> it = assemblyEvidence.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition)) {
 				while (it.hasNext()) {
 					SingleReadEvidence ass = (SingleReadEvidence) it.next();
 					if (!ass.getSAMRecord().isSecondaryOrSupplementary()) {

@@ -2,12 +2,12 @@ package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.util.DensityThrottlingIterator;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Iterator;
@@ -25,7 +25,8 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	private final IntervalBed throttled;
 	private final boolean throttleReadPairs;
 	private final boolean throttleSingleReads;
-	private DirectedEvidence tresholdStart = null;
+	private final SAMEvidenceSource.EvidenceSortOrder iteratorSortOrder;
+	private DirectedEvidence thresholdStart = null;
 	private int lastReferenceIndex = -1;
 	private int lastPosition = -1;
 	private double lastDensity = 0;
@@ -35,12 +36,14 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 			SAMSequenceDictionary dictionary,
 			LinearGenomicCoordinate lgc,
 			Iterator<DirectedEvidence> it,
+			SAMEvidenceSource.EvidenceSortOrder iteratorSortOrder,
 			int windowSize,
 			double acceptDensity,
 			double maxDensity,
 			boolean throttleReadPairs,
 			boolean throttleSingleReads){
 		super(it, windowSize, acceptDensity, maxDensity);
+		this.iteratorSortOrder = iteratorSortOrder;
 		this.lgc = lgc;
 		this.dictionary = dictionary;
 		this.throttled = throttled;
@@ -49,7 +52,12 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	}
 	@Override
 	protected long getPosition(DirectedEvidence record) {
-		return lgc.getLinearCoordinate(record.getBreakendSummary().referenceIndex, record.getBreakendSummary().start);
+		if (iteratorSortOrder ==  SAMEvidenceSource.EvidenceSortOrder.SAMRecordStartPosition) {
+			SAMRecord r = record instanceof NonReferenceReadPair ? ((NonReferenceReadPair)record).getLocalledMappedRead() : ((SingleReadEvidence)record).getSAMRecord();
+			return lgc.getStartLinearCoordinate(r);
+		} else {
+			return lgc.getLinearCoordinate(record.getBreakendSummary().referenceIndex, record.getBreakendSummary().start);
+		}
 	}
 
 	@Override
@@ -92,11 +100,11 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 				lastDensity = currentDensity();
 			}
 		}
-		if (!isBelowUnconditionalAcceptanceThreshold() && tresholdStart == null) {
-			tresholdStart = evidence;
-		} else if (isBelowUnconditionalAcceptanceThreshold() && tresholdStart != null) {			
-			int startReferenceIndex = tresholdStart.getBreakendSummary().referenceIndex;
-			int startPos = tresholdStart.getBreakendSummary().start;
+		if (!isBelowUnconditionalAcceptanceThreshold() && thresholdStart == null) {
+			thresholdStart = evidence;
+		} else if (isBelowUnconditionalAcceptanceThreshold() && thresholdStart != null) {
+			int startReferenceIndex = thresholdStart.getBreakendSummary().referenceIndex;
+			int startPos = thresholdStart.getBreakendSummary().start;
 			int endReferenceIndex = evidence.getBreakendSummary().referenceIndex;
 			int endPos = evidence.getBreakendSummary().start;
 			if (startReferenceIndex == endReferenceIndex) {
@@ -106,7 +114,7 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 				throttled.addInterval(endReferenceIndex, 1, endPos);
 			}
 			log.debug(String.format("Throttled assembly evidence in interval %s:%d-%d", dictionary.getSequence(startReferenceIndex).getSequenceName(), startPos, endPos));
-			tresholdStart = null;
+			thresholdStart = null;
 		}
 		return evidence;
 	}
