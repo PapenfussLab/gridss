@@ -274,7 +274,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 0, 43);
 		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.SAMRecordStartPosition));
 		List<SAMRecord> records = results.stream()
-				.map(e -> (e instanceof NonReferenceReadPair ? ((NonReferenceReadPair) e).getLocalledMappedRead() : ((SingleReadEvidence) e).getSAMRecord()))
+				.map(e -> e.getUnderlyingSAMRecord())
 				.collect(Collectors.toList());
 		assertTrue(Ordering.from(new SAMRecordCoordinateComparator()).isOrdered(records));
 	}

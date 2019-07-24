@@ -473,4 +473,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public int getLocalChimericAlignmentReadOffset() {
 		return new ChimericAlignment(record).getFirstAlignedBaseReadOffset();
 	}
+
+	@Override
+	public SAMRecord getUnderlyingSAMRecord() {
+		return getSAMRecord();
+	}
 }

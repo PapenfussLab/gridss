@@ -111,7 +111,7 @@ public class AssemblyAttributes {
 	}
 	private static int maxReadLength(Collection<DirectedEvidence> support) {
 		return support.stream()
-				.mapToInt(e -> e instanceof NonReferenceReadPair ? ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength() : ((SingleReadEvidence)e).getSAMRecord().getReadLength())
+				.mapToInt(e ->  e instanceof NonReferenceReadPair ? ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength() : ((SingleReadEvidence)e).getSAMRecord().getReadLength())
 				.max()
 				.orElse(0);
 	}

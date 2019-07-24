@@ -53,7 +53,7 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	@Override
 	protected long getPosition(DirectedEvidence record) {
 		if (iteratorSortOrder ==  SAMEvidenceSource.EvidenceSortOrder.SAMRecordStartPosition) {
-			SAMRecord r = record instanceof NonReferenceReadPair ? ((NonReferenceReadPair)record).getLocalledMappedRead() : ((SingleReadEvidence)record).getSAMRecord();
+			SAMRecord r = record.getUnderlyingSAMRecord();
 			return lgc.getStartLinearCoordinate(r);
 		} else {
 			return lgc.getLinearCoordinate(record.getBreakendSummary().referenceIndex, record.getBreakendSummary().start);

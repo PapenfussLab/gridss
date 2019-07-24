@@ -334,4 +334,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public void setAssociatedAssemblyName(String associatedAssemblyName) {
 		this.associatedAssemblyName = associatedAssemblyName; 
 	}
+
+	@Override
+	public SAMRecord getUnderlyingSAMRecord() {
+		return getLocalledMappedRead();
+	}
 }

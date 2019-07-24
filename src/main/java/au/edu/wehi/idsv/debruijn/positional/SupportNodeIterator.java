@@ -42,7 +42,6 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
 	private long consumed = 0;
-	private DirectedEvidence lastEvidence = null;
 	/**
 	 * Iterator that converts evidence to kmer nodes 
 	 * @param k kmer
@@ -78,6 +77,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 			return;
 		}
 		assert(de.getBreakendSummary().referenceIndex == firstReferenceIndex);
+		/*
 		if (lastEvidence != null && DirectedEvidence.ByStartEnd.compare(lastEvidence, de) > 0) {
 			String msg = String.format("SupportNodeIterator requires evidence to be sorted by starting position. Encountered %s at %s before %s at %s.",
 					lastEvidence.getEvidenceID(), lastEvidence.getBreakendSummary(),
@@ -86,7 +86,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 			throw new RuntimeException(msg);
 		}
 		lastEvidence = de;
-		
+		*/
 		KmerEvidence e;
 		KmerEvidence e2 = null;
 		if (de instanceof SingleReadEvidence) {
@@ -183,7 +183,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	}
 	private void ensureBuffer() {
 		while (underlying.hasNext() && (buffer.isEmpty() || buffer.peek().lastStart() > inputPosition - emitOffset)) {
-			inputPosition = underlying.peek().getBreakendSummary().start;
+			inputPosition = underlying.peek().getUnderlyingSAMRecord().getAlignmentStart();
 			advance();
 		}
 		if (!underlying.hasNext()) {
@@ -192,7 +192,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		}
 	}
 	private void advance() {
-		while (underlying.hasNext() && underlying.peek().getBreakendSummary().start <= inputPosition) {
+		while (underlying.hasNext() && underlying.peek().getUnderlyingSAMRecord().getAlignmentStart() <= inputPosition) {
 			process(underlying.next());
 			consumed++;
 		}

@@ -561,7 +561,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			}
 			toMerge.add(it);
 		}
-		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
+		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, eso == EvidenceSortOrder.EvidenceStartPosition ? DirectedEvidenceOrder.ByNatural : DirectedEvidenceOrder.BySAMStart);
 		return merged;
 	}
 	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source, final QueryInterval[] intervals, EvidenceSortOrder eso) {
@@ -570,7 +570,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			CloseableIterator<DirectedEvidence> it = bam.iterator(intervals, eso);
 			toMerge.add(it);
 		}
-		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
+		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge,  eso == EvidenceSortOrder.EvidenceStartPosition ? DirectedEvidenceOrder.ByNatural : DirectedEvidenceOrder.BySAMStart);
 		return merged;
 	}
 	/**

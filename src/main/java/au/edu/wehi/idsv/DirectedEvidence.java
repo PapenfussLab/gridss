@@ -2,6 +2,8 @@ package au.edu.wehi.idsv;
 
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 import java.util.Collection;
 
@@ -81,6 +83,7 @@ public interface DirectedEvidence {
 	 * @return Name of associated assembly.
 	 */
 	String getAssociatedAssemblyName();
+	SAMRecord getUnderlyingSAMRecord();
 	Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {

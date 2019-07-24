@@ -13,6 +13,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	public BreakpointSummary getBreakendSummary() {
 		return (BreakpointSummary)super.getBreakendSummary();
 	}
+
 	@Override
 	public int getRemoteMapq() {
 		return getNonReferenceRead().getMappingQuality();

@@ -1,6 +1,5 @@
-#source("https://bioconductor.org/biocLite.R")
-#biocLite("VariantAnnotation")
-#install_github("PapenfussLab/StructuralVariantAnnotation")
+# if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+#BiocManager::install("StructuralVariantAnnotation")
 #install.packages("stringr")
 library(VariantAnnotation)
 library(StructuralVariantAnnotation)

@@ -189,4 +189,9 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public String getAssociatedAssemblyName() {
 		throw new RuntimeException("NYI"); 
 	}
+
+	@Override
+	public SAMRecord getUnderlyingSAMRecord() {
+		return null;
+	}
 }
