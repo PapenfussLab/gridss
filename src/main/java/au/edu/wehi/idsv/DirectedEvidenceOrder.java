@@ -7,7 +7,7 @@ import htsjdk.samtools.SAMRecordCoordinateComparator;
 import java.util.Comparator;
 
 public abstract class DirectedEvidenceOrder {
-    public static final Comparator<? super DirectedEvidence> BySAMStart = Ordering.from(new SAMRecordCoordinateComparator()).onResultOf(x -> x.getUnderlyingSAMRecord());
+    public static final Comparator<? super DirectedEvidence> BySAMStart = Ordering.from(new SAMRecordCoordinateOnlyComparator()).onResultOf(x -> x.getUnderlyingSAMRecord());
     public static Ordering<DirectedEvidence> ByStartEnd = new Ordering<DirectedEvidence>() {
 		public int compare(DirectedEvidence arg1, DirectedEvidence arg2) {
 			return BreakendSummary.ByStartEnd.compare(arg1.getBreakendSummary(), arg2.getBreakendSummary());
