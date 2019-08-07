@@ -2,8 +2,6 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# This script is a simple wrapper around the all-in-one gridss.CallVariants entry point
-#
 # Example ./gridss.sh  -t 1 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -o gridss.full.chr12.1527326.DEL1024.vcf -a gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.5.0-gridss-jar-with-dependencies.jar chr12.1527326.DEL1024.bam
 set -o errexit -o pipefail -o noclobber -o nounset
 ! getopt --test > /dev/null 
@@ -12,7 +10,7 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 USAGE_MESSAGE="
-Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 28g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
+Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 25g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 
 	-r/--reference: reference genome to use. Must have a .fai index file and a bwa index.
 	-o/--output: output VCF.
@@ -45,7 +43,7 @@ output_vcf=""
 assembly=""
 threads=$(nproc)
 gridss_jar=""
-jvmheap="28g"
+jvmheap="25g"
 blacklist=""
 metricsrecords=10000000
 steps="all"
@@ -264,13 +262,17 @@ for tool in bwa Rscript /usr/bin/time sambamba java ; do
 	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2 
 done
+sambamba 2>&1 | grep sambamba | head -1 1>&2 || echo -n
+Rscript --version 1>&2
+echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
+/usr/bin/time --version 1>&2
 
 # check java version is ok by testing for GRIDSS usage message
 if java -cp $gridss_jar gridss.Echo ; then
-	java -version 2>&1
+	java -version 1>&2
 else
 	echo "Unable to run GRIDSS jar. GRIDSS requires java 1.8 or later." 2>&1
-	java -version 2>&1
+	java -version 1>&2
 	exit 14
 fi
 
@@ -350,7 +352,7 @@ if [[ $do_preprocess == true ]] ; then
 					INCLUDE_DUPLICATES=true \
 			| /usr/bin/time -a -o $timinglogfile \
 				sambamba sort \
-					--sort-picard \
+					-n \
 					--tmpdir $dir \
 					-m 8GB \
 					-o $tmp_prefix.namedsorted.bam \
