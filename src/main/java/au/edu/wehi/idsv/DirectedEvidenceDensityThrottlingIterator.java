@@ -26,7 +26,7 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	private final boolean throttleReadPairs;
 	private final boolean throttleSingleReads;
 	private final SAMEvidenceSource.EvidenceSortOrder iteratorSortOrder;
-	private DirectedEvidence thresholdStart = null;
+	private long thresholdStart = Long.MIN_VALUE;
 	private int lastReferenceIndex = -1;
 	private int lastPosition = -1;
 	private double lastDensity = 0;
@@ -80,33 +80,36 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 	@Override
 	public DirectedEvidence next() {
 		DirectedEvidence evidence = super.next();
+		long pos = getPosition(evidence);
 		if (DEBUG_DENSITY_WIG) {
-			if (evidence.getBreakendSummary().referenceIndex != lastReferenceIndex) {
-				lastReferenceIndex = evidence.getBreakendSummary().referenceIndex;
+			if (lgc.getReferenceIndex(pos) != lastReferenceIndex) {
+				lastReferenceIndex = lgc.getReferenceIndex(pos);
 				CloserUtil.close(wigWriter);
 				try {
 					wigWriter = new PrintWriter(File.createTempFile("assembly_density_" + dictionary.getSequence(lastReferenceIndex).getSequenceName() + "_", ".wig", new File(".")));
 					wigWriter.println("variableStep	chrom=" + dictionary.getSequence(lastReferenceIndex).getSequenceName());
-					lastPosition = evidence.getBreakendSummary().start;
+					lastPosition = lgc.getReferencePosition(pos);
 					lastDensity =  currentDensity();
 				} catch (IOException e) {
 					log.error(e);
 					wigWriter = null;
 				}
 			}
-			if (evidence.getBreakendSummary().start != lastPosition) {
+			if (lgc.getReferencePosition(pos) != lastPosition) {
 				wigWriter.println(String.format("%d	%.3f", lastPosition, lastDensity));
-				lastPosition = evidence.getBreakendSummary().start;
+				lastPosition = lgc.getReferencePosition(pos);
 				lastDensity = currentDensity();
 			}
 		}
-		if (!isBelowUnconditionalAcceptanceThreshold() && thresholdStart == null) {
-			thresholdStart = evidence;
-		} else if (isBelowUnconditionalAcceptanceThreshold() && thresholdStart != null) {
-			int startReferenceIndex = thresholdStart.getBreakendSummary().referenceIndex;
-			int startPos = thresholdStart.getBreakendSummary().start;
-			int endReferenceIndex = evidence.getBreakendSummary().referenceIndex;
-			int endPos = evidence.getBreakendSummary().start;
+		if (!isBelowUnconditionalAcceptanceThreshold() && thresholdStart == Long.MIN_VALUE) {
+			// start of new throttling region
+			thresholdStart = getPosition(evidence);
+		} else if (isBelowUnconditionalAcceptanceThreshold() && thresholdStart != Long.MIN_VALUE) {
+			// end of throttling region
+			int startReferenceIndex = lgc.getReferenceIndex(thresholdStart);
+			int startPos = lgc.getReferencePosition(thresholdStart);
+			int endReferenceIndex = lgc.getReferenceIndex(getPosition(evidence));
+			int endPos = lgc.getReferencePosition(getPosition(evidence));
 			if (startReferenceIndex == endReferenceIndex) {
 				throttled.addInterval(startReferenceIndex, startPos, endPos);
 			} else {
@@ -114,7 +117,7 @@ public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottling
 				throttled.addInterval(endReferenceIndex, 1, endPos);
 			}
 			log.debug(String.format("Throttled assembly evidence in interval %s:%d-%d", dictionary.getSequence(startReferenceIndex).getSequenceName(), startPos, endPos));
-			thresholdStart = null;
+			thresholdStart = Long.MIN_VALUE;
 		}
 		return evidence;
 	}
