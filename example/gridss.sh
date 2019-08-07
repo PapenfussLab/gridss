@@ -266,6 +266,7 @@ sambamba 2>&1 | grep sambamba | head -1 1>&2 || echo -n
 Rscript --version 1>&2
 echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
 /usr/bin/time --version 1>&2
+/bin/bash --version 2>&1 | head -1 1>&2
 
 # check java version is ok by testing for GRIDSS usage message
 if java -cp $gridss_jar gridss.Echo ; then
