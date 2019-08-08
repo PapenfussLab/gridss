@@ -313,7 +313,7 @@ if [[ $do_preprocess == true ]] ; then
 		fi
 		if [[ ! -f $prefix.sv.bam ]] ; then
 			echo "$(date)	CollectInsertSizeMetrics	$f	first $metricsrecords records" | tee -a $timinglogfile
-			{ /usr/bin/time -a -o $timinglogfile java -Xmx256m $jvm_args \
+			{ /usr/bin/time -a -o $timinglogfile java -Xmx4g $jvm_args \
 				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 				TMP_DIR=$dir \
 				ASSUME_SORTED=true \
@@ -328,7 +328,7 @@ if [[ $do_preprocess == true ]] ; then
 			; } 1>&2 2>> $logfile
 			echo "$(date)	CollectGridssMetricsAndExtractSVReads|sambamba	$f" | tee -a $timinglogfile
 			{ /usr/bin/time -a -o $timinglogfile \
-				java -Xmx512m $jvm_args \
+				java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 					TMP_DIR=$dir \
 					ASSUME_SORTED=true \
@@ -363,7 +363,7 @@ if [[ $do_preprocess == true ]] ; then
 			rm $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
 			echo "$(date)	ComputeSamTags|sambamba	$f" | tee -a $timinglogfile
 			{ /usr/bin/time -a -o $timinglogfile \
-				java -Xmx3g $jvm_args \
+				java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.ComputeSamTags \
 					TMP_DIR=$dir \
 					WORKING_DIR=$workingdir \
@@ -394,7 +394,7 @@ if [[ $do_preprocess == true ]] ; then
 			rm $tmp_prefix.namedsorted.bam
 			echo "$(date)	SoftClipsToSplitReads/bwa	$f" | tee -a $timinglogfile
 			{ /usr/bin/time -a -o $timinglogfile \
-				java -Xmx3g $jvm_args \
+				java -Xmx4g $jvm_args \
 					-Dsamjdk.create_index=true \
 					-Dgridss.gridss.output_to_temp_file=true \
 					-cp $gridss_jar gridss.SoftClipsToSplitReads \
@@ -438,7 +438,7 @@ if [[ $do_assemble == true ]] ; then
 	if [[ ! -f $prefix.sv.bam ]] ; then
 		echo "$(date)	CollectGridssMetrics	$assembly" | tee -a $timinglogfile
 		{ /usr/bin/time -a -o $timinglogfile \
-			java -Xmx256m $jvm_args \
+			java -Xmx4g $jvm_args \
 				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 				I=$assembly \
 				O=$prefix \
@@ -517,7 +517,7 @@ if [[ $do_call == true ]] ; then
 		rm $prefix.unallocated.vcf
 		echo "$(date)	AnnotateUntemplatedSequence	$output_vcf" | tee -a $timinglogfile
 		{ /usr/bin/time -a -o $timinglogfile \
-			java -Xmx1g $jvm_args \
+			java -Xmx4g $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateUntemplatedSequence \
 				TMP_DIR=$workingdir \
