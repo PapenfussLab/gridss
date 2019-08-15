@@ -566,7 +566,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (evidence.size() > 0) {
 			if (bestContigCaller.memoizedNodeCount() >= aes.getContext().getAssemblyParameters().positional.safetyModePathCountThreshold) {
 				contigsCalledInSafetyMode++;
-				log.warn(String.format("Safety mode initiated at %s:%d"));
+				log.warn(String.format("Safety mode initiated when graph loaded till %s:%d. Emitted contigs: %d.", assembledContig.getReferenceName(), nextPosition(), contigsCalledInSafetyMode));
 				// Local graph path complexity is too high.
 				bestContigCaller = null; // restart memoization from scratch (saves having to do node by node removals)
 				if (contigsCalledInSafetyMode >= aes.getContext().getAssemblyParameters().positional.safetyModeContigsToCall) {
