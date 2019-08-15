@@ -566,10 +566,11 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (evidence.size() > 0) {
 			if (bestContigCaller.memoizedNodeCount() >= aes.getContext().getAssemblyParameters().positional.safetyModePathCountThreshold) {
 				contigsCalledInSafetyMode++;
-				log.warn(String.format("Safety mode initiated when graph loaded till %s:%d. Emitted contigs: %d.", assembledContig.getReferenceName(), nextPosition(), contigsCalledInSafetyMode));
+				log.info(String.format("Safety mode initiated when graph loaded till %s:%d. Emitted contigs: %d.", contigName, nextPosition(), contigsCalledInSafetyMode));
 				// Local graph path complexity is too high.
 				bestContigCaller = null; // restart memoization from scratch (saves having to do node by node removals)
 				if (contigsCalledInSafetyMode >= aes.getContext().getAssemblyParameters().positional.safetyModeContigsToCall) {
+					log.warn(String.format("Safety threshold reached when graph at %s:%d. Flushing graph.", contigName, nextPosition()));
 					// abort assembly - flush out everything that at least a contig length from the next position
 					Collection<KmerPathSubnode> toRemove = graphByPosition
 							.stream()
