@@ -277,7 +277,7 @@ else
 	exit 14
 fi
 
-if ! java -Xmx$jvmheap -cp $gridss_jar gridss.Echo ; then
+if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
 	echo "Failure invoking java with --jvmheap parameter of \"$jvmheap\". Specify a JVM heap size (e.g. \"31g\") that is valid for this machine."
 	exit 15
 fi
