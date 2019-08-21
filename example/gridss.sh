@@ -16,7 +16,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	-o/--output: output VCF.
 	-a/--assembly: location of the GRIDSS assembly BAM. This file will be created by GRIDSS.
 	-t/--threads: number of threads to use. Defaults to the number of cores available.
-	-j/--jar: location of GRIDSS jar
+	-j/--jar: location of GRIDSS jar (defaults to $GRIDSS_JAR)
 	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. Defaults to the current directory.
 	-b/--blacklist: BED file containing regions to ignore
 	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators
@@ -42,7 +42,7 @@ reference=""
 output_vcf=""
 assembly=""
 threads=$(nproc)
-gridss_jar=""
+gridss_jar="$GRIDSS_JAR"
 jvmheap="25g"
 blacklist=""
 metricsrecords=10000000
@@ -138,7 +138,7 @@ if [[ "$gridss_jar" == "" ]] ; then
 fi
 if [[ ! -f $gridss_jar ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
-	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
+	echo "Unable to find GRIDSS jar (at $gridss_jar). Specify location using the --jar command line argument" 1>&2
 	exit 2
 fi
 ##### --workingdir
