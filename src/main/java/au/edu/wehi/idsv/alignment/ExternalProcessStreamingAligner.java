@@ -4,6 +4,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.NonFlushingBasicFastqWriter;
 import htsjdk.samtools.util.Log;
+import org.apache.commons.lang3.SystemUtils;
 
 import java.io.*;
 import java.lang.ProcessBuilder.Redirect;
@@ -62,7 +63,14 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		if (aligner == null) {
 			log.info("Starting external aligner");
 			log.info(commandlinestr);
-			aligner = new ProcessBuilder(args)
+			List<String> commandline = args;
+			if (SystemUtils.IS_OS_WINDOWS) {
+				// WSL path conversion
+				commandline = commandline.stream()
+						.map(s -> s.replace('\\', '/'))
+						.collect(Collectors.toList());
+			}
+			aligner = new ProcessBuilder(commandline)
 					.redirectInput(Redirect.PIPE)
 					.redirectOutput(Redirect.PIPE)
 					.redirectError(Redirect.INHERIT)
