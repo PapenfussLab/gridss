@@ -65,12 +65,16 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 		try (VCFFileReader vcfReader = new VCFFileReader(input, false)) {
 			header = vcfReader.getFileHeader();
 		}
+
 		header.addMetaDataLine(VcfInfoAttributes.BREAKEND_ALIGNMENTS.infoHeader());
 		File tmp = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(output) : output;
 		VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
-				.setOutputFile(tmp)
-				.setReferenceDictionary(getReference().getSequenceDictionary());
+				.setOutputFile(tmp);
 				//.setOption(Options.INDEX_ON_THE_FLY) // don't know if we're sorted or not so we can't index
+		if (header.getSequenceDictionary() != null) {
+			// annotation dictionary could be different to reference dictionary
+			builder = builder.setReferenceDictionary(header.getSequenceDictionary());
+		}
 		final ProgressLogger writeProgress = new ProgressLogger(log);
 		try (VariantContextWriter vcfWriter = builder.build()) {
 			vcfWriter.writeHeader(header);
