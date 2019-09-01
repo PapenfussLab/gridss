@@ -59,8 +59,8 @@ load_germline_pon_calls = function(vcf_file, sampleId) {
   bpgr = breakpointRanges(full_vcf, unpartneredBreakends=FALSE)
   begr = breakpointRanges(full_vcf, unpartneredBreakends=TRUE)
 
-  bpgr = bpgr[geno(full_vcf[bpgr$vcfId])$QUAL[,argv$normalordinal] > gridss.pon.min_normal_qual | geno(full_vcf[bpgr$partner])$QUAL[,argv$normalordinal] > gridss.pon.min_normal_qual]
-  begr = begr[geno(full_vcf[begr$vcfId])$BQ[,argv$normalordinal] > gridss.pon.min_normal_qual * gridss.single_breakend_multiplier]
+  bpgr = bpgr[geno(full_vcf[bpgr$sourceId])$QUAL[,argv$normalordinal] > gridss.pon.min_normal_qual | geno(full_vcf[bpgr$partner])$QUAL[,argv$normalordinal] > gridss.pon.min_normal_qual]
+  begr = begr[geno(full_vcf[begr$sourceId])$BQ[,argv$normalordinal] > gridss.pon.min_normal_qual * gridss.single_breakend_multiplier]
 
   minimal_bpgr = bpgr
   mcols(minimal_bpgr) = NULL

@@ -79,13 +79,13 @@ info(header(vcf)) = unique(as(rbind(as.data.frame(info(header(vcf))), data.frame
     "Portion of inserted sequence whose alignment overlaps the repeatmasker repeat. 1.0 indicates the inserted sequence entirely mapping to the repeat."))), "DataFrame"))
 
 insseqgr = with(data.frame(
-    vcfid=rep(names(rowRanges(vcf)), BiocGenerics::lengths(info(vcf)$BEALN)),
+    sourceId=rep(names(rowRanges(vcf)), BiocGenerics::lengths(info(vcf)$BEALN)),
     BEALN=unlist(info(vcf)$BEALN)) %>%
   separate(BEALN, sep="[:|]", into=c("chr", "start", "orientation", "cigar", "maqp")) %>%
   mutate(
     start=as.integer(start),
     end=start+GenomicAlignments::cigarWidthAlongReferenceSpace(cigar)),
-  GRanges(seqnames=chr, ranges=IRanges(start=start, end=end), strand=orientation, vcfid=vcfid))
+  GRanges(seqnames=chr, ranges=IRanges(start=start, end=end), strand=orientation, sourceId=sourceId))
 hits = findOverlaps(insseqgr, grrm, select="all", ignore.strand=TRUE)
 hits = hits %>% as.data.frame() %>%
   mutate(
@@ -93,25 +93,25 @@ hits = hits %>% as.data.frame() %>%
     repeatOverlapPercentage=overlap/(end(insseqgr[queryHits])-start(insseqgr[queryHits])),
     repeatType=grrm[subjectHits]$repeatType,
     repeatClass=grrm[subjectHits]$repeatClass,
-    vcfid=insseqgr[queryHits]$vcfid,
-    ALT=as.character(rowRanges(vcf)[vcfid]$ALT),
+    sourceId=insseqgr[queryHits]$sourceId,
+    ALT=as.character(rowRanges(vcf)[sourceId]$ALT),
     repeat_orientation=as.character(strand(grrm[subjectHits])))
 insrmdf = hits %>%
-  group_by(vcfid) %>%
+  group_by(sourceId) %>%
   top_n(1, repeatOverlapPercentage) %>%
-  distinct(vcfid, .keep_all=TRUE) %>%
+  distinct(sourceId, .keep_all=TRUE) %>%
   ungroup() %>%
-  dplyr::select(vcfid, repeatType, repeatClass, repeat_orientation, repeatOverlapPercentage)
+  dplyr::select(sourceId, repeatType, repeatClass, repeat_orientation, repeatOverlapPercentage)
 
 info(vcf)$INSRMRT=NA_character_
 info(vcf)$INSRMRC=NA_character_
 info(vcf)$INSRMRO=NA_character_
 info(vcf)$INSRMP=NA_real_
 
-info(vcf[insrmdf$vcfid])$INSRMRT=insrmdf$repeatType
-info(vcf[insrmdf$vcfid])$INSRMRC=insrmdf$repeatClass
-info(vcf[insrmdf$vcfid])$INSRMRO=insrmdf$repeat_orientation
-info(vcf[insrmdf$vcfid])$INSRMP=insrmdf$repeatOverlapPercentage
+info(vcf[insrmdf$sourceId])$INSRMRT=insrmdf$repeatType
+info(vcf[insrmdf$sourceId])$INSRMRC=insrmdf$repeatClass
+info(vcf[insrmdf$sourceId])$INSRMRO=insrmdf$repeat_orientation
+info(vcf[insrmdf$sourceId])$INSRMP=insrmdf$repeatOverlapPercentage
 
 writeVcf(vcf, argv$output, index=TRUE)
 

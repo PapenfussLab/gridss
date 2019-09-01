@@ -9,8 +9,7 @@ argp = add_argument(argp, "--fulloutput", help="Full call set excluding obviousl
 argp = add_argument(argp, "--normalordinal", type="integer", default=1, help="Ordinal of matching normal sample in the VCF")
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
-# argv = parse_args(argp, argv=c("--input", "D:/hartwig/down/COLO829R_COLO829T.gridss.vcf", "--output", "D:/hartwig/temp/out.vcf", "-f", "D:/hartwig/temp/full.vcf", "-p", "D:/hartwig/dbs/gridss/pon3792v1", "--scriptdir", "D:/hartwig/scripts/gridss", "--gc"))
-#argv = parse_args(argp, argv=c("--input", "D:/hartwig/down/annotate_variants.vcf", "--output", "D:/hartwig/temp/out.vcf", "-f", "D:/hartwig/temp/full.vcf", "-p", "D:/hartwig/dbs/gridss/pon3792v1", "--scriptdir", "D:/hartwig/scripts/gridss", "--gc"))
+# argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
 argv = parse_args(argp)
 
 if (!file.exists(argv$input)) {
@@ -146,7 +145,7 @@ if (length(vcf) > 0) {
 
 link_df = bind_rows(asm_linked_df, transitive_df) %>%
   mutate(linking_group=str_replace(linked_by, "/.*$", "")) %>%
-  mutate(pass=passes_final_filters(vcf[vcfId])) %>%
+  mutate(pass=passes_final_filters(vcf[sourceId])) %>%
   group_by(linking_group) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
@@ -156,7 +155,7 @@ write(paste(Sys.time(),"Calculating bebe insertion links", argv$input), stderr()
 # Insertion linkage
 bebeins_link_df = linked_by_breakend_breakend_insertion_classification(begr) %>%
   group_by(linked_by) %>%
-  mutate(pass=passes_final_filters(vcf[vcfId])) %>%
+  mutate(pass=passes_final_filters(vcf[sourceId])) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -164,7 +163,7 @@ bebeins_link_df = linked_by_breakend_breakend_insertion_classification(begr) %>%
 write(paste(Sys.time(),"Calculating bebp insertion links", argv$input), stderr())
 bebpins_link_df = linked_by_breakpoint_breakend_insertion_classification(bpgr, begr) %>%
   group_by(linked_by) %>%
-  mutate(pass=passes_final_filters(vcf[vcfId])) %>%
+  mutate(pass=passes_final_filters(vcf[sourceId])) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -173,7 +172,7 @@ bebpins_link_df = linked_by_breakpoint_breakend_insertion_classification(bpgr, b
 write(paste(Sys.time(),"Calculating simple inversions", argv$input), stderr())
 inv_link_df = linked_by_simple_inversion_classification(bpgr) %>%
   group_by(linked_by) %>%
-  mutate(pass=passes_final_filters(vcf[vcfId])) %>%
+  mutate(pass=passes_final_filters(vcf[sourceId])) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -190,7 +189,7 @@ inv_link_df = linked_by_simple_inversion_classification(bpgr) %>%
 write(paste(Sys.time(),"Calculating dsb links", argv$input), stderr())
 dsb_link_df = linked_by_dsb(bpgr) %>%
   group_by(linked_by) %>%
-  mutate(pass=passes_final_filters(vcf[vcfId])) %>%
+  mutate(pass=passes_final_filters(vcf[sourceId])) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -206,15 +205,15 @@ event_link_df = bind_rows(
   bebpins_link_df,
   inv_link_df,
   dsb_link_df) %>%
-  dplyr::select(vcfId, linked_by) %>%
+  dplyr::select(sourceId, linked_by) %>%
   mutate(
-    QUAL=rowRanges(vcf)[vcfId]$QUAL,
-    hasPolyA=str_detect(rowRanges(vcf[vcfId])$ALT, "A{16}")) %>%
+    QUAL=rowRanges(vcf)[sourceId]$QUAL,
+    hasPolyA=str_detect(rowRanges(vcf[sourceId])$ALT, "A{16}")) %>%
   group_by(linked_by) %>%
   # filter events where supporting fragment counts differ by too much
   mutate(
-    max_supporting_fragment_count = max(ifelse(is.na(info(full_vcf[vcfId])$PARID), info(full_vcf[vcfId])$BVF, info(full_vcf[vcfId])$VF)),
-    min_supporting_fragment_count = min(ifelse(is.na(info(full_vcf[vcfId])$PARID), info(full_vcf[vcfId])$BVF, info(full_vcf[vcfId])$VF)),
+    max_supporting_fragment_count = max(ifelse(is.na(info(full_vcf[sourceId])$PARID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
+    min_supporting_fragment_count = min(ifelse(is.na(info(full_vcf[sourceId])$PARID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
     hasPolyA=any(hasPolyA)
     ) %>%
   filter(min_supporting_fragment_count >= gridss.min_rescue_portion * max_supporting_fragment_count | hasPolyA)
@@ -224,12 +223,12 @@ write(paste(Sys.time(),"Calculating final linkage annotation", argv$input), stde
 event_link_df = event_link_df %>%
   group_by(linked_by) %>%
   mutate(linkQUAL = pmin(QUAL)) %>%
-  group_by(vcfId) %>%
+  group_by(sourceId) %>%
   filter(QUAL == linkQUAL) %>%
   group_by(linked_by)
 # Don't event link to PON filtered variants
 event_link_df = event_link_df %>%
-  filter(!str_detect(filters[vcfId], "PON"))
+  filter(!str_detect(filters[sourceId], "PON"))
 # Fix up pairing
 event_link_df = event_link_df %>%
   filter(n() == 2) %>%
@@ -237,26 +236,26 @@ event_link_df = event_link_df %>%
 
 # include both breakends of any linked breakpoints
 # as linkage can be breakend specific (e.g. assembly, bpbeins)
-link_rescue = bind_rows(link_df, event_link_df) %>% pull(vcfId) %>% unique()
+link_rescue = bind_rows(link_df, event_link_df) %>% pull(sourceId) %>% unique()
 link_rescue = c(link_rescue, bpgr[link_rescue[link_rescue %in% names(bpgr)]]$partner)
 
 # Note that we don't rescue equivalent events
 begr$partner = rep(NA, length(begr))
 eqv_link_df = linked_by_equivalent_variants(full_vcf, as(rbind(as.data.frame(bpgr), as.data.frame(begr)), "GRanges"), bsgenome=refgenome) %>%
-  filter(passes_final_filters(vcf[vcfId]) | vcfId %in% link_rescue) %>%
+  filter(passes_final_filters(vcf[sourceId]) | sourceId %in% link_rescue) %>%
   group_by(linked_by) %>%
   filter(n() == 2) %>%
   ungroup() %>%
   mutate(type="eqv")
 
 link_summary_df = bind_rows(link_df, event_link_df, eqv_link_df) %>%
-  group_by(vcfId) %>%
+  group_by(sourceId) %>%
   summarise(linked_by=paste0(linked_by, collapse=","))
 
 # Add linking information
 info(full_vcf)$LOCAL_LINKED_BY = rep("", length(full_vcf))
 info(full_vcf)$REMOTE_LINKED_BY = rep("", length(full_vcf))
-info(full_vcf[link_summary_df$vcfId])$LOCAL_LINKED_BY = link_summary_df$linked_by
+info(full_vcf[link_summary_df$sourceId])$LOCAL_LINKED_BY = link_summary_df$linked_by
 info(full_vcf[!is.na(info(full_vcf)$PARID)])$REMOTE_LINKED_BY = info(full_vcf[info(full_vcf[!is.na(info(full_vcf)$PARID)])$PARID])$LOCAL_LINKED_BY
 
 write(paste(Sys.time(),"Final qual filtering ", argv$output), stderr())

@@ -255,7 +255,7 @@ is_small_inversion_with_homology = function(gr, vcf, minhomlen=6, maxsize=40) {
   if (!is.null(gr$partner)) {
     isbp <- gr$partner %in% names(gr)
     bpgr = gr[isbp]
-    homlen = (as.integer(info(vcf[bpgr$vcfId])$HOMLEN) %na% 0)[isbp]
+    homlen = (as.integer(info(vcf[bpgr$sourceId])$HOMLEN) %na% 0)[isbp]
     #ihomlen = gridss_inexact_homology_length(gr, vcf)
     svlen = abs(start(bpgr) - start(partner(bpgr)))
     result[isbp] = simpleEventType(bpgr) == "INV" &
@@ -291,7 +291,7 @@ is_shadow_breakpoint = function(bpgr, begr, vcf, breakendQualMultiple=3) {
     summarise(beQUAL = max(beQUAL))
   bpgr$overlapQUAL = 0
   bpgr$overlapQUAL[bestOverlap$queryHits] = bestOverlap$beQUAL
-  i <- info(vcf[bpgr$vcfId])
+  i <- info(vcf[bpgr$sourceId])
   better_call_filter = !is_short_event(bpgr) &
     bpgr$overlapQUAL > gridss.shadow_breakend_multiple * bpgr$QUAL &
     i$BANSRQ + i$BANRPQ > i$ASQ
@@ -354,10 +354,10 @@ gr_join_to_df = function(gr1, vcf1, gr2, vcf2, ..., suffix=c(".1", ".2"), group_
 	df1$orientation = paste0(strand(gr1), strand(partner(gr1)))
 	df2$orientation = paste0(strand(gr2), strand(partner(gr2)))
 	if (!is.null(vcf1)) {
-		df1 <- df1 %>% bind_cols(as.data.frame(info(vcf1[gr1$vcfId])))
+		df1 <- df1 %>% bind_cols(as.data.frame(info(vcf1[gr1$sourceId])))
 	}
 	if (!is.null(vcf2)) {
-		df2 <- df2 %>% bind_cols(as.data.frame(info(vcf2[gr2$vcfId])))
+		df2 <- df2 %>% bind_cols(as.data.frame(info(vcf2[gr2$sourceId])))
 	}
 	merged_df = full_join(df1, df2, by="key", suffix=suffix)
 	return(merged_df)
@@ -402,13 +402,13 @@ load_full_gridss_gr = function(filename, directory="", filter=c("somatic", "qual
 	gr = breakpointRanges(vcf)
 	gr$filename = filename
 	gr$af = gridss_somatic_af(gr, vcf)
-	info_df = info(vcf[gr$vcfId,])
-	info_df$filtered = should_filter(vcf[gr$vcfId,])
+	info_df = info(vcf[gr$sourceId,])
+	info_df$filtered = should_filter(vcf[gr$sourceId,])
 	mcols(gr) = bind_cols(as.data.frame(mcols(gr)), as.data.frame(info_df))
 	return(gr)
 }
 full_gridss_annotate_gr = function(gr, vcf, geno_suffix=c(".normal", ".tumour")) {
-	vcf = vcf[gr$vcfId,]
+	vcf = vcf[gr$sourceId,]
 	g = geno(vcf)
 	extra_df <- as.data.frame(as.data.frame(info(vcf)))
 	for (i in seq_along(geno_suffix)) {
@@ -885,7 +885,7 @@ zip_aggregate_pair_of_list_of_list = function(list1, list2, ZIP_FUN, AGGREGATE_F
 }
 linked_assemblies <- function(vcf, exclude_breakends_without_local_assembly=TRUE) {
   asm_linked_df <- data.frame(
-    vcfId=names(vcf),
+    sourceId=names(vcf),
     parid=info(vcf)$PARID,
     start=start(rowRanges(vcf)),
     asm=zip_aggregate_pair_of_list_of_list(
@@ -903,7 +903,7 @@ linked_assemblies <- function(vcf, exclude_breakends_without_local_assembly=TRUE
     asm_paired_df = .linked_assemblies_fix_breakends(vcf, asm_linked_df)
   }
   asm_paired_df = asm_paired_df %>%
-    dplyr::select(vcfId, linked_by=asm) %>%
+    dplyr::select(sourceId, linked_by=asm) %>%
     group_by(linked_by) %>%
     filter(n() == 2) %>%
     ungroup()
@@ -911,11 +911,11 @@ linked_assemblies <- function(vcf, exclude_breakends_without_local_assembly=TRUE
   return(asm_paired_df)
 }
 exclude_self_links = function(linked_df, vcf) {
-  self_links = linked_df %>% dplyr::select(vcfId, linked_by) %>%
-    mutate(parid = info(vcf[vcfId])$PARID) %>%
+  self_links = linked_df %>% dplyr::select(sourceId, linked_by) %>%
+    mutate(parid = info(vcf[sourceId])$PARID) %>%
     filter(!is.na(parid)) %>%
     group_by(linked_by) %>%
-    filter(length(unique(c(vcfId, parid))) != 4) %>%
+    filter(length(unique(c(sourceId, parid))) != 4) %>%
     pull(linked_by)
   return(linked_df %>% filter(!(linked_by %in% self_links)))
 
@@ -929,19 +929,19 @@ exclude_self_links = function(linked_df, vcf) {
     group_by(asm) %>%
     arrange(start) %>%
     mutate(
-      is_indel_start = (lead(parid) == vcfId) %na% FALSE,
-      is_indel_end = (lag(parid) == vcfId) %na% FALSE,
+      is_indel_start = (lead(parid) == sourceId) %na% FALSE,
+      is_indel_end = (lag(parid) == sourceId) %na% FALSE,
       requires_asm_renaming=n() > 2,
       paired_with_next=row_number() == 1 | is_indel_end) %>%
     # trim starting indel bound
-    filter(!(is_indel_start & is.na(lag(vcfId)))) %>%
+    filter(!(is_indel_start & is.na(lag(sourceId)))) %>%
     # trim ending indel bound
-    filter(!(is_indel_end & is.na(lead(vcfId)))) %>%
+    filter(!(is_indel_end & is.na(lead(sourceId)))) %>%
     mutate(asm_new=
       ifelse(!requires_asm_renaming, asm,
       paste(asm, (row_number() + ifelse(paired_with_next, 1, 0)) / 2, sep="-"))) %>%
     ungroup() %>%
-    dplyr::select(vcfId, asm=asm_new)
+    dplyr::select(sourceId, asm=asm_new)
 }
 #' Linked breakends require an additional assembly to ensure
 #' we actually have a local assembly at the breakend
@@ -949,12 +949,12 @@ exclude_self_links = function(linked_df, vcf) {
   i = info(vcf)
   breakends_with_less_than_two_assemblies = names(vcf)[
     is.na(i$PARID) & i$AS + i$RAS + i$CAS < 2]
-  asm_linked_df %>% filter(!(vcfId %in% breakends_with_less_than_two_assemblies))
+  asm_linked_df %>% filter(!(sourceId %in% breakends_with_less_than_two_assemblies))
 }
 require(testthat)
 test_that(".linked_assemblies_fix_indels corrects indels", {
   asm_linked_df = data.frame(
-    vcfId=c("in", "indel1o", "indel1h","indel2o", "indel2h", "out", "indel3o", "indel3h", "other_left", "other_right"),
+    sourceId=c("in", "indel1o", "indel1h","indel2o", "indel2h", "out", "indel3o", "indel3h", "other_left", "other_right"),
     parid=c("a", "indel1h", "indel1o","indel2h", "indel2o", NA, "indel3h", "indel3o", "b", "c"),
     start=c(1, 2, 3, 4, 5, 6, 2, 4, 3, 4),
     asm=c(rep("asm1", 6), rep("asm2", 2), rep("asm3", 2)),
@@ -997,27 +997,27 @@ transitive_calls = function(vcf, bpgr,
       group_by(transitive_start, full_path) %>%
       mutate(ordinal=row_number()) %>%
       mutate(
-        remote_vcfid=bpgr[bp_path]$partner,
-        prev_vcfid=ifelse(is.na(lag(remote_vcfid)), transitive_start, lag(remote_vcfid)),
-        next_vcfid=ifelse(is.na(lead(bp_path)), transitive_end, lead(bp_path))) %>%
+        remote_sourceId=bpgr[bp_path]$partner,
+        prev_sourceId=ifelse(is.na(lag(remote_sourceId)), transitive_start, lag(remote_sourceId)),
+        next_sourceId=ifelse(is.na(lead(bp_path)), transitive_end, lead(bp_path))) %>%
       ungroup()
     transitive_df = bind_rows(
       transitive_df %>%
-        mutate(linked_by=paste(transitive_start, ordinal, sep="/"), vcfId=bp_path) %>%
-        dplyr::select(vcfId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end),
+        mutate(linked_by=paste(transitive_start, ordinal, sep="/"), sourceId=bp_path) %>%
+        dplyr::select(sourceId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end),
       transitive_df %>%
-        mutate(linked_by=paste(transitive_start, ordinal, sep="/"), vcfId=prev_vcfid) %>%
-        dplyr::select(vcfId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end),
+        mutate(linked_by=paste(transitive_start, ordinal, sep="/"), sourceId=prev_sourceId) %>%
+        dplyr::select(sourceId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end),
       transitive_df %>%
-        mutate(linked_by=paste(transitive_start, ordinal+1, sep="/"), vcfId=remote_vcfid) %>%
-        dplyr::select(vcfId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end),
+        mutate(linked_by=paste(transitive_start, ordinal+1, sep="/"), sourceId=remote_sourceId) %>%
+        dplyr::select(sourceId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end),
       transitive_df %>%
-        mutate(linked_by=paste(transitive_start, ordinal+1, sep="/"), vcfId=next_vcfid) %>%
-        dplyr::select(vcfId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end)) %>%
+        mutate(linked_by=paste(transitive_start, ordinal+1, sep="/"), sourceId=next_sourceId) %>%
+        dplyr::select(sourceId, linked_by, has_multiple_paths, pathid, transitive_start, transitive_end)) %>%
       distinct()
   } else {
     # work-around for https://github.com/tidyverse/tidyr/issues/470
-    transitive_df = data.frame(linked_by=character(), vcfId=character(), has_multiple_paths=logical(), pathid=numeric(), stringsAsFactors=FALSE)
+    transitive_df = data.frame(linked_by=character(), sourceId=character(), has_multiple_paths=logical(), pathid=numeric(), stringsAsFactors=FALSE)
   }
 }
 #' @description Calculates a somatic score for the given variant.
@@ -1084,8 +1084,8 @@ linked_by_breakend_breakend_insertion_classification = function(begr, maxgap=gri
     filter(queryHits < subjectHits) %>% # remove symmetry
     mutate(linked_by=paste0("bebeins", row_number()))
   return( bind_rows(
-    hits %>% mutate(vcfId=names(begr)[queryHits]) %>% dplyr::select(vcfId, linked_by),
-    hits %>% mutate(vcfId=names(begr)[subjectHits]) %>% dplyr::select(vcfId, linked_by)
+    hits %>% mutate(sourceId=names(begr)[queryHits]) %>% dplyr::select(sourceId, linked_by),
+    hits %>% mutate(sourceId=names(begr)[subjectHits]) %>% dplyr::select(sourceId, linked_by)
   ) %>% distinct())
 }
 linked_by_breakpoint_breakend_insertion_classification = function(bpgr, begr, maxgap=gridss.insertion.maxgap) {
@@ -1108,8 +1108,8 @@ linked_by_breakpoint_breakend_insertion_classification = function(bpgr, begr, ma
     ungroup() %>%
     mutate(linked_by=paste0("bpbeins", row_number()))
   return( bind_rows(
-    hits %>% mutate(vcfId=names(bpgr)[queryHits]) %>% dplyr::select(vcfId, linked_by),
-    hits %>% mutate(vcfId=names(begr)[subjectHits]) %>% dplyr::select(vcfId, linked_by)
+    hits %>% mutate(sourceId=names(bpgr)[queryHits]) %>% dplyr::select(sourceId, linked_by),
+    hits %>% mutate(sourceId=names(begr)[subjectHits]) %>% dplyr::select(sourceId, linked_by)
   ) %>% distinct())
 }
 linked_by_simple_inversion_classification = function(bpgr, maxgap=gridss.inversion.maxgap) {
@@ -1132,10 +1132,10 @@ linked_by_simple_inversion_classification = function(bpgr, maxgap=gridss.inversi
     filter(queryHits < match(bpgr[queryHits]$partner, names(bpgr))) %>%
     mutate(linked_by=paste0("inv", row_number()))
     return( bind_rows(
-      hits %>% mutate(vcfId=names(bpgr)[queryHits]) %>% dplyr::select(vcfId, linked_by),
-      hits %>% mutate(vcfId=bpgr[queryHits]$partner) %>% dplyr::select(vcfId, linked_by),
-      hits %>% mutate(vcfId=names(bpgr)[subjectHits]) %>% dplyr::select(vcfId, linked_by),
-      hits %>% mutate(vcfId=bpgr[subjectHits]$partner) %>% dplyr::select(vcfId, linked_by)
+      hits %>% mutate(sourceId=names(bpgr)[queryHits]) %>% dplyr::select(sourceId, linked_by),
+      hits %>% mutate(sourceId=bpgr[queryHits]$partner) %>% dplyr::select(sourceId, linked_by),
+      hits %>% mutate(sourceId=names(bpgr)[subjectHits]) %>% dplyr::select(sourceId, linked_by),
+      hits %>% mutate(sourceId=bpgr[subjectHits]$partner) %>% dplyr::select(sourceId, linked_by)
     ) %>% distinct())
 }
 linked_by_dsb = function(bpgr, maxgap=gridss.dsb.maxgap, ...) {
@@ -1230,10 +1230,10 @@ sequence_common_prefix = function(gr, anchor_bases, bsgenome, ...) {
       sid=gr$id[subjectHits],
       sbeid=gr$beid[subjectHits])
   }
-  if (!is.null(gr$vcfId)) {
+  if (!is.null(gr$sourceId)) {
     hitdf = hitdf %>% mutate(
-      qvcfId=gr$vcfId[queryHits],
-      svcfId=gr$vcfId[subjectHits])
+      qsourceId=gr$sourceId[queryHits],
+      ssourceId=gr$sourceId[subjectHits])
   }
   return(hitdf)
 }
@@ -1359,8 +1359,8 @@ linked_by_adjacency = function(
     filter(queryHits < subjectHits) %>% # remove symmetry
     mutate(linked_by=paste0(link_label, row_number()))
   return(bind_rows(
-    hitdf %>% mutate(sampleId=bpgr$sampleId[queryHits],   beid=bpgr$beid[queryHits],   vcfId=names(bpgr)[queryHits]  ) %>% dplyr::select(sampleId, beid, vcfId, linked_by),
-    hitdf %>% mutate(sampleId=bpgr$sampleId[subjectHits], beid=bpgr$beid[subjectHits], vcfId=names(bpgr)[subjectHits]) %>% dplyr::select(sampleId, beid, vcfId, linked_by)) %>%
+    hitdf %>% mutate(sampleId=bpgr$sampleId[queryHits],   beid=bpgr$beid[queryHits],   sourceId=names(bpgr)[queryHits]  ) %>% dplyr::select(sampleId, beid, sourceId, linked_by),
+    hitdf %>% mutate(sampleId=bpgr$sampleId[subjectHits], beid=bpgr$beid[subjectHits], sourceId=names(bpgr)[subjectHits]) %>% dplyr::select(sampleId, beid, sourceId, linked_by)) %>%
     distinct())
 }
 #'
@@ -1370,9 +1370,9 @@ linked_by_equivalent_variants = function(vcf, gr, min_anchor_bases=20, max_per_b
   anchor_bases = pmax(min_anchor_bases, get_partner_anchor_support_width(vcf, gr))
   similar_calls_df = sequence_common_prefix(gr, anchor_bases=anchor_bases, maxgap=5, bsgenome) %>%
     filter(per_base_edit_distance <= max_per_base_edit_distance) %>%
-    dplyr::select(svcfId, qvcfId) %>%
+    dplyr::select(ssourceId, qsourceId) %>%
     mutate(linked_by=paste0("eqv", row_number())) %>%
-    gather(sorq, vcfId, svcfId, qvcfId) %>%
+    gather(sorq, sourceId, ssourceId, qsourceId) %>%
     dplyr::select(-sorq)
   return(similar_calls_df)
 }
@@ -1428,15 +1428,6 @@ setMethod("elementExtract", "ANY", .elementExtract.ANY)
 #' converts an XStringSet to a character
 setGeneric(".unXStringSet", function(x) x)
 setMethod(".unXStringSet", "XStringSet", function(x) as.character(x))
-
-
-#' Replaces the NA values in a with corresponding values in b
-#' @export
-'%na%' <- function(a, b) {
-  if (is.null(a) || length(a) == 0) return(b)
-  if (is.null(b) || length(b) == 0) return(a)
-  return(ifelse(is.na(a), b, a))
-}
 
 #' Uses b if a is NULL
 #' @export

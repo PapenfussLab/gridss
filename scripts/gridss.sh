@@ -42,7 +42,6 @@ reference=""
 output_vcf=""
 assembly=""
 threads=$(nproc)
-gridss_jar=""
 jvmheap="25g"
 blacklist=""
 metricsrecords=10000000
@@ -81,7 +80,7 @@ while true; do
             shift 2
             ;;
 		-j|--jar)
-            gridss_jar="$2"
+            GRIDSS_JAR="$2"
             shift 2
             ;;
 		--jvmheap)
@@ -129,18 +128,17 @@ fi
 if [[ "$steps" == *"call"* ]] ; then
 	do_call=true
 fi
-##### --jar
-echo "Using GRIDSS jar \"$gridss_jar\"" 1>&2
-if [[ "$gridss_jar" == "" ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "GRIDSS jar must be specified. Specify using the --jar command line argument" 1>&2
-	exit 3
-fi
-if [[ ! -f $gridss_jar ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Unable to find GRIDSS jar. Specify location using the --jar command line argument" 1>&2
-	exit 2
-fi
+### Find the jars
+find_jar() {
+	env_name=$1
+	if [[ -f "${!env_name:-}" ]] ; then
+		echo "${!env_name}"
+	else
+		echo "Unable to find $2 jar. Specify using the environment variant $env_name" 1>&2
+		exit 1
+	fi
+}
+gridss_jar=$(find_jar GRIDSS_JAR gridss)
 ##### --workingdir
 echo "Using working directory \"$workingdir\"" 1>&2
 if [[ "$workingdir" == "" ]] ; then
