@@ -31,7 +31,7 @@ addVCFHeaders = function(vcf) {
     Number=c(".", ".", "."),
     Type=c("Float", "String", "String"),
     Description=c("Allele fraction at for each breakend", "Breakend linking information", "Partner breakend linking information"))), "DataFrame"))
-  VariantAnnotation::fixed(header(vcf))$FILTER = unique(as(rbind(as.data.frame(VariantAnnotation::fixed(header(vcf)))$FILTER, data.frame(
+  VariantAnnotation::fixed(header(vcf))$FILTER = unique(as(rbind(as.data.frame(VariantAnnotation::fixed(header(vcf))$FILTER), data.frame(
     row.names=c(
       "PON",
       "imprecise",
