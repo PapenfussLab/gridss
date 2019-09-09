@@ -2,7 +2,7 @@
 library(argparser)
 argp = arg_parser("Filters a raw GRIDSS VCF into somatic call subsets.")
 argp = add_argument(argp, "--pondir", default=NA, help="Directory containing Panel Of Normal bed/bedpe used to filter FP somatic events. USer create_gridss_pon.R to generate the PON.")
-argp = add_argument(argp, "--ref", default="BSgenome.Hsapiens.UCSC.hg19", help="Reference genome to use. Must be a valid installed BSgenome package")
+argp = add_argument(argp, "--ref", default="", help="Reference genome to use. Must be a valid installed BSgenome package")
 argp = add_argument(argp, "--input", help="GRIDSS VCF")
 argp = add_argument(argp, "--output", help="High confidence somatic subset")
 argp = add_argument(argp, "--fulloutput", help="Full call set excluding obviously germline call.")
@@ -12,6 +12,7 @@ argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection af
 # argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
 #argv = parse_args(argp, argv=c("--input", "S:/colo829/gridss/tmp.rmann.colo829.gridss.vcf", "--output", "D:/hartwig/temp/out.vcf", "-f", "D:/hartwig/temp/full.vcf", "-p", "S:/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
 #argv = parse_args(argp, argv=c("--input", "/data/gridss/tmp.rmann.colo829.gridss.vcf", "--output", "/data/tmp.vcf", "-f", "/data/tmp-full.vcf", "-p", "/refdata/dbs/gridss/pon3792v1", "--scriptdir", "/opt/gridss", "--gc"))
+#argv = parse_args(argp, argv=c("--input", "D:/colo829/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "D:/dev/tmp.vcf", "-f", "D:/dev/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
 argv = parse_args(argp)
 
 if (!file.exists(argv$input)) {
@@ -28,7 +29,17 @@ if (is.na(argv$pondir)) {
   print(argp)
   stop(msg)
 }
-refgenome=eval(parse(text=paste0("library(", argv$ref, ")\n", argv$ref)))
+refgenome = NULL
+if (!is.null(argv$ref) & !is.na(argv$ref) & argv$ref != "") {
+  if (!(argv$ref %in% installed.packages()[,1])) {
+    stop(paste("Missing reference genome package", argv$ref, "."))
+  } else {
+    refgenome=eval(parse(text=paste0("library(", argv$ref, ")\n", argv$ref)))
+  }
+} else {
+  msg = paste("No reference genome supplied using --ref - not performing variant equivalence checks.")
+  write(msg, stderr())
+}
 
 library(tidyverse)
 library(readr)
@@ -243,12 +254,16 @@ link_rescue = c(link_rescue, bpgr[link_rescue[link_rescue %in% names(bpgr)]]$par
 
 # Note that we don't rescue equivalent events
 begr$partner = rep(NA, length(begr))
-eqv_link_df = linked_by_equivalent_variants(full_vcf, as(rbind(as.data.frame(bpgr), as.data.frame(begr)), "GRanges"), bsgenome=refgenome) %>%
-  filter(passes_final_filters(vcf[sourceId]) | sourceId %in% link_rescue) %>%
-  group_by(linked_by) %>%
-  filter(n() == 2) %>%
-  ungroup() %>%
-  mutate(type="eqv")
+if (!is.null(refgenome)) {
+  eqv_link_df = linked_by_equivalent_variants(full_vcf, as(rbind(as.data.frame(bpgr), as.data.frame(begr)), "GRanges"), bsgenome=refgenome) %>%
+    filter(passes_final_filters(vcf[sourceId]) | sourceId %in% link_rescue) %>%
+    group_by(linked_by) %>%
+    filter(n() == 2) %>%
+    ungroup() %>%
+    mutate(type="eqv")
+} else {
+  eqv_link_df = NULL
+}
 
 link_summary_df = bind_rows(link_df, event_link_df, eqv_link_df) %>%
   group_by(sourceId) %>%

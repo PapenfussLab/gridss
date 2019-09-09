@@ -136,7 +136,9 @@ gridss_breakpoint_filter = function(gr, vcf, bsgenome, min_support_filters=TRUE,
 
 	  filtered = .addFilter(filtered, "small.del.ligation.fp", is_likely_library_prep_fragment_ligation_artefact(gr, vcf))
 	  filtered = .addFilter(filtered, "small.inv.hom.fp", is_small_inversion_with_homology(gr, vcf))
-	  filtered = .addFilter(filtered, "small.replacement.fp", is_indel_artefact(gr, bsgenome))
+	  if (!is.null(bsgenome)) {
+	    filtered = .addFilter(filtered, "small.replacement.fp", is_indel_artefact(gr, bsgenome))
+	  }
 	  filtered = .addFilter(filtered, "cohortMinSize", is_too_small_event(gr))
 	}
 	if (somatic_filters) {
