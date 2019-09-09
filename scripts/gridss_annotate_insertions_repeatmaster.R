@@ -79,7 +79,7 @@ info(header(vcf)) = unique(as(rbind(as.data.frame(info(header(vcf))), data.frame
     "Portion of inserted sequence whose alignment overlaps the repeatmasker repeat. 1.0 indicates the inserted sequence entirely mapping to the repeat."))), "DataFrame"))
 
 insseqgr = with(data.frame(
-    sourceId=rep(names(rowRanges(vcf)), BiocGenerics::lengths(info(vcf)$BEALN)),
+    sourceId=rep(names(rowRanges(vcf)), lengths(info(vcf)$BEALN)),
     BEALN=unlist(info(vcf)$BEALN)) %>%
   separate(BEALN, sep="[:|]", into=c("chr", "start", "orientation", "cigar", "maqp")) %>%
   mutate(
