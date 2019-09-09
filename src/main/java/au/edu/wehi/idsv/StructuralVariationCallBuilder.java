@@ -276,17 +276,27 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		supportingSR.stream().flatMap(l -> l.stream()).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingIndel.stream().flatMap(l -> l.stream()).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		supportingDP.stream().flatMap(l -> l.stream()).forEach(e -> processAnchor(allAnchoredBases, e.getLocalledMappedRead()));
-		//supportingAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
-		supportingRAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
-		supportingCAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
+		supportingAS.stream().filter(e -> !shouldfilterAssemblyFromSupportInterval(e)).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
+		supportingRAS.stream().filter(e -> !shouldfilterAssemblyFromSupportInterval(e)).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
+		supportingCAS.stream().filter(e -> !shouldfilterAssemblyFromSupportInterval(e)).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
 		attribute(VcfInfoAttributes.SUPPORT_CIGAR, makeCigar(allAnchoredBases, nominalPosition).toString());
 		RangeSet<Integer> assemblyAnchoredBases = TreeRangeSet.create();
-		// TODO: implement https://github.com/PapenfussLab/gridss/issues/213 so we can include local assemblies
-		//supportingAS.stream().forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
-		supportingRAS.stream().forEach(e -> processAnchor(assemblyAnchoredBases, e.getSAMRecord()));
-		supportingCAS.stream().forEach(e -> processAnchor(assemblyAnchoredBases, e.getSAMRecord()));
+		supportingAS.stream().filter(e -> !shouldfilterAssemblyFromSupportInterval(e)).forEach(e -> processAnchor(allAnchoredBases, e.getSAMRecord()));
+		supportingRAS.stream().filter(e -> !shouldfilterAssemblyFromSupportInterval(e)).forEach(e -> processAnchor(assemblyAnchoredBases, e.getSAMRecord()));
+		supportingCAS.stream().filter(e -> !shouldfilterAssemblyFromSupportInterval(e)).forEach(e -> processAnchor(assemblyAnchoredBases, e.getSAMRecord()));
 		attribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR, makeCigar(assemblyAnchoredBases, nominalPosition).toString());
+	}
 
+	/**
+	 * https://github.com/PapenfussLab/gridss/issues/213
+	 * assemblies can assemble fragment that do not actually support the breakpoint
+	 * (e.g. nearby reads noise soft-clip). This means we can't use local assemblies
+	 * in anchor support interval calculation.
+	 * Note: this includes both sides of indel-spanning assemblies as well.
+	 */
+	private static boolean shouldfilterAssemblyFromSupportInterval(SingleReadEvidence e) {
+		// TODO: are both sides of indel assemblies
+		return !e.getSAMRecord().isSecondaryOrSupplementary();
 	}
 
 	private void updateAssemblySupportTracking() {

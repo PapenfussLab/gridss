@@ -728,7 +728,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals("9M1X", vc.getAttribute(VcfInfoAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
-	public void assembly_anchor_cigar_should_use_only_remote_assemblies() {
+	public void bug214_assembly_anchor_cigar_should_use_only_remote_assemblies() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
@@ -742,9 +742,44 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		SAMRecord beass = withMapq(44, Read(0, 98, "3M"))[0];
 		incorporateRealignment(AES(), ass, ImmutableList.of(beass));
 
+		// Remote stays
 		builder.addEvidence(SingleReadEvidence.createEvidence(AES(), 1, beass).get(0));
-		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("2M1X", vc.getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
+		assertEquals("2M1X", builder.make().getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
+
+		// Local gets filtered
+		builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(1, BWD, 200, 0, FWD, 100), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(SingleReadEvidence.createEvidence(AES(), 1, ass).get(0));
+		assertEquals("1X", builder.make().getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
+	}
+	@Test
+	public void bug214_assembly_anchor_cigar_should_not_use_indel_assembly() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder builder;
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				SR(Read(3, 98, "3M7S"), Read(3, 200, "7M"))
+		);
+		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), FWD, support, fullSupport(support), 3, 100, 3, B("NNNNNNNNNN"), B("NNNNNNNNNN"));
+		ass.setCigarString("3M100D7M");
+		List<SingleReadEvidence> indelass = SingleReadEvidence.createEvidence(AES(), 1, ass);
+		assertEquals(2, indelass.size()); // both sides of indel assembly
+
+		builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(3, FWD, 100, 3, BWD, 200), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(indelass.get(0));
+		assertEquals("1X", builder.make().getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
+
+		builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(3, BWD, 200, 3, FWD, 100), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(indelass.get(1));
+		assertEquals("1X", builder.make().getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	@Ignore("The assembler doesn't know which orientation it was assembling.")
