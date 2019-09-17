@@ -4,6 +4,7 @@ import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 import java.util.ArrayDeque;
 import java.util.Iterator;
@@ -11,6 +12,7 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 
 public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvidence>, PeekingIterator<DirectedEvidence> {
+	private static final Log log = Log.getInstance(DirectedEvidenceIterator.class);
 	private final SAMEvidenceSource source;
 	private Iterator<SAMRecord> it;
 	private Queue<DirectedEvidence> buffer = new ArrayDeque<>();
@@ -20,6 +22,9 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 	 * @param it input records
 	 */
 	public DirectedEvidenceIterator(Iterator<SAMRecord> it, SAMEvidenceSource source, int minIndelSize) {
+		if (source == null) {
+			throw new IllegalArgumentException("source cannot be null");
+		}
 		this.source = source;
 		this.it = it;
 		this.minIndelSize = minIndelSize;
@@ -32,17 +37,24 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 		}
 	}
 	private void addToBuffer(SAMRecord record) {
-		if (record.getReadUnmappedFlag() || record.getMappingQuality() < source.getContext().getConfig().minMapq) {
+		if (record == null || record.getReadUnmappedFlag() || record.getMappingQuality() < source.getContext().getConfig().minMapq) {
 			return;
 		}
 		buffer.addAll(SingleReadEvidence.createEvidence(source, minIndelSize, record));
 		if (!record.getSupplementaryAlignmentFlag()) {
-			if (record.getReadPairedFlag()
-					&& !record.getReadUnmappedFlag()
-					&& !source.getReadPairConcordanceCalculator().isConcordant(record)) {
-				NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
-				if (nrrp != null) {
-					buffer.add(nrrp);
+			if (record.getReadPairedFlag()) {
+				ReadPairConcordanceCalculator rpcc = source.getReadPairConcordanceCalculator();
+				if (rpcc == null) {
+					String msg = String.format("Sanity check failure: null ReadPairConcordanceCalculator for an input file where %s has read paired flag set.", record.getReadName());
+					log.error(msg);
+					throw new RuntimeException(msg);
+				}
+				if (!record.getReadUnmappedFlag()
+						&& !rpcc.isConcordant(record)) {
+					NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
+					if (nrrp != null) {
+						buffer.add(nrrp);
+					}
 				}
 			}
 		}
