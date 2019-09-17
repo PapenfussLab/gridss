@@ -8,14 +8,15 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Assemblies non-reference breakend contigs
@@ -35,6 +36,8 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	private AssemblyChunkTelemetry telemetry = null;
 	private final IntervalBed excludedRegions;
 	private final IntervalBed safetyRegions;
+	private EvidenceTracker evidenceTracker = null;
+	private boolean contigGeneratedSinceException = false;
 	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyNameGenerator, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction, IntervalBed excludedRegions, IntervalBed safetyRegions) {
 		this.context = context;
 		this.source = source;
@@ -52,17 +55,18 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	}
 	@Override
 	public boolean hasNext() {
-		ensureAssembler(Defaults.ATTEMPT_ASSEMBLY_RECOVERY);
+		ensureAssembler(Defaults.ATTEMPT_ASSEMBLY_RECOVERY, null);
 		return currentAssembler != null && currentAssembler.hasNext();
 	}
 	@Override
 	public SAMRecord next() {
-		ensureAssembler(Defaults.ATTEMPT_ASSEMBLY_RECOVERY);
+		ensureAssembler(Defaults.ATTEMPT_ASSEMBLY_RECOVERY, null);
 		SAMRecord r = currentAssembler.next();
 		if (direction != null) {
 			// force assembly direction to match the direction supplied
 			r.setAttribute(SamTags.ASSEMBLY_DIRECTION, direction.toChar());
 		}
+		contigGeneratedSinceException = true;
 		return r;
 	}
 	private void flushIfRequired() {
@@ -80,40 +84,60 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		}
 		currentAssembler = null;
 	}
-	private void ensureAssembler(boolean attemptRecovery) {
+	private Set<DirectedEvidence> getEvidenceInCurrentAssembler() {
+		Set<DirectedEvidence> reloadRecoverySet = new HashSet<>();
+		if (currentAssembler != null) {
+			Set<KmerEvidence> ske = evidenceTracker.getTrackedEvidence();
+			ske.addAll(currentAssembler.getEvidenceUntrackedButNotYetReturnedByIterator());
+			reloadRecoverySet = ske.stream()
+					.map(ke -> ke.evidence())
+					.collect(Collectors.toSet());
+		}
+		return reloadRecoverySet;
+	}
+	private void ensureAssembler(boolean attemptRecovery, Set<DirectedEvidence> preload) {
 		try {
-			ensureAssembler();
+			ensureAssembler(preload);
 		} catch (AssertionError|Exception e) {
-			closeCurrentAssembler();
-			String msg = "Error assembling " + currentContig + ". This should not happen. Please raise an issue at https://github.com/PapenfussLab/gridss/issues";
-			if (!attemptRecovery) {
-				log.error(e, msg);
-				throw e;
+			if (contigGeneratedSinceException) {
+				contigGeneratedSinceException = false;
+				Set<DirectedEvidence> reloadRecoverySet = getEvidenceInCurrentAssembler();
+				String msg = String.format("Error during assembly of chromosome %s (%d reads in graph). Attempting recovery by rebuilding assembly graph.", currentContig, reloadRecoverySet.size());
+				log.warn(e, msg);
+				closeCurrentAssembler();
+				ensureAssembler(attemptRecovery, reloadRecoverySet);
 			} else {
-				try {
-					if (it.hasNext()) {
-						msg = String.format("%s. Attempting recovery by resuming assembly at %s:%d",
-								msg,
-								context.getReference().getSequenceDictionary().getSequence(it.peek().getBreakendSummary().referenceIndex).getSequenceName(),
-								it.peek().getBreakendSummary().start);
+				String msg = "Error assembling " + currentContig + ". Please raise an issue at https://github.com/PapenfussLab/gridss/issues";
+				if (!attemptRecovery) {
+					log.error(e, msg);
+					throw e;
+				} else {
+					try {
+						if (it.hasNext()) {
+							msg = String.format("%s. Attempting recovery by resuming assembly at %s:%d",
+									msg,
+									context.getReference().getSequenceDictionary().getSequence(it.peek().getBreakendSummary().referenceIndex).getSequenceName(),
+									it.peek().getBreakendSummary().start);
+						}
+					} catch (AssertionError | Exception nested) {
+						log.error(nested, "Assembly recovery attempt failed due to exception thrown by underlying iterator");
 					}
-				} catch (AssertionError|Exception nested) {
-					log.error(nested, "Assembly recovery attempt failed due to exception thrown by underlying iterator");
+					log.error(e, msg);
 				}
-				log.error(e, msg);
+				closeCurrentAssembler();
+				ensureAssembler(false, null); // don't attempt to recover again if our recovery attempt just failed
 			}
-			ensureAssembler(); // don't attempt to recover again if our recovery attempt just failed
 		}
 	}
-	private void ensureAssembler() {
+	private void ensureAssembler(Set<DirectedEvidence> preload) {
 		flushIfRequired();
 		while ((currentAssembler == null || !currentAssembler.hasNext()) && it.hasNext()) {
 			// traverse contigs until we find one that has an assembly to call
-			currentAssembler = createAssembler();
+			currentAssembler = createAssembler(preload);
 			flushIfRequired();
 		}
 	}
-	private NonReferenceContigAssembler createAssembler() {
+	private NonReferenceContigAssembler createAssembler(Set<DirectedEvidence> preload) {
 		AssemblyConfiguration ap = context.getAssemblyParameters();
 		int maxKmerSupportIntervalWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
 		int maxReadLength = source.getMaxReadLength();
@@ -124,9 +148,15 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		int anchorAssemblyLength = ap.anchorLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
 		int firstPosition = it.peek().getBreakendSummary().start;
+		PeekingIterator<DirectedEvidence> inputIterator = it;
+		if (preload != null && preload.size() > 0) {
+			ArrayList<DirectedEvidence> list = Lists.newArrayList(preload);
+			list.sort(DirectedEvidenceOrder.ByNatural);
+			inputIterator = Iterators.peekingIterator(Iterators.concat(list.iterator(), it));
+		}
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
-		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
-		EvidenceTracker evidenceTracker = new EvidenceTracker();
+		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(inputIterator, referenceIndex);
+		evidenceTracker = new EvidenceTracker();
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
@@ -208,6 +238,6 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		public void remove() {
 			throw new UnsupportedOperationException();
 		}
-		
+
 	}
 }

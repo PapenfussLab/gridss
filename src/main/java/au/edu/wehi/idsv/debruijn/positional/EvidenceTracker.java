@@ -205,6 +205,15 @@ public class EvidenceTracker {
 			return node;
 		}
 	}
+	public Set<KmerEvidence> getTrackedEvidence() {
+		HashSet<KmerEvidence> set = new HashSet<>();
+		for (LinkedList<KmerSupportNode> ll : lookup.values()) {
+			for (KmerSupportNode ksn : ll) {
+				set.add(ksn.evidence());
+			}
+		}
+		return set;
+	}
 	public long tracking_evidenceTotal() {
 		return evidenceTotal;
 	}

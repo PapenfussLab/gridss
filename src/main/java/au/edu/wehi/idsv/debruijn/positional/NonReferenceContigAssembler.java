@@ -18,6 +18,7 @@ import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
  */
 public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private static final Log log = Log.getInstance(NonReferenceContigAssembler.class);
+	private static final boolean debug_injectErrors = Boolean.valueOf(System.getProperty("debug.assembly_inject_errors", "false"));
 	/**
 	 * Debugging tracker to ensure memoization export files have unique names
 	 */
@@ -79,7 +81,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private final PeekingIterator<KmerPathNode> underlying;
 	private final String contigName;
 	private final BreakendDirection preferredContigDirection;
-	private final Queue<SAMRecord> called = new ArrayDeque<>();
+	private final Queue<Pair<SAMRecord, Set<KmerEvidence>>> called = new ArrayDeque<>();
 	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
 	private int lastNextPosition = Integer.MIN_VALUE;
 	private RangeSet<Integer> toFlush = TreeRangeSet.create();
@@ -89,6 +91,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
 	private AssemblyChunkTelemetry telemetry = null;
+	private Set<KmerEvidence> untrackedEvidenceStillBeingProcessed = null;
 	public int getReferenceIndex() { return referenceIndex; }
 	private int retainWidth() {
 		return  maxContigAnchorLength() + Math.max(
@@ -172,7 +175,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	@Override
 	public SAMRecord next() {
 		ensureCalledContig();
-		return called.remove();
+		return called.remove().getLeft();
 	}
 	/**
 	 * Flush calls outside retain window.
@@ -214,6 +217,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					return;
 				}
 			}
+		}
+		if (debug_injectErrors) {
+			debug_inject();
 		}
 	}
 	public int maxContigAnchorLength() {
@@ -309,6 +315,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(misassemblyToRemove);
 		removeFromGraph(evidence);
+		if (debug_injectErrors) {
+			debug_inject();
+		}
 	}
 	private int nextPosition() {
 		if (!underlying.hasNext()) return Integer.MAX_VALUE;
@@ -354,6 +363,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			}
 			if (excludedRegions != null) {
 				excludedRegions.addInterval(referenceIndex, flushOnOrAfter, flushBefore - 1);
+			}
+			if (debug_injectErrors) {
+				debug_inject();
 			}
 		}
 	}
@@ -468,6 +480,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		quals = Arrays.copyOfRange(quals, startBasesToTrim, quals.length - endingBasesToTrim);
 		
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
+		untrackedEvidenceStillBeingProcessed = evidence;
 		List<DirectedEvidence> evidenceIds = evidence.stream()
 				.map(e -> e.evidence())
 				.collect(Collectors.toList());
@@ -479,7 +492,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					})
 				.filter(x -> x != null)
 				.collect(Collectors.toList());
-
+		if (debug_injectErrors) {
+			debug_inject();
+		}
 		SAMRecord assembledContig;
 		if (startingAnchor.size() == 0 && endingAnchor.size() == 0) {
 			assert(startBasesToTrim == 0);
@@ -605,10 +620,19 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 		contigsCalled++;
 		if (assembledContig != null) {
-			called.add(assembledContig);
+			called.add(Pair.of(assembledContig, evidence));
 		}
+		untrackedEvidenceStillBeingProcessed = null;
 		return assembledContig;
 	}
+
+	private void debug_inject() {
+		double rate = Double.valueOf(System.getProperty("debug.assembly_inject_error_rate", "0.00001"));
+		if (Math.random() < rate) {
+			throw new RuntimeException("Artificially injected error to test assembly recovery");
+		}
+	}
+
 	private ArrayDeque<KmerPathSubnode> extendEndingAnchor(ArrayDeque<KmerPathSubnode> contig, int targetAnchorLength) {
 		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getFirst(), true, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.stream().mapToInt(sn -> sn.length()).sum());
 		Iterator<KmerPathSubnode> it = contig.iterator();
@@ -647,7 +671,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * @param evidence
 	 */
 	private void removeFromGraph(Set<KmerEvidence> evidence) {
-		assert(!evidence.isEmpty());
+		if (evidence.isEmpty()) {
+			log.warn("Sanity check failure: removeFromGraph() called with empty set");
+			return;
+		}
 		// Tracks what we need to remove from each kmer of each path node
 		Map<KmerPathNode, List<List<KmerNode>>> toRemove = new IdentityHashMap<KmerPathNode, List<List<KmerNode>>>();
 		for (KmerEvidence e : evidence) {
@@ -829,6 +856,24 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (list.size() == 0) {
 			graphByKmerNode.remove(node.firstKmer());
 		}
+	}
+
+	/**
+	 * Returns evidence that was untracked but the contig was not yet called.
+	 * Combining the evidence tracker evidence with this evidence will enable
+	 * the reconstruction of the assembly graph.
+	 *
+	 * This is used for recovery after an exception
+	 */
+	public Set<KmerEvidence> getEvidenceUntrackedButNotYetReturnedByIterator() {
+		Set<KmerEvidence> set = new HashSet<>();
+		if (untrackedEvidenceStillBeingProcessed != null) {
+			set.addAll(untrackedEvidenceStillBeingProcessed);
+		}
+		for (Pair<SAMRecord, Set<KmerEvidence>> p : called) {
+			set.addAll(p.getRight());
+		}
+		return set;
 	}
 	private class SupportLookup {
 		private final Long2ObjectOpenHashMap<RangeMap<Integer, Integer>> lookup;
