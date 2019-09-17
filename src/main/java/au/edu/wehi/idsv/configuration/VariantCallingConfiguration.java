@@ -132,6 +132,7 @@ public class VariantCallingConfiguration {
 			filters.add(VcfFilter.SMALL_EVENT);
 		}
 		if (bp.couldBeReferenceAllele() && call.getUntemplatedSequence().length() == 0) {
+			// add condition: (IMPRECISE or (nominal is reference))
 			filters.add(VcfFilter.REFERENCE_ALLELE);
 		}
 		if (call.getBreakpointQual() < minScore) {

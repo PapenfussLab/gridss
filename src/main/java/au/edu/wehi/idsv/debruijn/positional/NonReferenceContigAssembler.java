@@ -279,7 +279,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				}
 			}
 			Set<KmerEvidence> toRemove = evidenceTracker.untrack(nodes);
-			removeFromGraph(toRemove);
+			if (!toRemove.isEmpty()) {
+				removeFromGraph(toRemove);
+			}
 			if (getTelemetry() != null) {
 				long currentTime = System.nanoTime();
 				getTelemetry().flushReferenceNodes(referenceIndex, startPosition, endPosition, toRemove.size(), currentTime - telemetryLastflushReferenceNodes);
