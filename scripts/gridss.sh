@@ -146,6 +146,10 @@ if [[ "$workingdir" == "" ]] ; then
 	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
 	exit 3
 fi
+if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
+		echo "workingdir cannot contain whitespace" 1>&2
+		exit 16
+	fi
 if [[ ! -d $workingdir ]] ; then
 	if ! mkdir -p $workingdir ; then
 		echo Unable to create working directory $workingdir 1>&2
@@ -219,6 +223,10 @@ elif [[ ! -f $blacklist ]] ; then
 else
 	blacklist_arg="BLACKLIST=$blacklist"
 	echo "Using blacklist $blacklist" 1>&2
+	if [[ "$(tr -d ' 	\n' <<< "$blacklist_arg")" != "$blacklist_arg" ]] ; then
+		echo "blacklist cannot contain whitespace" 1>&2
+		exit 16
+	fi
 fi
 if [[ "$jvmheap" == "" ]] ; then
 	if [[ $threads -gt 8 ]] ; then
@@ -246,13 +254,25 @@ if [[ "$config_file" != "" ]] ; then
 fi
 input_args=""
 for f in $@ ; do
+	if [[ "$(tr -d ' 	\n' <<< "$f")" != "$f" ]] ; then
+		echo "input filenames and paths cannot contain whitespace" 1>&2
+		exit 16
+	fi
 	echo "Using input file $f" 1>&2
 	input_args="$input_args INPUT=$f"
 done
 if [[ "$labels" != "" ]] ; then
-	for label in $(echo $labels | tr , " ") ; do
+	nows_labels=$(tr -d ' 	\n' <<< "$labels")
+	if [[ "$nows_labels" != "$labels" ]] ; then
+		echo "input labels cannot contain whitespace" 1>&2
+		exit 16
+	fi
+	IFS=',' read -ra LABEL_ARRAY  <<< "$nows_labels"
+	for label in "${LABEL_ARRAY[@]}" ; do
 		input_args="$input_args INPUT_LABEL=$label"
+		echo label is $label
 	done
+	
 fi
 
 # Validate tools exist on path
@@ -412,6 +432,7 @@ if [[ $do_preprocess == true ]] ; then
 else
 	echo "$(date)	Skipping pre-processing."
 fi
+
 if [[ $do_assemble == true ]] ; then
 	echo "$(date)	Start assembly	$assembly" | tee -a $timinglogfile
 	if [[ ! -f $assembly ]] ; then
