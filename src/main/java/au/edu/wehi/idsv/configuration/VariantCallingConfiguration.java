@@ -131,8 +131,8 @@ public class VariantCallingConfiguration {
 			// we allow the default output 
 			filters.add(VcfFilter.SMALL_EVENT);
 		}
-		if (bp.couldBeReferenceAllele() && call.getUntemplatedSequence().length() == 0) {
-			// add condition: (IMPRECISE or (nominal is reference))
+		if (bp.couldBeReferenceAllele(call.isBreakendExact()) && call.getUntemplatedSequence().length() == 0) {
+			// unhandled edge case: precise only on one side
 			filters.add(VcfFilter.REFERENCE_ALLELE);
 		}
 		if (call.getBreakpointQual() < minScore) {

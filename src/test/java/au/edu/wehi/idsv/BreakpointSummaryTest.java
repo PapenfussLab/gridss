@@ -218,4 +218,12 @@ public class BreakpointSummaryTest extends TestHelper {
 		assertTrue(new BreakpointSummary(0, BWD, 10, 1, FWD, 1).isValid(dict));
 		assertTrue(new BreakpointSummary(0, BWD, 1, 1, FWD, 10).isValid(dict));
 	}
+	@Test
+	public void couldBeReferenceAllele() {
+		assertTrue(new BreakpointSummary(0, FWD, 10, 0, BWD, 11).couldBeReferenceAllele(true));
+		assertTrue(new BreakpointSummary(0, FWD, 10, 0, BWD, 11).couldBeReferenceAllele(false));
+		// Can't be reference since the nominal position is non-reference
+		assertFalse(new BreakpointSummary(0, FWD, 6, 5,7, 0, BWD, 8, 7, 9).couldBeReferenceAllele(true));
+		assertTrue(new BreakpointSummary(0, FWD, 6, 5,7, 0, BWD, 8, 7, 9).couldBeReferenceAllele(false));
+	}
 }

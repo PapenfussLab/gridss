@@ -177,8 +177,13 @@ public class BreakpointSummary extends BreakendSummary {
 	 * Determines whether this breakpoint could just be the reference allele
 	 * @return
 	 */
-	public boolean couldBeReferenceAllele() {
-		return couldBeDeletionOfSize(0, 0);
+	public boolean couldBeReferenceAllele(boolean isPrecise) {
+		if (!isPrecise) {
+			return couldBeDeletionOfSize(0, 0);
+		} else {
+			return new BreakpointSummary(referenceIndex, direction, nominal, referenceIndex2, direction2, nominal2)
+				.couldBeReferenceAllele(false);
+		}
 	}
 	/**
 	 * Gets the nominal position of the variant for variant calling purposes

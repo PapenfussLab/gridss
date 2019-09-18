@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Test;
 
@@ -18,17 +19,28 @@ import java.util.Set;
 
 public class VariantCallingConfigurationTest extends TestHelper {
 	public VariantContextDirectedBreakpoint V(BreakpointSummary bs, String untemplated) {
+		return V(true, bs, untemplated);
+	}
+	public VariantContextDirectedBreakpoint V(boolean precise, BreakpointSummary bs, String untemplated) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder.breakpoint(bs, untemplated);
+		if (!precise) {
+			builder.attribute(VcfSvConstants.IMPRECISE_KEY, true);
+		}
 		return (VariantContextDirectedBreakpoint)builder.make();
 	}
 	@Test
-	public void breakpointFilters_should_filter_reference_allele() {
+	public void breakpointFilters_should_filter_reference_allele_imprecise() {
 		VariantCallingConfiguration p = getConfig().getVariantCalling();
-		assertTrue(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 150, 100, 200, 0, BWD, 150, 100, 200), "")).contains(VcfFilter.REFERENCE_ALLELE));
-		assertTrue(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 1, 1, 0, BWD, 2, 2, 2), "")).contains(VcfFilter.REFERENCE_ALLELE));
-		assertFalse(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 1, 1, 0, BWD, 3, 3, 3), "")).contains(VcfFilter.REFERENCE_ALLELE));
-		assertFalse(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 1, 1, 0, FWD, 2, 2, 2), "")).contains(VcfFilter.REFERENCE_ALLELE));
+		assertTrue(p.calculateBreakpointFilters(V(false, new BreakpointSummary(0, FWD, 150, 100, 200, 0, BWD, 150, 100, 200), "")).contains(VcfFilter.REFERENCE_ALLELE));
+		assertTrue(p.calculateBreakpointFilters(V(false, new BreakpointSummary(0, FWD, 1, 1, 1, 0, BWD, 2, 2, 2), "")).contains(VcfFilter.REFERENCE_ALLELE));
+		assertFalse(p.calculateBreakpointFilters(V(false, new BreakpointSummary(0, FWD, 1, 1, 1, 0, BWD, 3, 3, 3), "")).contains(VcfFilter.REFERENCE_ALLELE));
+		assertFalse(p.calculateBreakpointFilters(V(false, new BreakpointSummary(0, FWD, 1, 1, 1, 0, FWD, 2, 2, 2), "")).contains(VcfFilter.REFERENCE_ALLELE));
+
+		assertFalse(p.calculateBreakpointFilters(V(true, new BreakpointSummary(0, FWD, 150, 100, 200, 0, BWD, 150, 100, 200), "")).contains(VcfFilter.REFERENCE_ALLELE));
+		assertTrue(p.calculateBreakpointFilters(V(true, new BreakpointSummary(0, FWD, 1, 1, 1, 0, BWD, 2, 2, 2), "")).contains(VcfFilter.REFERENCE_ALLELE));
+		assertFalse(p.calculateBreakpointFilters(V(true, new BreakpointSummary(0, FWD, 1, 1, 1, 0, BWD, 3, 3, 3), "")).contains(VcfFilter.REFERENCE_ALLELE));
+		assertFalse(p.calculateBreakpointFilters(V(true, new BreakpointSummary(0, FWD, 1, 1, 1, 0, FWD, 2, 2, 2), "")).contains(VcfFilter.REFERENCE_ALLELE));
 	}
 	@Test
 	public void breakpointFilters_should_filter_insertion() {
