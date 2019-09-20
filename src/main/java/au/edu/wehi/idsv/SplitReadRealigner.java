@@ -109,7 +109,7 @@ public class SplitReadRealigner {
 		public List<SAMRecord> realignments = new ArrayList<>(2);
 		public int outstandingRealignments = 0;
 	}
-	public void createSupplementaryAlignments(final StreamingAligner aligner, final File input, final File output, final boolean rewriteOA, final int maxBufferedRecords) throws IOException {
+	public void createSupplementaryAlignments(final StreamingAligner aligner, final File input, final File output, final File outputModified, final boolean rewriteOA, final int maxBufferedRecords) throws IOException {
 		SplitReadFastqExtractor rootExtractor = new SplitReadFastqExtractor(false,
 				minSoftClipLength,
 				minSoftClipQuality,
@@ -130,7 +130,12 @@ public class SplitReadRealigner {
 		try (SamReader reader = readerFactory.open(input)) {
 			SAMFileHeader header = reader.getFileHeader().clone();
 			header.setSortOrder(SortOrder.unsorted);
+			SAMFileWriter modifiedWriter = null;
 			try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, output)) {
+				modifiedWriter =  writer;
+				if (outputModified != null && !modifiedWriter.equals(output)) {
+					modifiedWriter = writerFactory.makeSAMOrBAMWriter(header, true, outputModified);
+				}
 				try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
 					while (bufferedIt.hasNext()) {
 						SAMRecord r = bufferedIt.next();
@@ -140,7 +145,7 @@ public class SplitReadRealigner {
 							aligner.flush();
 						}
 						while (aligner.hasAlignmentRecord()) {
-							processAlignmentRecord(aligner, recursiveExtractor, realignments, writer, rewriteOA);
+							processAlignmentRecord(aligner, recursiveExtractor, realignments, writer, modifiedWriter, rewriteOA);
 						}
 						if (++recordNumber % 1000 == 0) {
 							String msg = String.format("Processed %d records. %d in aligner input buffer. %d in aligner output buffer. %s records in lookup", recordNumber, aligner.outstandingAlignmentRecord(), aligner.processedAlignmentRecords(), realignments.size());
@@ -155,7 +160,7 @@ public class SplitReadRealigner {
 					while (aligner.hasAlignmentRecord()) {
 						// perform nested realignment
 						while (aligner.hasAlignmentRecord()) {
-							processAlignmentRecord(aligner, recursiveExtractor, realignments, writer, rewriteOA);
+							processAlignmentRecord(aligner, recursiveExtractor, realignments, writer, modifiedWriter, rewriteOA);
 						}
 						aligner.flush();
 					}
@@ -163,9 +168,11 @@ public class SplitReadRealigner {
 				if (realignments.size() != 0) {
 					log.error(String.format("External aligner did not return alignments for %d records including %s.", realignments.size(), realignments.values().iterator().next().originatingRecord.getReadName()));
 					for (SplitReadRealignmentInfo info : realignments.values()) {
-						writeCompletedAlignment(info.originatingRecord, info.realignments, writer, writer, rewriteOA);
+						writeCompletedAlignment(info.originatingRecord, info.realignments, writer, modifiedWriter, rewriteOA);
 					}
 				}
+			} finally {
+				CloserUtil.close(modifiedWriter);
 			}
 		}
 	}
@@ -191,7 +198,7 @@ public class SplitReadRealigner {
 	}
 	private void processAlignmentRecord(StreamingAligner aligner,
 			SplitReadFastqExtractor recursiveExtractor, Map<String, SplitReadRealignmentInfo> realignments,
-			SAMFileWriter writer, boolean writeOA) throws IOException {
+			SAMFileWriter writer, SAMFileWriter modifiedRecordWriter, boolean writeOA) throws IOException {
 		SAMRecord supp = aligner.getAlignment();
 		String lookupkey = SplitReadHelper.getOriginatingAlignmentUniqueName(supp);
 		SplitReadRealignmentInfo info = realignments.get(lookupkey);
@@ -212,7 +219,7 @@ public class SplitReadRealigner {
 			}
 			// all splits identified
 			if (info.outstandingRealignments == 0) {
-				writeCompletedAlignment(info.originatingRecord, info.realignments, writer, writer, writeOA);
+				writeCompletedAlignment(info.originatingRecord, info.realignments, writer, modifiedRecordWriter, writeOA);
 				realignments.remove(lookupkey);
 			} else {
 				//log.debug(String.format("%s: %d outstanding alignments", info.originatingRecord.getReadName(), info.outstandingRealignments));
@@ -230,9 +237,8 @@ public class SplitReadRealigner {
 		boolean primaryHasMoved = prepareRecordsForWriting(primary, realignments, writeOA);
 		if (primary.getReadUnmappedFlag() || primaryHasMoved) {
 			// we'll break sort ordering if we write it back to the input file
-			realignmentWriter.addAlignment(primary);
 		} else {
-			recordWriter.addAlignment(primary);
+			realignmentWriter.addAlignment(primary);
 		}
 		for (SAMRecord sar : realignments) {
 			realignmentWriter.addAlignment(sar);
@@ -241,7 +247,7 @@ public class SplitReadRealigner {
 	private boolean prepareRecordsForWriting(SAMRecord primary, List<SAMRecord> realignments, boolean writeOA) {
 		int primaryReferenceIndex = primary.getReadUnmappedFlag() ? -1 : primary.getReferenceIndex();
 		int primaryAlignmentStart = primary.getReadUnmappedFlag() ? -1 : primary.getAlignmentStart();
-		// Only do anything to records that we actually attempted realignment for 
+		// Only do anything to records that we actually attempted realignment for
 		if (realignments.size() > 0) {
 			if (isRealignEntireRecord() &&
 					// special case exclusion of unanchored assemblies as
@@ -268,7 +274,7 @@ public class SplitReadRealigner {
 		}
 		return primary.getReadUnmappedFlag() || primary.getReferenceIndex() != primaryReferenceIndex || primary.getAlignmentStart() != primaryAlignmentStart;
 	}
-	public void createSupplementaryAlignments(FastqAligner aligner, File input, File output, final boolean rewriteOA) throws IOException {
+	public void createSupplementaryAlignments(FastqAligner aligner, File input, File output, File unorderedOutput, final boolean rewriteOA) throws IOException {
 		try {
 			int iteration = 0;
 			File fq = pc.getFileSystemContext().getRealignmentFastq(input, iteration);
@@ -300,7 +306,7 @@ public class SplitReadRealigner {
 					Files.move(tmpfq, fq);
 				}
 			}
-			mergeSupplementaryAlignment(input, aligned, output, rewriteOA);
+			mergeSupplementaryAlignment(input, aligned, output, unorderedOutput, rewriteOA);
 		} finally {
 			if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 				for (File f : tmpFiles) {
@@ -311,7 +317,7 @@ public class SplitReadRealigner {
 			}
 		}
 	}
-	private void mergeSupplementaryAlignment(File input, List<File> aligned, File output, boolean rewriteOA) throws IOException {
+	private void mergeSupplementaryAlignment(File input, List<File> aligned, File output, File unorderedOutput, boolean rewriteOA) throws IOException {
 		log.info("Merging split read alignments for ", output);
 		File suppMerged = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sa.");
 		File tmpoutput = FileSystemContext.getWorkingFileFor(output);
@@ -342,16 +348,21 @@ public class SplitReadRealigner {
 				sr.close();
 			}
 		}
-		if (header.getSortOrder() != null && header.getSortOrder() != SortOrder.unsorted) {
-			File suppMergedsorted = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sorted.sa.");
-			tmpFiles.add(suppMergedsorted);
-			SAMFileUtil.sort(pc.getFileSystemContext(), suppMerged, suppMergedsorted, header.getSortOrder());
-			FileHelper.move(suppMergedsorted, suppMerged, true);
+		if (unorderedOutput !=  null && !output.equals(unorderedOutput)) {
+			if (header.getSortOrder() != null && header.getSortOrder() != SortOrder.unsorted) {
+				File suppMergedsorted = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sorted.sa.");
+				tmpFiles.add(suppMergedsorted);
+				SAMFileUtil.sort(pc.getFileSystemContext(), suppMerged, suppMergedsorted, header.getSortOrder());
+				FileHelper.move(suppMergedsorted, suppMerged, true);
+			}
+			SAMFileUtil.merge(ImmutableList.of(tmpoutput, suppMerged),
+					output,
+					pc.getSamReaderFactory(),
+					pc.getSamFileWriterFactory(header.getSortOrder() == SortOrder.coordinate));
+		} else {
+			FileHelper.move(tmpoutput, output, true);
+			FileHelper.move(suppMerged, unorderedOutput, false);
 		}
-		SAMFileUtil.merge(ImmutableList.of(tmpoutput, suppMerged),
-				output,
-				pc.getSamReaderFactory(),
-				pc.getSamFileWriterFactory(header.getSortOrder() == SortOrder.coordinate));
 	}
 	private void mergeSupplementaryAlignment(Iterator<SAMRecord> it, List<PeekingIterator<SAMRecord>> alignments, SAMFileWriter out, SAMFileWriter saout, boolean writeOA) {
 		List<SAMRecord> salist = Lists.newArrayList();

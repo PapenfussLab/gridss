@@ -106,16 +106,17 @@ public class SplitReadHelper {
 	 * Updates the given record and realignments to represent a split read alignment
 	 * @param record initial read alignment
 	 * @param salist realignments created from recursive alignment of the output of getSplitReadRealignments()
+	 * @return true if the record was converted to a split read, flag if the record was unmodified.
 	 */
-	public static void convertToSplitRead(SAMRecord record, List<SAMRecord> salist, ReferenceLookup reference, boolean adjustPrimaryAlignment) {
-		if (salist.size() == 0) return;
+	public static boolean convertToSplitRead(SAMRecord record, List<SAMRecord> salist, ReferenceLookup reference, boolean adjustPrimaryAlignment) {
+		if (salist.size() == 0) return false;
 		List<SAMRecord> alignments = new ArrayList<>(1 + salist.size());
 		for (SAMRecord r : salist) {
 			if (!r.getReadUnmappedFlag()) {
 				alignments.add(r);
 			}
 		}
-		if (alignments.size() == 0) return;
+		if (alignments.size() == 0) return false;
 		// ok, so we have an actual split read alignment
 		unclip(record, alignments);
 		for (SAMRecord r : alignments) {
@@ -125,6 +126,7 @@ public class SplitReadHelper {
 			adjustSplitLocationsToMinimiseEditDistance(record, alignments, reference, adjustPrimaryAlignment);
 		}
 		writeSA(record, alignments);
+		return true;
 	}
 	/**
 	 * Writes the SA SAM tag for split read alignments

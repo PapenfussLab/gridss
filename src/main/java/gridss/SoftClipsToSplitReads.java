@@ -30,10 +30,15 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);
 	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-L", "0,0", "-t", "%3$d", "%2$s", "%1$s");
 	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of("bowtie2", "--threads", "%3$d", "--local", "--mm", "--reorder", "-x", "%2$s", "-U", "%1$s");
-    @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
+    @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input file", optional=false)
     public File INPUT;
     @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file", optional=false)
     public File OUTPUT;
+	@Argument(doc="Outputs new supplementary records and primary alignments with a new position to a separate file. " +
+			"Records ordering matches initial primary alignment records INPUT." +
+			"If this parameter is omitted, modified records are coordinate sorted and merged into the OUTPUT file. " +
+			"This parameter is useful for off-loading the sort and merge steps to an external tool with better sorting performance than htsjdk (e.g. sambamba)", optional=true)
+	public File OUTPUT_UNORDERED_RECORDS = null;
     @Argument(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
     public int MIN_CLIP_LENGTH = 15;
     @Argument(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
@@ -84,10 +89,10 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
         	
         	if (ALIGNER_STREAMING) {
         		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, WRITE_OA, MAX_RECORDS_IN_RAM);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS, WRITE_OA, MAX_RECORDS_IN_RAM);
         	} else {
         		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, WRITE_OA);
+        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS, WRITE_OA);
         	}
     		
     		
@@ -101,6 +106,9 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private void validateParameters() {
     	IOUtil.assertFileIsReadable(INPUT);
     	IOUtil.assertFileIsWritable(OUTPUT);
+    	if (OUTPUT_UNORDERED_RECORDS != null) {
+			IOUtil.assertFileIsWritable(OUTPUT_UNORDERED_RECORDS);
+		}
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
