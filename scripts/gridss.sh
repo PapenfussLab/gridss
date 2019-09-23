@@ -521,7 +521,6 @@ if [[ $do_assemble == true ]] ; then
 				$tmp_prefix.sc2sr.suppsorted.sv.bam \
 		&& rm $tmp_prefix.sc2sr.primary.sv.bam \
 		&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam $tmp_prefix.sc2sr.suppsorted.sv.bam.bai \
-		&& exit 1 \
 		; } 1>&2 2>> $logfile
 	fi
 	echo "$(date)	Complete assembly	$assembly"
