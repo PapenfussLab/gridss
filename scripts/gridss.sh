@@ -4,6 +4,10 @@
 #
 # Example ./gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.6.2-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 set -o errexit -o pipefail -o noclobber -o nounset
+last_command=""
+current_command=""
+trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+trap 'echo "\"${last_command}\" command completed with exit code $?."' EXIT
 ! getopt --test > /dev/null 
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     echo '`getopt --test` failed in this environment.'
