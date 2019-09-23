@@ -133,7 +133,7 @@ public class SplitReadRealigner {
 			SAMFileWriter modifiedWriter = null;
 			try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, output)) {
 				modifiedWriter =  writer;
-				if (outputModified != null && !modifiedWriter.equals(output)) {
+				if (outputModified != null && !output.equals(outputModified)) {
 					modifiedWriter = writerFactory.makeSAMOrBAMWriter(header, true, outputModified);
 				}
 				try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
@@ -237,8 +237,9 @@ public class SplitReadRealigner {
 		boolean primaryHasMoved = prepareRecordsForWriting(primary, realignments, writeOA);
 		if (primary.getReadUnmappedFlag() || primaryHasMoved) {
 			// we'll break sort ordering if we write it back to the input file
-		} else {
 			realignmentWriter.addAlignment(primary);
+		} else {
+			recordWriter.addAlignment(primary);
 		}
 		for (SAMRecord sar : realignments) {
 			realignmentWriter.addAlignment(sar);
@@ -348,7 +349,7 @@ public class SplitReadRealigner {
 				sr.close();
 			}
 		}
-		if (unorderedOutput !=  null && !output.equals(unorderedOutput)) {
+		if (unorderedOutput == null || output.equals(unorderedOutput)) {
 			if (header.getSortOrder() != null && header.getSortOrder() != SortOrder.unsorted) {
 				File suppMergedsorted = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sorted.sa.");
 				tmpFiles.add(suppMergedsorted);

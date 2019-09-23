@@ -2,7 +2,7 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# Example ./gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.5.1-gridss-jar-with-dependencies.jar chr12.1527326.DEL1024.bam
+# Example ./gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.6.2-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 set -o errexit -o pipefail -o noclobber -o nounset
 ! getopt --test > /dev/null 
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -410,20 +410,36 @@ if [[ $do_preprocess == true ]] ; then
 					/dev/stdin \
 			; } 1>&2 2>> $logfile
 			rm $tmp_prefix.namedsorted.bam
-			echo "$(date)	SoftClipsToSplitReads/bwa	$f" | tee -a $timinglogfile
+			echo "$(date)	SoftClipsToSplitReads	$f" | tee -a $timinglogfile
 			{ /usr/bin/time -a -o $timinglogfile \
 				java -Xmx4g $jvm_args \
-					-Dsamjdk.create_index=true \
+					-Dsamjdk.create_index=false \
 					-Dgridss.gridss.output_to_temp_file=true \
 					-cp $gridss_jar gridss.SoftClipsToSplitReads \
 					TMP_DIR=$workingdir \
 					WORKING_DIR=$workingdir \
 					REFERENCE_SEQUENCE=$reference \
 					I=$tmp_prefix.coordinate.bam \
-					O=$prefix.sv.bam \
+					O=$tmp_prefix.sc2sr.primary.sv.bam \
+					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 					WORKER_THREADS=$threads \
+			&& rm $tmp_prefix.coordinate.bam $tmp_prefix.coordinate.bam.bai \
+			&& /usr/bin/time -a -o $timinglogfile \
+				sambamba sort \
+					-t $threads \
+					--tmpdir $dir \
+					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
+					$tmp_prefix.sc2sr.supp.sv.bam \
+			&& rm $tmp_prefix.sc2sr.supp.sv.bam \
+			&& /usr/bin/time -a -o $timinglogfile \
+				sambamba merge \
+					-t $threads \
+					$prefix.sv.bam \
+					$tmp_prefix.sc2sr.primary.sv.bam \
+					$tmp_prefix.sc2sr.suppsorted.sv.bam \
+			&& rm $tmp_prefix.sc2sr.primary.sv.bam \
+			&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam $tmp_prefix.sc2sr.suppsorted.sv.bam.bai \
 			; } 1>&2 2>> $logfile
-			rm $tmp_prefix.coordinate.bam $tmp_prefix.coordinate.bam.bai
 			echo "$(date)	Complete pre-processing	$f"
 		else
 			echo "$(date)	Skipping pre-processing as $prefix.sv.bam already exists. $f"
@@ -453,7 +469,9 @@ if [[ $do_assemble == true ]] ; then
 	else
 		echo "$(date)	Skipping assembly as $assembly already exists.	$assembly"
 	fi
-	prefix=$workingdir/$(basename $assembly).gridss.working/$(basename $assembly)
+	dir=$workingdir/$(basename $assembly).gridss.working/
+	prefix=$dir/$(basename $assembly)
+	tmp_prefix=$dir/tmp.$(basename $assembly)
 	if [[ ! -f $prefix.sv.bam ]] ; then
 		echo "$(date)	CollectGridssMetrics	$assembly" | tee -a $timinglogfile
 		{ /usr/bin/time -a -o $timinglogfile \
@@ -475,18 +493,35 @@ if [[ $do_assemble == true ]] ; then
 		; } 1>&2 2>> $logfile
 		echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
 		{ /usr/bin/time -a -o $timinglogfile \
-			java -Xmx6g $jvm_args \
+			java -Xmx4g $jvm_args \
 				-Dgridss.async.buffersize=16 \
-				-Dsamjdk.create_index=true \
+				-Dsamjdk.create_index=false \
 				-Dgridss.gridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.SoftClipsToSplitReads \
-				TMP_DIR=$workingdir \
+				TMP_DIR=$dir \
 				WORKING_DIR=$workingdir \
 				REFERENCE_SEQUENCE=$reference \
 				WORKER_THREADS=$threads \
 				I=$assembly \
-				O=$prefix.sv.bam \
+				O=$tmp_prefix.sc2sr.primary.sv.bam \
+				OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 				REALIGN_ENTIRE_READ=true \
+		&& /usr/bin/time -a -o $timinglogfile \
+			sambamba sort \
+				-t $threads \
+				--tmpdir $dir \
+				-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
+				$tmp_prefix.sc2sr.supp.sv.bam \
+		&& rm $tmp_prefix.sc2sr.supp.sv.bam \
+		&& /usr/bin/time -a -o $timinglogfile \
+			sambamba merge \
+				-t $threads \
+				$prefix.sv.bam \
+				$tmp_prefix.sc2sr.primary.sv.bam \
+				$tmp_prefix.sc2sr.suppsorted.sv.bam \
+		&& rm $tmp_prefix.sc2sr.primary.sv.bam \
+		&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam $tmp_prefix.sc2sr.suppsorted.sv.bam.bai \
+		&& exit 1 \
 		; } 1>&2 2>> $logfile
 	fi
 	echo "$(date)	Complete assembly	$assembly"

@@ -146,7 +146,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			.createSupplementaryAlignments(new StubFastqAligner(pc, pc.getEvidenceIDGenerator())
 					.align(inputRecords.get(0), 3, 10, false, "15M")
 					.align(inputRecords.get(1), 2, 10, false, "15M")
-					.align(inputRecords.get(2), 1, 10, false, "15M"), input, input, true);
+					.align(inputRecords.get(2), 1, 10, false, "15M"), input, input, input, true);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(6, result.size());
@@ -176,7 +176,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 					.align(inputRecords.get(1), FWD, 2, 10, false, "15M")
 					.align(inputRecords.get(2), FWD, 1, 10, false, "15M")
 					.align(inputRecords.get(2), BWD, 1, 100, false, "15M")
-				, input, input, true);
+				, input, input, input, true);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(6 + 5, result.size());
@@ -194,7 +194,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		StubFastqAligner aligner = new StubFastqAligner(getCommandlineContext(), getCommandlineContext().getEvidenceIDGenerator());
 		aligner.align(inputRecords.get(0), FWD, 1, 10, false, "15M");
-		new SplitReadRealigner(getCommandlineContext()).createSupplementaryAlignments(aligner, input, input, true);
+		new SplitReadRealigner(getCommandlineContext()).createSupplementaryAlignments(aligner, input, input, input, true);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		assertEquals(result.get(0).getBreakendSummary(), ((BreakpointSummary)result.get(1).getBreakendSummary()).remoteBreakpoint());
