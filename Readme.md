@@ -126,6 +126,9 @@ java -Xmx8g \
 	REFERENCE_SEQUENCE=$ref_genome
 ```
 
+The score fields of the bedpe/bed files is the count of the number of samples that variant was found in.
+I recommended filtering these output files to only variants found in 3+ samples.
+
 Note that `gridss_somatic_filter.R` requires the files to be named `gridss_pon_breakpoint.bedpe` and `gridss_pon_single_breakend.bed`.
 
 ### Should I process each input BAM separately or together?
