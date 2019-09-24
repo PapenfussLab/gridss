@@ -35,20 +35,77 @@ To run GRIDSS the following must be installed:
 
 # Running
 
-Pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases.
+Scripts and pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases. GRIDSS invokes external tools at multiple points during processing. By default this is bwa mem, but can be configured to use bowtie2 or another aligner.
 
-GRIDSS is built using htsjdk, so is invoked in the same manner as Picard tools utilities. GRIDSS invokes an external alignment tool at multiple points during processing. By default this is bwa mem, but can be configured to use bowtie2 or another aligner.
+The following scripts are included in GRIDSS releases:
 
-## Example scripts
+|script|description
+|---|---|
+gridss.sh|Driver script for running GRIDSS. Use this to run GRIDSS
+gridss_somatic_filter.R|Somatic filtering script. Identifies somatic events for tumour samples with a matched normal. Multiple tumour biopsies are supported
+gridss_annotate_insertions_repeatmaster.R|Annotates single breakend variant calls and breakpoint insert sequences with their RepeatMasker class and type 
 
-Example scripts can be found in the examples subdirectory of this repository.
+## gridss.sh command-line arguments
 
-* example/GRIDSS.sh: simple example script to run GRIDSS on a single sample
-* example/somatic.sh: simple tumour/normal somatic variant calling
-* example/somatic.R shows how the StructuralVariantAnnotation R package can be used to analyse GRIDSS variant calls and export variants of interest to other formats such as BEDPE
-* example/separate.sh: example script showing how the GRIDSS 
-* example/gridss_fully_integrated_fastq_to_vcf_pipeline.sh: example script showing how the two preprocessing sorting steps can be avoided if the GRIDSS preprocessing steps are fully integrated into a NGS pipeline
-## FAQ
+```
+Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 25g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
+```
+
+argument|description
+---|---
+-o, --output|output VCF
+-a, --assembly|location of the GRIDSS assembly BAM. This file will be created by GRIDSS
+-r, --reference|reference genome to use. Must have a .fai index file and a bwa index
+-t, --threads|number of threads to use. Defaults to the number of cores available.
+-j, --jar|location of GRIDSS jar
+-b/--blacklist|BED file containing regions to ignore. The ENCODE DAC blacklist is recommended for hg19. (Optional)
+--jvmheap|size of JVM heap for assembly and variant calling. Defaults to 25g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8
+-c, --configuration|configuration file use to override default GRIDSS settings (Optional)
+--maxcoverage|maximum coverage. Regions with coverage in excess of this are ignored. (Default: 50000)
+--labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
+--steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
+
+# FAQ
+
+### Why are there ALT alleles with `.` in the output?
+
+This is the [VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf) notation for single breakend variant calls. See section 5.4.9 of the specifications document. These calls indicate that a breakpoint was found at this location but the partner location could not be unambiguously determined.
+
+### How do I get output like the GRIDSS PURPLE LINX figures?
+
+Run the [integrated GRIDSS PURPLE LINX pipeline script](https://github.com/hartwigmedical/gridss-purple-linx) or the docker image gridss/gridss-purple-linx:latest.
+
+### How do I do RepeatMasker annotation?
+
+Run `gridss.AnnotateUntemplatedSequence` from the GRIDSS jar against your reference genome. Then run the repeat masker annotation script. The first step finds potential mapping locations for the sequences, the second annotates with the corresponding RepeatMasker repeat class and type for those locations. For example:
+
+```
+java -Xmx6g $jvm_args -cp $GRIDSS_JAR gridss.AnnotateUntemplatedSequence \
+			REFERENCE_SEQUENCE=$ref_genome \
+			INPUT=raw_gridss_output.vcf \
+			OUTPUT=location_annotated.vcf \
+			WORKER_THREADS=$threads
+# workaround for https://github.com/Bioconductor/VariantAnnotation/issues/19
+cat $annotated_gridss_output | awk ' { if (length($0) >= 4000) { gsub(":0.00:", ":0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000:")} ; print $0  } ' < location_annotated.vcf > location_annotated_va19hack.vcf
+		Rscript $install_dir/gridss/gridss_annotate_insertions_repeatmaster.R \
+			--input location_annotated_va19hack.vcf \
+			--output repeatmasker_annotated \
+			--repeatmasker hg19.fa.out \
+			--scriptdir $install_dir/gridss/
+```
+`--scriptdir` is the location of `libgridss.R` and `gridss.config.R`. Both must be in the same directory.
+
+### How do I do viral annotation?
+
+Run `gridss.AnnotateUntemplatedSequence` from the GRIDSS jar against your viral reference (fasta format). For example:
+
+```
+java -Xmx6g -cp $GRIDSS_JAR gridss.AnnotateUntemplatedSequence \
+				REFERENCE_SEQUENCE=$viralreference \
+				INPUT=$raw_gridss_output \
+				OUTPUT=$annotated_gridss_output \
+				WORKER_THREADS=$threads
+```
 
 ### Should I process each input BAM separately or together?
 
@@ -74,15 +131,15 @@ server operation. Note that due to Java's use of [Compressed Oops](http://docs.o
 
 GRIDSS relies on the aligner to determine the mapping location and quality of assembly contigs and to identify split read from soft clipped reads. GRIDSS considers alignments with low mapping quality (default mapq <= 10) to not be uniquely aligned and treats them as unaligned. If alt contigs are included in an aligner that is not alt-aware then hits to sequences that are in both the primary reference contigs and the alt contigs will be given a low mapq by the aligner and will be treated as unaligned by GRIDSS. By default, GRIDSS uses bwa mem for alignment so by including the bwa alt contig definition file, reads from regions with alt homology will be preferentially aligned to the reference with a correspondingly improved mapq. Whether or not to include alt contigs depends on what sort of downstream analysis you intend to perform and how your intend to handle structural variants involving alt contigs. That said, if your reference genome includes alt contigs and a bwa alt contig definition file is available for your genome, you should use it.
 
-## GRIDSS tools
+## GRIDSS JAR
 
-GRIDSS takes a modular approach so each step of the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline:
+GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss.sh`.
 
 ![GRIDSS data flow diagram](https://docs.google.com/drawings/d/1aXFBH0E9zmW4qztHIEliZfsLCHJa6_-l624Frq1X-Ms/pub?w=973&h=760)
 
 #### CallVariants
 
-This tool runs every step in the variant calling pipeline. For most users, this is the only tool that will need to be run.
+This tool runs every step in the variant calling pipeline. This entry point has been superceeded by `gridss.sh` but is retained for backward compatibility with existing pipeline. `gridss.sh` is preferred as it has lower peak memory usage and is slightly faster due to the use of sambamba for sorting instead of htsjdk.
 
 #### CollectGridssMetrics
 
@@ -180,6 +237,10 @@ Calculates the number of reads and read pairs providing support for the referenc
 Calculates the size of the inexact homology between the reference sequence and the breakpoint sequence. Breakpoints
 with long inexact homology are possibly due to alignment artifacts causing false positive breakpoint calls between
 regions of homologous sequence.
+
+#### AnnotateUntemplatedSequence
+
+Finds potential mapping locations for single breakends and breakpoint insert sequences in the given reference. Used for RepeatMasker annotation, and viral integration detection.
 
 ## Common Parameters
 
