@@ -65,6 +65,8 @@ argument|description
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
 
+_Warning_: all somatic R scripts treat the first bam file to be the matched normal, and any subsequent as tumour sample. If you are doing somatic calling, make sure you follow this convention.
+
 # FAQ
 
 ### Why are there ALT alleles with `.` in the output?
@@ -106,6 +108,25 @@ java -Xmx6g -cp $GRIDSS_JAR gridss.AnnotateUntemplatedSequence \
 				OUTPUT=$annotated_gridss_output \
 				WORKER_THREADS=$threads
 ```
+
+### How do I create the panel of normals required by `gridss_somatic_filter.R`?
+
+If you are using hg19, then a PON based on almost Dutch samples is available from https://resources.hartwigmedicalfoundation.nl/. If not, you'll need to create your own using `gridss.GeneratePonBedpe`
+
+Here is an example that generates a PON from every VCF in the current directory:
+
+```
+mkdir -p pondir
+java -Xmx8g \
+	-cp ~/dev/gridss/target/gridss-2.6.2-gridss-jar-with-dependencies.jar \
+	gridss.GeneratePonBedpe \
+	$(ls -1 *.vcf.gz | awk ' { print "INPUT=" $0 }' | head -$n) \
+	O=pondir/gridss_pon_breakpoint.bedpe \
+	SBO=pondir/gridss_pon_single_breakend.bed \
+	REFERENCE_SEQUENCE=$ref_genome
+```
+
+Note that `gridss_somatic_filter.R` requires the files to be named `gridss_pon_breakpoint.bedpe` and `gridss_pon_single_breakend.bed`.
 
 ### Should I process each input BAM separately or together?
 
@@ -241,6 +262,10 @@ regions of homologous sequence.
 #### AnnotateUntemplatedSequence
 
 Finds potential mapping locations for single breakends and breakpoint insert sequences in the given reference. Used for RepeatMasker annotation, and viral integration detection.
+
+#### GeneratePonBedpe
+
+This tool aggregates variants across multiple VCFs and counts the number of samples supporting each variant. Only the first sample per VCF is processed which is useful for generating a panel of normals (PON) from a cohort of cancer samples with matched normals. Output is a bedpe (breakpoint) and bed (single breakend) file suitable for use by `gridss_somatic_filter.R`.
 
 ## Common Parameters
 
