@@ -385,7 +385,8 @@ of each parameter can be found in the javadoc documentation of the au.edu.wehi.i
 
 GRIDSS is fundamentally a structural variation breakpoint caller. Variants are output as VCF breakends. Each call is a breakpoint consisting of two breakends, one from location A to location B, and a reciprocal record from location B back to A. Note that although each record fully defines the call, the VCF format requires both breakends to be written as separate records.
 
-To assist in downstream analysis, the StructuralVariantAnnotation R package (https://github.com/PapenfussLab/StructuralVariantAnnotation) is strongly recommended. Operations such as variant filter, annotation and exporting to other formats such as BEDPE can be easily accomplished using this package in conjuction with the BioConductor annotation packages.
+To assist in downstream analysis, the `StructuralVariantAnnotation` R BioConductor package is strongly recommended.
+Operations such as variant filter, annotation and exporting to other formats such as BEDPE can be easily accomplished using this package in conjuction with the BioConductor annotation packages.
 
 ## Quality score
 
@@ -399,14 +400,41 @@ and variants with low QUAL score or lack any supporting assemblies are considere
 
 GRIDSS writes a number of non-standard VCF fields. These fields are described in the VCF header.
 
-## BEDPE
+## BED/BEDPE export
 
-GRIDSS supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the GRIDSS jar.
-A working example of this conversion utility is provided in example/GRIDSS.sh
+The recommended way to convert GRIDSS output to BEDPE is via the BioConductor `StructuralVariantAnntotation` package.
 
-Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the BEDPE file.
-These fields match the VCF INFO fields of the same name.
-For BEDPE output, breakend information is not exported and per category totals (such as split read counts) are aggregated to a single value.
+```
+library(StructuralVariantAnnotation)
+library(rtracklayer)
+
+vcf = readVcf("gridss.vcf")
+
+# Export breakpoints to BEDPE
+bpgr = breakpointRanges(vcf)
+# TODO: add your event filtering here. The default GRIDSS output is very verbose/sensitive.
+bpgr_first_breakend = bpgr[substring(names(bpgr), nchar(names(bpgr))) == "o"]
+bpgr_first_breakend_partner = bpgr[bpgr_first_breakend$partner]
+bedpedf = data.frame(
+	chrom1=seqnames(bpgr_first_breakend),
+	start1=start(bpgr_first_breakend),
+	end1=end(bpgr_first_breakend),
+	chrom2=seqnames(bpgr_first_breakend_partner),
+	start2=start(bpgr_first_breakend_partner),
+	end2=end(bpgr_first_breakend_partner),
+	name=names(bpgr_first_breakend),
+	score=bpgr_first_breakend$QUAL,
+	strand1=strand(bpgr_first_breakend),
+	strand2=strand(bpgr_first_breakend_partner))
+write.table(bedpedf, file="gridss_breakpoints.bedpe", sep="\t", quote=FALSE, col.names=FALSE)
+	
+# Export single breakends to BED
+begr = breakendRanges(vcf)
+# TODO: add your event filtering here. The default GRIDSS output is very verbose/sensitive.
+begr$score = begr$QUAL
+export(begr, con="gridss_single_breakends.bed")
+
+```
 
 ## Visualisation of results
 
