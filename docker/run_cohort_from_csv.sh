@@ -109,29 +109,29 @@ grep -vE "^#" $1 | while IFS=',' read -a ALINE ; do
 			echo "DEAD CODE"
 		fi
 		INPUT_MOUNTS="$INPUT_MOUNTS -v \"$(dirname $(readlink -f $BAM)):/data/bam${ORDINAL}\""
-		INPUT_ARGS="$INPUT_ARGS INPUT=/data/bam${ORDINAL}/$(basename $BAM) "
+		INPUT_ARGS="$INPUT_ARGS /data/bam${ORDINAL}/$(basename $BAM) "
 	done
 	PATIENT_SCRIPT=$OUTDIR/run_gridss_docker_patient_${PATIENT_ID}.sh
 	cat > $PATIENT_SCRIPT << EOF
 #!/bin/sh
 docker run \
-        --ulimit nofile=$(ulimit -Hn):$(ulimit -Hn) \
-        -v "$(dirname $(readlink -f $REFERENCE)):/data/reference/" \
-        -v "$(dirname $(readlink -f $BLACKLIST)):/data/blacklist/" \
-        -v "$(dirname $(readlink -f $ASSEMBLY)):/data/assembly/" \
-        -v "$(dirname $(readlink -f $OUTPUT)):/data/output/" \
-        $INPUT_MOUNTS \
-        $CONTAINER \
-        TMP_DIR="/data/output/" \
-        REFERENCE_SEQUENCE="/data/reference/$(basename $REFERENCE)" \
-        BLACKLIST="/data/blacklist/$(basename $BLACKLIST)" \
-        ASSEMBLY="/data/assembly/$(basename $ASSEMBLY)" \
-        OUTPUT="/data/output/$(basename $OUTPUT)" \
-        $INPUT_ARGS \
-        2>&1 | tee -a $(readlink -f $OUTDIR)/gridss.$PATIENT_ID.\$HOSTNAME.\$\$.log
+	--ulimit nofile=$(ulimit -Hn):$(ulimit -Hn) \
+	-v "$(dirname $(readlink -f $REFERENCE)):/data/reference/" \
+	-v "$(dirname $(readlink -f $BLACKLIST)):/data/blacklist/" \
+	-v "$(dirname $(readlink -f $ASSEMBLY)):/data/assembly/" \
+	-v "$(dirname $(readlink -f $OUTPUT)):/data/output/" \
+	$INPUT_MOUNTS \
+	$CONTAINER \
+	--workingdir /data/output/ \
+	--reference /data/reference/$(basename $REFERENCE) \
+	--blacklist /data/blacklist/$(basename $BLACKLIST) \
+	--assembly /data/assembly/$(basename $ASSEMBLY) \
+	--output /data/output/$(basename $OUTPUT) \
+	$INPUT_ARGS \
+	2>&1 | tee -a $(readlink -f $OUTDIR)/gridss.$PATIENT_ID.\$HOSTNAME.\$\$.log
 EOF
-        chmod +x $PATIENT_SCRIPT
-        echo "Generated sample script $PATIENT_SCRIPT"
+	chmod +x $PATIENT_SCRIPT
+	echo "Generated sample script $PATIENT_SCRIPT"
 done
 
 #echo "Generated cohort script $RUN_SCRIPT"
