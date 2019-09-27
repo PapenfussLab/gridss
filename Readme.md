@@ -33,6 +33,11 @@ To run GRIDSS the following must be installed:
 * sambamba
 * bwa
 
+The driver script requires:
+
+* bash
+* getopt(1) (part of [util-linux](https://en.wikipedia.org/wiki/Util-linux))
+
 # Running
 
 Scripts and pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases. GRIDSS invokes external tools at multiple points during processing. By default this is bwa mem, but can be configured to use bowtie2 or another aligner.
