@@ -215,7 +215,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 						// realignment.* not soft-clip
 						//"MIN_CLIP_LENGTH=" + getContext().getConfig().
 						//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
-				execute(new SoftClipsToSplitReads(), args);
+				SoftClipsToSplitReads program =  new SoftClipsToSplitReads();
+				program.setReference(getProcessContext().getReference());
+				program.setFileSystemContext(getProcessContext().getFileSystemContext());
+				execute(program, args);
 				if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 					FileHelper.delete(taggedFile, true);
 				}

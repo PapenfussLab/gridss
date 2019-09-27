@@ -241,12 +241,15 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		ensureMetrics();
 		if (!svFile.exists()) {
 			log.info("Identifying split reads for " + getFile().getAbsolutePath());
+			SoftClipsToSplitReads program = new SoftClipsToSplitReads();
+			program.setReference(getProcessContext().getReference());
+			program.setFileSystemContext(getProcessContext().getFileSystemContext());
 			List<String> args = Lists.newArrayList(
 					"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
 					"INPUT=" + getFile().getPath(),
 					"OUTPUT=" + svFile.getPath(),
 					"REALIGN_ENTIRE_READ=" + Boolean.toString(getContext().getConfig().getAssembly().realignContigs));
-			execute(new SoftClipsToSplitReads(), args);
+			execute(program, args);
 		}
 		SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
 	}
