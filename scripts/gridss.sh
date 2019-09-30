@@ -2,7 +2,7 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# Example ./gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.6.2-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
+# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.6.2-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -32,11 +32,12 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 	--jvmheap: size of JVM heap for assembly and variant calling. Defaults to 27.5g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8.
 	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored.
+	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
 	"
 	
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -57,6 +58,7 @@ steps="all"
 config_file=""
 maxcoverage=50000
 labels=""
+picardoptions=""
 while true; do
     case "$1" in
         -r|--reference)
@@ -108,7 +110,10 @@ while true; do
 			maxcoverage=$2
 			shift 2
 			;;
-			
+		--picardoptions)
+			picardoptions=$2
+			shift 2
+			;;
 		--)
             shift
             break
@@ -351,6 +356,7 @@ if [[ $do_preprocess == true ]] ; then
 				PROGRAM=null \
 				PROGRAM=CollectInsertSizeMetrics \
 				STOP_AFTER=$metricsrecords \
+				$picardoptions \
 			; } 1>&2 2>> $logfile
 			echo "$(date)	CollectGridssMetricsAndExtractSVReads|sambamba	$f" | tee -a $timinglogfile
 			{ /usr/bin/time -a -o $timinglogfile \
@@ -377,6 +383,7 @@ if [[ $do_preprocess == true ]] ; then
 					UNMAPPED_READS=false \
 					MIN_CLIP_LENGTH=5 \
 					INCLUDE_DUPLICATES=true \
+					$picardoptions \
 			| /usr/bin/time -a -o $timinglogfile \
 				sambamba sort \
 					-n \
@@ -409,6 +416,7 @@ if [[ $do_preprocess == true ]] ; then
 					TAGS=MC \
 					TAGS=MQ \
 					ASSUME_SORTED=true \
+					$picardoptions \
 			| /usr/bin/time -a -o $timinglogfile \
 				sambamba sort \
 					--tmpdir $dir \
@@ -431,6 +439,7 @@ if [[ $do_preprocess == true ]] ; then
 					O=$tmp_prefix.sc2sr.primary.sv.bam \
 					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 					WORKER_THREADS=$threads \
+					$picardoptions \
 			&& rm $tmp_prefix.coordinate.bam $tmp_prefix.coordinate.bam.bai \
 			&& /usr/bin/time -a -o $timinglogfile \
 				sambamba sort \
@@ -473,6 +482,7 @@ if [[ $do_assemble == true ]] ; then
 				$input_args \
 				$blacklist_arg \
 				$config_args \
+				$picardoptions \
 		; } 1>&2 2>> $logfile
 	else
 		echo "$(date)	Skipping assembly as $assembly already exists.	$assembly"
@@ -498,6 +508,7 @@ if [[ $do_assemble == true ]] ; then
 				GRIDSS_PROGRAM=ReportThresholdCoverage \
 				PROGRAM=null \
 				PROGRAM=CollectAlignmentSummaryMetrics \
+				$picardoptions \
 		; } 1>&2 2>> $logfile
 		echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
 		{ /usr/bin/time -a -o $timinglogfile \
@@ -514,6 +525,7 @@ if [[ $do_assemble == true ]] ; then
 				O=$tmp_prefix.sc2sr.primary.sv.bam \
 				OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 				REALIGN_ENTIRE_READ=true \
+				$picardoptions \
 		&& /usr/bin/time -a -o $timinglogfile \
 			sambamba sort \
 				-t $threads \
@@ -574,6 +586,7 @@ if [[ $do_call == true ]] ; then
 				ASSEMBLY=$assembly \
 				INPUT_VCF=$prefix.unallocated.vcf \
 				OUTPUT_VCF=$prefix.allocated.vcf \
+				$picardoptions \
 		; } 1>&2 2>> $logfile
 		rm $prefix.unallocated.vcf
 		echo "$(date)	AnnotateUntemplatedSequence	$output_vcf" | tee -a $timinglogfile
@@ -587,6 +600,7 @@ if [[ $do_call == true ]] ; then
 				WORKER_THREADS=$threads \
 				INPUT=$prefix.allocated.vcf \
 				OUTPUT=$output_vcf \
+				$picardoptions \
 		; } 1>&2 2>> $logfile
 		rm $prefix.allocated.vcf
 	else

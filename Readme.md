@@ -69,6 +69,7 @@ argument|description
 --maxcoverage|maximum coverage. Regions with coverage in excess of this are ignored. (Default: 50000)
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
+--picardoptions|additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
 
 _Warning_: all somatic R scripts treat the first bam file to be the matched normal, and any subsequent as tumour sample. If you are doing somatic calling, make sure you follow this convention.
 
