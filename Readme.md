@@ -88,12 +88,7 @@ Run the [integrated GRIDSS PURPLE LINX pipeline script](https://github.com/hartw
 Run `gridss.AnnotateUntemplatedSequence` from the GRIDSS jar against your reference genome. Then run the repeat masker annotation script. The first step finds potential mapping locations for the sequences, the second annotates with the corresponding RepeatMasker repeat class and type for those locations. For example:
 
 ```
-java -Xmx6g $jvm_args -cp $GRIDSS_JAR gridss.AnnotateUntemplatedSequence \
-			REFERENCE_SEQUENCE=$ref_genome \
-			INPUT=raw_gridss_output.vcf \
-			OUTPUT=location_annotated.vcf \
-			WORKER_THREADS=$threads
-# workaround for https://github.com/Bioconductor/VariantAnnotation/issues/19
+#258# workaround for https://github.com/Bioconductor/VariantAnnotation/issues/19
 cat $annotated_gridss_output | awk ' { if (length($0) >= 4000) { gsub(":0.00:", ":0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000:")} ; print $0  } ' < location_annotated.vcf > location_annotated_va19hack.vcf
 		Rscript $install_dir/gridss/gridss_annotate_insertions_repeatmaster.R \
 			--input location_annotated_va19hack.vcf \
@@ -552,6 +547,13 @@ Just like Picard tools and htsjdk libraries that GRIDSS uses, intermediate files
 It's also possible that you've just run out of space.
 
 
+# Acknowledgement
 
+GRIDSS uses the YourKit Java Profiler for Performance Tuning.
+
+![alt text](https://www.yourkit.com/images/yklogo.png)
+
+YourKit supports open source projects with innovative and intelligent tools for monitoring and profiling Java and .NET applications.
+YourKit is the creator of [YourKit Java Profiler](https://www.yourkit.com/java/profiler/), [YourKit .NET Profiler](https://www.yourkit.com/.net/profiler/), [YourKit YouMonitor](https://www.yourkit.com/youmonitor/).
 
 
