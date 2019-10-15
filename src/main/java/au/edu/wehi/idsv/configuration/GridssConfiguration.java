@@ -97,11 +97,14 @@ public class GridssConfiguration {
 	private final VisualisationConfiguration visualisation;
 	private final VariantCallingConfiguration variantCalling;
 	private final ScoringConfiguration scoring;
+	private File sourceConfigurationFile;
 	public GridssConfiguration() throws ConfigurationException {
 		this((File)null, new File("."));
+		sourceConfigurationFile = null;
 	}
 	public GridssConfiguration(File configuration, File workingDirectory) throws ConfigurationException {
 		this(LoadConfiguration(configuration), workingDirectory);
+		sourceConfigurationFile = configuration;
 	}
 	public GridssConfiguration(Configuration config, File workingDirectory) {
 		assembly = new AssemblyConfiguration(config);
@@ -121,6 +124,7 @@ public class GridssConfiguration {
 		chunkSequenceChangePenalty = config.getInt("chunkSequenceChangePenalty");
 		useReadGroupSampleNameCategoryLabel = config.getBoolean("useReadGroupSampleNameCategoryLabel");
 		hashEvidenceID = config.getBoolean("hashEvidenceID");
+		sourceConfigurationFile = null;
 	}
 	public static Configuration LoadConfiguration(File configuration) throws ConfigurationException {
 		CompositeConfiguration config = new CompositeConfiguration();
@@ -158,5 +162,9 @@ public class GridssConfiguration {
 			}
 		}
 		return defaultConfigFromJar;
+	}
+
+	public File getSourceConfigurationFile() {
+		return sourceConfigurationFile;
 	}
 }

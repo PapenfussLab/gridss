@@ -1,21 +1,31 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SamTags;
+import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.PeekingIterator;
-import htsjdk.samtools.SAMRecord;
+import com.google.common.collect.*;
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
+import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -107,7 +117,16 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				closeCurrentAssembler();
 				ensureAssembler(attemptRecovery, reloadRecoverySet);
 			} else {
+				File packagedFile = null;
+				try {
+					packagedFile = packageMinimalAssemblyErrorReproductionData(getEvidenceInCurrentAssembler());
+				} catch (Exception ex) {
+					log.error("Error packaging assembly error reproduction data.", ex);
+				}
 				String msg = "Error assembling " + currentContig + ". Please raise an issue at https://github.com/PapenfussLab/gridss/issues";
+				if (packagedFile != null && packagedFile.exists()) {
+					msg = msg + ". If your data can be shared publicly, please also include a minimal data set for reproducing the problem by attaching " + packagedFile.toString() + ".";
+				}
 				if (!attemptRecovery) {
 					log.error(e, msg);
 					throw e;
@@ -129,6 +148,94 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			}
 		}
 	}
+	private static AtomicInteger errorPackagesCreated = new AtomicInteger(0);
+	private File packageMinimalAssemblyErrorReproductionData(Set<DirectedEvidence> evidenceInCurrentAssembler) throws IOException {
+		FileSystemContext fsc = context.getFileSystemContext();
+		File asswd = fsc.getWorkingDirectory(source.getFile());
+		int fatalErrorNumber = errorPackagesCreated.incrementAndGet();
+		if (fatalErrorNumber != 1) {
+			// Only create a reproduction package for the first error
+			return null;
+		}
+		File outFile = new File(asswd, String.format("gridss_minimal_reproduction_data_for_error_%d.zip", fatalErrorNumber));
+		File workingLocation = new File(asswd, outFile.getName() + ".error_package");
+		if (!asswd.exists()) {
+			asswd.mkdir();
+		}
+		workingLocation.mkdir();
+		// Copy config file
+		if (context.getConfig().getSourceConfigurationFile() != null) {
+			FileUtils.copyFileToDirectory(context.getConfig().getSourceConfigurationFile(), workingLocation);
+		}
+		Set<SAMEvidenceSource> sources = evidenceInCurrentAssembler.stream()
+				.map(de -> (SAMEvidenceSource)de.getEvidenceSource())
+				.collect(Collectors.toSet());
+		for (SAMEvidenceSource source : sources) {
+			File samFile = source.getFile();
+			File samInDir = fsc.getIntermediateDirectory(samFile);
+			File samOutDir = new File(workingLocation, samInDir.getName());
+			samOutDir.mkdir();
+			// Copy metrics
+			FileUtils.copyFileToDirectory(fsc.getCigarMetrics(samFile), samOutDir);
+			FileUtils.copyFileToDirectory(fsc.getCoverageBlacklistBed(samFile), samOutDir);
+			FileUtils.copyFileToDirectory(fsc.getIdsvMetrics(samFile), samOutDir);
+			FileUtils.copyFileToDirectory(fsc.getInsertSizeMetrics(samFile), samOutDir);
+			FileUtils.copyFileToDirectory(fsc.getMapqMetrics(samFile), samOutDir);
+			FileUtils.copyFileToDirectory(fsc.getTagMetrics(samFile), samOutDir);
+			FileUtils.copyFileToDirectory(fsc.getSVMetrics(samFile), samOutDir);
+
+			// Copy minimal set of reads
+			File outSam = new File(samOutDir, fsc.getSVBam(samFile).getName());
+			SAMFileHeader header;
+			try (SamReader reader = context.getSamReader(source.getFile())) {
+				header = reader.getFileHeader();
+			}
+			// TODO: preserve original BAM ordering?
+			try (SAMFileWriter writer = context.getSamFileWriterFactory(true).setCreateIndex(true).makeBAMWriter(header, false, outSam)) {
+				evidenceInCurrentAssembler.stream()
+						.filter(de -> de.getEvidenceSource() == source)
+						.forEach(a -> writer.addAlignment(a.getUnderlyingSAMRecord()));
+			}
+		}
+		// reference genome - regions not overlapping support are N masked to improve compression
+		final int paddingMargin = Math.min(2000, 2 * source.getMaxConcordantFragmentSize());
+		ReferenceLookup rl = context.getReference();
+		File ref = new File(workingLocation, "masked_ref.fa");
+		try (FileOutputStream fso = new FileOutputStream(ref)) {
+			for (SAMSequenceRecord seq : rl.getSequenceDictionary().getSequences()) {
+				final int refIndex = seq.getSequenceIndex();
+				fso.write(new byte[] { '>'});
+				fso.write(seq.getSequenceName().getBytes(StandardCharsets.UTF_8));
+				fso.write(new byte[] { '\n'});
+				RangeSet<Integer> rs = TreeRangeSet.create(Streams.concat(
+					// local side of evidence
+					evidenceInCurrentAssembler.stream()
+						.map(de -> de.getBreakendSummary())
+						.filter(bs -> bs.referenceIndex == refIndex)
+						.map(bs -> Range.closed(bs.start - paddingMargin, bs.end + paddingMargin)),
+					// remote side of evidence
+					evidenceInCurrentAssembler.stream()
+						.map(de -> de.getBreakendSummary())
+						.filter(bs -> bs instanceof BreakpointSummary)
+						.map(bs -> (BreakpointSummary)bs)
+						.filter(bs -> bs.referenceIndex2 == refIndex)
+						.map(bs -> Range.closed(bs.start2 - paddingMargin, bs.end2 + paddingMargin)))
+					.collect(Collectors.toList()));
+				byte[] bases = rl.getSequence(seq.getSequenceName()).getBases().clone();
+				for (Range<Integer> nRange : rs.complement().asRanges()) {
+					int lowerBound = Math.max(0, nRange.hasLowerBound() ? nRange.lowerEndpoint() : 0);
+					int upperBound = Math.min(bases.length, nRange.hasUpperBound() ? nRange.upperEndpoint() : bases.length);
+					Arrays.fill(bases, lowerBound, upperBound, (byte)'N');
+				}
+				fso.write(bases);
+				fso.write(new byte[] { '\n'});
+			}
+		}
+		FileHelper.zipDirectory(outFile, workingLocation);
+		FileUtils.deleteDirectory(workingLocation);
+		return outFile;
+	}
+
 	private void ensureAssembler(Set<DirectedEvidence> preload) {
 		flushIfRequired();
 		while ((currentAssembler == null || !currentAssembler.hasNext()) && it.hasNext()) {

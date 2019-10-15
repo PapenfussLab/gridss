@@ -2,11 +2,15 @@ package au.edu.wehi.idsv.util;
 
 import com.google.common.io.Files;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.net.URI;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public abstract class FileHelper {
 	/**
@@ -94,5 +98,38 @@ public abstract class FileHelper {
 		return Stream.of(
 				new File(file.getAbsolutePath() + indexSuffix),
 				new File(file.getParentFile(), Files.getNameWithoutExtension(file.getName()) + indexSuffix));
+	}
+	public static void zipDirectory(File zip, File directory) throws IOException {
+		byte[] buffer = new byte[4194304];
+		URI base = directory.toURI();
+		Deque<File> queue = new ArrayDeque<>();
+		queue.push(directory);
+		try (OutputStream outStream = new FileOutputStream(zip)) {
+			try (ZipOutputStream zipStream = new ZipOutputStream(outStream)) {
+				while (!queue.isEmpty()) {
+					directory = queue.pop();
+					for (File child : directory.listFiles()) {
+						String name = base.relativize(child.toURI()).getPath();
+						if (child.isDirectory()) {
+							queue.push(child);
+							// Don't write directory entries
+							//name = name.endsWith("/") ? name : name + "/";
+							// zipStream.putNextEntry(new ZipEntry(name));
+						} else {
+							ZipEntry ze = new ZipEntry(name);
+							ze.setSize(child.length());
+							zipStream.putNextEntry(ze);
+							try (FileInputStream fis = new FileInputStream(child)) {
+								int len;
+								while ((len = fis.read(buffer, 0, buffer.length)) > 0) {
+									zipStream.write(buffer, 0, len);
+								}
+							}
+							zipStream.closeEntry();
+						}
+					}
+				}
+			}
+		}
 	}
 }
