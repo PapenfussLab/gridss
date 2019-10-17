@@ -35,4 +35,14 @@ public class AssembleBreakends extends MultipleSamFileCommandLineProgram {
     	assembler.assembleBreakends(threadpool);
     	return 0;
 	}
+	@Override
+	protected String[] customCommandLineValidation() {
+		String[] val = multiSamFileInputCustomCommandLineValidation();
+		if (val != null) return val;
+		String[] err = getWorkingDirectoryFilenameCollisions(OUTPUT, "OUTPUT");
+		if (err != null) {
+			return err;
+		}
+		return super.customCommandLineValidation();
+	}
 }

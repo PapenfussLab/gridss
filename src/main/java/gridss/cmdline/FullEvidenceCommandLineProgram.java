@@ -33,8 +33,14 @@ public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileComm
 		return super.customCommandLineValidation();
 	}
 	public String[] assemblyCustomCommandLineValidation() {
-		if (requireAssembly && ASSEMBLY != null && !ASSEMBLY.exists()) {
-			return new String[] { "Missing ASSEMBLY file" };
+		if (requireAssembly) {
+			if (ASSEMBLY != null && !ASSEMBLY.exists()) {
+				return new String[]{"Missing ASSEMBLY file"};
+			}
+			String[] err = getWorkingDirectoryFilenameCollisions(ASSEMBLY, "ASSEMBLY");
+			if (err != null) {
+				return err;
+			}
 		}
     	return null;
 	}

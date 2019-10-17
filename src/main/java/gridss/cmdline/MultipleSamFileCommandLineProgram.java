@@ -19,6 +19,7 @@ import picard.cmdline.StandardOptionDefinitions;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
@@ -261,7 +262,28 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	if (BLACKLIST != null && !BLACKLIST.exists()) {
 			return new String[] { "Missing BLACKLIST file " + BLACKLIST.getName() };
 		}
+		String[] err = getWorkingDirectoryFilenameCollisions(null, "");
+		if (err != null) {
+			return err;
+		}
     	return null;
+	}
+	protected String[] getWorkingDirectoryFilenameCollisions(File file, String param) {
+		if (INPUT.stream().collect(Collectors.toSet()).size() != INPUT.size()) {
+			return new String[]{"INPUT files must not be specified multiple times"};
+		}
+		if (file != null && INPUT.contains(file)) {
+			return new String[]{param + " filename cannot match INPUT filename."};
+		}
+		if (WORKING_DIR != null) {
+			if (INPUT.size() != INPUT.stream().map(f -> f.getName()).distinct().count()) {
+				return new String[]{"INPUT files must have unique names if WORKING_DIR is specified."};
+			}
+			if (file != null && INPUT.stream().map(f -> f.getName()).anyMatch(f -> f.equals(file.getName()))) {
+				return new String[]{param + " filename cannot match INPUT filename."};
+			}
+		}
+		return null;
 	}
 	@Override
 	public void copyInputs(CommandLineProgram cmd) {
