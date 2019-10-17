@@ -37,7 +37,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -59,6 +59,8 @@ config_file=""
 maxcoverage=50000
 labels=""
 picardoptions=""
+jobindex="0"
+jobnodes="1"
 while true; do
     case "$1" in
         -r|--reference)
@@ -112,6 +114,14 @@ while true; do
 			;;
 		--picardoptions)
 			picardoptions=$2
+			shift 2
+			;;
+		--jobindex)
+			jobindex=$2
+			shift 2
+			;;
+		--jobnodes)
+			jobnodes=$2
 			shift 2
 			;;
 		--)
@@ -333,6 +343,11 @@ jvm_args="
 	-Dsamjdk.buffer_size=4194304"
 
 if [[ $do_preprocess == true ]] ; then
+	if [[ "$jobnodes" != "1" ]] ; then
+		echo "Error: Preprocessing does not support multiple nodes for a given input file." 2>&1
+		echo "	To perform parallel per-input preprocessing, run independent preprocessing per input file." 2>&1
+		exit 16
+	fi
 	for f in $@ ; do
 		echo "$(date)	Start pre-processing	$f"
 		dir=$workingdir/$(basename $f).gridss.working
@@ -451,11 +466,13 @@ if [[ $do_preprocess == true ]] ; then
 			&& /usr/bin/time -a -o $timinglogfile \
 				sambamba merge \
 					-t $threads \
-					$prefix.sv.bam \
+					$prefix.sv.tmp.bam \
 					$tmp_prefix.sc2sr.primary.sv.bam \
 					$tmp_prefix.sc2sr.suppsorted.sv.bam \
 			&& rm $tmp_prefix.sc2sr.primary.sv.bam \
 			&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam $tmp_prefix.sc2sr.suppsorted.sv.bam.bai \
+			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 			; } 1>&2 2>> $logfile
 			echo "$(date)	Complete pre-processing	$f"
 		else
@@ -469,11 +486,13 @@ fi
 if [[ $do_assemble == true ]] ; then
 	echo "$(date)	Start assembly	$assembly" | tee -a $timinglogfile
 	if [[ ! -f $assembly ]] ; then
-		echo "$(date)	AssembleBreakends	$assembly" | tee -a $timinglogfile
+		echo "$(date)	AssembleBreakends	$assembly	job $jobindex	total jobs $jobnodes" | tee -a $timinglogfile
 		{ /usr/bin/time -a -o $timinglogfile \
 			java -Xmx$jvmheap $jvm_args \
 				-Dgridss.gridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AssembleBreakends \
+				JOB_INDEX=$jobindex \
+				JOB_NODES=$jobnodes \
 				TMP_DIR=$workingdir \
 				WORKING_DIR=$workingdir \
 				REFERENCE_SEQUENCE=$reference \
@@ -486,6 +505,11 @@ if [[ $do_assemble == true ]] ; then
 		; } 1>&2 2>> $logfile
 	else
 		echo "$(date)	Skipping assembly as $assembly already exists.	$assembly"
+	fi
+	if [[ "$jobnodes" != "1" ]] ; then
+		echo "Assembly processing for job index $jobindex complete." 2>&1 
+		echo "To perform the gather/reduce after all jobs are complete, run assembly without specifying --jobnodes." 2>&1 
+		exit 0
 	fi
 	dir=$workingdir/$(basename $assembly).gridss.working/
 	prefix=$dir/$(basename $assembly)
@@ -536,11 +560,13 @@ if [[ $do_assemble == true ]] ; then
 		&& /usr/bin/time -a -o $timinglogfile \
 			sambamba merge \
 				-t $threads \
-				$prefix.sv.bam \
+				$prefix.sv.tmp.bam \
 				$tmp_prefix.sc2sr.primary.sv.bam \
 				$tmp_prefix.sc2sr.suppsorted.sv.bam \
 		&& rm $tmp_prefix.sc2sr.primary.sv.bam \
 		&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam $tmp_prefix.sc2sr.suppsorted.sv.bam.bai \
+		&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+		&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 		; } 1>&2 2>> $logfile
 	fi
 	echo "$(date)	Complete assembly	$assembly"
@@ -549,6 +575,10 @@ else
 fi
 if [[ $do_call == true ]] ; then
 	echo "$(date)	Start calling	$output_vcf" | tee -a $timinglogfile
+	if [[ "$jobnodes" != "1" ]] ; then
+		echo "Error: variant calling does not (yet) support multiple nodes for a given input file." 2>&1
+		exit 16
+	fi
 	if [[ ! -f $output_vcf ]] ; then
 		dir=$workingdir/$(basename $output_vcf).gridss.working
 		prefix=$dir/$(basename $output_vcf)
@@ -609,3 +639,5 @@ if [[ $do_call == true ]] ; then
 	echo "$(date)	Complete calling	$output_vcf" | tee -a $timinglogfile
 fi
 echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
+trap - EXIT
+exit 0 # success!
