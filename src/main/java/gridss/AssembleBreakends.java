@@ -23,6 +23,13 @@ import java.util.concurrent.ExecutorService;
 public class AssembleBreakends extends MultipleSamFileCommandLineProgram {
     @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file containing subset of input", optional=false)
     public File OUTPUT;
+	@Argument(doc="Used for scaling assembly across multiple jobs. This is the zero-based index of this job.", optional=true)
+    public int JOB_INDEX = 0;
+	@Argument(doc="Used for scaling assembly across multiple jobs. " +
+			"This is the total number of jobs to spread the assembly over. " +
+			"Work will be allocated across all jobs based on an even distribution of genomic regions to process. " +
+			"After all jobs have completed, output should be gathered by rerunning AssembleBreakends with JOB_NODES=1.", optional=true)
+	public int JOB_NODES = 1;
 	public static void main(String[] argv) {
         System.exit(new AssembleBreakends().instanceMain(argv));
     }
@@ -32,7 +39,7 @@ public class AssembleBreakends extends MultipleSamFileCommandLineProgram {
 		ProcessingContext pc = getContext();
 		List<SAMEvidenceSource> sources = getSamEvidenceSources();
     	AssemblyEvidenceSource assembler = new AssemblyEvidenceSource(pc, sources, OUTPUT);
-    	assembler.assembleBreakends(threadpool);
+    	assembler.assembleBreakends(threadpool, JOB_INDEX, JOB_NODES);
     	return 0;
 	}
 	@Override
@@ -42,6 +49,15 @@ public class AssembleBreakends extends MultipleSamFileCommandLineProgram {
 		String[] err = getWorkingDirectoryFilenameCollisions(OUTPUT, "OUTPUT");
 		if (err != null) {
 			return err;
+		}
+		if (JOB_NODES < 1) {
+			return new String[] { "JOB_NODES must be at least 1."};
+		}
+		if (JOB_INDEX < 0) {
+			return new String[] { "JOB_INDEX cannot be less than 0."};
+		}
+		if (JOB_INDEX >= JOB_NODES) {
+			return new String[] { "JOB_INDEX is zero-based: JOB_INDEX must be less than JOB_NODES."};
 		}
 		return super.customCommandLineValidation();
 	}

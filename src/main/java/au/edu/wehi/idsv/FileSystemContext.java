@@ -64,15 +64,13 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s.realign.%3$d" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s.breakpoint" + VCF_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_CHUNK_SAM = "%1$s/%2$s.assembly.chunk%3$d" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_TELEMETRY = "%1$s/%2$s.events.csv";
-	private static final String FORMAT_ASSEMBLY_EXCLUDED_REGIONS = "%1$s/%2$s.excluded.bed";
-	private static final String FORMAT_ASSEMBLY_SAFETY_REGIONS = "%1$s/%2$s.subsetCalled.bed";
-	private static final String FORMAT_ASSEMBLY_DOWNSAMPLED_REGIONS = "%1$s/%2$s.downsampled.bed";
+	private static final String FORMAT_ASSEMBLY_TELEMETRY = "%1$s/%2$s.events_%3$d.csv";
+	private static final String FORMAT_ASSEMBLY_EXCLUDED_REGIONS = "%1$s/%2$s.excluded_%3$d.bed";
+	private static final String FORMAT_ASSEMBLY_SAFETY_REGIONS = "%1$s/%2$s.subsetCalled_%3$d.bed";
+	private static final String FORMAT_ASSEMBLY_DOWNSAMPLED_REGIONS = "%1$s/%2$s.downsampled_%3$d.bed";
 	private static final String FORMAT_VARIANT_CALL_CHUNK_VCF = "%1$s/%2$s.breakpoint.chunk%3$d" + VCF_SUFFIX;
 	/**
 	 * Gets the idsv intermediate working directory for the given input
-	 * @param input
-	 * @return
 	 */
 	public File getWorkingDirectory(File file) {
 		if (workingDir != null) {
@@ -154,17 +152,17 @@ public class FileSystemContext {
 	public File getAssemblyChunkBam(File input, int chunk) {
 		return getFile(String.format(FORMAT_ASSEMBLY_CHUNK_SAM, getIntermediateDirectory(input), getSource(input).getName(), chunk));
 	}
-	public File getAssemblyTelemetry(File assembly) {
+	public File getAssemblyTelemetry(File assembly, int nodeIndex) {
 		return getFile(String.format(FORMAT_ASSEMBLY_TELEMETRY, getIntermediateDirectory(assembly), getSource(assembly).getName()));
 	}
-	public File getAssemblyExcludedRegions(File assembly) {
-		return getFile(String.format(FORMAT_ASSEMBLY_EXCLUDED_REGIONS, getIntermediateDirectory(assembly), getSource(assembly).getName()));
+	public File getAssemblyExcludedRegions(File assembly, int nodeIndex) {
+		return getFile(String.format(FORMAT_ASSEMBLY_EXCLUDED_REGIONS, getIntermediateDirectory(assembly), getSource(assembly).getName(), nodeIndex));
 	}
-	public File getAssemblySafetyRegions(File assembly) {
-		return getFile(String.format(FORMAT_ASSEMBLY_SAFETY_REGIONS, getIntermediateDirectory(assembly), getSource(assembly).getName()));
+	public File getAssemblySafetyRegions(File assembly, int nodeIndex) {
+		return getFile(String.format(FORMAT_ASSEMBLY_SAFETY_REGIONS, getIntermediateDirectory(assembly), getSource(assembly).getName(), nodeIndex));
 	}
-	public File getAssemblyDownsampledRegions(File assembly) {
-		return getFile(String.format(FORMAT_ASSEMBLY_DOWNSAMPLED_REGIONS, getIntermediateDirectory(assembly), getSource(assembly).getName()));
+	public File getAssemblyDownsampledRegions(File assembly, int nodeIndex) {
+		return getFile(String.format(FORMAT_ASSEMBLY_DOWNSAMPLED_REGIONS, getIntermediateDirectory(assembly), getSource(assembly).getName(), nodeIndex));
 	}
 	public File getVariantCallChunkVcf(File input, int chunk) {
 		return getFile(String.format(FORMAT_VARIANT_CALL_CHUNK_VCF, getIntermediateDirectory(input), getSource(input).getName(), chunk));

@@ -24,10 +24,7 @@ import picard.sam.GatherBamFiles;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -66,12 +63,16 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
 		}
 	}
+
+	public void assembleBreakends(ExecutorService threadpool) throws IOException {
+		assembleBreakends(threadpool, 0, 1);
+	}
 	/**
 	 * Perform breakend assembly 
 	 * @param threadpool 
 	 * @throws IOException 
 	 */
-	public void assembleBreakends(ExecutorService threadpool) throws IOException {
+	public void assembleBreakends(ExecutorService threadpool, int jobNodeIndex, int jobNodes) throws IOException {
 		IntervalBed excludedRegions = new IntervalBed(getContext().getLinear());
 		IntervalBed safetyRegions = new IntervalBed(getContext().getLinear());
 		IntervalBed downsampledRegions = new IntervalBed(getContext().getLinear());
@@ -81,18 +82,23 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		invalidateSummaryCache();
 		if (getContext().getConfig().getVisualisation().assemblyTelemetry) {
-			telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile()), getContext().getDictionary());
+			telemetry = new AssemblyTelemetry(getContext().getFileSystemContext().getAssemblyTelemetry(getFile(), jobNodeIndex), getContext().getDictionary());
 		}
 		List<QueryInterval[]> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize, getContext().getConfig().chunkSequenceChangePenalty);
 		List<File> assembledChunk = new ArrayList<>();
 		List<Future<Void>> tasks = new ArrayList<>();
 		for (int i = 0; i < chunks.size(); i++) {
-			QueryInterval[] chunk = chunks.get(i);
-			File f = getContext().getFileSystemContext().getAssemblyChunkBam(getFile(), i);
-			int chunkNumber = i;
-			assembledChunk.add(f);
-			if (!f.exists()) {
-				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunkNumber, chunk, excludedRegions, safetyRegions, downsampledRegions); return null; }));
+			if (i % jobNodes == jobNodeIndex) {
+				QueryInterval[] chunk = chunks.get(i);
+				File f = getContext().getFileSystemContext().getAssemblyChunkBam(getFile(), i);
+				int chunkNumber = i;
+				assembledChunk.add(f);
+				if (!f.exists()) {
+					tasks.add(threadpool.submit(() -> {
+						assembleChunk(f, chunkNumber, chunk, excludedRegions, safetyRegions, downsampledRegions);
+						return null;
+					}));
+				}
 			}
 		}
 		runTasks(tasks);
@@ -100,14 +106,18 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			telemetry.close();
 			telemetry = null;
 		}
-		excludedRegions.write(getContext().getFileSystemContext().getAssemblyExcludedRegions(getFile()), "excludedDueToGraphComplexity");
-		safetyRegions.write(getContext().getFileSystemContext().getAssemblySafetyRegions(getFile()), "subsetOfContigsCalledDueToGraphComplexity");
-		downsampledRegions.write(getContext().getFileSystemContext().getAssemblyDownsampledRegions(getFile()), "subsetOfReadsAssembled");
-		log.info("Breakend assembly complete.");
+		excludedRegions.write(getContext().getFileSystemContext().getAssemblyExcludedRegions(getFile(), jobNodeIndex), "excludedDueToGraphComplexity");
+		safetyRegions.write(getContext().getFileSystemContext().getAssemblySafetyRegions(getFile(), jobNodeIndex), "subsetOfContigsCalledDueToGraphComplexity");
+		downsampledRegions.write(getContext().getFileSystemContext().getAssemblyDownsampledRegions(getFile(), jobNodeIndex), "subsetOfReadsAssembled");
+		log.info(String.format("Breakend assembly complete (node %d, %d total)", jobNodeIndex, jobNodes));
 		List<File> deduplicatedChunks = assembledChunk;
 		long secondaryNotSplit = source.stream().mapToLong(ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT).sum();
 		if (secondaryNotSplit > 0) {
 			log.warn(String.format("Found %d secondary alignments that were not split read alignments. GRIDSS no longer supports multi-mapping alignment. These reads will be ignored.", secondaryNotSplit));
+		}
+		if (jobNodes > 1) {
+			log.info("Not merging assembly files since not all chunks were assembled.");
+			return;
 		}
 		log.info("Merging assembly files");
 		// Merge chunk files
@@ -266,10 +276,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (r.hasAttribute("OA") && !SAMRecordUtil.overlapsOriginalAlignment(r)) {
 			return true;
 		}
-		float[] qualBreakdown = r.getFloatArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL);
-		if (qualBreakdown != null && qualBreakdown.length != getContext().getCategoryCount()) {
-			String msg = String.format("Fatal error: Assembly contig %s does not contains the expected number of input categories. " +
-					"GRIDSS performs joint assembly and does not support per-input assembling.", r.getReadName());
+		int[] supportCategory = r.getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY);
+		if (supportCategory != null && Arrays.stream(supportCategory).anyMatch(c -> c >= getContext().getCategoryCount())) {
+			String msg = String.format("Fatal error: Assembly contig %s contains for unknown input. " +
+					"GRIDSS performs joint assembly and does not support per-input assembling. " +
+					"inputs and labels must be the same for all assembly and variant calling steps. ",
+					r.getReadName());
 			log.error(msg);
 			throw new RuntimeException(msg);
 		}
@@ -449,6 +461,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		SamReader reader = super.getReader();
 		SAMFileHeader header = reader.getFileHeader();
 		List<String> categories = header.getComments().stream()
+				.map(s -> s.replaceFirst("@CO	", ""))
 				.filter(s -> s.startsWith(INPUT_CATEGORY_SAM_HEADER_PREFIX))
 				.map(s -> s.replaceFirst(INPUT_CATEGORY_SAM_HEADER_PREFIX, ""))
 				.collect(Collectors.toList());
@@ -470,7 +483,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				}
 			}
 		}
-		return null;
+		return reader;
 	}
 
 	public SAMFileHeader getHeader() {
