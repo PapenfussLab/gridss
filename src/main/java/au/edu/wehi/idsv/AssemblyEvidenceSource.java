@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  */
 public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
-	public static final String INPUT_CATEGORY_SAM_HEADER_PREFIX = "gridss_input_category";
+	public static final String INPUT_CATEGORY_SAM_HEADER_PREFIX = "gridss_input_category=";
 	private final List<SAMEvidenceSource> source;
 	private int cachedMaxSourceFragSize = -1;
 	private int cachedMinConcordantFragmentSize = -1;
@@ -58,9 +58,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
 		this.header = processContext.getBasicSamHeader();
-		for (int i = 0; i < processContext.getCategoryCount(); i++) {
-			String category = processContext.getCategoryLabel(i);
-			this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
+		if (!this.header.getComments().stream().anyMatch(s -> s.contains(INPUT_CATEGORY_SAM_HEADER_PREFIX))) {
+			for (int i = 0; i < processContext.getCategoryCount(); i++) {
+				String category = processContext.getCategoryLabel(i);
+				this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
+			}
 		}
 	}
 
@@ -467,8 +469,11 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				.collect(Collectors.toList());
 		if (categories.size() > 0) {
 			if (categories.size() != getContext().getCategoryCount()) {
-				String msg = String.format("Fatal error: GRIDSS assembly does not have the expected number of input categories. " +
-						"GRIDSS performs joint assembly and does not support per-input assembly.");
+				String msg = String.format("Fatal error: GRIDSS assembly does not have the expected number of input categories (found %d, expected %d). " +
+						"GRIDSS performs joint assembly and does not support per-input assembly. " +
+						"Make sure the same input and labels are specified in the same order for the assembly and variant calling steps.",
+						categories.size(),
+						getContext().getCategoryCount());
 				log.error(msg);
 				throw new RuntimeException(msg);
 			}
@@ -477,7 +482,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				String actual = categories.get(i);
 				if (!Objects.equals(expected, actual)) {
 					String msg = String.format("Fatal error: GRIDSS assembly categories do not match those supplied on the command line. " +
-							"All steps except pre-processing must have input files (and labels) in the same order.");
+							"All steps except pre-processing must have input files (and labels) in the same order. " +
+							"Make sure the same input and labels are specified in the same order for the assembly and variant calling steps.");
 					log.error(msg);
 					throw new RuntimeException(msg);
 				}

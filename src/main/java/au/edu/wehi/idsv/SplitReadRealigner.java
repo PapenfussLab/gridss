@@ -134,7 +134,7 @@ public class SplitReadRealigner {
 			try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, output)) {
 				modifiedWriter =  writer;
 				if (outputModified != null && !output.equals(outputModified)) {
-					modifiedWriter = writerFactory.makeSAMOrBAMWriter(header, true, outputModified);
+					modifiedWriter = writerFactory.makeSAMOrBAMWriter(minimal(header), true, outputModified);
 				}
 				try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
 					while (bufferedIt.hasNext()) {
@@ -335,7 +335,8 @@ public class SplitReadRealigner {
 				suppIt.add(new AsyncBufferedIterator<>(new NmTagIterator(suppReader.iterator(), pc.getReference()), sf.getName()));
 			}
 			try (SAMFileWriter inputWriter = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-				try (SAMFileWriter suppWriter = writerFactory.makeSAMOrBAMWriter(header, false, suppMerged)) {
+
+				try (SAMFileWriter suppWriter = writerFactory.makeSAMOrBAMWriter(minimal(header), false, suppMerged)) {
 					try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(new NmTagIterator(reader.iterator(), pc.getReference()), input.getName())) {
 						mergeSupplementaryAlignment(bufferedIt, suppIt, inputWriter, suppWriter, rewriteOA);
 					}
@@ -365,6 +366,18 @@ public class SplitReadRealigner {
 			FileHelper.move(suppMerged, unorderedOutput, false);
 		}
 	}
+
+	/**
+	 * Minimal header required so merging tools don't duplicate headers such as comments
+	 */
+	private SAMFileHeader minimal(SAMFileHeader header) {
+		header = header.clone();
+		// Strip everything that could be duplicated in the merger
+		header.setComments(ImmutableList.of());
+		header.setProgramRecords(ImmutableList.of());
+		return header;
+	}
+
 	private void mergeSupplementaryAlignment(Iterator<SAMRecord> it, List<PeekingIterator<SAMRecord>> alignments, SAMFileWriter out, SAMFileWriter saout, boolean writeOA) {
 		List<SAMRecord> salist = Lists.newArrayList();
 		while (it.hasNext()) {
