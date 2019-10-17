@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import com.google.common.base.Stopwatch;
@@ -26,9 +27,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Structural variant supporting contigs generated from assembly
@@ -42,6 +45,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
+	public static final String INPUT_CATEGORY_SAM_HEADER_PREFIX = "gridss_input_category";
 	private final List<SAMEvidenceSource> source;
 	private int cachedMaxSourceFragSize = -1;
 	private int cachedMinConcordantFragmentSize = -1;
@@ -57,6 +61,10 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
 		this.header = processContext.getBasicSamHeader();
+		for (int i = 0; i < processContext.getCategoryCount(); i++) {
+			String category = processContext.getCategoryLabel(i);
+			this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
+		}
 	}
 	/**
 	 * Perform breakend assembly 
@@ -258,6 +266,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		if (r.hasAttribute("OA") && !SAMRecordUtil.overlapsOriginalAlignment(r)) {
 			return true;
 		}
+		float[] qualBreakdown = r.getFloatArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL);
+		if (qualBreakdown != null && qualBreakdown.length != getContext().getCategoryCount()) {
+			String msg = String.format("Fatal error: Assembly contig %s does not contains the expected number of input categories. " +
+					"GRIDSS performs joint assembly and does not support per-input assembling.", r.getReadName());
+			log.error(msg);
+			throw new RuntimeException(msg);
+		}
 		return super.shouldFilter(r);
 	}
 	public boolean shouldFilterAssembly(SAMRecord asm) {
@@ -428,6 +443,35 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 */
 	@Override
 	public boolean knownSingleEnded() { return true; }
+
+	@Override
+	protected SamReader getReader() {
+		SamReader reader = super.getReader();
+		SAMFileHeader header = reader.getFileHeader();
+		List<String> categories = header.getComments().stream()
+				.filter(s -> s.startsWith(INPUT_CATEGORY_SAM_HEADER_PREFIX))
+				.map(s -> s.replaceFirst(INPUT_CATEGORY_SAM_HEADER_PREFIX, ""))
+				.collect(Collectors.toList());
+		if (categories.size() > 0) {
+			if (categories.size() != getContext().getCategoryCount()) {
+				String msg = String.format("Fatal error: GRIDSS assembly does not have the expected number of input categories. " +
+						"GRIDSS performs joint assembly and does not support per-input assembly.");
+				log.error(msg);
+				throw new RuntimeException(msg);
+			}
+			for (int i = 0; i < getContext().getCategoryCount(); i++) {
+				String expected = getContext().getCategoryLabel(i);
+				String actual = categories.get(i);
+				if (!Objects.equals(expected, actual)) {
+					String msg = String.format("Fatal error: GRIDSS assembly categories do not match those supplied on the command line. " +
+							"All steps except pre-processing must have input files (and labels) in the same order.");
+					log.error(msg);
+					throw new RuntimeException(msg);
+				}
+			}
+		}
+		return null;
+	}
 
 	public SAMFileHeader getHeader() {
 		return header;

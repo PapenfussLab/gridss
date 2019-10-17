@@ -278,11 +278,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 		Iterator<DirectedEvidence> eit = asEvidence(it, eso);
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
-	private SamReader getReader() {
+	protected SamReader getReader() {
 		File svFile = getSVFile();
 		SamReader reader = getProcessContext().getSamReader(svFile.exists() ? svFile : getFile());
 		return reader;
 	}
+
 	public File getSVFile() {
 		if (getFile() == null) {
 			return null;
@@ -596,5 +597,5 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * Provides hint as to whether the input file is known to contain only single-ended reads.
 	 * @return
 	 */
-	public boolean knownSingleEnded() { return false; } 
+	public boolean knownSingleEnded() { return false; }
 }
