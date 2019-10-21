@@ -178,7 +178,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		log.info("Breakend assembly complete.");
 	}
 	private void assembleChunk(File output, int chunkNumber, QueryInterval[] qi, IntervalBed excludedRegions, IntervalBed safetyRegions, IntervalBed downsampledRegions) throws IOException {
-		AssemblyIdGenerator assemblyNameGenerator = new SequentialIdGenerator(String.format("asm%d-", chunkNumber));
+		AssemblyIdGenerator assemblyNameGenerator = new SequentialIdGenerator(String.format(getContext().getConfig().getAssembly().contigNamePrefix, chunkNumber));
 		String chuckName = String.format("chunk %d (%s:%d-%s:%d)", chunkNumber,
 			getContext().getDictionary().getSequence(qi[0].referenceIndex).getSequenceName(), qi[0].start,
 			getContext().getDictionary().getSequence(qi[qi.length-1].referenceIndex).getSequenceName(), qi[qi.length-1].end);

@@ -18,6 +18,7 @@ public class AssemblyConfiguration {
 		removeMisassembledPartialContigsDuringAssembly = config.getBoolean("removeMisassembledPartialContigsDuringAssembly");
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
 		realignContigs = config.getBoolean("realignContigs");
+		contigNamePrefix = config.getString("contigNamePrefix");
 	}
 	public ErrorCorrectionConfiguration errorCorrection;
 	public DownsamplingConfiguration downsampling;
@@ -71,4 +72,8 @@ public class AssemblyConfiguration {
 	 * Realign entire contig. Contigs that do not map back to their originating location are ignored.
 	 */
 	public boolean realignContigs;
+	/**
+	 * SAM rread name prefix of assembly contigs.
+	 */
+	public String contigNamePrefix;
 }
