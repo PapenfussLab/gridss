@@ -62,7 +62,13 @@ public class PositionalAssemblyConfiguration {
 	 */
 	public float forceFullMemoizationRecalculationAt;
 	/**
-	 * Number of contigs called in safety mode
+	 * Number of contigs called in safety mode.
+	 *
+	 * Safety mode is entered when the number of active nodes in the assembly exceeds this threshold.
+	 * When safety mode is entered, the next {@link #safetyModePathCountThreshold} contigs will be
+	 * called then the remaining reads still in the assembly graph discarded.
+	 * Safety mode is reset whenever a new read is loaded into the assembly graph (ie when assembler
+	 * makes any progress and load more of the genome into the graph).
 	 */
 	public final int safetyModeContigsToCall;
 	/**
