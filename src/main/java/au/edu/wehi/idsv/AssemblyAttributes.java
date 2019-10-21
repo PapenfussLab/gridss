@@ -142,9 +142,11 @@ public class AssemblyAttributes {
 			}
 			support = Collections.emptyList();
 		}
-		if (support.size() != aes.size()) {
-			throw new IllegalArgumentException("support and aes sizes do not match");
-		}
+		// #260 support and aes do not have to match as aes is filtered based on supporting interval
+		// A read supporting a kmer but not the contig will have no aes support record
+		//if (support.size() != aes.size()) {
+		//	throw new IllegalArgumentException("support and aes sizes do not match");
+		//}
 		annotateAssemblyEvidenceSupport(record, aes);
 
 		record.setAttribute(SamTags.IS_ASSEMBLY, (byte)1);
