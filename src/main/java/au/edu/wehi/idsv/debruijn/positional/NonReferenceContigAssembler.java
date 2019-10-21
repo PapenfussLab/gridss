@@ -611,12 +611,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				bestContigCaller.sanityCheck(graphByPosition);
 			}
 		} else {
-			if (!MessageThrottler.Current.shouldSupress(log, "unsupported paths")) {
-				log.error("Sanity check failure: found path with no support. Attempting to recover by direct node removal ", contigName);
-			}
-			for (KmerPathSubnode n : contig) {
-				removeFromGraph(n.node(), true);
-			}
+			String msg = String.format("Sanity check failure: found path with no support. Attempting to recover by direct node removal (%s:%d)", contigName, rawcontig.getFirst().firstStart());
+			log.error(msg);
+			throw new RuntimeException(msg);
 		}
 		contigsCalled++;
 		if (assembledContig != null) {

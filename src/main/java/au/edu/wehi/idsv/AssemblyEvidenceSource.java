@@ -439,6 +439,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		return maxMappedReadLength;
 	}
+	/*
 	@SuppressWarnings("unused")
 	private Iterator<SAMRecord> getAllAssemblies_single_threaded() {
 		ProgressLogger progressLog = new ProgressLogger(log);
@@ -452,6 +453,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		return Iterators.concat(list.iterator());
 	}
+	*/
 	/**
 	 * Assembly contigs are not paired
 	 */
