@@ -318,7 +318,7 @@ public class SplitReadRealigner {
 			}
 		}
 	}
-	private void mergeSupplementaryAlignment(File input, List<File> aligned, File output, File unorderedOutput, boolean rewriteOA) throws IOException {
+	public void mergeSupplementaryAlignment(File input, List<File> aligned, File output, File unorderedOutput, boolean rewriteOA) throws IOException {
 		log.info("Merging split read alignments for ", output);
 		File suppMerged = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sa.");
 		File tmpoutput = FileSystemContext.getWorkingFileFor(output);
@@ -335,8 +335,9 @@ public class SplitReadRealigner {
 				suppIt.add(new AsyncBufferedIterator<>(new NmTagIterator(suppReader.iterator(), pc.getReference()), sf.getName()));
 			}
 			try (SAMFileWriter inputWriter = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-
-				try (SAMFileWriter suppWriter = writerFactory.makeSAMOrBAMWriter(minimal(header), false, suppMerged)) {
+				SAMFileHeader suppUnsortedHeader = minimal(header);
+				suppUnsortedHeader.setSortOrder(SortOrder.unsorted);
+				try (SAMFileWriter suppWriter = writerFactory.makeSAMOrBAMWriter(suppUnsortedHeader, true, suppMerged)) {
 					try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(new NmTagIterator(reader.iterator(), pc.getReference()), input.getName())) {
 						mergeSupplementaryAlignment(bufferedIt, suppIt, inputWriter, suppWriter, rewriteOA);
 					}

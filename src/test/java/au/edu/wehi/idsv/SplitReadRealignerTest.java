@@ -5,9 +5,12 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -382,5 +385,33 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(2, list.size());
 		Assert.assertEquals("282S618M", list.get(0).getCigarString());
+	}
+	//@Test // presort=false was the issue!
+	public void mergeSupplementaryAlignment_debug_memory_leak() throws IOException {
+		File projectDir = new File("W:/projects/BouilletProject1/working");
+		File asmDir = new File(projectDir, "bouillet.asm.bam.gridss.working");
+		ProcessingContext pc = new ProcessingContext(
+				new FileSystemContext(projectDir, 500000),
+				new File("W:/projects/BouilletProject1/ref/mm10.fa"),
+				null,
+				Lists.newArrayList(),
+				new GridssConfiguration(getDefaultConfig(), projectDir));
+		SplitReadRealigner srr = new SplitReadRealigner(pc);
+		List<File> realignments = ImmutableList.of(
+				new File(asmDir, "bouillet.asm.bam.realign.0.bam"),
+				new File(asmDir, "bouillet.asm.bam.realign.1.bam"),
+				new File(asmDir, "bouillet.asm.bam.realign.2.bam"),
+				new File(asmDir, "bouillet.asm.bam.realign.3.bam"),
+				new File(asmDir, "bouillet.asm.bam.realign.4.bam"),
+				new File(asmDir, "bouillet.asm.bam.realign.5.bam"),
+				new File(asmDir, "bouillet.asm.bam.realign.6.bam"),
+				new File(asmDir, "bouillet.asm.bam.realign.7.bam")
+		);
+		srr.mergeSupplementaryAlignment(
+				new File("W:/projects/BouilletProject1/bouillet.asm.bam"),
+				realignments,
+				new File(projectDir, "debug_memory_leak_order.bam"),
+				new File(projectDir, "debug_memory_leak_unordered.bam"),
+				true);
 	}
 }
