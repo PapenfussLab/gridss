@@ -480,6 +480,10 @@ If GRIDSS was built successfully, a combined jar containing GRIDSS and all requi
 For some error messages, it is difficult to determine the root cause and what to do to fix it.
 Here is a list of key phrases of errors encountered by users and their solution
 
+### htsjdk.samtools.SAMFormatException: SAM validation error
+
+Your input file does not conform to the SAM/BAM specifications. Solutions are to fix the input file so it conforms to the specifications (recommended) or add `--picardoptions VALIDATION_STRINGENCY=LENIENT` to ignore the error. Note that not all errors can be ignored.
+
 ### Aborting since lock gridss.lock._OUTPUT_ already exists. GRIDSS does not support multiple simulatenous instances running on the same data.
 
 Multiple instances of GRIDSS were run on the same data. GRIDSS does not yet support MPI parallelisation across multiple machines. Use the WORKER_THREADS parameter to specify the desired level of multi-threading. If using a cluster/job queuing system, a single non-MPI job should be submitted and either WORKER_THREADS explicitly set to the number of cores associated with the job requests, or the job should request the entire node.
