@@ -299,7 +299,7 @@ if [[ "$labels" != "" ]] ; then
 fi
 
 # Validate tools exist on path
-for tool in bwa Rscript /usr/bin/time sambamba java ; do
+for tool in bwa Rscript /usr/bin/time samtools java ; do
 	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2 
 done
@@ -383,7 +383,7 @@ if [[ $do_preprocess == true ]] ; then
 					STOP_AFTER=$metricsrecords \
 					$picardoptions \
 			; } 1>&2 2>> $logfile
-			echo "$(date)	CollectGridssMetricsAndExtractSVReads|sambamba	$f" | tee -a $timinglogfile
+			echo "$(date)	CollectGridssMetricsAndExtractSVReads|samtools	$f" | tee -a $timinglogfile
 			{ $timecmd \
 				java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
@@ -410,16 +410,17 @@ if [[ $do_preprocess == true ]] ; then
 					INCLUDE_DUPLICATES=true \
 					$picardoptions \
 			| $timecmd \
-				sambamba sort \
+				samtools sort \
 					-n \
-					--tmpdir $dir \
+					-T $tmp_prefix.namedsorted-tmp \
 					-m 8GB \
+					-Obam \
 					-o $tmp_prefix.namedsorted.bam \
-					-t $threads \
+					-@ $threads \
 					/dev/stdin \
 			; } 1>&2 2>> $logfile
 			rm $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
-			echo "$(date)	ComputeSamTags|sambamba	$f" | tee -a $timinglogfile
+			echo "$(date)	ComputeSamTags|samtools	$f" | tee -a $timinglogfile
 			{ $timecmd \
 				java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.ComputeSamTags \
@@ -443,11 +444,12 @@ if [[ $do_preprocess == true ]] ; then
 					ASSUME_SORTED=true \
 					$picardoptions \
 			| $timecmd \
-				sambamba sort \
-					--tmpdir $dir \
+				samtools sort \
+					-T $tmp_prefix.coordinate-tmp \
 					-m 8GB \
+					-Obam \
 					-o $tmp_prefix.coordinate.bam \
-					-t $threads \
+					-@ $threads \
 					/dev/stdin \
 			; } 1>&2 2>> $logfile
 			rm $tmp_prefix.namedsorted.bam
@@ -465,22 +467,25 @@ if [[ $do_preprocess == true ]] ; then
 					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 					WORKER_THREADS=$threads \
 					$picardoptions \
-			&& rm $tmp_prefix.coordinate.bam $tmp_prefix.coordinate.bam.bai \
+			&& rm $tmp_prefix.coordinate.bam \
 			&& $timecmd \
-				sambamba sort \
-					-t $threads \
-					--tmpdir $dir \
+				samtools sort \
+					-@ $threads \
+					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+					-Obam \
 					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 					$tmp_prefix.sc2sr.supp.sv.bam \
 			&& rm $tmp_prefix.sc2sr.supp.sv.bam \
 			&& $timecmd \
-				sambamba merge \
-					-t $threads \
+				samtools merge \
+					-@ $threads \
 					$prefix.sv.tmp.bam \
 					$tmp_prefix.sc2sr.primary.sv.bam \
 					$tmp_prefix.sc2sr.suppsorted.sv.bam \
+			&& /usr/bin/time -a -o $timinglogfile \
+				samtools index $prefix.sv.tmp.bam \
 			&& rm $tmp_prefix.sc2sr.primary.sv.bam \
-			&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam $tmp_prefix.sc2sr.suppsorted.sv.bam.bai \
+			&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam \
 			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
 			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 			; } 1>&2 2>> $logfile
@@ -561,20 +566,23 @@ if [[ $do_assemble == true ]] ; then
 				REALIGN_ENTIRE_READ=true \
 				$picardoptions \
 		&& $timecmd \
-			sambamba sort \
-				-t $threads \
-				--tmpdir $dir \
+			samtools sort \
+				-@ $threads \
+				-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+				-Obam \
 				-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 				$tmp_prefix.sc2sr.supp.sv.bam \
 		&& rm $tmp_prefix.sc2sr.supp.sv.bam \
 		&& $timecmd \
-			sambamba merge \
-				-t $threads \
+			samtools merge \
+				-@ $threads \
 				$prefix.sv.tmp.bam \
 				$tmp_prefix.sc2sr.primary.sv.bam \
 				$tmp_prefix.sc2sr.suppsorted.sv.bam \
+		&& /usr/bin/time -a -o $timinglogfile \
+			samtools index $prefix.sv.tmp.bam \
 		&& rm $tmp_prefix.sc2sr.primary.sv.bam \
-		&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam $tmp_prefix.sc2sr.suppsorted.sv.bam.bai \
+		&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam \
 		&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
 		&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 		; } 1>&2 2>> $logfile
