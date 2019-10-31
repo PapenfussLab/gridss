@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -225,5 +226,27 @@ public class BreakpointSummaryTest extends TestHelper {
 		// Can't be reference since the nominal position is non-reference
 		assertFalse(new BreakpointSummary(0, FWD, 6, 5,7, 0, BWD, 8, 7, 9).couldBeReferenceAllele(true));
 		assertTrue(new BreakpointSummary(0, FWD, 6, 5,7, 0, BWD, 8, 7, 9).couldBeReferenceAllele(false));
+	}
+	@Test
+	public void centreAligned_should_left_centre_adjust_lower_endpoint() {
+		assertEquals(2, new BreakpointSummary(0, FWD, 2, 1, 4, 1, FWD, 3, 1, 4).centreAligned().nominal);
+		for (BreakpointSummary bp : Lists.newArrayList(
+				new BreakpointSummary(0, FWD, 1, 1, 4, 1, FWD, 4, 1, 4),
+				new BreakpointSummary(0, FWD, 2, 1, 4, 1, FWD, 3, 1, 4),
+				new BreakpointSummary(0, FWD, 3, 1, 4, 1, FWD, 2, 1, 4),
+				new BreakpointSummary(0, FWD, 4, 1, 4, 1, FWD, 1, 1, 4)
+		)) {
+			assertEquals(2, bp.centreAligned().nominal);
+			assertEquals(3, bp.remoteBreakpoint().centreAligned().nominal);
+		}
+		for (BreakpointSummary bp : Lists.newArrayList(
+				new BreakpointSummary(0, FWD, 1, 1, 4, 1, BWD, 1, 1, 4),
+				new BreakpointSummary(0, FWD, 2, 1, 4, 1, BWD, 2, 1, 4),
+				new BreakpointSummary(0, FWD, 3, 1, 4, 1, BWD, 3, 1, 4),
+				new BreakpointSummary(0, FWD, 4, 1, 4, 1, BWD, 4, 1, 4)
+				)) {
+			assertEquals(2, bp.centreAligned().nominal);
+			assertEquals(2, bp.remoteBreakpoint().centreAligned().nominal);
+		}
 	}
 }
