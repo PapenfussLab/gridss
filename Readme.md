@@ -156,6 +156,18 @@ server operation. Note that due to Java's use of [Compressed Oops](http://docs.o
 
 GRIDSS relies on the aligner to determine the mapping location and quality of assembly contigs and to identify split read from soft clipped reads. GRIDSS considers alignments with low mapping quality (default mapq <= 10) to not be uniquely aligned and treats them as unaligned. If alt contigs are included in an aligner that is not alt-aware then hits to sequences that are in both the primary reference contigs and the alt contigs will be given a low mapq by the aligner and will be treated as unaligned by GRIDSS. By default, GRIDSS uses bwa mem for alignment so by including the bwa alt contig definition file, reads from regions with alt homology will be preferentially aligned to the reference with a correspondingly improved mapq. Whether or not to include alt contigs depends on what sort of downstream analysis you intend to perform and how your intend to handle structural variants involving alt contigs. That said, if your reference genome includes alt contigs and a bwa alt contig definition file is available for your genome, you should use it.
 
+### How do I process only my region of interest?
+
+Extract all fragments overlapping your region of interest, then run gridss. See [gridss_targeted.sh](https://github.com/PapenfussLab/gridss/blob/master/example/gridss_targeted.sh) for an example.
+
+### How do I use GRIDSS to validate the calls from another caller?
+
+- Convert your calls to a BED file containing the start and end positions of all SVs called by your other caller.
+
+- Expand intervals by at least 10kbp. Too small a window will have a negative impact on GRIDSS QUAL scores (since they're emperically weighted, taking only regions with soft clipped reads will cause GRIDSS to massively downweight soft clips when scoring). Alternatively, for unbiased scoring, run `gridss.CollectGridssMetrics` on your input file and rename the `.gridss.working` directory to the name of your targeted bam file to enable the targeted bam to use the full bam metrics.
+
+- Process as per the region of interest processing outlined above.
+
 ## GRIDSS JAR
 
 GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss.sh`.
