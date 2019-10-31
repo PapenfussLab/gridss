@@ -157,7 +157,7 @@ find_jar() {
 	if [[ -f "${!env_name:-}" ]] ; then
 		echo "${!env_name}"
 	else
-		echo "Unable to find $2 jar. Specify using the environment variant $env_name" 1>&2
+		echo "Unable to find $2 jar. Specify using the environment variant $env_name, or the --jar command line parameter." 1>&2
 		exit 1
 	fi
 }
