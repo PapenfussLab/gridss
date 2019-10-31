@@ -64,10 +64,9 @@ if (file.exists(cache_filename)) {
 }
 ####
 # Start processing
-
 vcf = readVcf(argv$input)
 styles=c()
-try({styles = seqlevelsStyle(vcf)})
+try({styles = seqlevelsStyle(vcf)}, silent=TRUE)
 if (length(styles) > 0) {
   seqlevelsStyle(grrm) = seqlevelsStyle(vcf)[1]
 }
@@ -81,6 +80,10 @@ info(header(vcf)) = unique(as(rbind(as.data.frame(info(header(vcf))), data.frame
     "Inserted sequence repeatmasker repeat class",
     "Inserted sequence repeatmasker repeat orientation",
     "Portion of inserted sequence whose alignment overlaps the repeatmasker repeat. 1.0 indicates the inserted sequence entirely mapping to the repeat."))), "DataFrame"))
+info(vcf)$INSRMRT=rep(NA_character_, nrow(info(vcf)))
+info(vcf)$INSRMRC=rep(NA_character_, nrow(info(vcf)))
+info(vcf)$INSRMRO=rep(NA_character_, nrow(info(vcf)))
+info(vcf)$INSRMP=rep(NA_character_, nrow(info(vcf)))
 
 insseqgr = with(data.frame(
     sourceId=rep(names(rowRanges(vcf)), lengths(info(vcf)$BEALN)),
@@ -90,6 +93,12 @@ insseqgr = with(data.frame(
     start=as.integer(start),
     end=start+GenomicAlignments::cigarWidthAlongReferenceSpace(cigar)),
   GRanges(seqnames=chr, ranges=IRanges(start=start, end=end), strand=orientation, sourceId=sourceId))
+getFirstAlt = function(alt) {
+  if (any(elementNROWS(alt) > 1)) {
+    stop("Multiple ALT alleles in a single record are not supported")
+  }
+  as.character(unlist(alt))
+}
 hits = findOverlaps(insseqgr, grrm, select="all", ignore.strand=TRUE)
 hits = hits %>% as.data.frame() %>%
   mutate(
@@ -98,7 +107,7 @@ hits = hits %>% as.data.frame() %>%
     repeatType=grrm[subjectHits]$repeatType,
     repeatClass=grrm[subjectHits]$repeatClass,
     sourceId=insseqgr[queryHits]$sourceId,
-    ALT=as.character(rowRanges(vcf)[sourceId]$ALT),
+    ALT=getFirstAlt(rowRanges(vcf)[sourceId]$ALT),
     repeat_orientation=as.character(strand(grrm[subjectHits])))
 insrmdf = hits %>%
   group_by(sourceId) %>%
@@ -106,11 +115,6 @@ insrmdf = hits %>%
   distinct(sourceId, .keep_all=TRUE) %>%
   ungroup() %>%
   dplyr::select(sourceId, repeatType, repeatClass, repeat_orientation, repeatOverlapPercentage)
-
-info(vcf)$INSRMRT=NA_character_
-info(vcf)$INSRMRC=NA_character_
-info(vcf)$INSRMRO=NA_character_
-info(vcf)$INSRMP=NA_real_
 
 info(vcf[insrmdf$sourceId])$INSRMRT=insrmdf$repeatType
 info(vcf[insrmdf$sourceId])$INSRMRC=insrmdf$repeatClass
