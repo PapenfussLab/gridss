@@ -6,6 +6,7 @@ argp = arg_parser("Annotates insertion sequence with the longest alignment overl
 argp = add_argument(argp, "--input", help="Input GRIDSS VCF")
 argp = add_argument(argp, "--output", help="Output GRIDSS VCF")
 argp = add_argument(argp, "--repeatmasker", help="RepeatMasker .fa.out file")
+argp = add_argument(argp, "--chromosomeStyle", default="NCBI", help="Default: keep as is. Other options are: UCSC, ")
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
 # argv = parse_args(argp, c("--input", "D:/hartwig/down/pre.vcf", "--output", "D:/hartwig/down/testrm.vcf","--repeatmasker", "D:/hartwig/hg19.fa.out"))
 argv = parse_args(argp)
@@ -61,12 +62,15 @@ if (file.exists(cache_filename)) {
   grrm = import.repeatmasker.fa.out(argv$repeatmasker)
   saveRDS(grrm, file=cache_filename)
 }
-seqlevelsStyle(grrm) = "NCBI"
-
 ####
 # Start processing
 
 vcf = readVcf(argv$input)
+styles=c()
+try({styles = seqlevelsStyle(vcf)})
+if (length(styles) > 0) {
+  seqlevelsStyle(grrm) = seqlevelsStyle(vcf)[1]
+}
 # Add new fields to header
 info(header(vcf)) = unique(as(rbind(as.data.frame(info(header(vcf))), data.frame(
   row.names=c("INSRMRT", "INSRMRC", "INSRMRO", "INSRMP"),
