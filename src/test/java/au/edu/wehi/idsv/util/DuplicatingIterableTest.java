@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import com.google.common.collect.PeekingIterator;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -119,5 +120,20 @@ public class DuplicatingIterableTest {
 				}
 			}
 		}
+	}
+	@Test
+	public void should_raise_on_all_iterators() {
+		int exceptionsFound = 0;
+		int n = 4;
+		DuplicatingIterable<Integer> di = new DuplicatingIterable<Integer>(n, new ErrorIterator<>(), 16);
+		for (int i = 0; i < n; i++) {
+			PeekingIterator<Integer> it = di.iterator();
+			try {
+				it.next();
+			} catch (RuntimeException e) {
+				exceptionsFound++;
+			}
+		}
+		assertEquals(n, exceptionsFound);
 	}
 }

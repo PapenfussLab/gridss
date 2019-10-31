@@ -1,5 +1,4 @@
 target
-*.gridss.working
 .Rproj.user
 bin
 chr12.*
@@ -7,3 +6,4 @@ hg19.*
 hg38.*
 .idea
 /example/*.log
+/example/out/

@@ -88,6 +88,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 				try {
 					eos();
 				} catch (InterruptedException e1) {
+					log.error("Interrupted when writing end of stream.");
 				}
 			}
 		}

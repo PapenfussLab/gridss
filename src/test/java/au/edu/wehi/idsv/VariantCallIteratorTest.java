@@ -3,17 +3,23 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import htsjdk.samtools.SAMRecord;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.util.ErrorIterator;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import htsjdk.samtools.*;
+import htsjdk.samtools.util.CloseableIterator;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import htsjdk.samtools.QueryInterval;
 
 public class VariantCallIteratorTest extends IntermediateFilesTest {
 	@Test
@@ -106,5 +112,25 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		VariantCallIterator ecp = new VariantCallIterator(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(1024, result.size());
+	}
+
+	/**
+	 * https://github.com/PapenfussLab/gridss/issues/267
+	 */
+	@Test(expected = RuntimeException.class)
+	public void iterator_exception_should_surface_275() {
+		VariantCallIterator ecp = new VariantCallIterator(getContext(), new ErrorIterator<>());
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
+	}
+	/**
+	 * https://github.com/PapenfussLab/gridss/issues/267
+	 */
+	@Test(expected = RuntimeException.class)
+	public void iterator_exception_should_surface_from_parsing_error_275() throws IOException {
+		ArrayList<SAMEvidenceSource> sess = Lists.newArrayList(new MockSAMEvidenceSource(getContext(), new File("src/test/resources/malformedsv.sam")));
+		MockAssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), sess, new File("src/test/resources/empty.bam"));
+		VariantCaller vc = new VariantCaller(getContext(), sess, aes);
+		ExecutorService threadpool = Executors.newFixedThreadPool(2, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Test275-%d").build());
+		vc.callBreakends(new File(testFolder.getRoot(), "out275.vcf"), threadpool);
 	}
 }

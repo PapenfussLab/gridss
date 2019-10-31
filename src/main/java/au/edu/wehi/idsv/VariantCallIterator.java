@@ -145,6 +145,11 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 				}
 			} catch (Exception e) {
 				workerThreadException = e;
+				try {
+					outBuffer.putLast(endOfStream);
+				} catch (InterruptedException ex) {
+					log.error("Interrupted writing end of stream");
+				}
 			}
 		}
 		@Override

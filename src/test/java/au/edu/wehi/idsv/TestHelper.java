@@ -889,10 +889,13 @@ public class TestHelper {
 		public IdsvSamFileMetrics metrics = new MockMetrics();
 		public int category = 0;
 		public MockSAMEvidenceSource(ProcessingContext processContext) {
-			super(processContext, new File("test.bam"), null, 0);
+			super(processContext, new File("src/test/resources/test.bam"), null, 0);
+		}
+		public MockSAMEvidenceSource(ProcessingContext processContext, File file) {
+			super(processContext, file, null, 0);
 		}
 		public MockSAMEvidenceSource(ProcessingContext processContext, int minFragmentSize, int maxFragmentSize) {
-			super(processContext, new File("test.bam"), null, 0, minFragmentSize, maxFragmentSize);
+			super(processContext, new File("src/test/resources/test.bam"), null, 0, minFragmentSize, maxFragmentSize);
 			metrics.getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH = maxFragmentSize;
 			metrics.getIdsvMetrics().MIN_PROPER_PAIR_FRAGMENT_LENGTH = minFragmentSize;
 			metrics.getIdsvMetrics().MAX_READ_LENGTH = minFragmentSize == 0 ? maxFragmentSize : minFragmentSize;
@@ -1014,22 +1017,22 @@ public class TestHelper {
 	public static AssemblyEvidenceSource AES() {
 		return new AssemblyEvidenceSource(getContext(),
 				ImmutableList.<SAMEvidenceSource>of(SES()), new File(
-						"test.bam"));
+						"src/test/resources/test.bam"));
 	}
 	public static AssemblyEvidenceSource AES(ProcessingContext context) {
 		return new AssemblyEvidenceSource(context,
 				ImmutableList.<SAMEvidenceSource>of(SES(context)), new File(
-						"test.bam"));
+						"src/test/resources/test.bam"));
 	}
 	public static AssemblyEvidenceSource AES(int maxFragmentSize) {
 		return new AssemblyEvidenceSource(getContext(),
 				ImmutableList.<SAMEvidenceSource>of(SES(maxFragmentSize)), new File(
-						"test.bam"));
+						"src/test/resources/test.bam"));
 	}
 	public static AssemblyEvidenceSource AES(SAMEvidenceSource ses) {
 		return new AssemblyEvidenceSource(ses.getContext(),
 				ImmutableList.<SAMEvidenceSource>of(ses), new File(
-						"test.bam"));
+						"src/test/resources/test.bam"));
 	}
 	public VariantContextDirectedEvidence CallSV(SAMRecord... evidence) {
 		return CallSV(Stream.of(evidence)

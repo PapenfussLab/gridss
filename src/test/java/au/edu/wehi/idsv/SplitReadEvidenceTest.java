@@ -439,7 +439,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[]{10, 20, 5});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "1 2 3");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
-		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("src/test/resources/test.bam"));
 		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);
 		// 0 1 2 3 4 5 6
 		//  M S S S    primary
@@ -463,7 +463,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_QUAL, new float[]{10, 20, 5});
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "1 2 3");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
-		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("src/test/resources/test.bam"));
 		SplitReadEvidence e = SplitReadEvidence.create(aes, r).get(0);
 		Assert.assertEquals(0, e.getBreakpointQual(), 0);
 	}
@@ -489,7 +489,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "e");
 		r.setAttribute(SamTags.UNANCHORED, 1);
 		copyAssemblyAttributes(r, realigned);
-		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("src/test/resources/test.bam"));
 		SplitReadEvidence local = SplitReadEvidence.create(aes, r).get(0);
 		SplitReadEvidence remote = SplitReadEvidence.create(aes, realigned).get(0);
 		Assert.assertEquals(10, local.getBreakpointQual(), 0);
@@ -517,7 +517,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "e");
 		r.setAttribute(SamTags.UNANCHORED, 1);
 		copyAssemblyAttributes(r, realigned);
-		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("src/test/resources/test.bam"));
 		SplitReadEvidence local = SplitReadEvidence.create(aes, r).get(0);
 		SplitReadEvidence remote = SplitReadEvidence.create(aes, realigned).get(0);
 		Assert.assertEquals(10, local.getBreakpointQual(), 0);
@@ -543,7 +543,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_EVIDENCEID, "1 2 3");
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
 		copyAssemblyAttributes(r, r2);
-		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("test.bam"));
+		AssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), ImmutableList.of(SES(0), SES(1)), new File("src/test/resources/test.bam"));
 		SplitReadEvidence elocal = SplitReadEvidence.create(aes, r2).get(0);
 		SplitReadEvidence eremote = SplitReadEvidence.create(aes, r).get(0);
 		Assert.assertEquals(elocal.getBreakpointQual(), eremote.getBreakpointQual(), 0);
