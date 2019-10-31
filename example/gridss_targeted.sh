@@ -114,13 +114,11 @@ wait
 
 # Run GRIDSS on the extracted files
 # warning: if you haven't increased your OS file ulimit above 4096 then will probably crash. Refer to the GRIDSS README for more details
-java -Xmx31g $JVM_ARGS \
-	-cp $GRIDSS_JAR gridss.CallVariants \
-	TMP_DIR=. \
-	WORKING_DIR=. \
-	REFERENCE_SEQUENCE=$REFERENCE \
-	INPUT=$(dirname $INPUT)/$(basename $INPUT .bam).targeted.bam \
-	OUTPUT=$OUTPUT \
-	ASSEMBLY=$ASSEMBLY \
-	WORKER_THREADS=16 \
-	2>&1 | tee -a log.gridss.$HOSTNAME.$$.log
+gridss.sh \
+	--workingdir . \
+	--jar $GRIDSS_JAR \
+	--reference $REFERENCE \
+	--output $OUTPUT \
+	--assembly $ASSEMBLY \
+	--threads 8 \
+	$(dirname $INPUT)/$(basename $INPUT .bam).targeted.bam
