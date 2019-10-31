@@ -303,7 +303,7 @@ for tool in bwa Rscript /usr/bin/time samtools java ; do
 	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2 
 done
-sambamba 2>&1 | grep sambamba | head -1 1>&2 || echo -n
+samtools --version | grep -v Copyright 1>&2
 Rscript --version 1>&2
 echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
 /usr/bin/time --version 1>&2
