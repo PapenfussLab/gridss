@@ -299,14 +299,23 @@ if [[ "$labels" != "" ]] ; then
 fi
 
 # Validate tools exist on path
-for tool in bwa Rscript /usr/bin/time samtools java ; do
+for tool in bwa Rscript samtools java ; do
 	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2 
 done
+if which /usr/bin/time >/dev/null ; then
+	timecmd="/usr/bin/time"
+	echo "Found /usr/bin/time" 1>&2
+else
+	timecmd=""
+	echo "Not found /usr/bin/time" 1>&2
+fi
 samtools --version | grep -v Copyright 1>&2
 Rscript --version 1>&2
 echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
-/usr/bin/time --version 1>&2
+if which /usr/bin/time >/dev/null ; then
+	/usr/bin/time --version 1>&2
+fi
 /bin/bash --version 2>&1 | head -1 1>&2
 
 # check java version is ok by testing for GRIDSS usage message
@@ -323,20 +332,21 @@ if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
 	exit 15
 fi
 
-
 timestamp=$(date +%Y%m%d_%H%M%S)
 mkdir -p $workingdir
 logfile=$workingdir/gridss.full.$timestamp.$HOSTNAME.$$.log
 timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
+if [[ "$timecmd" != "" ]] ; then
+	timecmd="/usr/bin/time --verbose -a -o $timinglogfile"
+	if ! $timecmd echo 2>&1 > /dev/null; then
+		timecmd="/usr/bin/time -a -o $timinglogfile"
+	fi
+	if ! $timecmd echo 2>&1 > /dev/null ; then
+		timecmd=""
+		echo "Unexpected /usr/bin/time version. Not logging timing information." 1>&2
+	fi
+fi
 
-timecmd="/usr/bin/time --verbose -a -o $timinglogfile"
-if ! $timecmd echo 2>&1 > /dev/null; then
-	timecmd="/usr/bin/time -a -o $timinglogfile"
-fi
-if ! $timecmd echo 2>&1 > /dev/null ; then
-	timecmd=""
-	echo "Not tracking timing information with /usr/bin/time" 1>&2
-fi
 
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
@@ -368,8 +378,7 @@ if [[ $do_preprocess == true ]] ; then
 		fi
 		if [[ ! -f $prefix.sv.bam ]] ; then
 			echo "$(date)	CollectInsertSizeMetrics	$f	first $metricsrecords records" | tee -a $timinglogfile
-			{ $timecmd \
-				java -Xmx4g $jvm_args \
+			{ $timecmd java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 					TMP_DIR=$dir \
 					ASSUME_SORTED=true \
@@ -384,8 +393,7 @@ if [[ $do_preprocess == true ]] ; then
 					$picardoptions \
 			; } 1>&2 2>> $logfile
 			echo "$(date)	CollectGridssMetricsAndExtractSVReads|samtools	$f" | tee -a $timinglogfile
-			{ $timecmd \
-				java -Xmx4g $jvm_args \
+			{ $timecmd java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 					TMP_DIR=$dir \
 					ASSUME_SORTED=true \
@@ -409,8 +417,7 @@ if [[ $do_preprocess == true ]] ; then
 					MIN_CLIP_LENGTH=5 \
 					INCLUDE_DUPLICATES=true \
 					$picardoptions \
-			| $timecmd \
-				samtools sort \
+			| $timecmd samtools sort \
 					-n \
 					-T $tmp_prefix.namedsorted-tmp \
 					-m 8GB \
@@ -421,8 +428,7 @@ if [[ $do_preprocess == true ]] ; then
 			; } 1>&2 2>> $logfile
 			rm $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
 			echo "$(date)	ComputeSamTags|samtools	$f" | tee -a $timinglogfile
-			{ $timecmd \
-				java -Xmx4g $jvm_args \
+			{ $timecmd java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.ComputeSamTags \
 					TMP_DIR=$dir \
 					WORKING_DIR=$workingdir \
@@ -443,8 +449,7 @@ if [[ $do_preprocess == true ]] ; then
 					TAGS=MQ \
 					ASSUME_SORTED=true \
 					$picardoptions \
-			| $timecmd \
-				samtools sort \
+			| $timecmd samtools sort \
 					-T $tmp_prefix.coordinate-tmp \
 					-m 8GB \
 					-Obam \
@@ -454,8 +459,7 @@ if [[ $do_preprocess == true ]] ; then
 			; } 1>&2 2>> $logfile
 			rm $tmp_prefix.namedsorted.bam
 			echo "$(date)	SoftClipsToSplitReads	$f" | tee -a $timinglogfile
-			{ $timecmd \
-				java -Xmx4g $jvm_args \
+			{ $timecmd java -Xmx4g $jvm_args \
 					-Dsamjdk.create_index=false \
 					-Dgridss.gridss.output_to_temp_file=true \
 					-cp $gridss_jar gridss.SoftClipsToSplitReads \
@@ -468,22 +472,19 @@ if [[ $do_preprocess == true ]] ; then
 					WORKER_THREADS=$threads \
 					$picardoptions \
 			&& rm $tmp_prefix.coordinate.bam \
-			&& $timecmd \
-				samtools sort \
+			&& $timecmd samtools sort \
 					-@ $threads \
 					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 					-Obam \
 					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 					$tmp_prefix.sc2sr.supp.sv.bam \
 			&& rm $tmp_prefix.sc2sr.supp.sv.bam \
-			&& $timecmd \
-				samtools merge \
+			&& $timecmd samtools merge \
 					-@ $threads \
 					$prefix.sv.tmp.bam \
 					$tmp_prefix.sc2sr.primary.sv.bam \
 					$tmp_prefix.sc2sr.suppsorted.sv.bam \
-			&& /usr/bin/time -a -o $timinglogfile \
-				samtools index $prefix.sv.tmp.bam \
+			&& $timecmd samtools index $prefix.sv.tmp.bam \
 			&& rm $tmp_prefix.sc2sr.primary.sv.bam \
 			&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam \
 			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
@@ -502,8 +503,7 @@ if [[ $do_assemble == true ]] ; then
 	echo "$(date)	Start assembly	$assembly" | tee -a $timinglogfile
 	if [[ ! -f $assembly ]] ; then
 		echo "$(date)	AssembleBreakends	$assembly	job $jobindex	total jobs $jobnodes" | tee -a $timinglogfile
-		{ $timecmd \
-			java -Xmx$jvmheap $jvm_args \
+		{ $timecmd java -Xmx$jvmheap $jvm_args \
 				-Dgridss.gridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AssembleBreakends \
 				JOB_INDEX=$jobindex \
@@ -531,8 +531,7 @@ if [[ $do_assemble == true ]] ; then
 	tmp_prefix=$dir/tmp.$(basename $assembly)
 	if [[ ! -f $prefix.sv.bam ]] ; then
 		echo "$(date)	CollectGridssMetrics	$assembly" | tee -a $timinglogfile
-		{ $timecmd \
-			java -Xmx4g $jvm_args \
+		{ $timecmd java -Xmx4g $jvm_args \
 				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 				I=$assembly \
 				O=$prefix \
@@ -550,8 +549,7 @@ if [[ $do_assemble == true ]] ; then
 				$picardoptions \
 		; } 1>&2 2>> $logfile
 		echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
-		{ $timecmd \
-			java -Xmx4g $jvm_args \
+		{ $timecmd java -Xmx4g $jvm_args \
 				-Dgridss.async.buffersize=16 \
 				-Dsamjdk.create_index=false \
 				-Dgridss.gridss.output_to_temp_file=true \
@@ -565,22 +563,19 @@ if [[ $do_assemble == true ]] ; then
 				OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 				REALIGN_ENTIRE_READ=true \
 				$picardoptions \
-		&& $timecmd \
-			samtools sort \
+		&& $timecmd samtools sort \
 				-@ $threads \
 				-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 				-Obam \
 				-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 				$tmp_prefix.sc2sr.supp.sv.bam \
 		&& rm $tmp_prefix.sc2sr.supp.sv.bam \
-		&& $timecmd \
-			samtools merge \
+		&& $timecmd samtools merge \
 				-@ $threads \
 				$prefix.sv.tmp.bam \
 				$tmp_prefix.sc2sr.primary.sv.bam \
 				$tmp_prefix.sc2sr.suppsorted.sv.bam \
-		&& /usr/bin/time -a -o $timinglogfile \
-			samtools index $prefix.sv.tmp.bam \
+		&& $timecmd samtools index $prefix.sv.tmp.bam \
 		&& rm $tmp_prefix.sc2sr.primary.sv.bam \
 		&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam \
 		&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
@@ -605,8 +600,7 @@ if [[ $do_call == true ]] ; then
 			exit 2
 		fi
 		echo "$(date)	IdentifyVariants	$output_vcf" | tee -a $timinglogfile
-		{ $timecmd \
-			java -Xmx$jvmheap $jvm_args \
+		{ $timecmd java -Xmx$jvmheap $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.IdentifyVariants \
 				TMP_DIR=$workingdir \
@@ -620,8 +614,7 @@ if [[ $do_call == true ]] ; then
 				OUTPUT_VCF=$prefix.unallocated.vcf \
 		; } 1>&2 2>> $logfile
 		echo "$(date)	AnnotateVariants	$output_vcf" | tee -a $timinglogfile
-		{ $timecmd \
-			java -Xmx$jvmheap $jvm_args \
+		{ $timecmd java -Xmx$jvmheap $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateVariants \
 				TMP_DIR=$workingdir \
@@ -638,8 +631,7 @@ if [[ $do_call == true ]] ; then
 		; } 1>&2 2>> $logfile
 		rm $prefix.unallocated.vcf
 		echo "$(date)	AnnotateUntemplatedSequence	$output_vcf" | tee -a $timinglogfile
-		{ $timecmd \
-			java -Xmx4g $jvm_args \
+		{ $timecmd java -Xmx4g $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateUntemplatedSequence \
 				TMP_DIR=$workingdir \
@@ -656,6 +648,10 @@ if [[ $do_call == true ]] ; then
 	fi
 	echo "$(date)	Complete calling	$output_vcf" | tee -a $timinglogfile
 fi
-echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
+if [[ -f $logfile ]] ; then
+	echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
+else 
+	echo "$(date)	Run complete with no log file. Output file already exists?"
+fi
 trap - EXIT
-exit 0 # success!
+#exit 0 # success!
