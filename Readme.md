@@ -30,7 +30,7 @@ To run GRIDSS the following must be installed:
 
 * java 1.8 or later
 * R 3.5 or later
-* sambamba
+* samtools
 * bwa
 
 The driver script requires:
@@ -164,7 +164,7 @@ GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of s
 
 #### CallVariants
 
-This tool runs every step in the variant calling pipeline. This entry point has been superceeded by `gridss.sh` but is retained for backward compatibility with existing pipeline. `gridss.sh` is preferred as it has lower peak memory usage and is slightly faster due to the use of sambamba for sorting instead of htsjdk.
+This tool runs every step in the variant calling pipeline. This entry point has been superceeded by `gridss.sh` but is retained for backward compatibility with existing pipeline. `gridss.sh` is preferred as it has lower peak memory usage and is slightly faster due to the use of samtools for sorting instead of htsjdk.
 
 #### CollectGridssMetrics
 
