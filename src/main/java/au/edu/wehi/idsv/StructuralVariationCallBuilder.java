@@ -254,8 +254,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					.findFirst().orElse(null);
 			if (bestBreakpoint != null && bestBreakpoint.isBreakendExact()) {
 				untemplated = bestBreakpoint.getUntemplatedSequence();
-				nominalPosition = bestBreakpoint.getBreakendSummary().centreAligned();
-				breakpoint((BreakpointSummary)nominalPosition, untemplated);
+				nominalPosition = bestBreakpoint.getBreakendSummary();
+				breakpoint(bestBreakpoint.getBreakendSummary(), untemplated);
 				homo = bestBreakpoint.getHomologySequence();
 				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
 			} else {

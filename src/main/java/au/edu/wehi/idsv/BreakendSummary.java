@@ -112,6 +112,7 @@ public class BreakendSummary {
 	/**
 	 * Extends the breakend location interval
 	 * @param expandBy number of bases to extend bounds by
+	 * @param dictionary sequence dictionary
 	 * @return breakend with bounds expanded on both sides
 	 */
 	public BreakendSummary expandBounds(int expandBy) {
@@ -119,6 +120,8 @@ public class BreakendSummary {
 	}
 	/**
 	 * Extends the breakend location interval
+	 * @param expandBy number of bases to extend bounds by
+	 * @param dictionary sequence dictionary
 	 * @return breakend with bounds expanded on both sides
 	 */
 	private BreakendSummary adjustBounds(int startAdjustment, int endAdjustment) {
@@ -161,6 +164,7 @@ public class BreakendSummary {
 	/**
 	 * Reduces size of the breakend location interval
 	 * @param by bases to reduce each side of the bounds by 
+	 * @param dictionary sequence dictionary
 	 * @return breakend with bounds reduced
 	 */
 	public BreakendSummary compressBounds(int by) {
@@ -244,9 +248,6 @@ public class BreakendSummary {
 			breakcigar.add(new CigarElement(1, CigarOperator.X));
 		}
 		return breakcigar;
-	}
-	public BreakendSummary centreAligned() {
-		return new BreakendSummary(referenceIndex, direction, (int)Math.floor(((double)start + end) / 2), start, end);
 	}
 	@Override
 	public String toString() {

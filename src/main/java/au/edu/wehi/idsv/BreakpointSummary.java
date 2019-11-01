@@ -233,26 +233,6 @@ public class BreakpointSummary extends BreakendSummary {
 		}
 	}
 	@Override
-	public BreakpointSummary centreAligned() {
-		int addToLocal;
-		int addToRemote;
-		double targetPosition = ((double)start + end) / 2;
-		if (direction != direction2) {
-			addToLocal = (int)Math.floor(targetPosition) - nominal;
-			addToRemote = addToLocal;
-		} else {
-			if (isLowBreakend()) {
-				addToLocal = (int)Math.floor(targetPosition) - nominal;
-			} else {
-				addToLocal = (int)Math.ceil(targetPosition) - nominal;
-			}
-			addToRemote = -addToLocal;
-		}
-		return new BreakpointSummary(
-				referenceIndex, direction, nominal + addToLocal, start, end,
-				referenceIndex2, direction2, nominal2 + addToRemote, start2, end2);
-	}
-	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
