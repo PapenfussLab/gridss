@@ -420,7 +420,6 @@ if [[ $do_preprocess == true ]] ; then
 			| $timecmd samtools sort \
 					-n \
 					-T $tmp_prefix.namedsorted-tmp \
-					-m 8GB \
 					-Obam \
 					-o $tmp_prefix.namedsorted.bam \
 					-@ $threads \
@@ -451,7 +450,6 @@ if [[ $do_preprocess == true ]] ; then
 					$picardoptions \
 			| $timecmd samtools sort \
 					-T $tmp_prefix.coordinate-tmp \
-					-m 8GB \
 					-Obam \
 					-o $tmp_prefix.coordinate.bam \
 					-@ $threads \
