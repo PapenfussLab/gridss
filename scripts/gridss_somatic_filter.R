@@ -6,6 +6,7 @@ argp = add_argument(argp, "--ref", default="", help="Reference genome to use. Mu
 argp = add_argument(argp, "--input", help="GRIDSS VCF")
 argp = add_argument(argp, "--output", help="High confidence somatic subset")
 argp = add_argument(argp, "--fulloutput", help="Full call set excluding obviously germline call.")
+argp = add_argument(argp, "--plotdir", default="", help="Output directory for plots")
 argp = add_argument(argp, "--normalordinal", type="integer", default=1, help="Ordinal of matching normal sample in the VCF")
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
@@ -13,7 +14,8 @@ argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection af
 #argv = parse_args(argp, argv=c("--input", "S:/colo829/gridss/tmp.rmann.colo829.gridss.vcf", "--output", "D:/hartwig/temp/out.vcf", "-f", "D:/hartwig/temp/full.vcf", "-p", "S:/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
 #argv = parse_args(argp, argv=c("--input", "/data/gridss/tmp.rmann.colo829.gridss.vcf", "--output", "/data/tmp.vcf", "-f", "/data/tmp-full.vcf", "-p", "/refdata/dbs/gridss/pon3792v1", "--scriptdir", "/opt/gridss", "--gc"))
 #argv = parse_args(argp, argv=c("--input", "D:/colo829/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "D:/dev/tmp.vcf", "-f", "D:/dev/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
-argv = parse_args(argp)
+#argv = parse_args(argp, argv=c("--input", "C:/dev/combimet/CMHP1.sv.vcf", "--plotdir", "C:/dev/combimet", "--output", "C:/dev/tmp.vcf", "-f", "C:/dev/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
+#argv = parse_args(argp)
 
 if (!file.exists(argv$input)) {
   msg = paste(argv$input, "not found")
@@ -56,11 +58,32 @@ if (file.exists(libgridssfile)) {
   print(argp)
   stop(msg)
 }
-
+library(ggplot2)
+dpi=300
+theme_set(theme_bw())
 
 # Filter to somatic calls
 write(paste(Sys.time(), "Reading", argv$input), stderr())
 raw_vcf = readVcf(argv$input)
+if (argv$plotdir != "") {
+  # QUAL distributions of each sample
+  plotdf = as.numeric(geno(raw_vcf)$QUAL)
+  plotdf = plotdf %>% as.data.frame() %>%
+    replace_na(list(QUAL=0)) %>%
+    mutate(
+      alt=unlist(alt(raw_vcf)),
+      isSingleBreakend=startsWith(alt, ".") | endsWith(alt, "."),
+      foundIn=rowSums(geno(raw_vcf)$QUAL > 0)) %>%
+    gather(sample, qual, -foundIn, -isSingleBreakend)
+  ggsave(paste0(argv$plotdir, "/", basename(argv$output), ".plots.bpqual.png"),
+         ggplot(plotdf %>% filter(!isSingleBreakend & qual > 0)) +
+           aes(x=qual, fill=as.character(foundIn)) +
+           geom_histogram(bins=50) +
+           scale_x_log10() +
+           facet_wrap( ~ sample) +
+           labs(fill="Found in samples", title="Raw QUAL breakdown (breakpoint variants)"),
+         dpi=dpi, unit="in", width=3840/dpi, height=2160/dpi)
+}
 tumourordinal = seq(ncol(geno(raw_vcf)$VF))[-argv$normalordinal]
 # hard filter variants that are obviously not somatic
 full_vcf = raw_vcf[geno(raw_vcf)$QUAL[,argv$normalordinal] / VariantAnnotation::fixed(raw_vcf)$QUAL < 4 * gridss.allowable_normal_contamination]
@@ -72,7 +95,7 @@ full_vcf = align_breakpoints(full_vcf)
 # Add header fields
 full_vcf = addVCFHeaders(full_vcf)
 
-info(full_vcf)$BPI_AF = rep("", length(full_vcf))
+info(full_vcf)$TAF = rep("", length(full_vcf))
 filters = rep("", length(full_vcf))
 names(filters) = names(full_vcf)
 
@@ -82,7 +105,7 @@ write(paste(Sys.time(), "Calculating single breakend VAF", argv$input), stderr()
 begr$af = round(gridss_be_af(begr, full_vcf, tumourordinal), 5)
 begr$af_str = as.character(begr$af)
 if (length(begr) > 0) {
-  info(full_vcf[names(begr)])$BPI_AF = begr$af_str
+  info(full_vcf[names(begr)])$TAF = begr$af_str
 }
 write(paste(Sys.time(), "Filtering single breakends", argv$input), stderr())
 befiltered = gridss_breakend_filter(begr, full_vcf, pon_dir=argv$pondir, normalOrdinal=argv$normalordinal, tumourOrdinal=tumourordinal)
@@ -100,7 +123,7 @@ write(paste(Sys.time(), "Calculating breakpoint VAF", argv$input), stderr())
 bpgr$af = round(gridss_bp_af(bpgr, full_vcf, tumourordinal), 5)
 bpgr$af_str = paste(bpgr$af, partner(bpgr)$af, sep=",")
 if (length(bpgr) > 0) {
-  info(full_vcf[names(bpgr)])$BPI_AF = bpgr$af_str
+  info(full_vcf[names(bpgr)])$TAF = bpgr$af_str
 }
 write(paste(Sys.time(), "Filtering breakpoints", argv$input), stderr())
 bpfiltered = gridss_breakpoint_filter(bpgr, full_vcf, bsgenome=refgenome, pon_dir=argv$pondir, normalOrdinal=argv$normalordinal, tumourOrdinal=tumourordinal)
@@ -141,6 +164,43 @@ is_imprecise = !(is.na(info(vcf)$IMPRECISE) | !info(vcf)$IMPRECISE) |
       (is.na(info(vcf)$PARID) & info(vcf)$BASSR + info(vcf)$BSC > 0))
 filters[names(vcf)[is_imprecise]] = paste0(filters[names(vcf)[is_imprecise]], ";imprecise")
 filters[transitive_df$linked_by] = paste0(filters[transitive_df$linked_by], ";transitive")
+
+# write out filtering overview plots
+if (argv$plotdir != "") {
+  fdf = data.frame(
+    id=names(filters),
+    isSingleBreakend=str_detect(unlist(alt(full_vcf)), stringr::fixed(".")),
+    filter=filters,
+    gridssFilters=rowRanges(full_vcf)$FILTER,
+    qual=rowRanges(full_vcf)$QUAL)
+  fldf = fdf %>%
+    mutate(nfilters=str_count(filters, ";")) %>%
+    mutate(filter=str_replace(filter, "^;", "")) %>%
+    separate_rows(filter, sep=";")
+  ggsave(paste0(argv$plotdir, "/", basename(argv$output), ".plots.bpfilters.png"),
+    ggplot(fldf %>% filter(!isSingleBreakend & qual > 250)) +
+      aes(x=qual, fill=as.character(nfilters)) +
+      geom_histogram(bins=50) +
+      scale_x_log10() +
+      facet_wrap( ~ filter) +
+      labs(fill="Filters", title="Filtering breakdown (breakpoint variants)"),
+    dpi=dpi, unit="in", width=3840/dpi, height=2160/dpi)
+  ggsave(paste0(argv$plotdir, "/", basename(argv$output), ".plots.befilters.png"),
+    ggplot(fldf %>% filter(isSingleBreakend & qual > 500)) +
+      aes(x=qual, fill=as.character(nfilters)) +
+      geom_histogram(bins=50) +
+      scale_x_log10() +
+      facet_wrap( ~ filter) +
+      labs(fill="Filters", title="Filtering breakdown (single breakend variants)"),
+    dpi=dpi, unit="in", width=3840/dpi, height=2160/dpi)
+  ggsave(paste0(argv$plotdir, "/", basename(argv$output), ".plots.bpassembly.png"),
+      ggplot(fdf %>% filter(filter=="")) +
+      aes(x=qual, fill=str_replace(gridssFilters, "(PASS)|(;?LOW_QUAL;?)", "")) +
+      geom_histogram(bins=100) +
+      scale_x_log10() +
+      labs("Assembly support of unfiltered variants", fill="Status"),
+      dpi=dpi, unit="in", width=3840/dpi, height=2160/dpi)
+}
 
 vcf = full_vcf[passes_soft_filters(filters)]
 vcf = vcf[is.na(info(vcf)$PARID) | info(vcf)$PARID %in% names(vcf)]

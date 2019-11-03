@@ -2,8 +2,10 @@
 gridss.short_event_size_threshold = 1000
 
 # somatic filters
-gridss.allowable_normal_contamination=0.03 # matches https://github.com/hartwigmedical/pipeline/settings/include/settings.ini:BPI_CONTAMINATION_FRACTION
+gridss.allowable_normal_contamination=0.03
 gridss.min_normal_depth = 8
+# Minimum number of reads providing direct support the variant
+gridss.min_direct_read_support = 0
 
 # initial consideration filters
 gridss.max_homology_length = 50
@@ -37,4 +39,4 @@ gridss.soft_filters = c("PON")
 gridss.min_rescue_portion = 0.25
 
 # consistency
-gridss.min_event_size = 32
+gridss.min_event_size = 8

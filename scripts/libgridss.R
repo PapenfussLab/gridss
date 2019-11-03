@@ -27,10 +27,14 @@ source("gridss.config.R")
 }
 addVCFHeaders = function(vcf) {
   info(header(vcf)) = unique(as(rbind(as.data.frame(info(header(vcf))), data.frame(
-    row.names=c("BPI_AF", "LOCAL_LINKED_BY", "REMOTE_LINKED_BY"),
+    row.names=c("TAF", "LOCAL_LINKED_BY", "REMOTE_LINKED_BY"),
     Number=c(".", ".", "."),
     Type=c("Float", "String", "String"),
-    Description=c("Allele fraction at for each breakend", "Breakend linking information", "Partner breakend linking information"))), "DataFrame"))
+    Description=c(
+      "Overall unadjusted allele fraction of tumour samples (not weighted by sample depth, nor purity adjusted)",
+      "Breakend linking information",
+      "Partner breakend linking information"))),
+    "DataFrame"))
   VariantAnnotation::fixed(header(vcf))$FILTER = unique(as(rbind(as.data.frame(VariantAnnotation::fixed(header(vcf))$FILTER), data.frame(
     row.names=c(
       "PON",
@@ -38,8 +42,8 @@ addVCFHeaders = function(vcf) {
       "strand_bias",
       "homlen",
       "ihomlen",
-      "BPI.Filter.PRSupportZero",
-      "BPI.Filter.SRSupportZero",
+      "largeNoRP",
+      "smallNoSR",
       "small.del.ligation.fp",
       "small.inv.hom.fp",
       "small.replacement.fp",
@@ -47,27 +51,31 @@ addVCFHeaders = function(vcf) {
       "SRNormalSupport",
       "normalCoverage",
       "af",
-      "NO_ASRP",
+      "NoAssembledRP",
       "LongPolyC",
-      "cohortMinSize"),
+      "cohortMinSize",
+      "minRead",
+      "noAssembly"),
     Description=c(
       "Found in panel of normals",
       "Imprecise variant",
       "Short event with excessive strand bias in split reads/soft clipped reads overlapping breakpoint",
-      "Breakpoint homology length too long",
-      "Inexact breakpoint homology length too long",
+      "Breakpoint homology length too long (gridss.max_homology_length)",
+      "Inexact breakpoint homology length too long (gridss.max_inexact_homology_length)",
       "Large event not supported by any read pairs either directly or via assembly",
       "Short event not supported by any split reads either directly or via assembly",
       "Short deletion that appears to be a ligation artefact",
       "Short inversion with significant sequence homology",
       "Deletion with insertion of the same length that is not a simple inversion.",
-      "Too many support reads from the normal sample",
+      "Too many supporting reads from the normal sample(s) (gridss.allowable_normal_contamination)",
       "Short event with split reads support in the normal sample",
-      "Insufficient normal coverage to determine somatic status",
-      "Variant allele fraction too low",
-      "Breakend supported by 0 assembled read pairs",
-      "Single breakend containing long polyC or polyG run. Likely to be an artefact.",
-      "Variant is smaller than the minimum event size considered for this cohort"))), "DataFrame"))
+      "Insufficient normal coverage to determine somatic status (gridss.min_normal_depth)",
+      "Variant allele fraction too low (gridss.min_af)",
+      "Single breakend with no assembled read pairs",
+      "Single breakend containing long polyC or polyG run. Likely to be an NovaSeq artefact.",
+      "Variant is smaller than the minimum event size considered for this cohort",
+      "Too few reads directly support the variant (gridss.min_direct_read_support)",
+      "no assembly support"))), "DataFrame"))
   return(vcf)
 }
 
@@ -117,22 +125,21 @@ gridss_breakpoint_filter = function(gr, vcf, bsgenome, min_support_filters=TRUE,
 	  strandbias = pmax(i$SB, 1 - i$SB)
 	  filtered = .addFilter(filtered, "strand_bias", !is.na(strandbias) & isShort & strandbias > gridss.max_allowable_short_event_strand_bias)
 
-
 	  #filtered = .addFilter(filtered, "FlankingHighQualIndel", str_detect(gridss_gr$FILTER, "SINGLE_ASSEMBLY") & (i$RP + i$SR) / i%VF < 0.1 & i$RP >= 2 & i$SR >= 2 # fixed in GRIDSSv1.8.0
 	}
 	if (min_support_filters) {
 	  filtered = .addFilter(filtered, "af", gridss_bp_af(gr, vcf, tumourOrdinal) < gridss.min_af)
 	  # Multiple biopsy concordance indicates that assemblies with very few supporting reads are sus
-	  #filtered = .addFilter(filtered, "minRead", .genosum(g$RP,c(normalOrdinal, tumourOrdinal)) + .genosum(g$SR, c(normalOrdinal, tumourOrdinal)) < gridss.min_direct_read_support)
-	  #filtered = .addFilter(filtered, "unanchored", i$ASSR + i$SR + i$IC == 0)
+	  filtered = .addFilter(filtered, "minRead", .genosum(g$RP,c(normalOrdinal, tumourOrdinal)) + .genosum(g$SR, c(normalOrdinal, tumourOrdinal)) < gridss.min_direct_read_support)
+	  #filtered = .addFilter(filtered, "unanchored", i$ASSR + i$SR + i$IC == 0) # replaced by 'imprecise'
 	  # very high coverage hits assembly threshold; we also need to keep transitive calls so we reallocate them to get the correct VF
-	  #filtered = .addFilter(filtered, "NO_ASSEMBLY", str_detect(gr$FILTER, "NO_ASSEMBLY"))
+	  filtered = .addFilter(filtered, "noAssembly", str_detect(gr$FILTER, "NO_ASSEMBLY") & i$VF < 100)
 	  # homology FPs handled by normal and/or PON
 	  filtered = .addFilter(filtered, "homlen", homlen > gridss.max_homology_length)
 	  filtered = .addFilter(filtered, "ihomlen", ihomlen > gridss.max_inexact_homology_length & !(is_short_dup(gr)))
 		# Added ASRP into filter otherwise breakpoint chains don't get called
-	  filtered = .addFilter(filtered, "BPI.Filter.PRSupportZero", !isShort & .genosum(g$RP,c(normalOrdinal, tumourOrdinal)) + .genosum(g$ASRP,c(normalOrdinal, tumourOrdinal)) == 0)
-	  filtered = .addFilter(filtered, "BPI.Filter.SRSupportZero", isShort & .genosum(g$SR,c(normalOrdinal, tumourOrdinal)) == 0)
+	  filtered = .addFilter(filtered, "largeNoRP", !isShort & .genosum(g$RP,c(normalOrdinal, tumourOrdinal)) + .genosum(g$ASRP,c(normalOrdinal, tumourOrdinal)) == 0)
+	  filtered = .addFilter(filtered, "smallNoSR", isShort & .genosum(g$SR,c(normalOrdinal, tumourOrdinal)) == 0)
 
 	  filtered = .addFilter(filtered, "small.del.ligation.fp", is_likely_library_prep_fragment_ligation_artefact(gr, vcf))
 	  filtered = .addFilter(filtered, "small.inv.hom.fp", is_small_inversion_with_homology(gr, vcf))
@@ -170,7 +177,7 @@ gridss_breakend_filter = function(gr, vcf, min_support_filters=TRUE, somatic_fil
     # require at least one read pair included in the assembly
     # this is a relatively strict filter but does filter out most of the
     # noise from microsatellite sequences
-    filtered = .addFilter(filtered, "NO_ASRP", i$BASRP == 0)
+    filtered = .addFilter(filtered, "NoAssembledRP", i$BASRP == 0)
     filtered = .addFilter(filtered, "LongPolyC", str_detect(gr$insSeq, "CCCCCCCCCCCCCCCC") | str_detect(gr$insSeq, "GGGGGGGGGGGGGGGG"))
   }
   if (somatic_filters) {
