@@ -249,4 +249,11 @@ public class BreakpointSummaryTest extends TestHelper {
 			assertEquals(2, bp.remoteBreakpoint().centreAligned().nominal);
 		}
 	}
+	@Test
+	public void centreAligned_should_not_adjust_nominal_outside_of_interval_bounds() {
+		BreakpointSummary bp = new BreakpointSummary(0, FWD, 1, 1, 5, 1, BWD, 4, 1, 5);
+		bp = bp.centreAligned();
+		assertEquals(1, bp.nominal);
+		assertEquals(4, bp.nominal2);
+	}
 }

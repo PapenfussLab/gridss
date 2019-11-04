@@ -1,9 +1,11 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.Log;
 
 import java.math.RoundingMode;
 
@@ -14,6 +16,7 @@ import java.math.RoundingMode;
  *
  */
 public class BreakpointSummary extends BreakendSummary {
+	private static final Log log = Log.getInstance(BreakpointSummary.class);
 	/**
 	 * Nominal position of breakpoint is immediately after this 1-based genomic coordinate on the destination contig
 	 */
@@ -248,9 +251,14 @@ public class BreakpointSummary extends BreakendSummary {
 			}
 			addToRemote = -addToLocal;
 		}
-		return new BreakpointSummary(
-				referenceIndex, direction, nominal + addToLocal, start, end,
-				referenceIndex2, direction2, nominal2 + addToRemote, start2, end2);
+		try {
+			return new BreakpointSummary(
+					referenceIndex, direction, nominal + addToLocal, start, end,
+					referenceIndex2, direction2, nominal2 + addToRemote, start2, end2);
+		} catch (IllegalArgumentException e) {
+			log.debug("Adjusted %s out of interval bounds.", this.toString());
+			return this;
+		}
 	}
 	@Override
 	public int hashCode() {
