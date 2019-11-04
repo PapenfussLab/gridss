@@ -611,7 +611,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				bestContigCaller.sanityCheck(graphByPosition);
 			}
 		} else {
-			String msg = String.format("Sanity check failure: found path with no support. Attempting to recover by direct node removal (%s:%d)", contigName, rawcontig.getFirst().firstStart());
+			String msg = String.format("Sanity check failure: found path with no support (%s:%d)", contigName, rawcontig.getFirst().firstStart());
 			log.error(msg);
 			throw new RuntimeException(msg);
 		}
