@@ -253,7 +253,18 @@ public class BreakpointSummaryTest extends TestHelper {
 	public void centreAligned_should_not_adjust_nominal_outside_of_interval_bounds() {
 		BreakpointSummary bp = new BreakpointSummary(0, FWD, 1, 1, 5, 1, BWD, 4, 1, 5);
 		bp = bp.centreAligned();
-		assertEquals(1, bp.nominal);
-		assertEquals(4, bp.nominal2);
+		assertEquals(3, bp.nominal);
+		assertEquals(3, bp.nominal2);
+	}
+
+	/**
+	 * Soft-clipped reads can have nonsensical nominal positions when the alignments overlap (e.g. 100M50S / 50S100M)
+	 */
+	@Test
+	public void centreAligned_should_ignore_existing_nominal() {
+		BreakpointSummary bp = new BreakpointSummary(0, FWD, 10, 1, 10, 1, FWD, 10, 1, 10);
+		bp = bp.centreAligned();
+		assertEquals(5, bp.nominal);
+		assertEquals(6, bp.nominal2);
 	}
 }

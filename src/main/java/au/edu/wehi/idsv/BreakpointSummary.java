@@ -237,28 +237,23 @@ public class BreakpointSummary extends BreakendSummary {
 	}
 	@Override
 	public BreakpointSummary centreAligned() {
-		int addToLocal;
-		int addToRemote;
-		double targetPosition = ((double)start + end) / 2;
+		double targetLocal = ((double)start + end) / 2;
+		double targetRemote = ((double)start2 + end2) / 2;
 		if (direction != direction2) {
-			addToLocal = (int)Math.floor(targetPosition) - nominal;
-			addToRemote = addToLocal;
+			targetLocal = Math.floor(targetLocal);
+			targetRemote = Math.floor(targetRemote);
 		} else {
 			if (isLowBreakend()) {
-				addToLocal = (int)Math.floor(targetPosition) - nominal;
+				targetLocal = Math.floor(targetLocal);
+				targetRemote = Math.ceil(targetRemote);
 			} else {
-				addToLocal = (int)Math.ceil(targetPosition) - nominal;
+				targetLocal = Math.ceil(targetLocal);
+				targetRemote = Math.floor(targetRemote);
 			}
-			addToRemote = -addToLocal;
 		}
-		try {
-			return new BreakpointSummary(
-					referenceIndex, direction, nominal + addToLocal, start, end,
-					referenceIndex2, direction2, nominal2 + addToRemote, start2, end2);
-		} catch (IllegalArgumentException e) {
-			log.debug("Adjusted %s out of interval bounds.", this.toString());
-			return this;
-		}
+		return new BreakpointSummary(
+					referenceIndex, direction, (int)targetLocal, start, end,
+					referenceIndex2, direction2, (int)targetRemote, start2, end2);
 	}
 	@Override
 	public int hashCode() {
