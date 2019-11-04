@@ -5,6 +5,8 @@ import au.edu.wehi.idsv.util.IntervalUtil;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 import java.util.*;
@@ -44,27 +46,33 @@ public class EvidenceTracker {
 		return support;
 	}
 	/**
-	 * Stops tracking all nodes associated with the given evidence 
-	 * @param evidence
+	 * Stops tracking all nodes associated with all of the given evidence
+	 * @param evidenceSet
 	 */
-	public void remove(KmerEvidence evidence) {
-		for (int i = 0; i < evidence.length(); i++) {
-			long kmer = evidence.kmer(i);
-			remove(kmer, evidence);
+	public void remove(Set<KmerEvidence> evidenceSet) {
+		LongSortedSet kmersInSet = new LongLinkedOpenHashSet();
+		for (KmerEvidence evidence : evidenceSet) {
+			for (int i = 0; i < evidence.length(); i++) {
+				long kmer = evidence.kmer(i);
+				kmersInSet.add(kmer);
+			}
+			id.remove(evidence.evidence().getEvidenceID());
 		}
-		id.remove(evidence.evidence().getEvidenceID());
+		for (long kmer : kmersInSet) {
+			remove(kmer, evidenceSet);
+		}
 	}
 	/**
 	 * Stops tracking all nodes associated with the given evidence 
 	 * @param evidence
 	 */
-	private void remove(long kmer, KmerEvidence evidence) {
+	private void remove(long kmer, Collection<KmerEvidence> evidence) {
 		LinkedList<KmerSupportNode> list = lookup.get(kmer);
 		if (list != null) {
 			ListIterator<KmerSupportNode> it = list.listIterator();
 			while (it.hasNext()) {
 				KmerSupportNode n = it.next();
-				if (n.evidence() == evidence) { 
+				if (evidence.contains(n.evidence())) {
 					it.remove();
 				}
 			}
@@ -105,10 +113,8 @@ public class EvidenceTracker {
 			}
 		}
 		if (remove) {
-			for (KmerEvidence e : evidence) {
-				// remove any leftover evidence kmers not on the called path   
-				remove(e);
-			}
+			// remove any leftover evidence kmers not on the called path
+			remove(evidence);
 		}
 		return evidence;
 	}
