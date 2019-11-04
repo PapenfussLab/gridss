@@ -5,7 +5,7 @@ gridss.short_event_size_threshold = 1000
 gridss.allowable_normal_contamination=0.03
 gridss.min_normal_depth = 8
 # Minimum number of reads providing direct support the variant
-gridss.min_direct_read_support = 0
+gridss.min_direct_read_support = 1
 
 # initial consideration filters
 gridss.max_homology_length = 50
