@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 import java.util.Comparator;
 
@@ -18,7 +17,7 @@ public abstract class DirectedEvidenceOrder {
 			return BreakendSummary.ByEndStart.compare(arg1.getBreakendSummary(), arg2.getBreakendSummary());
 		}
 	};
-	public static Ordering<DirectedEvidence> ByStartStart2EndEnd2 = new Ordering<DirectedEvidence>() {
+	public static Ordering<DirectedEvidence> ByStartEndStart2End2 = new Ordering<DirectedEvidence>() {
 		public int compare(DirectedEvidence arg1, DirectedEvidence arg2) {
 			BreakendSummary loc1 = arg1.getBreakendSummary();
 			BreakendSummary loc2 = arg2.getBreakendSummary();
@@ -55,5 +54,5 @@ public abstract class DirectedEvidenceOrder {
 	/**
 	 * Natural (genomic location of breakend) ordering of directed evidence.  
 	 */
-	public static Ordering<DirectedEvidence> ByNatural = ByStartStart2EndEnd2;
+	public static Ordering<DirectedEvidence> ByNatural = ByStartEndStart2End2;
 }
