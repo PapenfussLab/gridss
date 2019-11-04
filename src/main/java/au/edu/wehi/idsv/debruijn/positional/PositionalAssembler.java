@@ -241,6 +241,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		while ((currentAssembler == null || !currentAssembler.hasNext()) && it.hasNext()) {
 			// traverse contigs until we find one that has an assembly to call
 			currentAssembler = createAssembler(preload);
+			preload = null;
 			flushIfRequired();
 		}
 	}
