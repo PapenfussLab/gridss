@@ -1131,7 +1131,7 @@ linked_by_simple_inversion_classification = function(bpgr, maxgap=gridss.inversi
     filter(bpgr$sampleId[queryHits] == bpgr$sampleId[subjectHits]) %>% # intra-sample
     filter(as.logical(strand(bpgr)[queryHits] != strand(bpgr)[subjectHits])) %>% # opposite strand
     # matching pairs with the best qual
-    mutate(qqual=bpgr$QUAL[queryHits], squal=begr$QUAL[subjectHits]) %>%
+    mutate(qqual=bpgr$QUAL[queryHits], squal=bpgr$QUAL[subjectHits]) %>%
     group_by(queryHits) %>%
     top_n(1, squal) %>%
     group_by(subjectHits) %>%
