@@ -50,9 +50,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
     		metricsCollector.setup(header, samFile);
     	}
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-    	if (header.getSortOrder() != SortOrder.queryname) {
-			log.info("Not considering multiple read alignments as the input file is not queryname sorted.");
-		}
     	tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ExtractSVReads.") : OUTPUT;
     	writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput);
     	
