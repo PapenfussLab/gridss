@@ -6,11 +6,12 @@ library(StructuralVariantAnnotation)
 library(stringr)
 #' Simple SV type classifier
 simpleEventType <- function(gr) {
-	return(ifelse(seqnames(gr) != seqnames(partner(gr)), "CTX", # inter-chromosomosal
-								ifelse(gr$insLen >= abs(gr$svLen) * 0.7, "INS", # TODO: improve classification of complex events
-											 ifelse(strand(gr) == strand(partner(gr)), "INV",
-											 			 ifelse(xor(start(gr) < start(partner(gr)), strand(gr) == "-"), "DEL",
-											 			 			 "DUP")))))
+  pgr = partner(gr)
+  return(ifelse(seqnames(gr) != seqnames(pgr), "CTX", # inter-chromosomosal
+    ifelse(strand(gr) == strand(pgr), "INV",
+      ifelse(gr$insLen >= abs(gr$svLen) * 0.7, "INS", # TODO: improve classification of complex events
+        ifelse(xor(start(gr) < start(pgr), strand(gr) == "-"), "DEL",
+          "DUP")))))
 }
 # using the example in the GRIDSS /example directory
 vcf <- readVcf("gridss.full.chr12.1527326.DEL1024.vcf", "hg19")
