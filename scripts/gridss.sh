@@ -2,7 +2,7 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.6.3-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
+# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.7.2-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -174,7 +174,8 @@ if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
 		exit 16
 	fi
 if [[ ! -d $workingdir ]] ; then
-	if ! mkdir -p $workingdir ; then
+	mkdir -p $workingdir
+	if [[ ! -d $workingdir ]] ; then
 		echo Unable to create working directory $workingdir 1>&2
 		exit 2
 	fi
@@ -212,7 +213,11 @@ if [[ $do_assemble == "true" ]] ; then
 		echo "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory." 1>&2
 		exit 4
 	fi
-	mkdir -p $(dirname $assembly) || echo "Unable to create directory $(dirname $assembly) for assembly BAM." 1>&2
+	mkdir -p $(dirname $assembly)
+	if [[ ! -d $(dirname $assembly) ]] ; then
+		echo Unable to parent create directory for $assembly 1>&2
+		exit 2
+	fi
 	echo "Using assembly bam $assembly" 1>&2
 fi
 
@@ -223,7 +228,11 @@ if [[ $do_call == "true" ]] ; then
 		echo "Output VCF not specified. Use --output to specify output file." 1>&2
 		exit 9
 	fi
-	mkdir -p $(dirname $output_vcf) || echo "Unable to create directory $(dirname $output_vcf) for output VCF." 1>&2
+	mkdir -p $(dirname $output_vcf)
+	if [[ ! -d $(dirname $output_vcf) ]] ; then
+		echo "Unable to create directory for $output_vcf for output VCF." 1>&2
+		exit 2
+	fi
 	echo "Using output VCF $output_vcf" 1>&2
 fi
 ##### --threads
@@ -333,7 +342,6 @@ if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
 fi
 
 timestamp=$(date +%Y%m%d_%H%M%S)
-mkdir -p $workingdir
 logfile=$workingdir/gridss.full.$timestamp.$HOSTNAME.$$.log
 timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
 if [[ "$timecmd" != "" ]] ; then
@@ -372,7 +380,8 @@ if [[ $do_preprocess == true ]] ; then
 		dir=$workingdir/$(basename $f).gridss.working
 		prefix=$workingdir/$(basename $f).gridss.working/$(basename $f)
 		tmp_prefix=$workingdir/$(basename $f).gridss.working/tmp.$(basename $f)
-		if ! mkdir -p $dir ; then
+		mkdir -p $dir
+		if [[ ! -d $dir ]] ; then
 			echo Unable to create directory $dir 1>&2
 			exit 2
 		fi
@@ -593,7 +602,8 @@ if [[ $do_call == true ]] ; then
 	if [[ ! -f $output_vcf ]] ; then
 		dir=$workingdir/$(basename $output_vcf).gridss.working
 		prefix=$dir/$(basename $output_vcf)
-		if ! mkdir -p $dir ; then
+		mkdir -p $dir
+		if [[ ! -d $dir ]] ; then
 			echo Unable to create directory $dir 1>&2
 			exit 2
 		fi
