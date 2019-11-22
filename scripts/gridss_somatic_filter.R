@@ -15,7 +15,7 @@ argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection af
 #argv = parse_args(argp, argv=c("--input", "/data/gridss/tmp.rmann.colo829.gridss.vcf", "--output", "/data/tmp.vcf", "-f", "/data/tmp-full.vcf", "-p", "/refdata/dbs/gridss/pon3792v1", "--scriptdir", "/opt/gridss", "--gc"))
 #argv = parse_args(argp, argv=c("--input", "D:/colo829/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "D:/dev/tmp.vcf", "-f", "D:/dev/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
 #argv = parse_args(argp, argv=c("--input", "C:/dev/combimet/CMHP1.sv.vcf", "--plotdir", "C:/dev/combimet", "--output", "C:/dev/tmp.vcf", "-f", "C:/dev/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
-#argv = parse_args(argp)
+argv = parse_args(argp)
 
 if (!file.exists(argv$input)) {
   msg = paste(argv$input, "not found")
@@ -101,6 +101,9 @@ names(filters) = names(full_vcf)
 
 write(paste(Sys.time(), "Parsing single breakends", argv$input), stderr())
 begr = breakpointRanges(full_vcf, unpartneredBreakends=TRUE)
+if (is.null(begr$sourceId) & !is.null(begr$vcfId)) {
+  stop("StructuralVariantAnnotation version mismatch.")
+}
 write(paste(Sys.time(), "Calculating single breakend VAF", argv$input), stderr())
 begr$af = round(gridss_be_af(begr, full_vcf, tumourordinal), 5)
 begr$af_str = as.character(begr$af)
@@ -119,6 +122,9 @@ if (argv$gc) { gc() }
 
 write(paste(Sys.time(), "Parsing breakpoints", argv$input), stderr())
 bpgr = breakpointRanges(full_vcf, unpartneredBreakends=FALSE)
+if (is.null(bpgr$sourceId) & !is.null(bpgr$vcfId)) {
+  stop("StructuralVariantAnnotation version mismatch.")
+}
 write(paste(Sys.time(), "Calculating breakpoint VAF", argv$input), stderr())
 bpgr$af = round(gridss_bp_af(bpgr, full_vcf, tumourordinal), 5)
 bpgr$af_str = paste(bpgr$af, partner(bpgr)$af, sep=",")
