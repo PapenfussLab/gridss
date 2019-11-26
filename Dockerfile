@@ -21,20 +21,19 @@ ENV R_INSTALL_STAGED=false
 RUN Rscript -e 'options(Ncpus=16L, repos="https://cloud.r-project.org/");install.packages(c("tidyverse", "assertthat", "testthat", "NMF", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite"))'
 RUN Rscript -e 'options(Ncpus=16L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c("copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene"))'
 
-ENV GRIDSS_VERSION=2.7.1
+ENV GRIDSS_VERSION=2.7.3
 ENV GRIDSS_JAR=/opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar
-
-RUN mkdir /opt/gridss/
-COPY target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
-COPY scripts/*.sh /opt/gridss/
-COPY scripts/*.R /opt/gridss/
-
-LABEL version="1"
+LABEL version="2"
 LABEL software="GRIDSS"
 LABEL software.version="$GRIDSS_VERSION"
 LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
 LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
+
+RUN mkdir /opt/gridss/
+COPY target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
+COPY scripts/*.sh /opt/gridss/
+COPY scripts/*.R /opt/gridss/
 
 WORKDIR /data/
 ENTRYPOINT ["/opt/gridss/gridss.sh"]
