@@ -137,18 +137,18 @@ done
 do_preprocess=false
 do_assemble=false
 do_call=false
-if [[ "$steps" == *"all"* ]] ; then
+if echo "'$steps' =~ /(\A|,)all(\Z|,)/ or exit 1" | perl ; then
 	do_preprocess=true
 	do_assemble=true
 	do_call=true
 fi
-if [[ "$steps" == *"preprocess"* ]] ; then
+if echo "'$steps' =~ /(\A|,)preprocess(\Z|,)/ or exit 1" | perl ; then
 	do_preprocess=true
 fi
-if [[ "$steps" == *"assemble"* ]] ; then
+if echo "'$steps' =~ /(\A|,)assemble(\Z|,)/ or exit 1" | perl ; then
 	do_assemble=true
 fi
-if [[ "$steps" == *"call"* ]] ; then
+if echo "'$steps' =~ /(\A|,)call(\Z|,)/ or exit 1" | perl ; then
 	do_call=true
 fi
 ### Find the jars
