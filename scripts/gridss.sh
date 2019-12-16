@@ -137,20 +137,22 @@ done
 do_preprocess=false
 do_assemble=false
 do_call=false
-if [[ "$steps" == *"all"* ]] ; then
-	do_preprocess=true
-	do_assemble=true
-	do_call=true
-fi
-if [[ "$steps" == *"preprocess"* ]] ; then
-	do_preprocess=true
-fi
-if [[ "$steps" == *"assemble"* ]] ; then
-	do_assemble=true
-fi
-if [[ "$steps" == *"call"* ]] ; then
-	do_call=true
-fi
+for step in $(echo $steps | tr ',' ' ' ) ; do
+	if [[ "$step" == "all" ]] ; then
+		do_preprocess=true
+		do_assemble=true
+		do_call=true
+	elif [[ "$step" == "preprocess" ]] ; then
+		do_preprocess=true
+	elif [[ "$step" == "assemble" ]] ; then
+		do_assemble=true
+	elif [[ "$step" == "call" ]] ; then
+		do_call=true
+	else
+		echo "Unknown step \"$step\"" 1>&2
+		exit 18
+	fi
+done
 ### Find the jars
 find_jar() {
 	env_name=$1
@@ -355,12 +357,21 @@ if [[ "$timecmd" != "" ]] ; then
 	fi
 fi
 
-
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 echo "Max file handles: $(ulimit -n)" 1>&2 
 
-echo "$(date)	Running GRIDSS. The full log is in $logfile"
+echo -n "$(date)	Running GRIDSS steps" 1>&2
+if [[ $do_preprocess == "true" ]] ; then
+	echo -n " preprocess," 1>&2
+fi
+if [[ $do_assemble == "true" ]] ; then
+	echo -n " assemble," 1>&2
+fi
+if [[ $do_call == "true" ]] ; then
+	echo -n " call," 1>&2
+fi
+echo ". The full log is in $logfile" 2>&1 
 
 jvm_args="
 	-Dreference_fasta=$reference \
