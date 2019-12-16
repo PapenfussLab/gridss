@@ -75,6 +75,14 @@ _Warning_: all somatic R scripts treat the first bam file to be the matched norm
 
 # FAQ
 
+### How do I run GRIDSS on multiple samples?
+
+Just specify multiple BAMs on the command line. GRIDSS will perform joint calling and provide a per-BAM breakdown of support.
+
+### How do I tell GRIDSS multiple BAMs are from the same sample?
+
+Use the `--labels` command line option. Eg: `--labels sample1,sample1,sample2 sample1_library1.bam sample1_library2.bam sample2.bam`
+
 ### Why are there ALT alleles with `.` in the output?
 
 This is the [VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf) notation for single breakend variant calls. See section 5.4.9 of the specifications document. These calls indicate that a breakpoint was found at this location but the partner location could not be unambiguously determined.
