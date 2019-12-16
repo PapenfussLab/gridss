@@ -118,6 +118,10 @@ java -Xmx6g -cp $GRIDSS_JAR gridss.AnnotateUntemplatedSequence \
 				WORKER_THREADS=$threads
 ```
 
+### What does `gridss_somatic_filter.R` actually do?
+
+See documentation at https://github.com/PapenfussLab/gridss/wiki/Somatic-Filtering
+
 ### How do I create the panel of normals required by `gridss_somatic_filter.R`?
 
 If you are using hg19, then a PON based on almost Dutch samples is available from https://resources.hartwigmedicalfoundation.nl/. If not, you'll need to create your own using `gridss.GeneratePonBedpe`
