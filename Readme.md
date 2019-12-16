@@ -118,6 +118,10 @@ java -Xmx6g -cp $GRIDSS_JAR gridss.AnnotateUntemplatedSequence \
 				WORKER_THREADS=$threads
 ```
 
+This will add a `BEALN` INFO field to the VCF that contains the potential alignment locations in $viralreference for single breakend/breakpoint inserted sequences.
+
+Note: Be aware that low complexity sequences (e.g poly-A) can match viral sequences. This can be mitigated by either first aligning to the human reference (as done by `gridss.sh`), or making a human+viral reference sequence and running `AnnotateUntemplatedSequence` against that.
+
 ### What does `gridss_somatic_filter.R` actually do?
 
 See documentation at https://github.com/PapenfussLab/gridss/wiki/Somatic-Filtering
