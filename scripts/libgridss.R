@@ -55,7 +55,8 @@ addVCFHeaders = function(vcf) {
       "LongPolyC",
       "cohortMinSize",
       "minRead",
-      "noAssembly"),
+      "noAssembly",
+      "cohortMinSize"),
     Description=c(
       "Found in panel of normals",
       "Imprecise variant",
@@ -75,7 +76,8 @@ addVCFHeaders = function(vcf) {
       "Single breakend containing long polyC or polyG run. Likely to be an NovaSeq artefact.",
       "Variant is smaller than the minimum event size considered for this cohort",
       "Too few reads directly support the variant (gridss.min_direct_read_support)",
-      "no assembly support"))), "DataFrame"))
+      "no assembly support",
+      "Variant is smaller than the minimum event size considered for this cohort"))), "DataFrame"))
   return(vcf)
 }
 
