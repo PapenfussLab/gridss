@@ -321,7 +321,7 @@ else
 	timecmd=""
 	echo "Not found /usr/bin/time" 1>&2
 fi
-samtools --version | grep -v Copyright 1>&2
+samtools --version-only 1>&2 || ( echo "Your samtools version is so old it does not support --version-only. Update samtools." 1>&2 && exit 19 )
 Rscript --version 1>&2
 echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
 if which /usr/bin/time >/dev/null ; then
@@ -329,7 +329,7 @@ if which /usr/bin/time >/dev/null ; then
 fi
 /bin/bash --version 2>&1 | head -1 1>&2
 
-# check java version is ok by testing for GRIDSS usage message
+# check java version is ok using the gridss.Echo entry point
 if java -cp $gridss_jar gridss.Echo ; then
 	java -version 1>&2
 else
@@ -673,4 +673,4 @@ else
 	echo "$(date)	Run complete with no log file. Output file already exists?"
 fi
 trap - EXIT
-#exit 0 # success!
+exit 0 # success!
