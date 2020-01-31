@@ -47,7 +47,7 @@ public class GeneratePonBedpe extends CommandLineProgram {
 	@Argument(shortName="SBO", doc="Output BED", optional=false)
 	public File SINGLE_BREAKEND_OUTPUT;
 	@Argument(shortName="NO", doc="VCF index of normal", optional=true)
-    public int NORMAL_ORDINAL = 1;
+    public int NORMAL_ORDINAL = 0;
 	@Argument(shortName="Q", doc="Minimum variant quality score for a breakpoint variant to be considered part of the normal.", optional=true)
 	public double MIN_BREAKPOINT_QUAL = 75;
 	@Argument(shortName="BQ", doc="Minimum variant quality score for a single breakend variant to be considered part of the normal.", optional=true)
