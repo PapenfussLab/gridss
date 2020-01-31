@@ -41,7 +41,7 @@ public class SequentialEvidenceAnnotator extends ParallelTransformIterator<Varia
 	}
 	private static VariantContextDirectedEvidence make(ProcessingContext context, VariantEvidenceSupport ves) {
 		try {
-			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, ves.variant);
+			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, new CalledBreakpointPositionLookup(), ves.variant);
 			for (DirectedEvidence e : ves.support) {
 				builder.addEvidence(e);
 			}

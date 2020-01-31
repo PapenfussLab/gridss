@@ -44,6 +44,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	public static enum EvidenceAllocationStrategy {
 		GREEDY,
 	}
+	private CalledBreakpointPositionLookup lookup = new CalledBreakpointPositionLookup();
 	public CloseableIterator<DirectedEvidence> getReadIterator() {
 		CloseableIterator<DirectedEvidence> evidenceIt;
 		List<SAMEvidenceSource> sources = getSamEvidenceSources();
@@ -97,7 +98,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	}
 	private VariantContextDirectedEvidence annotate(VariantEvidenceSupport ves) {
 		VariantCallingConfiguration vc = getContext().getConfig().getVariantCalling();
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), ves.variant);
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), lookup, ves.variant);
 		builder.setUpdateAssemblyInformation(ALLOCATE_ASSEMBLIES);
 		builder.setUpdateReadInformation(ALLOCATE_READS);
 		for (DirectedEvidence e : ves.support) {

@@ -5,17 +5,11 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import au.edu.wehi.idsv.*;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.IdsvVariantContextBuilder;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.StructuralVariationCallBuilder;
-import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 
@@ -23,7 +17,7 @@ public class AnnotateInexactHomologyTest extends TestHelper {
 	@Test
 	public void should_calculate_inexact_homology() {
 		ProcessingContext pc = getContext();
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(2, FWD, 78, 6, BWD, 79), "");
 			phredScore(50);
 		}}.make());

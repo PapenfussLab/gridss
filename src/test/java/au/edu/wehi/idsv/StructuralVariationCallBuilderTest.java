@@ -121,7 +121,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_not_allow_unsupporting_evidence() {
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
 		cb.addEvidence(SCE(BWD, Read(1, 5, "1S2M")));
 	}
@@ -136,7 +136,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READ() {
 		ProcessingContext pc = getContext();
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
 		cb.referenceReads(new int[] { 7, 8} );
 		cb.referenceSpanningPairs(new int[] { 9, 10 } );
@@ -148,7 +148,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READPAIR() {
 		ProcessingContext pc = getContext();
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
 		cb.referenceReads(new int[] { 7, 8} );
 		cb.referenceSpanningPairs(new int[] { 9, 10 } );
@@ -176,7 +176,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public VariantContextDirectedBreakpoint complex_bp() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(new sc(1, true));
 		cb.addEvidence(new sc(2, false));
@@ -268,7 +268,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_BREAKPOINT_INDEL() {
 		IndelEvidence ie = IE(SES(true), Read(0, 1, "10M10D10M"));
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), BP("variant", new BreakpointSummary(0, FWD, 10, 0, BWD, 21)));
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), BP("variant", new BreakpointSummary(0, FWD, 10, 0, BWD, 21)));
 		cb.addEvidence(ie);
 		VariantContextDirectedEvidence vc = cb.make();
 		
@@ -279,7 +279,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_READPAIR_COUNT() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(new dp(1, true));
 		cb.addEvidence(new dp(2, true));
@@ -309,7 +309,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_READ_COUNT() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(new rsc(1, true));
 		cb.addEvidence(new rsc(2, true));
@@ -346,7 +346,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	 */
 	@Test
 	public void should_exclude_breakpoint_evidence_contributing_to_breakend_assembly_but_not_supporting_breakpoint() {
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(new rsc_not_supporting_breakpoint(1, true)); 
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BP.direction, support, fullSupport(support), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
@@ -357,7 +357,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_count_evidence_once() {
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(new sc(1, true));
 		cb.addEvidence(new sc(1, true));
@@ -376,7 +376,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(1, (int)v.getAttribute(VcfInfoAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
 	}
 	public StructuralVariationCallBuilder cb(DirectedEvidence... evidence) {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "").make());
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
@@ -391,7 +391,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
 		tes.category = 1;
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
 		cb.addEvidence(SCE(BWD, nes, Read(0, 5, "1S2M")));
 		cb.addEvidence(SCE(BWD, tes, Read(0, 4, "3S4M")));
@@ -452,7 +452,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void evidence_must_support_call() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(),
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(),
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakend(new BreakendSummary(0, FWD, 1), null)
 					.make());
@@ -523,7 +523,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_HOMLEN_HOMSEQ_for_microhomology() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 20, 0, BWD, 40, 30, 40), "");
 			phredScore(20);
 		}}.make());
@@ -560,7 +560,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_adjust_call_bounds_based_on_best_assembly() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 14, 12, 14, 1, BWD, 11, 11, 11), "GTAC");
 			phredScore(20);
 		}}.make());
@@ -589,7 +589,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_adjust_call_bounds_based_on_best_soft_clip() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 14, 12, 14, 1, BWD, 11, 11, 11), "GTAC");
 			phredScore(20);
 		}}.make());
@@ -603,7 +603,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_CALLED_QUAL_to_parent_quality_score() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 14, 12, 14, 1, BWD, 11, 11, 11), "GTAC");
 			phredScore(31);
 		}}.make());
@@ -617,7 +617,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_exact_soft_clip_bounds() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
@@ -627,7 +627,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void indels_should_have_zero_margin_applied() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 11, 0, BWD, 12, 12, 12), "");
 			phredScore(10);
 		}}.make());
@@ -638,7 +638,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_exclude_unsupporting_realigned_soft_clip() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
@@ -646,7 +646,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_exclude_unsupporting_discordant_read_pair() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
@@ -654,7 +654,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_cigar_should_use_X_for_exact() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 11, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
@@ -663,7 +663,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_cigar_should_use_2X_for_single_bp_imprecision() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
@@ -672,7 +672,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_cigar_should_use_xnx_for_large_imprecision() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 15, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
@@ -681,7 +681,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_fwd() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 15, 1, FWD, 100, 100, 100), "");
 			phredScore(10);
 		}}.make());
@@ -698,7 +698,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_bwd() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, BWD, 10, 10, 15, 0, FWD, 100, 100, 100), "");
 			phredScore(10);
 		}}.make());
@@ -719,7 +719,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_cigar_should_use_local_coordinates() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 100, 0, BWD, 10), "");
 			phredScore(10);
 		}}.make());
@@ -731,7 +731,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void bug214_assembly_anchor_cigar_should_use_only_remote_assemblies() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 100, 1, BWD, 200), "");
 			phredScore(10);
 		}}.make());
@@ -747,7 +747,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals("2M1X", builder.make().getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
 
 		// Local gets filtered
-		builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		builder = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(1, BWD, 200, 0, FWD, 100), "");
 			phredScore(10);
 		}}.make());
@@ -767,14 +767,14 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		List<SingleReadEvidence> indelass = SingleReadEvidence.createEvidence(AES(), 1, ass);
 		assertEquals(2, indelass.size()); // both sides of indel assembly
 
-		builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		builder = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(3, FWD, 100, 3, BWD, 200), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(indelass.get(0));
 		assertEquals("1X", builder.make().getAttribute(VcfInfoAttributes.ASSEMBLY_SUPPORT_CIGAR.attribute()));
 
-		builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		builder = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(3, BWD, 200, 3, FWD, 100), "");
 			phredScore(10);
 		}}.make());
@@ -786,7 +786,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void spanning_assemblies_should_use_original_parent_assembly_direction_to_determine_local_remote_status() {
 		IndelEvidence r = IE(withMapq(40, Read(2, 90, "10M1I10M"))[0]);
 		ImmutableList<DirectedEvidence> rid = ImmutableList.of(r);
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(2, FWD, 100, 2, BWD, 101), "");
 			phredScore(10);
 		}}.make());
@@ -810,7 +810,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				B(seq),
 				B(40,seq.length()));
 		SingleReadEvidence ae = incorporateRealignment(AES(), ass, ImmutableList.of(withQual(B(40, seq.length() - anchor), Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))[0]));
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(6, FWD, 78, 2, BWD, 79), "");
 			phredScore(50);
 		}}.make());
@@ -833,7 +833,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				B(40,seq.length()));
 		SAMRecord remote = withQual(B(40, seq.length() - anchor), Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))[0];
 		incorporateRealignment(AES(), ass, remote);
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(2, BWD, 79, 6, FWD, 78), "");
 			phredScore(50);
 		}}.make());
@@ -846,7 +846,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	@Ignore("Issue #18: Output breakend support interval")
 	public void support_interval_should_be_written() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 100, 1, BWD, 200), "");
 			phredScore(50);
 		}}.make());
@@ -899,7 +899,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_count_indel_assembly_based_on_originating_direction_local() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(new BreakpointSummary(0, FWD, 10, 0, BWD, 20), "GT").make());
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakpoint(pc, aes, new SequentialIdGenerator("asm"), Lists.<DirectedEvidence>newArrayList(new rsc(5, false)),null,
 				0, 10, 5, 0, 20, 5, B("NNNNNNNNNN"), B("NNNNNNNNNN"));
@@ -914,7 +914,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_count_indel_assembly_based_on_originating_direction_remote() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(new BreakpointSummary(0, FWD, 10, 0, BWD, 20), "GT").make());
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakpoint(pc, aes, new SequentialIdGenerator("asm"), Lists.<DirectedEvidence>newArrayList(new rsc(5, false)),null,
 				0, 10, 5, 0, 20, 5, B("NNNNNNNNNN"), B("NNNNNNNNNN"));
@@ -929,7 +929,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void compound_assembly_not_originating_from_either_breakend_should_be_annotated_as_CAS() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(new BreakpointSummary(0, FWD, 10, 0, BWD, 20), "GT").make());
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(new rsc(5, false)); 
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, new SequentialIdGenerator("asm"), FWD, support, fullSupport(support),1, 1, 1, B("NNN"), B("AAA"));
@@ -952,7 +952,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void called_position_nominal_position_should_round_trip() throws IOException {
 		ProcessingContext pc = getContext();
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, BP("test",
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), BP("test",
 				new BreakpointSummary(new BreakendSummary(0,  FWD, 1, 1, 100), new BreakendSummary(0,  BWD, 200, 200, 400))));
 		cb.addEvidence(SR(Read(0, 1, "50M50S"), Read(0, 250, "50M")));
 		BreakpointSummary expected = new BreakpointSummary(new BreakendSummary(0,  FWD, 50, 1, 100), new BreakendSummary(0,  BWD, 250, 201, 300));
@@ -978,7 +978,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void breakend_should_use_best_unanchored_sequence() {
 		ProcessingContext pc = getContext();
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, FWD, 10), "GT").make());
 		SAMRecord r1 = withMapq(44, Read(0, 10, "1M10S"))[0];
 		cb.addEvidence(SCE(FWD, r1));
@@ -989,7 +989,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_VcfAttribute_BREAKEND_ASSEMBLY_READPAIR_COUNT() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(BP.localBreakend(), "GT").make());
 		cb.addEvidence(new um(1, true));
 		cb.addEvidence(new um(2, true));
@@ -1009,7 +1009,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_count_unique_supporting_fragments() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(new rsc(1, true));
 		cb.addEvidence(new rsc(2, false));
@@ -1040,7 +1040,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_VcfAttributes_BREAKEND_ASSEMBLY_ID() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(ass1());
 		cb.addEvidence(ass2());
@@ -1051,5 +1051,33 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(3, (int)bp.getAttributeAsIntList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_LOCAL_CONTIG_OFFSET.attribute(), 1234).get(1));
 		assertEquals(-1, (int)bp.getAttributeAsIntList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET.attribute(), 1234).get(0));
 		assertEquals(1, (int)bp.getAttributeAsIntList(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET.attribute(), 1234).get(1));
+	}
+	@Test
+	public void issue278_should_call_same_breakpoint_on_both_sides() {
+		ProcessingContext pc = getContext();
+		BreakpointSummary bs = new BreakpointSummary(0, FWD, 100, 100, 100, 0, BWD, 200, 200, 200);
+		VariantContext vclow = minimalBreakend()
+				.breakpoint(bs, "")
+				.id("evento")
+				.attribute("EVENT", "event")
+				.make();
+		VariantContext vchigh = minimalBreakend()
+				.breakpoint(bs.remoteBreakpoint(), "")
+				.id("eventh")
+				.attribute("EVENT", "event")
+				.make();
+		VariantContextDirectedBreakpoint vcdplow = (VariantContextDirectedBreakpoint)VariantContextDirectedEvidence.create(pc, null, vclow);
+		VariantContextDirectedBreakpoint vcdphigh = (VariantContextDirectedBreakpoint)VariantContextDirectedEvidence.create(pc, null, vchigh);
+		CalledBreakpointPositionLookup lookup = new CalledBreakpointPositionLookup();
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, lookup, vcdplow);
+		cb.addEvidence(SR(Read(0, 100, "2M6S"), Read(0, 200, "4S2M")));
+		VariantContextDirectedBreakpoint low = (VariantContextDirectedBreakpoint)cb.make();
+
+		assertEquals(101, low.getBreakendSummary().start);
+
+		cb = new StructuralVariationCallBuilder(pc, lookup, vcdphigh);
+		cb.addEvidence(SR(Read(0, 200, "1S1M"), Read(0, 100, "1M")));
+		VariantContextDirectedBreakpoint high = (VariantContextDirectedBreakpoint)cb.make();
+		assertEquals(high.getBreakendSummary().remoteBreakpoint(), low.getBreakendSummary());
 	}
 }
