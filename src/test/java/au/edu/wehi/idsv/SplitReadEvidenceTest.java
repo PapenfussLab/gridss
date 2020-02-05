@@ -585,4 +585,13 @@ public class SplitReadEvidenceTest extends TestHelper {
         double qual = e.get(0).getBreakpointQual();
         assertTrue(qual < 100);
     }
+	@Test
+	public void getBreakpointQual_split_read_should_use_primary_alignment_softclip_length_in_scoring_model() {
+		SAMRecord primary = Read(3, 100, "50S40M25S");
+		SAMRecord supp = withName("#0", Read(3, 200, "20M30S"))[0];
+		SplitReadHelper.convertToSplitRead(primary, ImmutableList.of(supp), null, false);
+		SplitReadEvidence primaryEvidence = SplitReadEvidence.create(SES(), primary).get(0);
+		SplitReadEvidence suppEvidence = SplitReadEvidence.create(SES(), supp).get(0);
+		Assert.assertEquals(primaryEvidence.getBreakpointQual(), suppEvidence.getBreakpointQual(), 0);
+	}
 }
