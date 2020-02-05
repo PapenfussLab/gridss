@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
 	private final ProcessingContext processContext;
+	private final CalledBreakpointPositionLookup calledBreakpointLookup;
 	private final VariantContextDirectedEvidence parent;
 	private final Set<String> encounteredEvidenceIDs;
 	private final List<DirectedBreakpoint> supportingBreakpoint = new ArrayList<>();
@@ -41,11 +42,12 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<SoftClipEvidence> supportingBAS = new ArrayList<>();
 	private boolean updateReadInformation = true;
 	private boolean updateAssemblyInformation= true;
-	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
-		this(processContext, parent, true);
+	public StructuralVariationCallBuilder(ProcessingContext processContext, CalledBreakpointPositionLookup lookup, VariantContextDirectedEvidence parent) {
+		this(processContext, lookup, parent, true);
 	}
-	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent, boolean deduplicateEvidence) {
+	public StructuralVariationCallBuilder(ProcessingContext processContext, CalledBreakpointPositionLookup calledBreakpointLookup, VariantContextDirectedEvidence parent, boolean deduplicateEvidence) {
 		super(processContext, parent);
+		this.calledBreakpointLookup = calledBreakpointLookup;
 		this.processContext = processContext;
 		this.parent = parent;
 		this.encounteredEvidenceIDs = deduplicateEvidence ? new HashSet<String>() : null;
@@ -232,7 +234,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			return;
 		}
 		BreakendSummary nominalPosition = parent.getBreakendSummary();
-		String untemplated;// = parent.getBreakpointSequenceString();
+		String untemplated = "";// = parent.getBreakpointSequenceString();
 		String homo = parent.getAttributeAsString(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY, "");
 		if (isBreakend()) {
 			DirectedEvidence bestBreakend = supportingBreakend.stream()
@@ -249,14 +251,36 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				}
 			}
 		} else {
-			DirectedBreakpoint bestBreakpoint = supportingBreakpoint.stream()
-					.sorted(ByBestBreakpointDesc)
-					.findFirst().orElse(null);
-			if (bestBreakpoint != null && bestBreakpoint.isBreakendExact()) {
-				untemplated = bestBreakpoint.getUntemplatedSequence();
-				nominalPosition = bestBreakpoint.getBreakendSummary().centreAligned();
-				breakpoint((BreakpointSummary)nominalPosition, untemplated);
-				homo = bestBreakpoint.getHomologySequence();
+			String event = parent.getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null);
+			CalledBreakpointPositionLookup.NominalPosition np = calledBreakpointLookup.removeUpper(event);
+			boolean isExact;
+			if (np == null) {
+				DirectedBreakpoint bestBreakpoint = supportingBreakpoint.stream()
+						.sorted(ByBestBreakpointDesc)
+						.findFirst().orElse(null);
+				if (bestBreakpoint != null && bestBreakpoint.isBreakendExact()) {
+					untemplated = bestBreakpoint.getUntemplatedSequence();
+					nominalPosition = bestBreakpoint.getBreakendSummary().centreAligned();
+					breakpoint((BreakpointSummary) nominalPosition, untemplated);
+					homo = bestBreakpoint.getHomologySequence();
+					isExact = true;
+					rmAttribute(VcfSvConstants.IMPRECISE_KEY);
+				} else {
+					isExact = false;
+					if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {
+
+						attribute(VcfSvConstants.IMPRECISE_KEY, true);
+					}
+				}
+				np = new CalledBreakpointPositionLookup.NominalPosition((BreakpointSummary)nominalPosition, untemplated, homo, isExact);
+				calledBreakpointLookup.addLower(event, np);
+				if (np.nominalPosition.isHighBreakend()) {
+					log.debug("CalledBreakpointLookup entry missing for " + event);
+				}
+			}
+			if (np.isExact) {
+				breakpoint(np.nominalPosition, np.insertedSequenced);
+				homo = np.homologySequence;
 				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
 			} else {
 				if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {

@@ -1044,7 +1044,7 @@ public class TestHelper {
 		IdsvVariantContextBuilder vcBuilder = new IdsvVariantContextBuilder(getContext());
 		byte[] seq = evidence[0].getBreakendSequence();
 		vcBuilder.breakend(evidence[0].getBreakendSummary(), seq == null ? "" : new String(seq, StandardCharsets.US_ASCII));
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)vcBuilder.make());
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)vcBuilder.make());
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
