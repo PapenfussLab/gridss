@@ -4,6 +4,7 @@
 package au.edu.wehi.idsv.sam;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -692,7 +693,7 @@ public class SAMRecordUtil {
 	 * @param recalculateSupplementary 
 	 */
 	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
-			boolean restoreHardClips, boolean fixMates, boolean fixDuplicates, boolean recalculateSupplementary) {
+			boolean restoreHardClips, boolean fixMates, boolean fixDuplicates, boolean fixSA, boolean fixTruncated, boolean recalculateSupplementary) {
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
 		if (tags.contains(SAMTag.FI.name())) {
@@ -708,6 +709,11 @@ public class SAMRecordUtil {
 				r.setAttribute(SAMTag.TC.name(), segments.size());
 			}
 		}
+		if (fixTruncated) {
+			for (int i = 0; i < segments.size(); i++) {
+				addMissingHardClipping(segments.get(i));
+			}
+		}
 		if (restoreHardClips) {
 			for (int i = 0; i < segments.size(); i++) {
 				softenHardClips(segments.get(i));
@@ -720,7 +726,7 @@ public class SAMRecordUtil {
 		// SA
 		if (tags.contains(SAMTag.SA.name())) {
 			for (int i = 0; i < segments.size(); i++) {
-				calculateSATags(segments.get(i));
+				calculateSATags(segments.get(i), fixSA);
 			}
 		}
 		if (recalculateSupplementary) {
@@ -768,6 +774,51 @@ public class SAMRecordUtil {
 			}
 		}
 	}
+	private static final Comparator<SAMRecord> ByReadLength = Comparator.comparingInt(r -> r.getReadLength());
+	private static void addMissingHardClipping(List<SAMRecord> list) {
+		if (list.isEmpty()) return;
+		SAMRecord longest = list.stream().max(ByReadLength).get();
+		String longseq = longest.getReadString();
+		if (longest.getReadNegativeStrandFlag()) {
+			longseq = SequenceUtil.reverseComplement(longseq).toUpperCase();
+		}
+		for (SAMRecord r : list) {
+			if (r.getReadUnmappedFlag()) continue;
+			if (r.getReadLength() == longseq.length()) continue;
+			List<CigarElement> cigar = r.getCigar().getCigarElements();
+			int cigarLengthWithHardClips = r.getCigar().getReadLength() + cigar.stream()
+					.filter(ce -> ce.getOperator() == CigarOperator.HARD_CLIP)
+					.mapToInt(ce -> ce.getLength())
+					.sum();
+			if (cigarLengthWithHardClips == longseq.length()) continue;
+			String seq = r.getReadString().toUpperCase();
+			String fullseq = r.getReadNegativeStrandFlag() ? SequenceUtil.reverseComplement(longseq) : longseq;
+			boolean isFixed = false;
+			for (int i = 0 ; i <= fullseq.length() - seq.length(); i++) {
+				String matchseq = fullseq.substring(i, i + seq.length());
+				if (seq.equals(matchseq)) {
+					List<CigarElement> newCigar = cigar.stream().filter(ce -> ce.getOperator() != CigarOperator.HARD_CLIP).collect(Collectors.toList());
+					int leftPad = i;
+					int rightPad = fullseq.length() - seq.length() - i;
+					if (leftPad > 0) {
+						newCigar.add(0, new CigarElement(leftPad, CigarOperator.HARD_CLIP));
+					}
+					if (rightPad > 0) {
+						newCigar.add(new CigarElement(rightPad, CigarOperator.HARD_CLIP));
+					}
+					isFixed = true;
+					r.setCigar(new Cigar(newCigar));
+					break;
+				}
+			}
+			if (!isFixed) {
+				if (!MessageThrottler.Current.shouldSupress(log, "Add missing hard clipping")) {
+					log.warn(String.format("Unable to restore hard clipping of truncated read %s. No sequence match to full length alignment record.", list.get(0).getReadName()));
+				}
+			}
+		}
+	}
+
 	/**
 	 * Orders the records such that the primary record for a split read alignment is first
 	 */
@@ -972,7 +1023,7 @@ public class SAMRecordUtil {
 		}
 	}
 
-	private static void calculateSATags(List<SAMRecord> list) {
+	private static void calculateSATags(List<SAMRecord> list, boolean recalculateSA) {
 		// TODO use CC, CP, HI, IH tags if they are present
 		// TODO break ties in an other other than just overwriting the previous
 		// alignment that
@@ -984,8 +1035,9 @@ public class SAMRecordUtil {
 			end.put(getLastAlignedBaseReadOffset(r), r);
 		}
 		for (SAMRecord r : list) {
-			if (r.getAttribute(SAMTag.SA.name()) != null)
+			if (!recalculateSA && r.getAttribute(SAMTag.SA.name()) != null) {
 				continue;
+			}
 			ArrayDeque<SAMRecord> alignment = new ArrayDeque<SAMRecord>();
 			SAMRecord prev = r;
 			while (prev != null) {

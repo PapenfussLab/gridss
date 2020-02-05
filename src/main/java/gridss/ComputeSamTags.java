@@ -52,6 +52,10 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 	public boolean FIX_MATE_INFORMATION = true;
 	@Argument(doc="Sets the duplicate flag if any alignment in the read pair is flagged as a duplicate. Many duplicate marking tools do not correctly mark all supplementary alignments.", optional=true)
 	public boolean FIX_DUPLICATE_FLAG = true;
+	@Argument(doc="Fixes the SA tag to match the read alignments. Useful for programs such as GATK indel realignment do not update the SA tag when adjusting read alignments.", optional=true)
+	public boolean FIX_SA = true;
+	@Argument(doc="Adds hard clipping CIGAR elements to truncated alignments. Useful for programs such as GATK indel realignment that strip hard clips.", optional=true)
+	public boolean FIX_MISSING_HARD_CLIP = true;
 	@Argument(doc="Recalculates the supplementary flag based on the SA tag. The supplementary flag should be set on all split read alignments except one.", optional=true)
 	public boolean RECALCULATE_SA_SUPPLEMENTARY = true;
 	@Argument(shortName="T", doc="Tags to calculate")
@@ -87,7 +91,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     			try (SAMRecordIterator it = reader.iterator()) {
     				File tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.") : OUTPUT;
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, RECALCULATE_SA_SUPPLEMENTARY, INPUT.getName() + "-");
+    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY, INPUT.getName() + "-");
     				}
     				if (tmpoutput != OUTPUT) {
     					FileHelper.move(tmpoutput, OUTPUT, true);
@@ -104,6 +108,8 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			boolean softenHardClips,
 			boolean fixMates,
 			boolean fixDuplicates,
+		    boolean fixSA,
+		    boolean fixTruncated,
 			boolean recalculateSupplementary,
 			String threadprefix) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
@@ -114,7 +120,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 				it = new NmTagIterator(it, reference);
 			}
 			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty() || softenHardClips) {
-				it = new TemplateTagsIterator(it, softenHardClips, fixMates, fixDuplicates, recalculateSupplementary, tags);
+				it = new TemplateTagsIterator(it, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary, tags);
 				it = new AsyncBufferedIterator<SAMRecord>(it, threadprefix + "tags");
 			}
 			while (it.hasNext()) {

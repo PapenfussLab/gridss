@@ -18,13 +18,18 @@ public class TemplateTagsIterator implements Iterator<SAMRecord> {
 	private final boolean softenHardClips;
 	private final boolean fixMates;
 	private final boolean fixDuplicates;
+	private final boolean fixSA;
+	private final boolean fixTruncated;
 	private final boolean recalculateSupplementary;
 	private final Queue<SAMRecord> queue = new ArrayDeque<>();
-	public TemplateTagsIterator(Iterator<SAMRecord> it, boolean softenHardClips, boolean fixMates, boolean fixDuplicates, boolean recalculateSupplementary, Set<String> tags) {
+
+	public TemplateTagsIterator(Iterator<SAMRecord> it, boolean softenHardClips, boolean fixMates, boolean fixDuplicates, boolean fixSA, boolean fixTruncated, boolean recalculateSupplementary, Set<String> tags) {
 		this.it = Iterators.peekingIterator(it);
 		this.softenHardClips = softenHardClips;
 		this.fixMates = fixMates;
 		this.fixDuplicates = fixDuplicates;
+		this.fixSA = fixSA;
+		this.fixTruncated = fixTruncated;
 		this.recalculateSupplementary = recalculateSupplementary;
 		this.tags = tags;
 	}
@@ -39,7 +44,7 @@ public class TemplateTagsIterator implements Iterator<SAMRecord> {
 				while (readname != null && it.hasNext() && readname.equals(it.peek().getReadName())) {
 					records.add(it.next());
 				}
-				SAMRecordUtil.calculateTemplateTags(records, tags, softenHardClips, fixMates, fixDuplicates, recalculateSupplementary);
+				SAMRecordUtil.calculateTemplateTags(records, tags, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary);
 				queue.addAll(records);
 			}
 		}
