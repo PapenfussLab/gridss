@@ -397,4 +397,10 @@ public class SplitReadHelperTest extends TestHelper {
 		Assert.assertEquals("3S1M5S", left.getCigarString());
 		Assert.assertEquals("4S5M", right.getCigarString());
 	}
+	@Test
+	public void getEditDistanceDelta_should_force_mismatch_outside_of_chr_bounds() {
+		SAMRecord r = withSequence("NNAAT", Read(0, 1, "2S3M"))[0];
+		int[] distance = SplitReadHelper.getEditDistanceDelta(r, SMALL_FA, false);
+		Assert.assertArrayEquals(new int[] {1, 1, 0, 0, 1}, distance);
+	}
 }

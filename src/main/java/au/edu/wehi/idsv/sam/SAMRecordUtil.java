@@ -1579,5 +1579,22 @@ public class SAMRecordUtil {
 		}
 		return null;
 	}
+	public static boolean forceValidContigBounds(SAMRecord r, SAMSequenceDictionary dict) {
+		if (r.getReadUnmappedFlag()) return false;
+		int startClip = 0;
+		int endClip = 0;
+		if (r.getAlignmentStart() <= 0) {
+			startClip = 1 - r.getAlignmentStart();
+		}
+		int seqlen = dict.getSequence(r.getReferenceIndex()).getSequenceLength();
+		if (r.getAlignmentEnd() > seqlen) {
+			endClip = r.getAlignmentEnd() - seqlen;
+		}
+		if (startClip > 0 || endClip > 0) {
+			r.setCigar(new Cigar(CigarUtil.extendSoftClipping(r.getCigar(), startClip, endClip)));
+			return true;
+		}
+		return false;
+	}
 }
 

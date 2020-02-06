@@ -1044,5 +1044,27 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(), false, false, false, false, true,false);
 		Assert.assertEquals("1S4M1H", r2.getCigarString());
 	}
+	@Test
+	public void forceValidContigBounds_should_force_to_contig_start() {
+		// 2 1
+		// ^ ^012345
+		// MIMDDDMMM
+		SAMRecord r = Read(0, -2, "1M1I1M3D3M");
+		SAMRecordUtil.forceValidContigBounds(r, SMALL_FA.getSequenceDictionary());
+		assertEquals(3, r.getAlignmentStart());
+		assertEquals("3S3M", r.getCigarString());
+	}
+	@Test
+	public void forceValidContigBounds_should_force_to_contig_end() {
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] {"contig"}, new byte[][] { new byte[] {0,1,2,3,4,5,6,7}});
+		//         90123456
+		// 12345678
+		//   MMMDDDDIMDM
+		//   MMM    SS S
+		SAMRecord r = Read(0, 3, "3M4D1I1M1D1M");
+		SAMRecordUtil.forceValidContigBounds(r, ref.getSequenceDictionary());
+		assertEquals(5, r.getAlignmentEnd());
+		assertEquals("3M3S", r.getCigarString());
+	}
 }
 
