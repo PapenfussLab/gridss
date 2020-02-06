@@ -6,7 +6,6 @@ argp = arg_parser("Annotates insertion sequence with the longest alignment overl
 argp = add_argument(argp, "--input", help="Input GRIDSS VCF")
 argp = add_argument(argp, "--output", help="Output GRIDSS VCF")
 argp = add_argument(argp, "--repeatmasker", help="RepeatMasker .fa.out file")
-argp = add_argument(argp, "--chromosomeStyle", default="NCBI", help="Default: keep as is. Other options are: UCSC, ")
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
 # argv = parse_args(argp, c("--input", "D:/hartwig/down/pre.vcf", "--output", "D:/hartwig/down/testrm.vcf","--repeatmasker", "D:/hartwig/hg19.fa.out"))
 argv = parse_args(argp)
@@ -45,7 +44,7 @@ library(stringr)
 
 # from http://github.com/PapenfussLab/sv_benchmark
 import.repeatmasker.fa.out <- function(repeatmasker.fa.out) {
-  rmdt <- read_table2(repeatmasker.fa.out, col_names=FALSE, skip=3)
+  rmdt <- read_table2(repeatmasker.fa.out, col_types="ddddciicccccccc", col_names=FALSE, skip=3)
   grrm <- GRanges(
     seqnames=rmdt$X5,
     ranges=IRanges(start=rmdt$X6 + 1, end=rmdt$X7),
