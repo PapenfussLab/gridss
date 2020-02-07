@@ -4,11 +4,13 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -24,6 +26,7 @@ public class SplitReadHelper {
 	//private static final Log log = Log.getInstance(SplitReadHelper.class);
 	private static final char SEPARATOR = '#';
 	private static Comparator<SAMRecord> ByFirstAlignedBaseReadOffset = Comparator.comparing(r -> SAMRecordUtil.getFirstAlignedBaseReadOffset(r));
+	private static final Log log = Log.getInstance(SplitReadHelper.class);
 	public static FastqRecord getFullRealignment(SAMRecord r, EvidenceIdentifierGenerator eidgen) {
 		assert(!AssemblyAttributes.isUnanchored(r));
 		String name = eidgen.getAlignmentUniqueName(r);
@@ -125,8 +128,19 @@ public class SplitReadHelper {
 		if (reference != null && !AssemblyAttributes.isUnanchored(record)) {
 			adjustSplitLocationsToMinimiseEditDistance(record, alignments, reference, adjustPrimaryAlignment);
 		}
+		adjustToContigBounds(record, reference.getSequenceDictionary());
+		for (SAMRecord r : alignments) {
+			adjustToContigBounds(r, reference.getSequenceDictionary());
+		}
 		writeSA(record, alignments);
 		return true;
+	}
+	private static void adjustToContigBounds(SAMRecord r, SAMSequenceDictionary dict) {
+		if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
+			if (!MessageThrottler.Current.shouldSupress(log, "realignment out of bound")) {
+				log.warn(String.format("Split read contains out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
+			}
+		}
 	}
 	/**
 	 * Writes the SA SAM tag for split read alignments

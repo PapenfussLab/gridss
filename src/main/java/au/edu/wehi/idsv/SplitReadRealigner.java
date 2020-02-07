@@ -291,7 +291,7 @@ public class SplitReadRealigner {
 				File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(out) : out;
 				tmpFiles.add(out);
 				tmpFiles.add(tmpout);
-				aligner.align(fq, tmpout, pc.getReferenceFile(), workerThreads);
+				aligner.align(fq, tmpout, pc.getReferenceFile(), workerThreads, pc.getDictionary());
 				if (tmpout != out) {
 					FileHelper.move(tmpout, out, true);
 				}

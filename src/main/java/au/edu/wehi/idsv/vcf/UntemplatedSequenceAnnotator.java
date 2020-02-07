@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.util.AutoClosingIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.CloseableIterator;
@@ -32,12 +33,13 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 	private final boolean overwrite;
 	private final List<String> cmd;
 	private final int threads;
+	private final SAMSequenceDictionary dict;
 	private CloseableIterator<VariantContext> vcfStream;
 	private PeekingIterator<SAMRecord> samStream;
 	private ExternalProcessStreamingAligner aligner;
 	private Thread feedingAligner;
 	private VariantContext nextRecord = null;
-	public UntemplatedSequenceAnnotator(File referenceFile, File vcf, boolean overwrite, List<String> aligner_command_line, int threads) {
+	public UntemplatedSequenceAnnotator(File referenceFile, File vcf, boolean overwrite, List<String> aligner_command_line, int threads, SAMSequenceDictionary dict) {
 		this.referenceFile = referenceFile;
 		this.vcf = vcf;
 		this.overwrite = overwrite;
@@ -46,6 +48,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 		this.vcfStream = getVcf();
 		createRecordAlignmentStream();
 		this.samStream = Iterators.peekingIterator(this.aligner);
+		this.dict = dict;
 	}
 	private CloseableIterator<VariantContext> getVcf() {
 		VCFFileReader vcfReader = new VCFFileReader(vcf, false);
@@ -54,7 +57,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 	}
 	private ExternalProcessStreamingAligner createRecordAlignmentStream() {
 		log.debug("Started async external alignment feeder thread.");
-		aligner = new ExternalProcessStreamingAligner(SamReaderFactory.make(), cmd, referenceFile, threads);
+		aligner = new ExternalProcessStreamingAligner(SamReaderFactory.make(), cmd, referenceFile, threads, dict);
 		feedingAligner = new Thread(() -> feedExternalAligner());
 		feedingAligner.setName("async-feedExternalAligner");
 		feedingAligner.start();

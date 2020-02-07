@@ -218,7 +218,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Category(ExternalAlignerTests.class)
 	@Ignore("Working 2018-04-08. Currently need to manual check # restarts of external aligner to actually test this functionality. Needs a delayed return stub to test properly.")
 	public void streaming_should_limit_outstanding_records_to_buffer_size() throws IOException, CloneNotSupportedException {
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), ExternalAlignerTests.REFERENCE, lookup, Lists.newArrayList(), getConfig(testFolder.getRoot()));
 		SplitReadRealigner srr = new SplitReadRealigner(pc);
@@ -250,7 +250,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Test
 	@Category(ExternalAlignerTests.class)
 	public void should_realign_multiple_times() throws IOException {
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), ExternalAlignerTests.REFERENCE, lookup, Lists.newArrayList(), getConfig(testFolder.getRoot()));
 		SplitReadRealigner srr = new SplitReadRealigner(pc);
@@ -277,7 +277,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Test
 	@Category(ExternalAlignerTests.class)
 	public void realign_full_read_should_not_repeat_primary_alignment() throws IOException {
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), ExternalAlignerTests.REFERENCE, lookup, Lists.newArrayList(), getConfig(testFolder.getRoot()));
 		SplitReadRealigner srr = new SplitReadRealigner(pc);
@@ -305,7 +305,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Test
 	@Category(ExternalAlignerTests.class)
 	public void realign_entire_read_should_drop_existing_supplementary_alignments() throws IOException {
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), ExternalAlignerTests.REFERENCE, lookup, Lists.newArrayList(), getConfig(testFolder.getRoot()));
 		SplitReadRealigner srr = new SplitReadRealigner(pc);
@@ -331,7 +331,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Test
 	@Category(ExternalAlignerTests.class)
 	public void realign_split_reads_should_drop_existing_supplementary_alignments() throws IOException {
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
 		BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), ExternalAlignerTests.REFERENCE, lookup, Lists.newArrayList(), getConfig(testFolder.getRoot()));
 		SplitReadRealigner srr = new SplitReadRealigner(pc);
@@ -363,7 +363,7 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 	public void realign_should_not_overalign_one_side() throws IOException {
 		File hg19 = Hg19Tests.findHg19Reference();
 		SynchronousReferenceLookupAdapter ref = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(hg19));
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, hg19, 4);
+		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, hg19, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), hg19, ref, Lists.newArrayList(), getConfig(testFolder.getRoot()));
 		SplitReadRealigner srr = new SplitReadRealigner(pc);
 		srr.setRealignEntireRecord(true);

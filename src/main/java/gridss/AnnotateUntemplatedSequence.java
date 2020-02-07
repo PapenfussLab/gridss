@@ -7,6 +7,7 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.vcf.UntemplatedSequenceAnnotator;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import gridss.cmdline.ReferenceCommandLineProgram;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -19,6 +20,7 @@ import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.StandardOptionDefinitions;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -51,7 +53,7 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 		IOUtil.assertFileIsWritable(OUTPUT);
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		log.info("Annotating variant untemplated sequence in " + INPUT);
-		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(REFERENCE_SEQUENCE, INPUT, OVERWRITE, ALIGNER_COMMAND_LINE, WORKER_THREADS)) {
+		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(REFERENCE_SEQUENCE, INPUT, OVERWRITE, ALIGNER_COMMAND_LINE, WORKER_THREADS, new IndexedFastaSequenceFile(REFERENCE_SEQUENCE).getSequenceDictionary())) {
 			saveVcf(INPUT, OUTPUT, ann);
 			log.info("Annotated variants written to " + OUTPUT);
 		} catch (IOException e) {

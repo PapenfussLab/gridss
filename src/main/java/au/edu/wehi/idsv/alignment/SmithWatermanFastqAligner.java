@@ -21,7 +21,7 @@ public class SmithWatermanFastqAligner implements FastqAligner {
 		this.referenceIndex = referenceIndex;
 	}
 	@Override
-	public void align(File fastq, File output, File reference, int threads) throws IOException {
+	public void align(File fastq, File output, File reference, int threads, SAMSequenceDictionary dict) throws IOException {
 		try (ReferenceSequenceFile ref = new IndexedFastaSequenceFile(reference)) {
 			SAMFileHeader header = new SAMFileHeader();
 			header.setSequenceDictionary(ref.getSequenceDictionary());

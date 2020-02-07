@@ -88,7 +88,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
         	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
         	
         	if (ALIGNER_STREAMING) {
-        		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS);
+        		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS, getReference().getSequenceDictionary());
         		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS, WRITE_OA, MAX_RECORDS_IN_RAM);
         	} else {
         		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);

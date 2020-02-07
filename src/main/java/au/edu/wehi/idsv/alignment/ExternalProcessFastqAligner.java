@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv.alignment;
 
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.lang3.SystemUtils;
@@ -27,7 +30,7 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 		this.writerFactory = writerFactory;
 	}
 	@Override
-	public void align(final File fastq, final File output, final File reference, final int threads) throws IOException {
+	public void align(final File fastq, final File output, final File reference, final int threads, SAMSequenceDictionary dict) throws IOException {
 		List<String> commandline = template.stream()
 				.map(s -> String.format(s, fastq.getPath(), reference.getPath(), threads))
 				.collect(Collectors.toList());
@@ -48,7 +51,13 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 		try (final SAMFileWriter writer = writerFactory.clone().setCompressionLevel(0).makeWriter(header, false, output, reference)) {
 			final SAMRecordIterator it = reader.iterator();
 			while (it.hasNext()) {
-				writer.addAlignment(it.next());
+				SAMRecord r= it.next();
+				if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
+					if (!MessageThrottler.Current.shouldSupress(log, "aligner out of bounds")) {
+						log.warn(String.format("Aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
+					}
+				}
+				writer.addAlignment(r);
 			}
 		}
 		ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference);

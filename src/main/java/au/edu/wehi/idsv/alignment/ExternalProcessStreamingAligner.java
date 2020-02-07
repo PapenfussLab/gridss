@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.alignment;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.NonFlushingBasicFastqWriter;
@@ -34,6 +36,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 	private final BlockingQueue<SAMRecord> buffer = new LinkedBlockingQueue<>();
 	private final List<String> args;
 	private final SamReaderFactory readerFactory;
+	private final SAMSequenceDictionary dict;
 	private Process aligner = null;
 	private NonFlushingBasicFastqWriter toExternalProgram = null;
 	private Thread reader = null;
@@ -41,9 +44,10 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 	private final String commandlinestr;
 	private final File reference;
 	private final AtomicBoolean isClosed = new AtomicBoolean(false);
-	public ExternalProcessStreamingAligner(final SamReaderFactory readerFactory, final List<String> commandline, final File reference, final int threads) {
+	public ExternalProcessStreamingAligner(final SamReaderFactory readerFactory, final List<String> commandline, final File reference, final int threads, final SAMSequenceDictionary dict) {
 		this.readerFactory = readerFactory;
 		this.reference = reference;
+		this.dict = dict;
 		this.args = commandline.stream()
 				.map(s -> String.format(s, "-", reference.getPath(), threads))
 				.collect(Collectors.toList());
@@ -122,6 +126,11 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		SAMRecordIterator it = fromExternalProgram.iterator();
 		while (it.hasNext()) {
 			SAMRecord r = it.next();
+			if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
+				if (!MessageThrottler.Current.shouldSupress(log, "strreaming aligner out of bounds")) {
+					log.warn(String.format("Streamed aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
+				}
+			}
 			buffer.add(r);
 			outstandingReads.decrementAndGet();
 		}

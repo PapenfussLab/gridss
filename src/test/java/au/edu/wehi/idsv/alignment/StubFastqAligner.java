@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import htsjdk.samtools.*;
 import org.apache.commons.lang3.ArrayUtils;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -14,12 +15,6 @@ import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.SplitReadHelper;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMUtils;
-import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -57,7 +52,7 @@ public class StubFastqAligner implements FastqAligner {
 		return this;
 	}
 	@Override
-	public void align(File fastq, File output, File reference, int threads) throws IOException {
+	public void align(File fastq, File output, File reference, int threads, SAMSequenceDictionary dict) throws IOException {
 		SAMFileHeader header = context.getBasicSamHeader();
 		try (FastqReader reader = new FastqReader(fastq)) {
 			try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, true, output)) {

@@ -1581,20 +1581,54 @@ public class SAMRecordUtil {
 	}
 	public static boolean forceValidContigBounds(SAMRecord r, SAMSequenceDictionary dict) {
 		if (r.getReadUnmappedFlag()) return false;
-		int startClip = 0;
-		int endClip = 0;
-		if (r.getAlignmentStart() <= 0) {
-			startClip = 1 - r.getAlignmentStart();
-		}
 		int seqlen = dict.getSequence(r.getReferenceIndex()).getSequenceLength();
-		if (r.getAlignmentEnd() > seqlen) {
-			endClip = r.getAlignmentEnd() - seqlen;
-		}
-		if (startClip > 0 || endClip > 0) {
-			r.setCigar(new Cigar(CigarUtil.extendSoftClipping(r.getCigar(), startClip, endClip)));
-			return true;
-		}
+		if (r.getAlignmentStart() > 0 && r.getAlignmentEnd() <= seqlen) return false;
+		// trim the start
+		int endPosition = r.getAlignmentEnd();
+		List<CigarElement> cigar = forceStartOnContig(r.getAlignmentStart(), r.getCigar().getCigarElements());
+		r.setCigar(new Cigar(cigar));
+		int newEndPosition = r.getAlignmentEnd();
+		// adjust start so we're still ending at the same position
+		r.setAlignmentStart(r.getAlignmentStart() + endPosition - newEndPosition);
+		// trim the end by flipping the cigar and reusing the start trimming code
+		cigar = Lists.reverse(cigar);
+		cigar = forceStartOnContig(seqlen - r.getAlignmentEnd() + 1, cigar);
+		cigar = Lists.reverse(cigar);
+		r.setCigar(new Cigar(CigarUtil.clean(cigar, false)));
 		return false;
+	}
+
+	/**
+	 * Adjusts the CIGAR so that the startPosition is at least 1
+	 */
+	private static List<CigarElement> forceStartOnContig(int startPosition, List<CigarElement> cigar) {
+		List<CigarElement> out = new ArrayList<>();
+		int positionsLeftToUnmap = 1 - startPosition;
+		for (CigarElement ce : cigar) {
+			if (positionsLeftToUnmap <= 0) {
+				// pass through the rest of the cigar untouched
+				out.add(ce);
+			} else if (ce.getOperator().isClipping()) {
+				out.add(ce);
+			} else if (ce.getOperator().consumesReadBases() && ce.getOperator().consumesReferenceBases()) {
+				int basesToConvertToSoftClip = Math.min(ce.getLength(), positionsLeftToUnmap);
+				int basesToRetain = ce.getLength() - basesToConvertToSoftClip;
+				if (basesToConvertToSoftClip > 0) {
+					out.add(new CigarElement(basesToConvertToSoftClip, CigarOperator.SOFT_CLIP));
+				}
+				if (basesToRetain > 0) {
+					out.add(new CigarElement(basesToRetain, ce.getOperator()));
+				}
+				positionsLeftToUnmap -= basesToConvertToSoftClip;
+			} else if (ce.getOperator().consumesReadBases() && !ce.getOperator().consumesReferenceBases()) {
+				out.add(new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+			} else if (!ce.getOperator().consumesReadBases() && ce.getOperator().consumesReferenceBases()) {
+				positionsLeftToUnmap -= ce.getLength();
+			} else {
+				// doesn't consume read or reference bases - strip
+			}
+		}
+		return out;
 	}
 }
 

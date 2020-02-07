@@ -1053,6 +1053,17 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecordUtil.forceValidContigBounds(r, SMALL_FA.getSequenceDictionary());
 		assertEquals(3, r.getAlignmentStart());
 		assertEquals("3S3M", r.getCigarString());
+
+
+		r = Read(0, -1, "10M");
+		SAMRecordUtil.forceValidContigBounds(r, SMALL_FA.getSequenceDictionary());
+		assertEquals(1, r.getAlignmentStart());
+		assertEquals("2S8M", r.getCigarString());
+
+		r = Read(0, -1, "2I10M");
+		SAMRecordUtil.forceValidContigBounds(r, SMALL_FA.getSequenceDictionary());
+		assertEquals(1, r.getAlignmentStart());
+		assertEquals("4S8M", r.getCigarString());
 	}
 	@Test
 	public void forceValidContigBounds_should_force_to_contig_end() {
@@ -1067,4 +1078,5 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("3M3S", r.getCigarString());
 	}
 }
+
 

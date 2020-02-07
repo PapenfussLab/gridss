@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.alignment;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -14,9 +16,9 @@ public class SequentialExecutionFastqAligner implements FastqAligner {
 	public SequentialExecutionFastqAligner(FastqAligner aligner) {
 		this.aligner = aligner;
 	}
-	public void align(File fastq, File output, File reference, int threads) throws IOException {
+	public void align(File fastq, File output, File reference, int threads, SAMSequenceDictionary dict) throws IOException {
 		synchronized(lock) {
-			aligner.align(fastq, output, reference, threads);
+			aligner.align(fastq, output, reference, threads, dict);
 		}
 	}
 }
