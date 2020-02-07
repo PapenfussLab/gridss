@@ -165,6 +165,6 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	}
 	@Override
 	public String getRemoteEvidenceID() {
-		return getAttributeAsString(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, null);
+		return getAttributeAsString(VcfSvConstants.MATE_BREAKEND_ID_KEY, null);
 	}
 }

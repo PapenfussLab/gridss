@@ -122,7 +122,7 @@ public class BreakendToSimpleCallImpl {
 	private void process(VariantContextDirectedBreakpoint bp) {
 		assert(bp.getID().endsWith("o"));
 		remove(bp);
-		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY));
+		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY));
 		if (mate == null) {
 			log.warn(String.format("Breakpoint %s is missing mate", bp.getID()));
 		}
@@ -210,7 +210,7 @@ public class BreakendToSimpleCallImpl {
 	private void remove(VariantContextDirectedBreakpoint bp) {
 		lookup.remove(bp);
 		byQual.remove(bp);
-		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY));
+		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY));
 		if (mate != null) {
 			lookup.remove(mate);
 			byQual.remove(mate);

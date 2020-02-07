@@ -40,7 +40,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 	private final SetMultimap<String, VariantEvidenceSupport> assemblyAllocationLookup = HashMultimap.create();
 	public class VariantEvidenceSupport {
 		private final String id;
-		private final String parid;
+		private final String mateid;
 		private final String eventid;
 		private final long startLocation;
 		//public final long endLocation;
@@ -51,7 +51,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 		private VariantEvidenceSupport(VariantContextDirectedEvidence call) {
 			this.variant = call;
 			this.id = call.hasID() ? call.getID() : null;
-			this.parid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, null) : null;
+			this.mateid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, null) : null;
 			this.eventid = (String)call.getAttribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null);
 			this.score = (float)call.getPhredScaledQual();
 			assert(this.score >= 0); // variant must have score set
@@ -260,7 +260,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 	private VariantEvidenceSupport assignToBestBreakpoint(BreakendSummary bs, DirectedEvidence evidence) {
 		VariantEvidenceSupport best = breakpointLookup.findBestOverlapping(bs);
 		if (best != null) {
-			VariantEvidenceSupport mate = bufferedVariantId.get(best.parid);
+			VariantEvidenceSupport mate = bufferedVariantId.get(best.mateid);
 			if (mate != null && mate.location.overlaps(bs) && allocateToHighBreakend(evidence)) {
 				// special case: matches both sides of the breakpoint 
 				mate.attributeEvidence(evidence);

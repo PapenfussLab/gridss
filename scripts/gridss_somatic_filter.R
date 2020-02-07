@@ -90,7 +90,7 @@ full_vcf = raw_vcf[geno(raw_vcf)$QUAL[,argv$normalordinal] / VariantAnnotation::
 rm(raw_vcf)
 if (argv$gc) { gc() }
 # hard filter unpaired breakpoints (caused by inconsistent scoring across the two breakends)
-full_vcf = full_vcf[is.na(info(full_vcf)$PARID) | info(full_vcf)$PARID %in% names(full_vcf)]
+full_vcf = full_vcf[is.na(info(full_vcf)$MATEID) | info(full_vcf)$MATEID %in% names(full_vcf)]
 full_vcf = align_breakpoints(full_vcf)
 # Add header fields
 full_vcf = addVCFHeaders(full_vcf)
@@ -147,14 +147,14 @@ if (argv$gc) { gc() }
 
 # Remove very hard filtered variants
 full_vcf = full_vcf[passes_very_hard_filters(filters)]
-unpaired_breakpoint = !is.na(info(full_vcf)$PARID) & !(info(full_vcf)$PARID %in% names(full_vcf))
+unpaired_breakpoint = !is.na(info(full_vcf)$MATEID) & !(info(full_vcf)$MATEID %in% names(full_vcf))
 full_vcf = full_vcf[!unpaired_breakpoint]
 filters = filters[passes_very_hard_filters(filters)]
 filters = filters[!unpaired_breakpoint]
 rm(unpaired_breakpoint)
 
 vcf = full_vcf[passes_soft_filters(filters)]
-vcf = vcf[is.na(info(vcf)$PARID) | info(vcf)$PARID %in% names(vcf)]
+vcf = vcf[is.na(info(vcf)$MATEID) | info(vcf)$MATEID %in% names(vcf)]
 bpgr = bpgr[names(bpgr) %in% names(vcf)]
 if (argv$gc) { gc() }
 
@@ -166,8 +166,8 @@ transitive_df = transitive_calls(vcf, bpgr, report="max2") %>%
   mutate(type="transitive")
 # now we filter imprecise variants
 is_imprecise = !(is.na(info(vcf)$IMPRECISE) | !info(vcf)$IMPRECISE) |
-  !((!is.na(info(vcf)$PARID) & info(vcf)$ASSR + info(vcf)$SR + info(vcf)$IC > 0) |
-      (is.na(info(vcf)$PARID) & info(vcf)$BASSR + info(vcf)$BSC > 0))
+  !((!is.na(info(vcf)$MATEID) & info(vcf)$ASSR + info(vcf)$SR + info(vcf)$IC > 0) |
+      (is.na(info(vcf)$MATEID) & info(vcf)$BASSR + info(vcf)$BSC > 0))
 filters[names(vcf)[is_imprecise]] = paste0(filters[names(vcf)[is_imprecise]], ";imprecise")
 filters[transitive_df$linked_by] = paste0(filters[transitive_df$linked_by], ";transitive")
 
@@ -209,7 +209,7 @@ if (argv$plotdir != "") {
 }
 
 vcf = full_vcf[passes_soft_filters(filters)]
-vcf = vcf[is.na(info(vcf)$PARID) | info(vcf)$PARID %in% names(vcf)]
+vcf = vcf[is.na(info(vcf)$MATEID) | info(vcf)$MATEID %in% names(vcf)]
 bpgr = bpgr[names(bpgr) %in% names(vcf)]
 begr = begr[names(begr) %in% names(vcf)]
 if (argv$gc) { gc() }
@@ -291,8 +291,8 @@ event_link_df = bind_rows(
   group_by(linked_by) %>%
   # filter events where supporting fragment counts differ by too much
   mutate(
-    max_supporting_fragment_count = max(ifelse(is.na(info(full_vcf[sourceId])$PARID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
-    min_supporting_fragment_count = min(ifelse(is.na(info(full_vcf[sourceId])$PARID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
+    max_supporting_fragment_count = max(ifelse(is.na(info(full_vcf[sourceId])$MATEID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
+    min_supporting_fragment_count = min(ifelse(is.na(info(full_vcf[sourceId])$MATEID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
     hasPolyA=any(hasPolyA)
     ) %>%
   filter(min_supporting_fragment_count >= gridss.min_rescue_portion * max_supporting_fragment_count | hasPolyA)
@@ -339,7 +339,7 @@ link_summary_df = bind_rows(link_df, event_link_df, eqv_link_df) %>%
 info(full_vcf)$LOCAL_LINKED_BY = rep("", length(full_vcf))
 info(full_vcf)$REMOTE_LINKED_BY = rep("", length(full_vcf))
 info(full_vcf[link_summary_df$sourceId])$LOCAL_LINKED_BY = link_summary_df$linked_by
-info(full_vcf[!is.na(info(full_vcf)$PARID)])$REMOTE_LINKED_BY = info(full_vcf[info(full_vcf[!is.na(info(full_vcf)$PARID)])$PARID])$LOCAL_LINKED_BY
+info(full_vcf[!is.na(info(full_vcf)$MATEID)])$REMOTE_LINKED_BY = info(full_vcf[info(full_vcf[!is.na(info(full_vcf)$MATEID)])$MATEID])$LOCAL_LINKED_BY
 
 write(paste(Sys.time(),"Final qual filtering ", argv$output), stderr())
 # final qual filtering
@@ -353,13 +353,13 @@ if (argv$gc) { gc() }
 if (!is.na(argv$output)) {
   write(paste(Sys.time(),"Writing ", argv$output), stderr())
   vcf = full_vcf[passes_soft_filters(filters)]
-  vcf = vcf[is.na(info(vcf)$PARID) | info(vcf)$PARID %in% names(vcf)]
+  vcf = vcf[is.na(info(vcf)$MATEID) | info(vcf)$MATEID %in% names(vcf)]
   writeVcf(vcf, argv$output, index=TRUE)
 }
 if (!is.na(argv$fulloutput)) {
   write(paste(Sys.time(),"Writing ", argv$fulloutput), stderr())
   vcf = full_vcf[passes_very_hard_filters(filters)]
-  vcf = vcf[is.na(info(vcf)$PARID) | info(vcf)$PARID %in% names(vcf)]
+  vcf = vcf[is.na(info(vcf)$MATEID) | info(vcf)$MATEID %in% names(vcf)]
   writeVcf(vcf, argv$fulloutput, index=TRUE)
 }
 

@@ -19,7 +19,7 @@ errorCount <- 0
 margin <- 0.04 # margin of error allowed due to VCF rounding to 2dp
 vcf <- readVcf(args[2], "unknown")
 
-vcf = vcf[!is.na(info(vcf)$PARID)] # TODO expand script to include single breakends
+vcf = vcf[!is.na(info(vcf)$MATEID)] # TODO expand script to include single breakends
 
 ######
 # Annotation breakdown validations
@@ -51,14 +51,14 @@ if (any(mismatchedField)) {
 
 
 # Breakends are partnered
-missingPARID <- row.names(vcf)[!(info(vcf)$PARID %in% row.names(vcf))]
-if (length(missingPARID) > 0 ) {
+missingMATEID <- row.names(vcf)[!(info(vcf)$MATEID %in% row.names(vcf))]
+if (length(missingMATEID) > 0 ) {
 	errorCount <- errorCount + 1
-	write(paste("Missing partner specified in PARID for:", paste(missingPARID, collapse=", ")), stdout())
-	vcf <- vcf[!(row.names(vcf) %in% missingPARID),]
+	write(paste("Missing partner specified in MATEID for:", paste(missingMATEID, collapse=", ")), stdout())
+	vcf <- vcf[!(row.names(vcf) %in% missingMATEID),]
 }
 
-pvcf <- vcf[info(vcf)$PARID,]
+pvcf <- vcf[info(vcf)$MATEID,]
 
 mismatchedField = rowRanges(vcf)$QUAL != rowRanges(pvcf)$QUAL
 if (any(mismatchedField)) {

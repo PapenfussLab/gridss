@@ -737,7 +737,7 @@ transitive_breakpoints <- function(
 #' In the case of an even width interval, centre alignment adjusts to the centre
 #' position closest to the initial location.
 #' Adjusts the nominal position of a breakpoints
-align_breakpoints <- function(vcf, align=c("centre"), is_higher_breakend=names(vcf) < info(vcf)$PARID) {
+align_breakpoints <- function(vcf, align=c("centre"), is_higher_breakend=names(vcf) < info(vcf)$MATEID) {
   if (length(vcf) == 0) {
     return(vcf)
   }
@@ -897,7 +897,7 @@ zip_aggregate_pair_of_list_of_list = function(list1, list2, ZIP_FUN, AGGREGATE_F
 linked_assemblies <- function(vcf, exclude_breakends_without_local_assembly=TRUE) {
   asm_linked_df <- data.frame(
     sourceId=names(vcf),
-    parid=info(vcf)$PARID,
+    mateid=info(vcf)$MATEID,
     start=start(rowRanges(vcf)),
     asm=zip_aggregate_pair_of_list_of_list(
       info(vcf)$BEID,
@@ -923,10 +923,10 @@ linked_assemblies <- function(vcf, exclude_breakends_without_local_assembly=TRUE
 }
 exclude_self_links = function(linked_df, vcf) {
   self_links = linked_df %>% dplyr::select(sourceId, linked_by) %>%
-    mutate(parid = info(vcf[sourceId])$PARID) %>%
-    filter(!is.na(parid)) %>%
+    mutate(mateid = info(vcf[sourceId])$MATEID) %>%
+    filter(!is.na(mateid)) %>%
     group_by(linked_by) %>%
-    filter(length(unique(c(sourceId, parid))) != 4) %>%
+    filter(length(unique(c(sourceId, mateid))) != 4) %>%
     pull(linked_by)
   return(linked_df %>% filter(!(linked_by %in% self_links)))
 
@@ -940,8 +940,8 @@ exclude_self_links = function(linked_df, vcf) {
     group_by(asm) %>%
     arrange(start) %>%
     mutate(
-      is_indel_start = (lead(parid) == sourceId) %na% FALSE,
-      is_indel_end = (lag(parid) == sourceId) %na% FALSE,
+      is_indel_start = (lead(mateid) == sourceId) %na% FALSE,
+      is_indel_end = (lag(mateid) == sourceId) %na% FALSE,
       requires_asm_renaming=n() > 2,
       paired_with_next=row_number() == 1 | is_indel_end) %>%
     # trim starting indel bound
@@ -959,14 +959,14 @@ exclude_self_links = function(linked_df, vcf) {
 .linked_assemblies_fix_breakends = function(vcf, asm_linked_df) {
   i = info(vcf)
   breakends_with_less_than_two_assemblies = names(vcf)[
-    is.na(i$PARID) & i$AS + i$RAS + i$CAS < 2]
+    is.na(i$MATEID) & i$AS + i$RAS + i$CAS < 2]
   asm_linked_df %>% filter(!(sourceId %in% breakends_with_less_than_two_assemblies))
 }
 require(testthat)
 test_that(".linked_assemblies_fix_indels corrects indels", {
   asm_linked_df = data.frame(
     sourceId=c("in", "indel1o", "indel1h","indel2o", "indel2h", "out", "indel3o", "indel3h", "other_left", "other_right"),
-    parid=c("a", "indel1h", "indel1o","indel2h", "indel2o", NA, "indel3h", "indel3o", "b", "c"),
+    mateid=c("a", "indel1h", "indel1o","indel2h", "indel2o", NA, "indel3h", "indel3o", "b", "c"),
     start=c(1, 2, 3, 4, 5, 6, 2, 4, 3, 4),
     asm=c(rep("asm1", 6), rep("asm2", 2), rep("asm3", 2)),
     stringsAsFactors=FALSE)
@@ -1071,7 +1071,7 @@ gridss_breakpoint_somatic_llr = function(vcf, normalOrdinal, tumourOrdinal, cont
 passes_final_filters = function(vcf, include.existing.filters=TRUE) {
   return(
     (!include.existing.filters | rowRanges(vcf)$FILTER %in% c(".", "PASS")) &
-    ifelse(is.na(info(vcf)$PARID),
+    ifelse(is.na(info(vcf)$MATEID),
          rowRanges(vcf)$QUAL >= gridss.min_qual * gridss.single_breakend_multiplier,
          rowRanges(vcf)$QUAL >= gridss.min_qual))
 }
@@ -1470,3 +1470,17 @@ pairwiseLCPrefix <- function(s1, s2, ignore.case=FALSE) {
   }
   return(prefixLength)
 }
+
+fix_parid = function(vcf) {
+  if ("PARID" %in% row.names(info(header(vcf))) & !("MATEID" %in% row.names(info(header(vcf))))) {
+    parid = info(vcf)$PARID
+    info(vcf)$PARID = NULL
+    parid_header_ordinal = which(row.names(info(header(vcf))) == "PARID")
+    row.names(info(header(vcf)))[parid_header_ordinal] = "MATEID"
+    info(header(vcf))$Description[parid_header_ordinal] = "ID of mate breakends"
+    info(vcf)$MATEID = parid
+    write("WARNING: MATEID header not found. Assuming VCF was generated prior to GRIDSS 2.8.0 and rewriting as MATEID.", stderr())
+  }
+  return(vcf)
+}
+

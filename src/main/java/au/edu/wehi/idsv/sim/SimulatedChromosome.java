@@ -119,7 +119,7 @@ public class SimulatedChromosome {
 		builder.breakpoint(bp, "")
 			.id(event + (bp.isLowBreakend() ? "o" : "h"))
 			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event)
-			.attribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"))
+			.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"))
 			.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"));
 		return builder;
 	}

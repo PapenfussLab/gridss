@@ -55,10 +55,10 @@ public class BreakpointFilterTracker<T extends VariantContextDirectedEvidence> e
 	}
 
 	private boolean track(T evidence) {
-		String parid = evidence.getAttributeAsString(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, null);
-		if (!StringUtils.isEmpty(parid)) {
-			if (partner.containsKey(parid)) {
-				return isValidBreakpoint(evidence, partner.remove(parid));
+		String mateid = evidence.getAttributeAsString(VcfSvConstants.MATE_BREAKEND_ID_KEY, null);
+		if (!StringUtils.isEmpty(mateid)) {
+			if (partner.containsKey(mateid)) {
+				return isValidBreakpoint(evidence, partner.remove(mateid));
 			} else {
 				partner.put(evidence.getID(), evidence);
 			}

@@ -21,8 +21,8 @@ public class MaximalEvidenceCliqueIteratorTest extends TestHelper {
 	public void breakends_mateids_should_match() {
 		List<VariantContextDirectedEvidence> calls = Lists.newArrayList(new MaximalEvidenceCliqueIterator(getContext(), ImmutableList.<DirectedEvidence>of(NRRP(DP(0, 1, "1M", true, 0, 500, "1M", false))).iterator(), FWD, BWD, new SequentialIdGenerator("test")));
 		assertEquals(2, calls.size());
-		assertEquals(calls.get(0).getID(), calls.get(1).getAttribute("PARID"));
-		assertEquals(calls.get(1).getID(), calls.get(0).getAttribute("PARID"));
+		assertEquals(calls.get(0).getID(), calls.get(1).getAttribute("MATEID"));
+		assertEquals(calls.get(1).getID(), calls.get(0).getAttribute("MATEID"));
 	}
 	@Test
 	public void margin_should_expand_and_contract_past_chromosome_end() {

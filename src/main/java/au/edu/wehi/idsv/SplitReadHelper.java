@@ -128,9 +128,11 @@ public class SplitReadHelper {
 		if (reference != null && !AssemblyAttributes.isUnanchored(record)) {
 			adjustSplitLocationsToMinimiseEditDistance(record, alignments, reference, adjustPrimaryAlignment);
 		}
-		adjustToContigBounds(record, reference.getSequenceDictionary());
-		for (SAMRecord r : alignments) {
-			adjustToContigBounds(r, reference.getSequenceDictionary());
+		if (reference != null) {
+			adjustToContigBounds(record, reference.getSequenceDictionary());
+			for (SAMRecord r : alignments) {
+				adjustToContigBounds(r, reference.getSequenceDictionary());
+			}
 		}
 		writeSA(record, alignments);
 		return true;
