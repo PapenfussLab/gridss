@@ -1581,7 +1581,13 @@ public class SAMRecordUtil {
 	}
 	public static boolean forceValidContigBounds(SAMRecord r, SAMSequenceDictionary dict) {
 		if (r.getReadUnmappedFlag()) return false;
-		int seqlen = dict.getSequence(r.getReferenceIndex()).getSequenceLength();
+		if (dict == null) return false;
+		if (r.getReferenceIndex() == null) return false;
+		if (dict.getSequence(r.getReferenceIndex()) == null) return false;
+		int seqlen = Integer.MAX_VALUE;
+		if (dict != null && r.getReferenceIndex() != null && dict.getSequence(r.getReferenceIndex()) != null) {
+			seqlen = dict.getSequence(r.getReferenceIndex()).getSequenceLength();
+		}
 		if (r.getAlignmentStart() > 0 && r.getAlignmentEnd() <= seqlen) return false;
 		// trim the start
 		int endPosition = r.getAlignmentEnd();
