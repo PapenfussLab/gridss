@@ -459,6 +459,8 @@ if [[ $do_preprocess == true ]] ; then
 					SOFTEN_HARD_CLIPS=true \
 					FIX_MATE_INFORMATION=true \
 					FIX_DUPLICATE_FLAG=true \
+					FIX_SA=true \
+					FIX_MISSING_HARD_CLIP=true \
 					TAGS=null \
 					TAGS=NM \
 					TAGS=SA \

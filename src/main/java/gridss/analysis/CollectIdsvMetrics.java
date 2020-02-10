@@ -41,7 +41,7 @@ public class CollectIdsvMetrics extends SinglePassSamProgram {
 
     @Override
     public void setup(final SAMFileHeader header, final File samFile) {
-        IOUtil.assertFileIsWritable(OUTPUT != null ? OUTPUT : getOutputArgumentCollection().getOutputFile());
+        IOUtil.assertFileIsWritable(OUTPUT != null ? OUTPUT : output.getOutputFile());
         idsv = new IdsvMetrics();
     }
 
@@ -100,6 +100,6 @@ public class CollectIdsvMetrics extends SinglePassSamProgram {
     public void finish() {
         final MetricsFile<IdsvMetrics, Integer> metricsFile = getMetricsFile();
         metricsFile.addMetric(idsv);
-        metricsFile.write(OUTPUT != null ? OUTPUT : getOutputArgumentCollection().getOutputFile());
+        metricsFile.write(OUTPUT != null ? OUTPUT : output.getOutputFile());
     }
 }
