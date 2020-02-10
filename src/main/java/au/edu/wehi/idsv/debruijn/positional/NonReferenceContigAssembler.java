@@ -905,7 +905,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			KmerEvidence e2 = KmerEvidence.createAnchor(k, nrrp, aes.getContext().getAssemblyParameters().pairAnchorMismatchIgnoreEndBases, nrrp.getEvidenceSource().getContext().getReference());
 
 			Range<Integer> bounds = contigBaseOffsetBounds(lookup, e);
-			Range<Integer> anchorBounds = contigBaseOffsetBounds(lookup, e2);
+			// #287 e2 can be null if we don't have any valid kmers on the mate.
+			// This can occur in situations such as when the read is shorter than the kmer, or the the read does not
+			// contain a run of unambiguous bases of length k.
+			Range<Integer> anchorBounds = e2 == null ? null : contigBaseOffsetBounds(lookup, e2);
 
 			if (anchorBounds == null) {
 				if (bounds == null) {

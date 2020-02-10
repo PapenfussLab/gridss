@@ -573,4 +573,27 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(0, aa.getSupportingReadCount(12, null, null));
 		assertEquals(0, aa.getSupportingReadCount(13, null, null));
 	}
+	@Test
+	public void issue287_rp_support_for_anchor_with_no_valid_kmers_treated_as_anchoring_read_not_assembled() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 100);
+		SAMRecord[] rp = DP(0, 120, "1M", false, 0, 1000, "10M", true);
+		rp[0].setReadBases(B("A"));
+		rp[1].setReadBases(B("GGTTGCATAG"));
+		SoftClipEvidence sce = SCE(BWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 100, "12S5M")));
+		List<SAMRecord> output = go(pc, true, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertEquals(1, output.size());
+		assertEquals("GGTTGCATAGACGTGGTCGACC", S(output.get(0).getReadBases()));
+		assertFalse(output.get(0).hasAttribute(SamTags.UNANCHORED));
+		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
+		// GGTTGCATAGACGTGGTCGACC
+		// 0123456789012345678901
+		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		for (int i = 1; i < output.get(0).getReadLength(); i++) {
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		}
+		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+	}
 }
