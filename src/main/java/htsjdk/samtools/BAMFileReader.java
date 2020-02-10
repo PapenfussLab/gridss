@@ -29,10 +29,7 @@ import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -391,6 +388,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
     @Override
     public SamReader.Type type() {
+        if (mIndexFile != null && getIndexType().equals(SamIndexes.CSI)) {
+            return SamReader.Type.BAM_CSI_TYPE;
+        }
         return SamReader.Type.BAM_TYPE;
     }
 
@@ -411,14 +411,39 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         if(!hasIndex())
             throw new SAMException("No index is available for this BAM file.");
         if(mIndex == null) {
-            if (mIndexFile != null)
-                mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
-                                             : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
-            else
+            SamIndexes samIndex = getIndexType();
+            if (samIndex == null) {
                 mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary())
-                                             : new DiskBasedBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary());
+                        : new DiskBasedBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary());
+            } else if (samIndex.equals(SamIndexes.BAI)) {
+                    mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
+                            : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
+            } else if (samIndex.equals(SamIndexes.CSI)) {
+                    mIndex = new CSIIndex(mIndexFile, mEnableIndexMemoryMapping, getFileHeader().getSequenceDictionary());
+            } else {
+                throw new SAMFormatException("Unsupported BAM index file: " + mIndexFile.getName());
+            }
         }
+
         return mIndex;
+    }
+
+    /**
+     * Return the type of the BAM index, BAI or CSI.
+     * @return one of {@link SamIndexes#BAI} or {@link SamIndexes#CSI} or null
+     */
+    public SamIndexes getIndexType() {
+        if (mIndexFile != null) {
+            if (mIndexFile.getName().toLowerCase().endsWith(FileExtensions.BAI_INDEX)) {
+                return SamIndexes.BAI;
+            } else if (mIndexFile.getName().toLowerCase().endsWith(FileExtensions.CSI)) {
+                return SamIndexes.CSI;
+            }
+
+            throw new SAMFormatException("Unknown BAM index file type: " + mIndexFile.getName());
+        }
+
+        return null;
     }
 
     public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }
@@ -1172,48 +1197,6 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                 }
             }
         }
-    }
-
-    /**
-     * A decorating iterator that filters out records that do not match the given reference and start position.
-     */
-    private class BAMStartingAtIteratorFilter implements BAMIteratorFilter {
-
-        private final int mReferenceIndex;
-        private final int mRegionStart;
-
-        public BAMStartingAtIteratorFilter(final int referenceIndex, final int start) {
-            mReferenceIndex = referenceIndex;
-            mRegionStart = start;
-        }
-
-        /**
-         *
-         * @return MATCHES_FILTER if this record matches the filter;
-         * CONTINUE_ITERATION if does not match filter but iteration should continue;
-         * STOP_ITERATION if does not match filter and iteration should end.
-         */
-        @Override
-        public FilteringIteratorState compareToFilter(final SAMRecord record) {
-            // If beyond the end of this reference sequence, end iteration
-            final int referenceIndex = record.getReferenceIndex();
-            if (referenceIndex < 0 || referenceIndex > mReferenceIndex) {
-                return FilteringIteratorState.STOP_ITERATION;
-            } else if (referenceIndex < mReferenceIndex) {
-                // If before this reference sequence, continue
-                return FilteringIteratorState.CONTINUE_ITERATION;
-            }
-            final int alignmentStart = record.getAlignmentStart();
-            if (alignmentStart > mRegionStart) {
-                // If scanned beyond target region, end iteration
-                return FilteringIteratorState.STOP_ITERATION;
-            } else  if (alignmentStart == mRegionStart) {
-                    return FilteringIteratorState.MATCHES_FILTER;
-            } else {
-                return FilteringIteratorState.CONTINUE_ITERATION;
-            }
-        }
-
     }
 
     private class BAMFileIndexUnmappedIterator extends BAMFileIterator  {

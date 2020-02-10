@@ -8,6 +8,7 @@ import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.SinglePassSamProgram;
+import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 import java.io.File;
 import java.util.Collection;
@@ -91,7 +92,7 @@ public class CollectGridssMetricsAndExtractFullReads extends CollectGridssMetric
     protected ExtractFullReads getExtractFullReads() {
     	ExtractFullReads extract = new ExtractFullReads();
     	CommandLineProgramHelper.copyInputs(this, extract);
-    	extract.OUTPUT = READ_OUTPUT;
+    	extract.output = new RequiredOutputArgumentCollection(READ_OUTPUT);
         extract.INPUT = this.INPUT;
         extract.REGION_BED = REGION_BED;
         extract.EXTRACT_MATES = EXTRACT_MATES;

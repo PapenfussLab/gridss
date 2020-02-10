@@ -8,6 +8,7 @@ import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.analysis.CollectMultipleMetrics;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.SinglePassSamProgram;
+import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 import java.io.File;
 import java.util.Arrays;
@@ -42,7 +43,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     public Integer THRESHOLD_COVERAGE = null;
 
     public CollectGridssMetrics() {
-    	// By default, only run those required by GRIDSS
+    	// By default, only run metrics required by the GRIDSS pre-processing step
     	PROGRAM = new LinkedHashSet<>(Arrays.asList(Program.CollectInsertSizeMetrics));
     }
     
@@ -81,7 +82,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 																 final File refflat,
 																 final  Set<String> ignoreSequence) {
 	    					final CollectCigarMetrics program = new CollectCigarMetrics();
-	    	                program.OUTPUT = new File(outbase + gridss.analysis.CollectCigarMetrics.METRICS_SUFFIX + outext);
+							program.output = new RequiredOutputArgumentCollection(new File(outbase + gridss.analysis.CollectCigarMetrics.METRICS_SUFFIX + outext));
 	
 	    	                // Generally programs should not be accessing these directly but it might make things smoother
 	    	                // to just set them anyway. These are set here to make sure that in case of a the derived class
@@ -113,7 +114,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 																 final File refflat,
 																 final  Set<String> ignoreSequence) {
     						final CollectIdsvMetrics program = new CollectIdsvMetrics();
-    		                program.OUTPUT = new File(outbase + gridss.analysis.CollectIdsvMetrics.METRICS_SUFFIX + outext);
+							program.output = new RequiredOutputArgumentCollection(new File(outbase + gridss.analysis.CollectIdsvMetrics.METRICS_SUFFIX + outext));
 
     		                // Generally programs should not be accessing these directly but it might make things smoother
     		                // to just set them anyway. These are set here to make sure that in case of a the derived class
@@ -145,7 +146,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 																 final File refflat,
 																 final  Set<String> ignoreSequence) {
     						final CollectMapqMetrics program = new CollectMapqMetrics();
-    		                program.OUTPUT = new File(outbase + gridss.analysis.CollectMapqMetrics.METRICS_SUFFIX + outext);
+							program.output = new RequiredOutputArgumentCollection(new File(outbase + gridss.analysis.CollectMapqMetrics.METRICS_SUFFIX + outext));
     		                // TODO: why does this only work on my local desktop+servers and not the CI or cluster systems?
     		                //program.Histogram_FILE = new File(outbase + gridss.analysis.CollectMapqMetrics.HISTOGRAM_SUFFIX);
 
@@ -181,7 +182,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 																 final File refflat,
 																 final  Set<String> ignoreSequence) {
     						final CollectTagMetrics program = new CollectTagMetrics();
-    		                program.OUTPUT = new File(outbase + gridss.analysis.CollectTagMetrics.METRICS_SUFFIX + outext);
+							program.output = new RequiredOutputArgumentCollection(new File(outbase + gridss.analysis.CollectTagMetrics.METRICS_SUFFIX + outext));
 
     		                // Generally programs should not be accessing these directly but it might make things smoother
     		                // to just set them anyway. These are set here to make sure that in case of a the derived class
@@ -215,7 +216,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 																 final File refflat,
 																 final  Set<String> ignoreSequence) {
     						final ReportThresholdCoverage program = new ReportThresholdCoverage();
-    		                program.OUTPUT = new File(outbase + gridss.analysis.ReportThresholdCoverage.SUFFIX);
+							program.output = new RequiredOutputArgumentCollection(new File(outbase + gridss.analysis.ReportThresholdCoverage.SUFFIX + outext));
     		                
     		                // Generally programs should not be accessing these directly but it might make things smoother
     		                // to just set them anyway. These are set here to make sure that in case of a the derived class

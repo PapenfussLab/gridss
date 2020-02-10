@@ -402,7 +402,7 @@ public class SplitReadRealigner {
 		int recordsWritten = 0;
 		try (SamReader reader = readerFactory.open(input)) {
 			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
-				try (FastqWriter writer = new AsyncFastqWriter(new NonFlushingBasicFastqWriter(fq), AsyncFastqWriter.DEFAULT_QUEUE_SIZE)) {
+				try (FastqWriter writer = new AsyncFastqWriter(new BasicFastqWriter(fq), AsyncFastqWriter.DEFAULT_QUEUE_SIZE)) {
 					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(
 							bufferedIt,
 							isRecursive,

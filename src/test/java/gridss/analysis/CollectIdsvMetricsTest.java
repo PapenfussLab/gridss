@@ -10,13 +10,15 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
+import picard.analysis.SinglePassSamProgram;
+import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	@Test
 	public void should_calc_max_read_length() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectIdsvMetrics c = new CollectIdsvMetrics();
-		c.OUTPUT = metricFiles;
+		c.output = new RequiredOutputArgumentCollection(metricFiles);
 		c.setup(null, null);
 		c.acceptRead(RP(0, 1, 2, 1)[0], null);
 		c.acceptRead(RP(0, 1, 2, 1)[1], null);
@@ -31,7 +33,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	public void should_calc_read_statistics() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectIdsvMetrics c = new CollectIdsvMetrics();
-		c.OUTPUT = metricFiles;
+		c.output = new RequiredOutputArgumentCollection(metricFiles);
 		c.setup(null, null);
 		c.acceptRead(RP(0, 1, 2, 1)[1], null);
 		c.acceptRead(RP(0, 1, 2, 1)[0], null);
@@ -56,7 +58,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	public void should_calc_read_pairing_statistics() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectIdsvMetrics c = new CollectIdsvMetrics();
-		c.OUTPUT = metricFiles;
+		c.output = new RequiredOutputArgumentCollection(metricFiles);
 		c.setup(null, null);
 		c.acceptRead(RP(0, 1, 2, 1)[1], null);
 		c.acceptRead(RP(0, 1, 2, 1)[0], null);
@@ -83,7 +85,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	public void should_calc_alternate_mappings() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectIdsvMetrics c = new CollectIdsvMetrics();
-		c.OUTPUT = metricFiles;
+		c.output = new RequiredOutputArgumentCollection(metricFiles);
 		c.setup(null, null);
 		c.acceptRead(Read(0, 1, "1M"), null);
 		SAMRecord r2 = Read(0, 1, "1M");
@@ -104,7 +106,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	public void should_not_count_secondary() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectIdsvMetrics c = new CollectIdsvMetrics();
-		c.OUTPUT = metricFiles;
+		c.output = new RequiredOutputArgumentCollection(metricFiles);
 		c.setup(null, null);
 		SAMRecord r1 = Read(0, 1, "1M");
 		r1.setSecondaryAlignment(true);
@@ -114,7 +116,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 		assertEquals(0, metrics.READS);
 		
 		c = new CollectIdsvMetrics();
-		c.OUTPUT = metricFiles;
+		c.output = new RequiredOutputArgumentCollection(metricFiles);
 		c.COUNT_SECONDARY = true;
 		c.setup(null, null);
 		c.acceptRead(r1, null);
@@ -126,7 +128,7 @@ public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	public void should_not_count_supplementary() {
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectIdsvMetrics c = new CollectIdsvMetrics();
-		c.OUTPUT = metricFiles;
+		c.output = new RequiredOutputArgumentCollection(metricFiles);
 		c.setup(null, null);
 		SAMRecord r1 = Read(0, 1, "1M");
 		r1.setSupplementaryAlignmentFlag(true);

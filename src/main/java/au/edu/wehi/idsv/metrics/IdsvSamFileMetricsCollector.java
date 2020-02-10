@@ -180,6 +180,7 @@ public class IdsvSamFileMetricsCollector {
 				// match CollectInsertSizeMetrics defaults
 				new CollectInsertSizeMetrics().MINIMUM_PCT,
 				new CollectInsertSizeMetrics().HISTOGRAM_WIDTH,
+				new CollectInsertSizeMetrics().MIN_HISTOGRAM_WIDTH,
 				new CollectInsertSizeMetrics().DEVIATIONS,
 				true);
 	}

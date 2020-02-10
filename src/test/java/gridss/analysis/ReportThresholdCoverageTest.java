@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import picard.analysis.SinglePassSamProgram;
+import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 public class ReportThresholdCoverageTest extends IntermediateFilesTest {
 	@Test
@@ -24,9 +25,9 @@ public class ReportThresholdCoverageTest extends IntermediateFilesTest {
 		ReportThresholdCoverage rtc = new ReportThresholdCoverage();
 		rtc.THRESHOLD_COVERAGE = 1;
 		rtc.INPUT = input;
-		rtc.OUTPUT = output;
+		rtc.output = new RequiredOutputArgumentCollection(output);
 		SinglePassSamProgram.makeItSo(rtc.INPUT, null, true, 0, ImmutableList.of(rtc));
-		assertTrue(rtc.OUTPUT.isFile());
+		assertTrue(rtc.output.getOutputFile().isFile());
 	}
 	@Test
 	public void should_report_in_minimal_bed_format_with_header() throws IOException {
@@ -35,7 +36,7 @@ public class ReportThresholdCoverageTest extends IntermediateFilesTest {
 		ReportThresholdCoverage rtc = new ReportThresholdCoverage();
 		rtc.THRESHOLD_COVERAGE = 1;
 		rtc.INPUT = input;
-		rtc.OUTPUT = output;
+		rtc.output = new RequiredOutputArgumentCollection(output);
 		SinglePassSamProgram.makeItSo(rtc.INPUT, null, true, 0, ImmutableList.of(rtc));
 		List<String> lines = Files.readAllLines(output.toPath());
 		String[] split = lines.get(1).split("\t");

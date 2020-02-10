@@ -24,7 +24,13 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.CigarUtil;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.RuntimeEOFException;
+import htsjdk.samtools.util.StringUtil;
+import htsjdk.tribble.annotation.Strand;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,8 +38,14 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
+
 
 /**
  * Utilty methods.
@@ -1242,10 +1254,46 @@ public final class SAMUtils {
     }
 
     /**
+     * @deprecated because the method does the exact opposite of what it says.  Use the correctly named
+     *             isReferenceSequenceIncompatibleWithBAI() instead.
+     */
+    @Deprecated public static boolean isReferenceSequenceCompatibleWithBAI(final SAMSequenceRecord sequence) {
+        return isReferenceSequenceIncompatibleWithBAI(sequence);
+    }
+
+    /**
      * Checks if reference sequence is compatible with BAI indexing format.
      * @param sequence reference sequence.
      */
-    public static boolean isReferenceSequenceCompatibleWithBAI(final SAMSequenceRecord sequence) {
+    public static boolean isReferenceSequenceIncompatibleWithBAI(final SAMSequenceRecord sequence) {
         return sequence.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
+    }
+
+    /**
+     * Function to create the OA tag value from a record. The OA tag contains the mapping information
+     * of a record encoded as a comma-separated string (REF,POS,STRAND,CIGAR,MAPPING_QUALITY,NM_TAG_VALUE)
+     * @param record to use for generating the OA tag
+     * @return the OA tag string value
+     */
+    public static String calculateOATagValue(SAMRecord record) {
+        if (record.getReferenceName().contains(",")) {
+            throw new SAMException(String.format("Reference name for record %s contains a comma character.", record.getReadName()));
+        }
+        final String oaValue;
+        if (record.getReadUnmappedFlag()) {
+            oaValue = String.format("*,0,%s,*,%s,",
+                    record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
+                    record.getMappingQuality());
+        } else {
+            oaValue = String.format("%s,%s,%s,%s,%s,%s",
+                    record.getReferenceName(),
+                    record.getAlignmentStart(),
+                    record.getReadNegativeStrandFlag() ? Strand.NEGATIVE : Strand.POSITIVE,
+                    record.getCigarString(),
+                    record.getMappingQuality(),
+                    Optional.ofNullable(record.getAttribute(SAMTag.NM.name())).orElse(""));
+        }
+        return oaValue;
+
     }
 }

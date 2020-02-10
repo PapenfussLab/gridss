@@ -33,9 +33,12 @@ import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.*;
 import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.ArgumentCollection;
 import picard.PicardException;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
+import picard.cmdline.argumentcollections.OutputArgumentCollection;
+import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -57,8 +60,14 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
     @Argument(shortName = StandardOptionDefinitions.INPUT_SHORT_NAME, doc = "Input SAM or BAM file.")
     public File INPUT;
 
-    @Argument(shortName = "O", doc = "File to write the output to.")
-    public File OUTPUT;
+    @ArgumentCollection
+    public OutputArgumentCollection output = getOutputArgumentCollection();
+
+    protected OutputArgumentCollection getOutputArgumentCollection(){
+        return new RequiredOutputArgumentCollection();
+    }
+
+    protected File OUTPUT;
 
     @Argument(doc = "If true (default), then the sort order in the header file will be ignored.",
             shortName = StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME)
@@ -69,11 +78,27 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
 
     private static final Log log = Log.getInstance(SinglePassSamProgram.class);
 
+    @Argument(doc = "Allocate each metrics program in it's own thread. I/O and record parsing is still shared.")
+    public boolean PROCESS_IN_PARALLEL = true;
+
+    /**
+     * Number of SAMRecords to batch together before allocating to worker threads.
+     * A larger batch size reduces thread synchronisation overhead.
+     */
     private static final int BATCH_SIZE = 512;
+
+    /**
+     * Maximum number of outstanding batches.
+     * The default of two batches results in double buffering: one batch for I/O and parsing, and another
+     * being processed in parallel by the program worker threads.
+     */
     private static final int IN_FLIGHT_BATCHES = 2;
+
+    /**
+     * End of stream sentinel value.
+     * Program worker threads use this object to indicate a unexceptional end of stream.
+     */
     private static final Exception EOS_SENTINEL = new Exception();
-    private static final boolean USE_ASYNC_ITERATOR = true;
-    private static final boolean USE_ASYNC = true;
 
     /**
      * Set the reference File.
@@ -88,15 +113,23 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
      */
     @Override
     protected final int doWork() {
-        makeItSo(INPUT, REFERENCE_SEQUENCE, ASSUME_SORTED, STOP_AFTER, Arrays.asList(this));
+        makeItSo(INPUT, REFERENCE_SEQUENCE, ASSUME_SORTED, STOP_AFTER, Arrays.asList(this), PROCESS_IN_PARALLEL, PROCESS_IN_PARALLEL);
         return 0;
     }
-
     public static void makeItSo(final File input,
                                 final File referenceSequence,
                                 final boolean assumeSorted,
                                 final long stopAfter,
                                 final Collection<SinglePassSamProgram> programs) {
+        makeItSo(input, referenceSequence, assumeSorted, stopAfter, programs, true, true);
+    }
+    public static void makeItSo(final File input,
+                                final File referenceSequence,
+                                final boolean assumeSorted,
+                                final long stopAfter,
+                                final Collection<SinglePassSamProgram> programs,
+                                boolean parallel,
+                                boolean useAsyncIterator) {
 
         // Setup the standard inputs
         IOUtil.assertFileIsReadable(input);
@@ -135,10 +168,13 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
         // Call the abstract setup method!
         boolean anyUseNoRefReads = false;
         for (final SinglePassSamProgram program : programs) {
+            if (program.OUTPUT == null) {
+                program.OUTPUT = program.output.getOutputFile();
+            }
             program.setup(in.getFileHeader(), input);
             anyUseNoRefReads = anyUseNoRefReads || program.usesNoRefReads();
 
-            if (USE_ASYNC) {
+            if (parallel) {
                 ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer = new ArrayBlockingQueue<>(IN_FLIGHT_BATCHES);
                 buffers.add(buffer);
                 Thread t = new Thread(new SinglePassSamProgramRunner(program, buffer, completion));
@@ -149,7 +185,7 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
         }
 
         final ProgressLogger progress = new ProgressLogger(log, 10000000);
-        try (CloseableIterator<SAMRecord> it = USE_ASYNC_ITERATOR ? new AsyncBufferedIterator<>(in.iterator(), BATCH_SIZE, IN_FLIGHT_BATCHES, "SinglePassSamProgram") : in.iterator()){
+        try (CloseableIterator<SAMRecord> it = useAsyncIterator ? new AsyncBufferedIterator<>(in.iterator(), BATCH_SIZE, IN_FLIGHT_BATCHES, "SinglePassSamProgram") : in.iterator()){
             List<Tuple<ReferenceSequence, SAMRecord>> batch = new ArrayList<>();
             while (it.hasNext()) {
                 final SAMRecord rec =  it.next();
@@ -160,7 +196,7 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
                     ref = walker.get(rec.getReferenceIndex());
                 }
 
-                if (USE_ASYNC) {
+                if (parallel) {
                     batch.add(new Tuple<>(ref, rec));
                     if (batch.size() >= BATCH_SIZE) {
                         for (ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer : buffers) {
@@ -195,7 +231,7 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
                     break;
                 }
             }
-            if (USE_ASYNC) {
+            if (parallel) {
                 batch.add(new Tuple<>(null, null)); // Add EOS indicator
                 for (ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer : buffers) {
                     buffer.put(batch);
