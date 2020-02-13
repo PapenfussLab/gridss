@@ -11,10 +11,7 @@ argp = add_argument(argp, "--normalordinal", type="integer", default=1, help="Or
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 # argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
-#argv = parse_args(argp, argv=c("--input", "S:/colo829/gridss/tmp.rmann.colo829.gridss.vcf", "--output", "D:/hartwig/temp/out.vcf", "-f", "D:/hartwig/temp/full.vcf", "-p", "S:/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
-#argv = parse_args(argp, argv=c("--input", "/data/gridss/tmp.rmann.colo829.gridss.vcf", "--output", "/data/tmp.vcf", "-f", "/data/tmp-full.vcf", "-p", "/refdata/dbs/gridss/pon3792v1", "--scriptdir", "/opt/gridss", "--gc"))
-#argv = parse_args(argp, argv=c("--input", "D:/colo829/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "D:/dev/tmp.vcf", "-f", "D:/dev/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
-#argv = parse_args(argp, argv=c("--input", "C:/dev/combimet/CMHP1.sv.vcf", "--plotdir", "C:/dev/combimet", "--output", "C:/dev/tmp.vcf", "-f", "C:/dev/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
+# argv = parse_args(argp, argv=c("--input", "W:/projects/gridss/regression/v2.8.0-SNAPSHOT/colo829/output.vcf.gz", "--output", "C:/temp/tmp.vcf", "-f", "C:/temp/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
 argv = parse_args(argp)
 
 if (!file.exists(argv$input)) {
@@ -31,21 +28,9 @@ if (is.na(argv$pondir)) {
   print(argp)
   stop(msg)
 }
-refgenome = NULL
-if (!is.null(argv$ref) & !is.na(argv$ref) & argv$ref != "") {
-  if (!(argv$ref %in% installed.packages()[,1])) {
-    stop(paste("Missing reference genome package", argv$ref, "."))
-  } else {
-    refgenome=eval(parse(text=paste0("library(", argv$ref, ")\n", argv$ref)))
-  }
-} else {
-  msg = paste("No reference genome supplied using --ref - not performing variant equivalence checks.")
-  write(msg, stderr())
-}
-
-library(tidyverse)
-library(readr)
-library(stringr)
+library(tidyverse, warn.conflicts=FALSE, quietly=TRUE)
+library(readr, warn.conflicts=FALSE, quietly=TRUE)
+library(stringr, warn.conflicts=FALSE, quietly=TRUE)
 libgridssfile = paste0(argv$scriptdir, "/", "libgridss.R")
 if (file.exists(libgridssfile)) {
   tmpwd = getwd()
@@ -57,6 +42,17 @@ if (file.exists(libgridssfile)) {
   write(msg, stderr())
   print(argp)
   stop(msg)
+}
+refgenome = NULL
+if (!is.null(argv$ref) & !is.na(argv$ref) & argv$ref != "") {
+  if (!(argv$ref %in% installed.packages()[,1])) {
+    stop(paste("Missing reference genome package", argv$ref, "."))
+  } else {
+    refgenome=eval(parse(text=paste0("library(", argv$ref, ")\n", argv$ref)))
+  }
+} else {
+  msg = paste("No reference genome supplied using --ref - not performing variant equivalence checks.")
+  write(msg, stderr())
 }
 library(ggplot2)
 dpi=300

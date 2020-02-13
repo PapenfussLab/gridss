@@ -1,11 +1,20 @@
-library(VariantAnnotation, quietly=TRUE)
-library(StructuralVariantAnnotation, quietly=TRUE)
-library(rtracklayer, quietly=TRUE)
-library(tidyverse, quietly=TRUE)
-library(stringr, quietly=TRUE)
-library(testthat, quietly=TRUE)
-library(stringdist, quietly=TRUE)
-library(BSgenome.Hsapiens.UCSC.hg19, quietly=TRUE)
+# quieten all the dependency package conflict spam
+library(BiocGenerics, quietly=TRUE, warn.conflicts=FALSE)
+library(S4Vectors, quietly=TRUE, warn.conflicts=FALSE)
+library(IRanges, quietly=TRUE, warn.conflicts=FALSE)
+library(matrixStats, quietly=TRUE, warn.conflicts=FALSE)
+library(DelayedArray, quietly=TRUE, warn.conflicts=FALSE)
+library(XVector, quietly=TRUE, warn.conflicts=FALSE)
+library(Biostrings, quietly=TRUE, warn.conflicts=FALSE)
+suppressPackageStartupMessages(library(Biobase))
+# Ok, now load direct package dependencies. It's a pity warn.conflicts does not get passed through
+library(VariantAnnotation, quietly=TRUE, warn.conflicts=FALSE)
+library(rtracklayer, quietly=TRUE, warn.conflicts=FALSE)
+library(StructuralVariantAnnotation, quietly=TRUE, warn.conflicts=FALSE)
+library(tidyverse, quietly=TRUE, warn.conflicts=FALSE)
+library(stringr, quietly=TRUE, warn.conflicts=FALSE)
+library(testthat, quietly=TRUE, warn.conflicts=FALSE)
+library(stringdist, quietly=TRUE, warn.conflicts=FALSE)
 source("gridss.config.R")
 
 #' Replaces the NA values in a with corresponding values in b
@@ -833,6 +842,8 @@ readVcf = function(file, ...) {
   #   geno(raw_vcf)$BUMQ +
   #   geno(raw_vcf)$BSCQ
   # )[is.nanan(geno(raw_vcf)$BQ)]
+  raw_vcf = fix_parid(raw_vcf)
+  raw_vcf = flatten_mateid(raw_vcf)
   return(raw_vcf)
 }
 cached_read_file = function(file, read_function) {
@@ -1481,6 +1492,17 @@ fix_parid = function(vcf) {
     info(vcf)$MATEID = parid
     write("WARNING: MATEID header not found. Assuming VCF was generated prior to GRIDSS 2.8.0 and rewriting as MATEID.", stderr())
   }
+  return(vcf)
+}
+flatten_mateid = function(vcf) {
+  if (!("MATEID" %in% names(info(vcf)))) {
+    stop("Missing MATEID")
+  }
+  mateid = info(vcf)$MATEID
+  if (any(elementNROWS(mateid)) > 1) {
+    stop("Multiple MATEID for a single record not supported.")
+  }
+  info(vcf)$MATEID = as.character(mateid)
   return(vcf)
 }
 
