@@ -83,34 +83,37 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
     	if (rec.getDuplicateReadFlag() && !INCLUDE_DUPLICATES) return;
     	List<CigarElement> list = rec.getCigar().getCigarElements();
     	if (list == null || list.size() == 0) return;
-    	for (CigarElement ce : list) {
+    	boolean found[] = new boolean[CigarOperator.values().length];
+    	for (int i = 0; i < list.size(); i++) { // for (CigarElement ce : list) {
+			CigarElement ce = list.get(i);
     		acceptCigarElement(ce);
+    		found[ce.getOperator().ordinal()] = true;
     	}
     	if (INCLUDE_OMITTED_OPERATORS) {
 	    	for (CigarOperator op : CigarOperator.values()) {
 	    		switch (op) {
-	    			case S:
-	    				if (CigarUtil.getStartSoftClipLength(list) == 0) {
-	    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
-	    				}
-	    				if (CigarUtil.getEndSoftClipLength(list) == 0) {
-	    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
-	    				}
-	    				break;
-	    			case H:
-	    				if (list.get(0).getOperator() != CigarOperator.H) {
-	    					acceptCigarElement(new CigarElement(0, CigarOperator.H));
-	    				}
-	    				if (list.get(list.size() - 1).getOperator() != CigarOperator.H) {
-	    					acceptCigarElement(new CigarElement(0, CigarOperator.H));
-	    				}
-	    				break;
-	    			default:
-	    				if (!Iterables.any(list, ce -> ce.getOperator() == op)) {
-	    					acceptCigarElement(new CigarElement(0, op));
-	    				}
-	    				break;
-	    		}
+					case S:
+						if (CigarUtil.getStartSoftClipLength(list) == 0) {
+							acceptCigarElement(new CigarElement(0, CigarOperator.S));
+						}
+						if (CigarUtil.getEndSoftClipLength(list) == 0) {
+							acceptCigarElement(new CigarElement(0, CigarOperator.S));
+						}
+						break;
+					case H:
+						if (list.get(0).getOperator() != CigarOperator.H) {
+							acceptCigarElement(new CigarElement(0, CigarOperator.H));
+						}
+						if (list.get(list.size() - 1).getOperator() != CigarOperator.H) {
+							acceptCigarElement(new CigarElement(0, CigarOperator.H));
+						}
+						break;
+					default:
+						if (!found[op.ordinal()]) {
+							acceptCigarElement(new CigarElement(0, op));
+						}
+						break;
+				}
 	    	}
     	}
     }
