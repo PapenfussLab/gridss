@@ -62,7 +62,6 @@ addVCFHeaders = function(vcf) {
       "af",
       "NoAssembledRP",
       "LongPolyC",
-      "cohortMinSize",
       "minRead",
       "noAssembly",
       "cohortMinSize"),
@@ -83,7 +82,6 @@ addVCFHeaders = function(vcf) {
       "Variant allele fraction too low (gridss.min_af)",
       "Single breakend with no assembled read pairs",
       "Single breakend containing long polyC or polyG run. Likely to be an NovaSeq artefact.",
-      "Variant is smaller than the minimum event size considered for this cohort",
       "Too few reads directly support the variant (gridss.min_direct_read_support)",
       "no assembly support",
       "Variant is smaller than the minimum event size considered for this cohort"))), "DataFrame"))
@@ -1365,14 +1363,20 @@ linked_by_adjacency = function(
       is_best_qual = is_best_qual_query & is_best_qual_subject,
       is_unique = partners_query == 1 & partners_subject == 1) %>%
     dplyr::select(
-      -is_closest_query, --is_closest_subject,
+      -is_closest_query, -is_closest_subject,
       -is_best_qual_query, -is_best_qual_subject,
       -partners_query, -partners_subject)
-  hitdf = switch(select,
-    closest = hitdf %>% filter(is_closest),
-    bestqual = hitdf %>% filter(is_best_qual_query),
-    unique = hitdf %>% filter(is_unique),
-    all = hitdf)
+  if (select == "closest") {
+    hitdf = hitdf %>% filter(is_closest)
+  } else if (select == "bestqual") {
+    hitdf = hitdf %>% filter(is_best_qual_query)
+  } else if (select == "unique") {
+    hitdf = hitdf %>% filter(is_unique)
+  } else if (select == "all") {
+    hitdf = hitdf
+  } else {
+    stop(paste0("'", select, "' is not a valid value for select"))
+  }
   if (!allow_self_intersection) {
     # remove self-intersection
     hitdf = hitdf %>% filter(bpgr$partner[queryHits] != names(bpgr)[subjectHits])
