@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 library(argparser)
 argp = arg_parser("Filters a raw GRIDSS VCF into somatic call subsets.")
-argp = add_argument(argp, "--pondir", default=NA, help="Directory containing Panel Of Normal bed/bedpe used to filter FP somatic events. USer create_gridss_pon.R to generate the PON.")
+argp = add_argument(argp, "--pondir", default=NA, help="Directory containing Panel Of Normal bed/bedpe used to filter FP somatic events. Use gridss. to generate the PON.")
 argp = add_argument(argp, "--ref", default="", help="Reference genome to use. Must be a valid installed BSgenome package")
 argp = add_argument(argp, "--input", help="GRIDSS VCF")
 argp = add_argument(argp, "--output", help="High confidence somatic subset")
@@ -14,7 +14,15 @@ argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection af
 # argv = parse_args(argp, argv=c("--input", "W:/projects/gridss/regression/v2.8.0-SNAPSHOT/colo829/output.vcf.gz", "--output", "C:/temp/tmp.vcf", "-f", "C:/temp/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
 argv = parse_args(argp)
 
-if (!file.exists(argv$input)) {
+for (argname in c("input")) {
+	if (is.na(argv[argname]) || is.null(argv[argname])) {
+		msg = paste0("Required argument missing: --", argname)
+		write(msg, stderr())
+		print(argp)
+		stop(msg)
+	}
+}
+if (is.na(argv$input) || is.null(argv$input) || !file.exists(argv$input)) {
   msg = paste(argv$input, "not found")
   write(msg, stderr())
   print(argp)
@@ -28,6 +36,7 @@ if (is.na(argv$pondir)) {
   print(argp)
   stop(msg)
 }
+options(tidyverse.quiet = TRUE)
 library(tidyverse, warn.conflicts=FALSE, quietly=TRUE)
 library(readr, warn.conflicts=FALSE, quietly=TRUE)
 library(stringr, warn.conflicts=FALSE, quietly=TRUE)
@@ -63,21 +72,26 @@ write(paste(Sys.time(), "Reading", argv$input), stderr())
 raw_vcf = readVcf(argv$input)
 if (argv$plotdir != "") {
   # QUAL distributions of each sample
-  plotdf = as.numeric(geno(raw_vcf)$QUAL)
-  plotdf = plotdf %>% as.data.frame() %>%
-    replace_na(list(QUAL=0)) %>%
-    mutate(
-      alt=unlist(alt(raw_vcf)),
-      isSingleBreakend=startsWith(alt, ".") | endsWith(alt, "."),
-      foundIn=rowSums(geno(raw_vcf)$QUAL > 0)) %>%
-    gather(sample, qual, -foundIn, -isSingleBreakend)
+  plotdf = data.frame(
+  		sample=rep(colnames(geno(raw_vcf)$QUAL), each=length(raw_vcf)),
+  		bpqual=as.numeric(geno(raw_vcf)$QUAL),
+  		bequal=as.numeric(geno(raw_vcf)$BQ),
+  		alt=rep(as.character(alt(raw_vcf)), times=ncol(geno(raw_vcf)$QUAL)),
+  		stringsAsFactors=FALSE) %>%
+		mutate(
+			isSingleBreakend=startsWith(alt, ".") | endsWith(alt, "."),
+			qual=ifelse(isSingleBreakend, bequal, bpqual),
+			breakpointType=ifelse(isSingleBreakend, "Breakend", "Breakpoint"),
+			foundIn=ifelse(isSingleBreakend,
+										 rep(rowSums(geno(raw_vcf)$BQ > 0), times=ncol(geno(raw_vcf)$BQ)),
+										 rep(rowSums(geno(raw_vcf)$QUAL > 0), times=ncol(geno(raw_vcf)$QUAL))))
   ggsave(paste0(argv$plotdir, "/", basename(argv$output), ".plots.bpqual.png"),
-         ggplot(plotdf %>% filter(!isSingleBreakend & qual > 0)) +
+         ggplot(plotdf %>% filter(qual > 0)) +
            aes(x=qual, fill=as.character(foundIn)) +
            geom_histogram(bins=50) +
            scale_x_log10() +
-           facet_wrap( ~ sample) +
-           labs(fill="Found in samples", title="Raw QUAL breakdown (breakpoint variants)"),
+           facet_wrap(sample ~ breakpointType, scales="free_y") +
+           labs(fill="Found in samples", title="Raw QUAL breakdown"),
          dpi=dpi, unit="in", width=3840/dpi, height=2160/dpi)
 }
 tumourordinal = seq(ncol(geno(raw_vcf)$VF))[-argv$normalordinal]

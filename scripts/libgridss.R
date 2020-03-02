@@ -11,10 +11,13 @@ suppressPackageStartupMessages(library(Biobase))
 library(VariantAnnotation, quietly=TRUE, warn.conflicts=FALSE)
 library(rtracklayer, quietly=TRUE, warn.conflicts=FALSE)
 library(StructuralVariantAnnotation, quietly=TRUE, warn.conflicts=FALSE)
+options(tidyverse.quiet = TRUE)
 library(tidyverse, quietly=TRUE, warn.conflicts=FALSE)
 library(stringr, quietly=TRUE, warn.conflicts=FALSE)
 library(testthat, quietly=TRUE, warn.conflicts=FALSE)
 library(stringdist, quietly=TRUE, warn.conflicts=FALSE)
+
+options(stringsAsFactors=FALSE)
 source("gridss.config.R")
 
 #' Replaces the NA values in a with corresponding values in b
