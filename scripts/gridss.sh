@@ -555,6 +555,7 @@ if [[ $do_assemble == true ]] ; then
 				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 				I=$assembly \
 				O=$prefix \
+				REFERENCE_SEQUENCE=$reference \
 				THRESHOLD_COVERAGE=$maxcoverage \
 				TMP_DIR=$workingdir \
 				FILE_EXTENSION=null \
@@ -565,7 +566,7 @@ if [[ $do_assemble == true ]] ; then
 				GRIDSS_PROGRAM=CollectIdsvMetrics \
 				GRIDSS_PROGRAM=ReportThresholdCoverage \
 				PROGRAM=null \
-				PROGRAM=CollectAlignmentSummaryMetrics \
+				PROGRAM=QualityScoreDistribution \
 				$picardoptions \
 		; } 1>&2 2>> $logfile
 		echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
