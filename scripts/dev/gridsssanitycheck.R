@@ -12,8 +12,22 @@ if (!file.exists(args[2])) {
 	write(paste(args[2], "not found"), stderr())
 	q(save="no", status=1)
 }
-library(VariantAnnotation)
-
+# quieten all the dependency package conflict spam
+library(BiocGenerics, quietly=TRUE, warn.conflicts=FALSE)
+library(S4Vectors, quietly=TRUE, warn.conflicts=FALSE)
+library(IRanges, quietly=TRUE, warn.conflicts=FALSE)
+library(matrixStats, quietly=TRUE, warn.conflicts=FALSE)
+library(DelayedArray, quietly=TRUE, warn.conflicts=FALSE)
+library(XVector, quietly=TRUE, warn.conflicts=FALSE)
+library(Biostrings, quietly=TRUE, warn.conflicts=FALSE)
+suppressPackageStartupMessages(library(Biobase))
+# Ok, now load direct package dependencies. It's a pity warn.conflicts does not get passed through
+library(VariantAnnotation, quietly=TRUE, warn.conflicts=FALSE)
+#library(rtracklayer, quietly=TRUE, warn.conflicts=FALSE)
+#library(tidyverse, quietly=TRUE, warn.conflicts=FALSE)
+#library(stringr, quietly=TRUE, warn.conflicts=FALSE)
+#library(testthat, quietly=TRUE, warn.conflicts=FALSE)
+#library(stringdist, quietly=TRUE, warn.conflicts=FALSE)
 
 errorCount <- 0
 margin <- 0.04 # margin of error allowed due to VCF rounding to 2dp

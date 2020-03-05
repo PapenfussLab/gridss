@@ -1003,6 +1003,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 				if (node != null) {
 					assert(node.sanityCheck());
+					assert(pre.sanityCheck());
 				}
 			}
 		}

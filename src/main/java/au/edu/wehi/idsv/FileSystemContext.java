@@ -76,7 +76,8 @@ public class FileSystemContext {
 		if (workingDir != null) {
 			return workingDir;
 		}
-		return getSource(file).getParentFile();
+		File parent = getSource(file).getParentFile();
+		return parent == null ? new File("./") : parent;
 	}
 	/**
 	 * Ensures that the intermediate directory for the given file exists

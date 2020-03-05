@@ -155,6 +155,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 						log.error(msg);
 						throw new RuntimeException(msg);
 					} else {
+						assert(support.weight() > 0);
 						supportNodes.add(support);
 						hasNonReference |= !support.isReference();
 					}

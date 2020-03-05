@@ -15,6 +15,7 @@ import au.edu.wehi.idsv.visualisation.PositionalExporter;
 import com.google.common.collect.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.Tuple;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
@@ -262,6 +263,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			verifyMemoization();
 		}
 	}
+
 	private int flushReferenceNodes_debug_message_count = 0;
 	private void flushReferenceNodes() {
 		int endPosition = nonReferenceGraphByPosition.isEmpty() ? nextPosition() : nonReferenceGraphByPosition.first().firstStart();
@@ -1013,6 +1015,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			}
 		}
 		return true;
+	}
+	private void sanityCheckGraphMatchesEvidence() {
+		// TODO
+		HashMap<Tuple<Long, Long>, Integer> expectedWeights;
 	}
 	public int tracking_activeNodes() {
 		return graphByPosition.size();
