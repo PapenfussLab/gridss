@@ -41,12 +41,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream {
     private final ConcurrentLinkedQueue<byte[]> mFreeDecompressedBlockedBuffers = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<byte[]> mFreeCompressedBlockBuffers = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<BlockGunzipper> mFreeInflators = new ConcurrentLinkedQueue<>();
+    private final RecyclingSupplier<byte[]> mFreeCompressedBlockBuffers = new RecyclingSupplier<>(() -> new byte[BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE]);
+    private final RecyclingSupplier<BlockGunzipper> mFreeInflaters;
     private final AsyncBlockCompressedInputStreamTaskRunner async = new AsyncBlockCompressedInputStreamTaskRunner(
             BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE,
             Math.max(1, Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE));
-    private final InflaterFactory inflatorFactory;
     private volatile boolean checkCrc = false;
 
     public AsyncBlockCompressedInputStream(final InputStream stream) {
@@ -55,7 +54,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final InputStream stream, InflaterFactory inflaterFactory) {
         super(stream, true, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        mFreeInflaters = new RecyclingSupplier<>(() -> new BlockGunzipper(inflaterFactory));
     }
 
     public AsyncBlockCompressedInputStream(final File file) throws IOException {
@@ -64,7 +63,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory) throws IOException {
         super(file, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        mFreeInflaters = new RecyclingSupplier<>(() -> new BlockGunzipper(inflaterFactory));
     }
 
     public AsyncBlockCompressedInputStream(final URL url) {
@@ -73,7 +72,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final URL url, InflaterFactory inflaterFactory) {
         super(url, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        mFreeInflaters = new RecyclingSupplier<>(() -> new BlockGunzipper(inflaterFactory));
     }
 
     public AsyncBlockCompressedInputStream(final SeekableStream strm) {
@@ -82,7 +81,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
     public AsyncBlockCompressedInputStream(final SeekableStream strm, InflaterFactory inflaterFactory) {
         super(strm, inflaterFactory);
-        this.inflatorFactory = inflaterFactory;
+        mFreeInflaters = new RecyclingSupplier<>(() -> new BlockGunzipper(inflaterFactory));
     }
 
     @Override
@@ -123,10 +122,7 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         }
         @Override
         public Tuple<CompressionBlock, Long> performReadAhead(long bufferBudget) throws IOException {
-            byte[] compressedBuffer = mFreeCompressedBlockBuffers.poll();
-            if (compressedBuffer == null) {
-                compressedBuffer = new byte[BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE];
-            }
+            byte[] compressedBuffer = mFreeCompressedBlockBuffers.get();
             CompressionBlock block = readNextBlock(compressedBuffer);
             if (block != null) {
                 // since the buffer we allocate is BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE
@@ -138,20 +134,17 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
 
         @Override
         public CompressionBlock transform(CompressionBlock record) {
-            BlockGunzipper inflator = mFreeInflators.poll();
-            if (inflator == null) {
-                inflator = new BlockGunzipper(inflatorFactory);
-            }
+            BlockGunzipper inflater = mFreeInflaters.get();
             try {
-                inflator.setCheckCrcs(AsyncBlockCompressedInputStream.this.checkCrc);
-                record.decompress(mFreeDecompressedBlockedBuffers.poll(), inflator);
+                inflater.setCheckCrcs(AsyncBlockCompressedInputStream.this.checkCrc);
+                record.decompress(mFreeDecompressedBlockedBuffers.poll(), inflater, AsyncBlockCompressedInputStream.this);
             } finally {
-                mFreeInflators.add(inflator);
+                mFreeInflaters.recycle(inflater);
             }
             // compressed block is not needed once we have the decompressed version
             byte[] compressedBlockBuffer = record.getCompressedBlock();
             if (compressedBlockBuffer != null && compressedBlockBuffer.length > 0) {
-                mFreeCompressedBlockBuffers.add(compressedBlockBuffer);
+                mFreeCompressedBlockBuffers.recycle(compressedBlockBuffer);
             }
             return record;
         }
