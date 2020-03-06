@@ -2,15 +2,11 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.stream.IntStream;
 
-import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.TestHelper;
 
 import static org.junit.Assert.*;
 
@@ -346,5 +342,36 @@ public class KmerEvidenceTest extends TestHelper {
 		KmerEvidence anchor = KmerEvidence.createAnchor(1, rp, 0, null);
 		assertFalse(evidence.equals(anchor));
 		assertNotEquals(evidence.hashCode(), anchor.hashCode());
+	}
+	@Test
+	public void read_pair_should_place_relative_to_anchoring_base_closest_to_break() {
+		//           2         3
+		//  123456789012345678901234567890
+		//         ssMddddddddddM  break is after alignment so we define relative to the final anchoring base at pos 31
+		//                   mmmm <- inferred frag from anchor
+		//                   |    <- with fragment size of one this puts the fragment here
+		//                MMMM    <- and our mate is relative to fragment so it has to be at least 25
+		SAMEvidenceSource ses = SES(1, 10);
+		KmerEvidence ke = KmerEvidence.create(1, NRRP(ses, OEA(0, 20, "2S1M10D1M", true)));
+		assertTrue(ke.node(0).lastStart() >= 25);
+
+	}
+	@Test
+	public void read_pair_must_have_at_least_one_base_after_anchoring_base_closest_to_break() {
+		SAMEvidenceSource ses = SES(1, 10);
+		//           2
+		//  12345678901234567890
+		//         ssMddddM       break occurs after 25 so mate must have at least one base after 26
+		//              MMMM
+		//                >>>> or further this direction
+		KmerEvidence ke = KmerEvidence.create(1, NRRP(ses, OEA(0, 20, "2S1M4D1M", true)));
+		assertEquals(23, ke.node(0).lastStart());
+		//           2
+		//  12345678901234567890
+		//           M----Mss
+		//          MMMM
+		//           <<<< or further this direction
+		ke = KmerEvidence.create(1, NRRP(ses, OEA(0, 20, "1M4D1M2S", false)));
+		assertEquals(19, ke.node(0).lastEnd());
 	}
 }

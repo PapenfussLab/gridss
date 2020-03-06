@@ -5,6 +5,7 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import gridss.ComputeSamTags;
@@ -183,17 +184,37 @@ public class KmerEvidence extends PackedKmerList {
 			//  |-------------| max size
 			//           <-----
 			//  |-----|         minsize
-			//   <----- 
-			startPosition = local.getUnclippedStart() + minFragSize - remote.getReadLength();
-			endPosition = local.getUnclippedStart() + maxFragSize - remote.getReadLength();
+			//   <-----
+			int inferredFragStartBasedOnAnchor = local.getAlignmentEnd() - remote.getReadLength() + 1 + SAMRecordUtil.getEndSoftClipLength(local);
+			int closetPosForFragmentToNotFullyOverlap = local.getAlignmentEnd() - remote.getReadLength() + 2;
+			startPosition = Math.max(inferredFragStartBasedOnAnchor + minFragSize - remote.getReadLength(), closetPosForFragmentToNotFullyOverlap);
+			endPosition = inferredFragStartBasedOnAnchor + maxFragSize - remote.getReadLength();
 		} else {
 			//           <----- anchored
 			//  |-------------| max size
 			//  ----->
 			//          |-----| minsize
-			//          -----> 
-			startPosition = local.getUnclippedEnd() - maxFragSize + 1;
-			endPosition = local.getUnclippedEnd() - minFragSize + 1;
+			//          ----->
+			int inferredFragEndBasedOnAnchor = local.getAlignmentStart() + remote.getReadLength() - 1 - SAMRecordUtil.getStartSoftClipLength(local);
+			int closetPosForFragmentToNotFullyOverlap = local.getAlignmentStart() - 1;
+			startPosition = inferredFragEndBasedOnAnchor - maxFragSize + 1;
+			endPosition = Math.min(inferredFragEndBasedOnAnchor - minFragSize + 1, closetPosForFragmentToNotFullyOverlap);
+		}
+		if (remote.getReadBases() == null || remote.getReadBases().length == 0) {
+			String msg = String.format("Read %s at %s:%d is missing R2 attribute containing mate information required by GRIDSS. Unable to assemble read",
+					local.getReadName(), local.getReferenceName(), local.getAlignmentStart());
+			log.error(msg);
+			return null;
+		}
+		if (endPosition < startPosition) {
+			if (!MessageThrottler.Current.shouldSupress(log, "kmer filtered")) {
+				String msg = String.format("Paired read at %s:%d provides no read pair support. " +
+								"The most likely cause is your library fragment size is smaller than your read length. " +
+								"Aim for a median library fragment size at least three times your read length when performing library prep.",
+						local.getReadName(), local.getReferenceName(), local.getAlignmentStart());
+				log.warn(msg);
+			}
+			return null;
 		}
 		if (remote.getReadBases() == null || remote.getReadBases().length == 0) {
 			String msg = String.format("Read %s at %s:%d is missing R2 attribute containing mate information required by GRIDSS. Unable to assemble read",

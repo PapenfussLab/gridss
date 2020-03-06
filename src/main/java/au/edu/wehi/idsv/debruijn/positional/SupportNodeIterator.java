@@ -194,7 +194,8 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	}
 	private void advance() {
 		while (underlying.hasNext() && underlying.peek().getUnderlyingSAMRecord().getAlignmentStart() <= inputPosition) {
-			process(underlying.next());
+			DirectedEvidence nextRecord = underlying.next();
+			process(nextRecord);
 			consumed++;
 		}
 	}
