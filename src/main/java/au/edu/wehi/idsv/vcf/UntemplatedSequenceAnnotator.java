@@ -11,6 +11,7 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.StringUtil;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -161,7 +162,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 		List<String> aln = new ArrayList<>(alignments.size());
 		for (SAMRecord r : alignments) {
 			StringBuilder sb = new StringBuilder();
-			sb.append(r.getReferenceName());
+			sb.append(r.getReferenceName().replace(':', '_').replace('|', '_'));
 			sb.append(':');
 			sb.append(r.getAlignmentStart());
 			sb.append('|');
