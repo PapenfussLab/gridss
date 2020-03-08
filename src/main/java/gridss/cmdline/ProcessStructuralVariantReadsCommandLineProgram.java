@@ -1,7 +1,6 @@
 package gridss.cmdline;
 
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
-import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import gridss.analysis.InsertSizeDistribution;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
@@ -32,15 +31,13 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     public boolean SINGLE_MAPPED_PAIRED = true;
     @Argument(doc="Include read pairs that align do not align in the expected orientation within the expected fragment size distribution.", optional=true)
     public boolean DISCORDANT_READ_PAIRS = true;
-    @Argument(doc="Method of calculating read pair concordance. Valid values are SAM_FLAG, PERCENTAGE, and FIXED", optional=true)
-    public ReadPairConcordanceMethod READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.SAM_FLAG;
-    @Argument(doc="Minimum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
-    public int FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 0;
-    @Argument(doc="Maximum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
-    public int FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 0;
-    @Argument(doc = "Percent (0.0-1.0) of read pairs considered concorant if using the PERCENTAGE method of calculation.", optional=true)
-    public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
-    @Argument(doc="Picard tools insert size distribution metrics txt file. Required if using the PERCENTAGE read pair concordance calculation method.", optional=true)
+    @Argument(doc="Minimum concordant read pair fragment size if using the fixed method of calculation", optional=true)
+    public Integer READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = null;
+    @Argument(doc="Maximum concordant read pair fragment size if using the fixed method of calculation", optional=true)
+    public Integer READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = null;
+    @Argument(doc = "Percent (0.0-1.0) of read pairs considered concordant if using the library distribution to determine concordance.", optional=true)
+    public Double READ_PAIR_CONCORDANT_PERCENT = null;
+    @Argument(doc="Picard tools insert size distribution metrics txt file. Required if using the library distribution to determine concordance.", optional=true)
     public File INSERT_SIZE_METRICS = null;
     @Argument(doc="Include unmapped reads", optional=true)
     public boolean UNMAPPED_READS = true;
@@ -50,15 +47,17 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
 
     @Override
 	public String[] customCommandLineValidation() {
-		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {
-			return new String[] { "INSERT_SIZE_METRICS is required when using percentage based read pair concordance" };
+    	if ((READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE != null && READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE == null) ||
+				READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE == null && READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE != null) {
+			return new String[] { "READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE and READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE must both be specified." };
+		} else if (READ_PAIR_CONCORDANT_PERCENT != null && INSERT_SIZE_METRICS == null) {
+			return new String[] { "INSERT_SIZE_METRICS must be specified if READ_PAIR_CONCORDANT_PERCENT is specified." };
 		}
 		return super.customCommandLineValidation();
 	}
     private ReadPairConcordanceCalculator rpcc = null;
-    private boolean rpccInitialised = false;
     public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
-    	if (!rpccInitialised) {
+    	if (rpcc == null) {
     		// Read metrics file
     		InsertSizeDistribution isd = null;
     		if (INSERT_SIZE_METRICS != null) {
@@ -69,13 +68,11 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     			}
     		}
     		rpcc = ReadPairConcordanceCalculator.create(
-    				READ_PAIR_CONCORDANCE_METHOD,
-    				FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE,
-    				FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE,
+    				READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE == null ? 0 : READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE,
+    				READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE == null ? 0 : READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE,
     				READ_PAIR_CONCORDANT_PERCENT,
     				isd,
     				null);
-    		rpccInitialised = true;
     	}
     	return rpcc;
     }
@@ -88,12 +85,12 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     	to.SPLIT = SPLIT;
     	to.SINGLE_MAPPED_PAIRED = SINGLE_MAPPED_PAIRED;
     	to.DISCORDANT_READ_PAIRS = DISCORDANT_READ_PAIRS;
-    	to.READ_PAIR_CONCORDANCE_METHOD = READ_PAIR_CONCORDANCE_METHOD;
-    	to.FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE;
-    	to.FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE;
+    	to.READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE;
+    	to.READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE;
     	to.READ_PAIR_CONCORDANT_PERCENT = READ_PAIR_CONCORDANT_PERCENT;
     	to.INSERT_SIZE_METRICS = INSERT_SIZE_METRICS;
     	to.UNMAPPED_READS = UNMAPPED_READS;
+    	to.rpcc = rpcc;
     }
     @Override
 	public boolean referenceRequired() { return false; }

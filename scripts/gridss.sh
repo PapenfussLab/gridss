@@ -33,11 +33,13 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	--jvmheap: size of JVM heap for assembly and variant calling. Defaults to 27.5g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8.
 	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored.
 	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
+	--useproperpair: use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
+	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. Default: 0.995
 	"
 	
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -61,6 +63,8 @@ labels=""
 picardoptions=""
 jobindex="0"
 jobnodes="1"
+useproperpair="false"
+readpairpdistribution="0.995"
 while true; do
     case "$1" in
         -r|--reference)
@@ -123,6 +127,14 @@ while true; do
 		--jobnodes)
 			jobnodes=$2
 			shift 2
+			;;
+		--concordantreadpairdistribution)
+			readpairpdistribution=$2
+			shift 2
+			;;
+		--useproperpair)
+			jobnodes="true"
+			shift 1
 			;;
 		--)
             shift
@@ -380,6 +392,14 @@ jvm_args="
 	-Dsamjdk.use_async_io_write_tribble=true \
 	-Dsamjdk.buffer_size=4194304"
 
+readpairing_args=""
+
+READ_PAIR_CONCORDANT_PERCENT="$readpairpdistribution"
+if [[ "$useproperpair" == "true" ]] ; then
+	readpairing_args="READ_PAIR_CONCORDANT_PERCENT=null"
+fi
+
+
 if [[ $do_preprocess == true ]] ; then
 	if [[ "$jobnodes" != "1" ]] ; then
 		echo "Error: Preprocessing does not support multiple nodes for a given input file." 2>&1
@@ -433,6 +453,7 @@ if [[ $do_preprocess == true ]] ; then
 					COMPRESSION_LEVEL=0 \
 					METRICS_OUTPUT=$prefix.sv_metrics \
 					INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
+					$readpairing_args \
 					UNMAPPED_READS=false \
 					MIN_CLIP_LENGTH=5 \
 					INCLUDE_DUPLICATES=true \
@@ -537,6 +558,7 @@ if [[ $do_assemble == true ]] ; then
 				$blacklist_arg \
 				$config_args \
 				$picardoptions \
+				$readpairing_args \
 		; } 1>&2 2>> $logfile
 	else
 		echo "$(date)	Skipping assembly as $assembly already exists.	$assembly"
@@ -634,6 +656,7 @@ if [[ $do_call == true ]] ; then
 				$config_args \
 				ASSEMBLY=$assembly \
 				OUTPUT_VCF=$prefix.unallocated.vcf \
+				$readpairing_args \
 		; } 1>&2 2>> $logfile
 		echo "$(date)	AnnotateVariants	$output_vcf" | tee -a $timinglogfile
 		{ $timecmd java -Xmx$jvmheap $jvm_args \
@@ -650,6 +673,7 @@ if [[ $do_call == true ]] ; then
 				INPUT_VCF=$prefix.unallocated.vcf \
 				OUTPUT_VCF=$prefix.allocated.vcf \
 				$picardoptions \
+				$readpairing_args \
 		; } 1>&2 2>> $logfile
 		rm $prefix.unallocated.vcf
 		echo "$(date)	AnnotateUntemplatedSequence	$output_vcf" | tee -a $timinglogfile

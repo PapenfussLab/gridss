@@ -1,6 +1,5 @@
 package gridss;
 
-import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import gridss.analysis.CollectGridssMetrics;
 import gridss.analysis.CollectStructuralVariantReadMetrics;
 import gridss.cmdline.CommandLineProgramHelper;
@@ -42,15 +41,13 @@ public class CollectGridssMetricsAndExtractFullReads extends CollectGridssMetric
     public boolean SINGLE_MAPPED_PAIRED = true;
     @Argument(doc="Include read pairs that align do not align in the expected orientation within the expected fragment size distribution.", optional=true)
     public boolean DISCORDANT_READ_PAIRS = true;
-    @Argument(doc="Method of calculating read pair concordance. Valid values are SAM_FLAG, PERCENTAGE, and FIXED", optional=true)
-    public ReadPairConcordanceMethod READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.SAM_FLAG;
-    @Argument(doc="Minimum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
-    public int FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 0;
-    @Argument(doc="Maximum concordant read pair fragment size if using the FIXED method of calculation", optional=true)
-    public int FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 0;
-    @Argument(doc = "Percent (0.0-1.0) of read pairs considered concorant if using the PERCENTAGE method of calculation.", optional=true)
-    public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
-    @Argument(doc="Picard tools insert size distribution metrics txt file. Required if using the PERCENTAGE read pair concordance calculation method.", optional=true)
+    @Argument(doc="Minimum concordant read pair fragment size if using the fixed method of calculation", optional=true)
+    public Integer READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = null;
+    @Argument(doc="Maximum concordant read pair fragment size if using the fixed method of calculation", optional=true)
+    public Integer READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = null;
+    @Argument(doc = "Percent (0.0-1.0) of read pairs considered concordant if using the library distribution to determine concordance.", optional=true)
+    public Double READ_PAIR_CONCORDANT_PERCENT = null;
+    @Argument(doc="Picard tools insert size distribution metrics txt file. Required if using the library distribution to determine concordance.", optional=true)
     public File INSERT_SIZE_METRICS = null;
     @Argument(doc="Include unmapped reads", optional=true)
     public boolean UNMAPPED_READS = true;
@@ -135,15 +132,14 @@ public class CollectGridssMetricsAndExtractFullReads extends CollectGridssMetric
         extract.SPLIT = SPLIT;
         extract.SINGLE_MAPPED_PAIRED = SINGLE_MAPPED_PAIRED;
         extract.DISCORDANT_READ_PAIRS = DISCORDANT_READ_PAIRS;
-        extract.READ_PAIR_CONCORDANCE_METHOD = READ_PAIR_CONCORDANCE_METHOD;
-        extract.FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE;
-        extract.FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE;
+        extract.READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE;
+        extract.READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE;
         extract.READ_PAIR_CONCORDANT_PERCENT = READ_PAIR_CONCORDANT_PERCENT;
         extract.INSERT_SIZE_METRICS = INSERT_SIZE_METRICS;
         extract.UNMAPPED_READS = UNMAPPED_READS;
         extract.INCLUDE_DUPLICATES = INCLUDE_DUPLICATES;
         extract.OUTPUT = SV_METRICS_OUTPUT;
-        extract.INPUT = this.INPUT;
+        extract.INPUT = INPUT;
         extract.ASSUME_SORTED = true;
         return extract;
     }

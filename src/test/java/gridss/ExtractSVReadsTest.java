@@ -23,7 +23,6 @@ import com.google.common.io.Files;
 import au.edu.wehi.idsv.FixedSizeReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.Hg38Tests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
@@ -118,8 +117,8 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		ExtractSVReads extract = new ExtractSVReads();
 		extract.INPUT = input;
 		extract.OUTPUT = output;
-		extract.FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 2;
-		extract.FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 2;
+		extract.READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 2;
+		extract.READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 2;
 		extract.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.FIXED;
 		extract.setBlacklist(blacklist);
 		extract.setup(getHeader(), extract.INPUT);
@@ -177,7 +176,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.setReference(lookup); //new ProcessingContext(getFSContext(), ref, lookup, null, getConfig());
 		extract.MIN_CLIP_LENGTH = 4;
 		extract.INSERT_SIZE_METRICS = new File("src/test/resources/sa.split/test.insert_size_metrics");
-		extract.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.PERCENTAGE;
+		extract.READ_PAIR_CONCORDANT_PERCENT = 0.995;
 		extract.OUTPUT = output;
 		extract.INPUT = input;
 		try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {
@@ -211,7 +210,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.setReference(lookup); //new ProcessingContext(getFSContext(), ref, lookup, null, getConfig());
 		extract.MIN_CLIP_LENGTH = 4;
 		extract.INSERT_SIZE_METRICS = new File("src/test/resources/sa.split/test.insert_size_metrics");
-		extract.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.PERCENTAGE;
+		extract.READ_PAIR_CONCORDANT_PERCENT = 0.995;
 		extract.OUTPUT = output;
 		extract.INPUT = input;
 		try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {

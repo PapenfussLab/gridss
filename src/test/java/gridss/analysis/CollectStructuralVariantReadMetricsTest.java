@@ -10,7 +10,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.metrics.MetricsFile;
 
@@ -26,9 +25,8 @@ public class CollectStructuralVariantReadMetricsTest extends IntermediateFilesTe
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectStructuralVariantReadMetrics c = new CollectStructuralVariantReadMetrics();
 		c.OUTPUT = metricFiles;
-		c.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.FIXED;
-		c.FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 1000;
-		c.FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 1000;
+		c.READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 1000;
+		c.READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 1000;
 		c.setup(null, null);
 		c.acceptFragment(ImmutableList.of(
 				withReadName("read1", RP(0, 1, 2, 1))[0],
@@ -48,9 +46,8 @@ public class CollectStructuralVariantReadMetricsTest extends IntermediateFilesTe
 		File metricFiles = new File(testFolder.getRoot(), "metrics.txt");
 		CollectStructuralVariantReadMetrics c = new CollectStructuralVariantReadMetrics();
 		c.OUTPUT = metricFiles;
-		c.READ_PAIR_CONCORDANCE_METHOD = ReadPairConcordanceMethod.FIXED;
-		c.FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 1000;
-		c.FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 1000;
+		c.READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE = 1000;
+		c.READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE = 1000;
 		c.setup(null, null);
 		c.acceptFragment(ImmutableList.of(
 				withReadName("read1", OEA(0, 1, "1M", true))[0],
