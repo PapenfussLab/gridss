@@ -17,9 +17,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.io.FileUtils;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
@@ -114,6 +112,9 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				Set<DirectedEvidence> reloadRecoverySet = getEvidenceInCurrentAssembler();
 				String msg = String.format("Error during assembly of chromosome %s (%d reads in graph). Attempting recovery by rebuilding assembly graph.", currentContig, reloadRecoverySet.size());
 				log.warn(e, msg);
+				StringWriter sw = new StringWriter();
+				e.printStackTrace(new PrintWriter(sw));
+				log.warn(sw);
 				closeCurrentAssembler();
 				ensureAssembler(attemptRecovery, reloadRecoverySet);
 			} else {
@@ -265,7 +266,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(inputIterator, referenceIndex);
 		evidenceTracker = new EvidenceTracker();
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, Math.max(2 * source.getMaxReadLength(), source.getMaxConcordantFragmentSize()), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
 		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {

@@ -322,7 +322,9 @@ public abstract class SortedByPosition<T, TColl> {
     }
 
     public Iterator<T> iterator() {
-        log.warn("SortedByPosition.iterator() call. This is inefficient and should be no be called in production code.");
+        if (!"quiet".equals(System.getProperty("SortedByPosition.iterator.spamminess"))) {
+            log.warn("SortedByPosition.iterator() call. This is inefficient and should be no be called in production code.");
+        }
         return getCollectionsInOrder().stream()
                 .flatMap(coll -> positionStream(coll))
                 .iterator();
