@@ -43,7 +43,7 @@ public abstract class ReadPairConcordanceCalculator {
 				throw new IllegalArgumentException("minFragSize cannot be greater than maxFragSize");
 			}
 			return new FixedSizeReadPairConcordanceCalculator(minFragSize, maxFragSize);
-		} else if (concordantPortion != null) {
+		} else if (concordantPortion != null && insert != null) {
 			return new PercentageReadPairConcordanceCalculator(insert, concordantPortion);
 		} else {
 			if (idsv != null) {

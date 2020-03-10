@@ -515,7 +515,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
 		if (rpcc == null) {
-			rpcc = ReadPairConcordanceCalculator.create(rpcMinFragmentSize, rpcMaxFragmentSize, rpcConcordantPercentage, getMetrics().getInsertSizeDistribution(), getMetrics().getIdsvMetrics());
+			rpcc = ReadPairConcordanceCalculator.create(
+					rpcMinFragmentSize == null ? 0 : rpcMinFragmentSize,
+					rpcMaxFragmentSize == null ? 0 : rpcMaxFragmentSize,
+					rpcConcordantPercentage,
+					getMetrics().getInsertSizeDistribution(), getMetrics().getIdsvMetrics());
 		}
 		return rpcc;
 	}
