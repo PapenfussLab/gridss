@@ -466,7 +466,9 @@ if [[ $do_preprocess == true ]] ; then
 					-@ $threads \
 					/dev/stdin \
 			; } 1>&2 2>> $logfile
-			rm $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
+			if [[ -f $tmp_prefix.insert_size_metrics ]] ; then
+				rm $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
+			fi
 			echo "$(date)	ComputeSamTags|samtools	$f" | tee -a $timinglogfile
 			{ $timecmd java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.ComputeSamTags \
