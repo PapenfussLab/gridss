@@ -133,7 +133,7 @@ while true; do
 			shift 2
 			;;
 		--useproperpair)
-			jobnodes="true"
+			useproperpair="true"
 			shift 1
 			;;
 		--)
