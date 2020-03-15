@@ -132,9 +132,16 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * Since we count starting from the first unclipped base, and our frag size is less than our read length,
 	 * the first kmer of the mate read can be up to twice the read length from the end of the read.
 	 *
+	 *
+	 * Both anchoring read and unmapped mate have the evidenceID.
+	 * This means we can have:
+	 *
+	 * ======= contig
+	 *       ---------- read
+	 *                                         ------- mate placement
+	 *       |---------------------------------------| max frag size
 	 */
 	private int minDistanceFromNextPositionForEvidenceToBeFullyLoaded() {
-		// TODO: work out why maxEvidenceSupportIntervalWidth + aes.getMaxReadLength() - k + 1 isn't sufficient distance
 		return maxEvidenceSupportIntervalWidth + aes.getMaxReadLength() + Math.max(aes.getMaxReadMappedLength(), aes.getMaxConcordantFragmentSize()) + 1;
 	}
 	/**
@@ -718,14 +725,19 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				KmerPathNode kpn = entry.getKey();
 				for (int i = 0; i < kpn.length(); i++) {
 					// Check nodes each KmerPathNode kmer allocation is correct
-					List<KmerNode> toRemoveKmerNodes = entry.getValue().get(i);
+					List<KmerNode> toRemoveKmerNodes = new ArrayList();
+					if (entry.getValue().size() > i && entry.getValue().get(i) != null) {
+						toRemoveKmerNodes = entry.getValue().get(i);
+					}
 					int start = kpn.firstStart() + i;
 					int end = kpn.firstEnd() + i;
 					List<Long> kmers = new ArrayList();
 					kmers.add(kpn.kmer(i));
 					for (int j = 0; i < kpn.collapsedKmers().size(); j++) {
-						if (kpn.collapsedKmerOffsets().getInt(j) == i) {
-							kmers.add(kpn.collapsedKmers().getLong(j));
+						int collapseOffset = kpn.collapsedKmerOffsets().getInt(j);
+						long collapseKmer = kpn.collapsedKmers().getLong(j);
+						if (collapseOffset == i) {
+							kmers.add(collapseKmer);
 						}
 					}
 					for (KmerNode kn : toRemoveKmerNodes) {
@@ -735,7 +747,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					for (int pos = start; pos <= end; pos++) {
 						int finalPos = pos;
 						int actualWeight = toRemoveKmerNodes.stream().filter(kn -> kn.lastStart() <= finalPos && kn.lastEnd() >= finalPos).mapToInt(kn -> kn.weight()).sum();
-						int expectedWeight = kmers.stream().mapToInt(x -> expected.get(x).get(finalPos)).sum();
+						int expectedWeight = kmers.stream().
+								map(x -> expected.get((long)x)).
+								filter(x -> x != null).
+								map(x -> x.get(finalPos)).
+								filter(x -> x != null).
+								mapToInt(x -> x).
+								sum();
 						if (actualWeight != expectedWeight) {
 							List<KmerEvidence> overlappingEvidence = evidence.stream()
 									.filter(ke -> IntStream.range(0, ke.length()).filter(
@@ -1141,8 +1159,21 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		nodes.forEach(kn -> addkmerPosWeight(kmerPosWeight, kn));
 		return kmerPosWeight;
 	}
-
+	private class KmerPosWeightDelta {
+		public final long kmer;
+		public final int pos;
+		public final int expectedWeight;
+		public final int actualWeight;
+		public final Set<KmerEvidence> overlappingEvidence = new HashSet<>();
+		public KmerPosWeightDelta(long kmer, int pos, int expectedWeight, int actualWeight) {
+			this.kmer = kmer;
+			this.pos = pos;
+			this.expectedWeight = expectedWeight;
+			this.actualWeight = actualWeight;
+		}
+	}
 	private boolean sanityCheckCompareKmerPosWeights(Long2ObjectMap<Int2IntMap> expectedKmerPosWeight, Long2ObjectMap<Int2IntMap> actualKmerPosWeight, int maxPosition) {
+		List<KmerPosWeightDelta> mismatches = new ArrayList<>();
 		for (long kmer : Sets.union(actualKmerPosWeight.keySet(), expectedKmerPosWeight.keySet())) {
 			Int2IntMap actualPosWeight = actualKmerPosWeight.getOrDefault(kmer, emptyi2i);
 			Int2IntMap expectedPosWeight = expectedKmerPosWeight.getOrDefault(kmer, emptyi2i);
@@ -1151,10 +1182,26 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					int actualWeight = actualPosWeight.get(pos);
 					int expectedWeight = expectedPosWeight.get(pos);
 					if (actualWeight != expectedWeight) {
-						throw new IllegalStateException("Kmer position weights do not match");
+						mismatches.add(new KmerPosWeightDelta(kmer ,pos, expectedWeight, actualWeight));
 					}
 				}
 			}
+		}
+		if (mismatches.size() > 0) {
+			for (KmerEvidence ke : evidenceTracker.getTrackedEvidence()) {
+				for (int i = 0; i < ke.length(); i++) {
+					KmerNode kn = ke.node(i);
+					if (kn != null) {
+						mismatches.forEach(mm -> {
+							if (mm.kmer == kn.lastKmer() && IntervalUtil.overlapsClosed(mm.pos, mm.pos, kn.firstStart(), kn.firstEnd())) {
+								mm.overlappingEvidence.add(ke);
+							}
+						});
+					}
+				}
+			}
+			mismatches.sort(Comparator.<KmerPosWeightDelta>comparingInt(x -> x.pos).thenComparingLong(x -> x.kmer));
+			throw new IllegalStateException("Kmer position weights do not match");
 		}
 		return true;
 	}

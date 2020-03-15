@@ -52,7 +52,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	/**
 	 * Ensures that a sequence dictionary exists for the given reference
 	 * @param referenceFile reference genome fasta
-	 * @param invoking program
+	 * @param program invoking program
 	 */
 	public static void ensureSequenceDictionary(File referenceFile, CommandLineProgram program) {
 		try {

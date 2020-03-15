@@ -70,9 +70,9 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	private void process(DirectedEvidence de) {
 		if (tracker != null && tracker.isTracked(de.getEvidenceID())) {
 			if (!MessageThrottler.Current.shouldSupress(log, "assembly duplicated reads")) {
-				log.warn(String.format("Attempting to add %s to assembly when already present. "
+				log.warn(String.format("Attempting to add %s (from %s) to assembly when already present. "
 						+ "Possible causes are: duplicate read name, alignment with multi-mapping aligner which writes read alignments as distinct pairs. ",
-						de.getEvidenceID()));
+						de.getEvidenceID(), de.getUnderlyingSAMRecord().getReadName()));
 			}
 			return;
 		}
