@@ -13,6 +13,8 @@ import htsjdk.samtools.util.Log;
 
 import java.util.*;
 
+import static au.edu.wehi.idsv.Defaults.SANITY_CHECK_EVIDENCE_TRACKER;
+
 /**
  * Transforms a breakend start DirectedEvidence iterator
  * into a start position sorted kmer support iterator
@@ -119,6 +121,11 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 					tracker.track(sn);
 				}
 			}
+		} else {
+			log.debug("Ref anchor");
+		}
+		if (SANITY_CHECK_EVIDENCE_TRACKER) {
+			tracker.sanityCheck();
 		}
 	}
 	private boolean addSupport(List<KmerSupportNode> supportNodes, DirectedEvidence de, KmerEvidence e) {

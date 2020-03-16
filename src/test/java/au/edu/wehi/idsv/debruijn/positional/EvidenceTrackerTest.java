@@ -10,7 +10,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.SingleReadEvidence;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -75,5 +81,60 @@ public class EvidenceTrackerTest extends TestHelper {
 			list.stream().forEach(ke -> tracker.track(ke.node(finalI)));
 		}
 		tracker.remove(list);
+	}
+	@Test
+	public void remove_should_remove_both_anchor_and_nonreference_KmerEvidence_for_read_pair() {
+		int k = 4;
+		SAMRecord[] rp = OEA(3, 1, "4M", true);
+		rp[0].setReadBases(B("AACC"));
+		rp[1].setReadBases(B("ACGT"));
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(rp[0], rp[1], SES(50));
+		KmerEvidence e = KmerEvidence.create(k, nrrp);
+		KmerEvidence e2 = KmerEvidence.createAnchor(k, nrrp, 0, nrrp.getEvidenceSource().getContext().getReference());
+		EvidenceTracker tracker = new EvidenceTracker();
+		Stream.of(e, e2)
+				.flatMap(ev -> IntStream.range(0, ev.length()).mapToObj(i -> ev.node(i)))
+				.forEach(ksn -> tracker.track(ksn));
+		assertEquals(2, tracker.getTrackedEvidence().size());
+		assertTrue(tracker.isTracked(nrrp.getEvidenceID()));
+		tracker.sanityCheck();
+		tracker.remove(Collections.singleton(e));
+		assertEquals(0, tracker.getTrackedEvidence().size());
+		assertFalse(tracker.isTracked(nrrp.getEvidenceID()));
+		tracker.sanityCheck();
+	}
+	@Test
+	public void untrack_should_remove_both_anchor_and_nonreference_KmerEvidence_for_read_pair() {
+		int k = 4;
+		SAMRecord[] rp = OEA(3, 1, "4M", true);
+		rp[0].setReadBases(B("AACC"));
+		rp[1].setReadBases(B("ACGT"));
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(rp[0], rp[1], SES(50));
+		KmerEvidence e = KmerEvidence.create(k, nrrp);
+		KmerEvidence e2 = KmerEvidence.createAnchor(k, nrrp, 0, nrrp.getEvidenceSource().getContext().getReference());
+		EvidenceTracker tracker = new EvidenceTracker();
+		List<KmerSupportNode> list = Stream.of(e, e2)
+				.flatMap(ev -> IntStream.range(0, ev.length()).mapToObj(i -> ev.node(i)))
+				.collect(Collectors.toList());
+		list.stream().forEach(ksn -> tracker.track(ksn));
+		Set<KmerEvidence> result = tracker.untrack(ImmutableList.of(new KmerPathSubnode(KPN(k, "AACC", 1, 1, true))));
+		assertEquals(2, result.size());
+	}
+	@Test
+	public void traverse_should_remove_both_anchor_and_nonreference_KmerEvidence_for_read_pair() {
+		int k = 4;
+		SAMRecord[] rp = OEA(3, 1, "4M", true);
+		rp[0].setReadBases(B("AACC"));
+		rp[1].setReadBases(B("ACGT"));
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(rp[0], rp[1], SES(50));
+		KmerEvidence e = KmerEvidence.create(k, nrrp);
+		KmerEvidence e2 = KmerEvidence.createAnchor(k, nrrp, 0, nrrp.getEvidenceSource().getContext().getReference());
+		EvidenceTracker tracker = new EvidenceTracker();
+		List<KmerSupportNode> list = Stream.of(e, e2)
+				.flatMap(ev -> IntStream.range(0, ev.length()).mapToObj(i -> ev.node(i)))
+				.collect(Collectors.toList());
+		list.stream().forEach(ksn -> tracker.track(ksn));
+		Set<KmerEvidence> result = tracker.traverse(ImmutableList.of(new KmerPathSubnode(KPN(k, "AACC", 1, 1, true))), true);
+		assertEquals(2, result.size());
 	}
 }

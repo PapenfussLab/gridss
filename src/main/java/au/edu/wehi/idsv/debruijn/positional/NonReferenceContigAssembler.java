@@ -519,6 +519,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		untrackedEvidenceStillBeingProcessed = evidence;
 		List<DirectedEvidence> evidenceIds = evidence.stream()
+				// Just the anchoring read of a read pair doesn't count as supporting the contig
+				.filter(ke -> !(ke.isAnchored() && ke.evidence() instanceof NonReferenceReadPair))
 				.map(e -> e.evidence())
 				.collect(Collectors.toList());
 		SupportLookup supportLookup = new SupportLookup(fullContig);
