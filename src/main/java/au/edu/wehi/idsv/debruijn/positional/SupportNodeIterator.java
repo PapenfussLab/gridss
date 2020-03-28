@@ -108,6 +108,12 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		List<KmerSupportNode> supportNodes = new ArrayList<KmerSupportNode>(e.length() + (e2 == null ? 0 : e2.length()));
 		boolean hasNonReference = addSupport(supportNodes, de, e);
 		addSupport(supportNodes, de, e2);
+		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH && supportNodes.size() > 0) {
+			int start = supportNodes.stream().mapToInt(n -> n.firstStart()).min().orElse(0);
+			int end = supportNodes.stream().mapToInt(n -> n.lastEnd()).max().orElse(Integer.MAX_VALUE);
+			if (end - start > maxSupportStartPositionOffset) {
+			}
+		}
 		if (hasNonReference) {
 			// only add evidence that provides support for an SV
 			// If we have no non-reference kmers then we might
@@ -135,7 +141,9 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 				KmerSupportNode support = e.node(i); 
 				if (support != null) {
 					// make sure that we are actually able to resort into kmer order
-					if (support.firstStart() < de.getBreakendSummary().start - maxSupportStartPositionOffset) {
+					boolean isOutOfOrder = support.firstStart() < lastPosition;
+					boolean kmerToFarFromEvidence = support.firstStart() < de.getBreakendSummary().start - maxSupportStartPositionOffset;
+					if (isOutOfOrder || kmerToFarFromEvidence) {
 						SAMRecord read = null;
 						if (de instanceof SingleReadEvidence) {
 							read = ((SingleReadEvidence)de).getSAMRecord(); 
@@ -149,11 +157,19 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 								readString += String.format(" (%s:%d %s)", read.getReferenceName(), read.getStart(), read.getCigarString());
 							}
 						}
-						String msg = String.format("Error: kmer in evidence %s of read %s out of bounds."
-								+ " Kmer support starts at %d which is more than %d before the breakpoint start position at %s",
-								de.getEvidenceID(),
-								readString,
-								support.firstStart(), maxSupportStartPositionOffset, de.getBreakendSummary());
+						String msg;
+						if (kmerToFarFromEvidence) {
+							msg = String.format("Error: kmer in evidence %s of read %s out of bounds."
+											+ " Kmer support starts at %d which is more than %d before the breakpoint start position at %s",
+									de.getEvidenceID(),
+									readString,
+									support.firstStart(), maxSupportStartPositionOffset, de.getBreakendSummary());
+						} else {
+							msg = String.format("Error: kmer out of order for evidence %s. Kmer at position %d after emitting kmer at %d",
+									de.getEvidenceID(),
+									support.firstStart(),
+									lastPosition);
+						}
 						log.error(msg);
 						// Try to continue
 						//throw new RuntimeException(msg);
@@ -181,7 +197,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		ensureBuffer();
 		KmerSupportNode node = buffer.poll();
 		assert(node.lastStart() >= lastPosition);
-		lastPosition = node.lastStart();		
+		lastPosition = node.lastStart();
 		return node;
 	}
 	@Override

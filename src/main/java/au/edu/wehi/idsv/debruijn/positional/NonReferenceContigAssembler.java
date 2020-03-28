@@ -15,7 +15,6 @@ import au.edu.wehi.idsv.visualisation.PositionalExporter;
 import com.google.common.collect.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.Tuple;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -98,6 +97,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private AssemblyChunkTelemetry telemetry = null;
 	private Set<KmerEvidence> untrackedEvidenceStillBeingProcessed = null;
 	public int getReferenceIndex() { return referenceIndex; }
+
 	private int retainWidth() {
 		return  maxContigAnchorLength() + Math.max(
 				// safety check to ensure that flushed contigs don't call advanceUnderlying()
