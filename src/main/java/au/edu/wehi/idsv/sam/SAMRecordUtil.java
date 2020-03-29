@@ -15,6 +15,7 @@ import com.google.common.collect.*;
 import com.google.common.collect.ImmutableRangeSet.Builder;
 import com.google.common.primitives.Booleans;
 import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -23,6 +24,7 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.core.config.Order;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -694,6 +696,7 @@ public class SAMRecordUtil {
 	 */
 	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
 			boolean restoreHardClips, boolean fixMates, boolean fixDuplicates, boolean fixSA, boolean fixTruncated, boolean recalculateSupplementary) {
+		// TODO: support secondary alignments by switching to templateBySegmentByAlignmentGroup() and handling split secondary reads
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
 		if (tags.contains(SAMTag.FI.name())) {
@@ -720,13 +723,23 @@ public class SAMRecordUtil {
 			}
 		}
 		if (fixDuplicates) {
-			boolean isDuplicate = segments.stream().flatMap(l -> l.stream()).anyMatch(r -> r.getDuplicateReadFlag());
-			segments.stream().flatMap(l -> l.stream()).forEach(r -> r.setDuplicateReadFlag(isDuplicate));
+			boolean isDuplicate = false;
+			for (SAMRecord r : records) {
+				if (r.getDuplicateReadFlag()) {
+					isDuplicate = true;
+					break;
+				}
+			}
+			if (isDuplicate) {
+				for (SAMRecord r : records) {
+					r.setDuplicateReadFlag(true);
+				}
+			}
 		}
 		// SA
-		if (tags.contains(SAMTag.SA.name())) {
+		if (fixSA) {
 			for (int i = 0; i < segments.size(); i++) {
-				calculateSATags(segments.get(i), fixSA);
+				SAMRecordUtil.reinterpretAsSplitReadAlignment(segments.get(i), recalculateSupplementary);
 			}
 		}
 		if (recalculateSupplementary) {
@@ -825,12 +838,17 @@ public class SAMRecordUtil {
 	private static Ordering<SAMRecord> ByBestPrimarySplitCandidate = new Ordering<SAMRecord>() {
 		public int compare(SAMRecord arg1, SAMRecord arg2) {
 			return ComparisonChain.start()
+				.compareFalseFirst(arg1.getReadUnmappedFlag(), arg2.getReadUnmappedFlag())
 				// already flagged as supp is bad  
 				.compareFalseFirst(arg1.getSupplementaryAlignmentFlag(), arg2.getSupplementaryAlignmentFlag())
 				// flagged as secondary is bad due to legacy treatment of secondary alignments as supplementary (eg bwa mem -M) 
 				.compareFalseFirst(arg1.isSecondaryAlignment(), arg2.isSecondaryAlignment()) 
 				// the record with the shorter soft clip is a better candidate
 				.compare(SAMRecordUtil.getStartClipLength(arg1) + SAMRecordUtil.getEndClipLength(arg1), SAMRecordUtil.getStartClipLength(arg2) + SAMRecordUtil.getEndClipLength(arg2))
+				// longer read is better
+				.compare(arg2.getReadLength(), arg1.getReadLength())
+				// high MAPQ is better
+				.compare(arg2.getMappingQuality(), arg1.getMappingQuality())
 				// Other options are:
 				// - record is flagged as the mate of a read pair (strong support for that record to be the primary)
 				// - best MAPQ
@@ -1022,8 +1040,71 @@ public class SAMRecordUtil {
 			}
 		}
 	}
-
-	private static void calculateSATags(List<SAMRecord> list, boolean recalculateSA) {
+	// TODO support secondary alignments via CC, CP, HI, IH
+	private static void reinterpretAsSplitReadAlignment(List<SAMRecord> list, boolean updateSupplementary) {
+		if (list == null || list.isEmpty()) return;
+		if (list.size() == 1) {
+			list.get(0).setAttribute(SAMTag.SA.name(), null);
+		} else {
+			list.sort(ByFirstAlignedBaseReadOffset);
+			for (int i = 0; i < list.size() - 1; i++) {
+				SAMRecord r1 = list.get(i);
+				SAMRecord r2 = list.get(i + 1);
+				if (getFirstAlignedBaseReadOffset(r1) == getFirstAlignedBaseReadOffset(r2)) {
+					if (ByBestPrimarySplitCandidate.compare(r1, r2) <= 0) {
+						list.remove(i);
+					} else {
+						list.remove(i + 1);
+					}
+					if (!MessageThrottler.Current.shouldSupress(log, "Overlapping Split Read Alignments")) {
+						String msg = String.format("Found two read alignments starting at the same read offset for read %s. Ignoring one. Note that GRIDSS does not support multiple (non-split) alignments for a single read.", r1.getReadName());
+						log.warn(msg);
+					}
+				}
+			}
+			SAMRecord primary = list.stream().
+					filter(r -> !r.isSecondaryOrSupplementary()).
+					findFirst().
+					orElse(list.get(0)); // if we don't have a primary, default to first alignment
+			// Clean to flags: TODO: actually support secondary alignments
+			if (updateSupplementary) {
+				for (SAMRecord r : list) {
+					r.setSecondaryAlignment(false);
+					r.setSupplementaryAlignmentFlag(r != primary);
+				}
+			}
+			// move primary to end of list
+			list.remove(primary);
+			list.add(primary);
+			List<String> saString = new ArrayList<>(list.size());
+			for (SAMRecord r : list) {
+				saString.add(new ChimericAlignment(r).toString());
+			}
+			for (int i = 0; i < list.size(); i++) {
+				SAMRecord r = list.get(i);
+				StringBuilder sb = new StringBuilder();
+				if (r != primary) {
+					sb.append(saString.get(saString.size() - 1));
+					sb.append(';');
+				}
+				for (int j = 0; j < list.size() - 1; j++) { // -1 since we added the primary at the start
+					if (i != j) { // don't add self
+						sb.append(saString.get(j));
+						sb.append(';');
+					}
+				}
+				// strip trailing semicolon
+				if (sb.length() == 0) {
+					r.setAttribute(SAMTag.SA.name(), null);
+				} else {
+					sb.setLength(sb.length() - 1);
+					r.setAttribute(SAMTag.SA.name(), sb.toString());
+				}
+			}
+		}
+		warnIfInvalidSA(list);
+	}
+	private static void calculateNonoverlappingSplitReadAlignmentSATags(List<SAMRecord> list, boolean recalculateSA) {
 		// TODO use CC, CP, HI, IH tags if they are present
 		// TODO break ties in an other other than just overwriting the previous
 		// alignment that
@@ -1082,6 +1163,10 @@ public class SAMRecordUtil {
 				r.setAttribute(SAMTag.SA.name(), sb.toString());
 			}
 		}
+		warnIfInvalidSA(list);
+	}
+
+	private static void warnIfInvalidSA(List<SAMRecord> list) {
 		Set<ChimericAlignment> referencedReads = list.stream()
 				.flatMap(r -> ChimericAlignment.getChimericAlignments(r.getStringAttribute(SAMTag.SA.name())).stream())
 				.collect(Collectors.toSet());
@@ -1636,5 +1721,10 @@ public class SAMRecordUtil {
 		}
 		return out;
 	}
+	private static final Ordering<SAMRecord> ByFirstAlignedBaseReadOffset = new Ordering<SAMRecord>() {
+		public int compare(SAMRecord arg1, SAMRecord arg2) {
+			return Ints.compare(getFirstAlignedBaseReadOffset(arg1), getFirstAlignedBaseReadOffset(arg2));
+		}
+	};
 }
 

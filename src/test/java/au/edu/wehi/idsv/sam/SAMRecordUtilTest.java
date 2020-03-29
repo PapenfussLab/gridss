@@ -6,6 +6,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import htsjdk.samtools.util.SequenceUtil;
@@ -577,16 +578,16 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 	@Test
 	public void calculateTemplateTags_SA_should_ignore_missing_NM() {
-		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read0 = withMapq(10, withSequence("ANNNNN", Read(0, 1, "1M5S")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 		
 		read0.setAttribute("NM", null);
 		read1.setAttribute("NM", null);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA.name()), false, false, false, false, false,false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false,false);
 		
 		assertEquals("polyA,2,+,1H1M4H,11,", read0.getStringAttribute("SA"));
-		assertEquals("polyA,1,+,1M5H,10,", read1.getStringAttribute("SA"));
+		assertEquals("polyA,1,+,1M5S,10,", read1.getStringAttribute("SA"));
 	}
 	@Test
 	public void calculateTemplateTags_SA_should_not_be_written_for_nonchimeric_reads() {
@@ -627,7 +628,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		
 		read0.setSecondaryAlignment(true);
 		read1.setSecondaryAlignment(true);
-		read2.setSecondaryAlignment(true);
+		read2.setSecondaryAlignment(false);
 		read3.setSecondaryAlignment(true);
 		
 		read0.setAttribute("NM", 0);
@@ -635,7 +636,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setAttribute("NM", 2);
 		read3.setAttribute("NM", 3);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA.name()), false, false, false, false, false,false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false,false);
 		
 		assertEquals(null, alt.getStringAttribute("SA"));
 		// "0,4,+,3H1M2H,12,2,;0,1,+,1M5H,10,0,;0,2,+,1H1M4H,11,1,;0,5,+,4S2M,13,3,"
@@ -799,11 +800,11 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 	@Test
 	public void recalculateSupplementary_should_force_primary_to_supp() {
-		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read0 = withMapq(10, withSequence("ANNNNN", Read(0, 1, "1M5S")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 		
 		read0.setAttribute("SA", "polyA,2,+,1H1M4H,11,0");
-		read1.setAttribute("SA", "polyA,1,+,1M5H,10,0");
+		read1.setAttribute("SA", "polyA,1,+,1M5S,10,0");
 		
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(), false, false, false, false, false,true);
 		
@@ -1002,6 +1003,41 @@ public class SAMRecordUtilTest extends TestHelper {
 		Assert.assertEquals("polyA,200,+,10S10M10S,10,0;polyA,300,+,20S10M,10,0", r1.getStringAttribute("SA"));
 		Assert.assertEquals("polyA,100,+,10M20S,10,0;polyA,300,+,20S10M,10,0", r2.getStringAttribute("SA"));
 		Assert.assertEquals("polyA,100,+,10M20S,10,0;polyA,200,+,10S10M10S,10,0", r3.getStringAttribute("SA"));
+	}
+	@Test
+	public void fixSA_should_consider_first_primary_record_as_primary() {
+		SAMRecord r1 = Read(0, 100, "10M20S");
+		SAMRecord r2 = Read(0, 200, "10S10M10S");
+		SAMRecord r3 = Read(0, 300, "20S10M");
+		r1.setAttribute("SA", new ChimericAlignment(r1).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r1).toString());
+		r3.setAttribute("SA", new ChimericAlignment(r1).toString());
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2, r3), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false,true);
+		Assert.assertFalse(r1.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(r1.isSecondaryAlignment());
+		Assert.assertTrue(r2.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(r2.isSecondaryAlignment());
+		Assert.assertTrue(r3.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(r3.isSecondaryAlignment());
+	}
+	@Test
+	public void fixSA_convert_overlapping_read_to_split_read_alignment() {
+		SAMRecord r1 = Read(0, 100, "70M30S");
+		SAMRecord r2 = Read(0, 200, "30S70M");
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false,true);
+		Assert.assertFalse(r1.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(r1.isSecondaryAlignment());
+		Assert.assertTrue(r2.getSupplementaryAlignmentFlag());
+		Assert.assertFalse(r2.isSecondaryAlignment());
+		Assert.assertEquals("polyA,200,+,30S70M,10,0", r1.getStringAttribute("SA"));
+		Assert.assertEquals("polyA,100,+,70M30S,10,0", r2.getStringAttribute("SA"));
+	}
+	@Test
+	public void fixSA_should_remove_duplicate_alignments_starting_at_same_read_offset() {
+		SAMRecord r1 = Read(0, 100, "70M30S");
+		SAMRecord r2 = Read(0, 200, "50M50S");
+		ArrayList list = Lists.newArrayList(r1, r2);
+		SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false,true);
 	}
 	@Test
 	public void fixTruncated_should_add_hard_clipping_to_shorter_read_to_match_longer() {

@@ -150,21 +150,6 @@ public class IntermediateFilesTest extends TestHelper {
 		}
 		writer.close();
 	}
-	public static List<SAMRecord> getRecords(File file) {
-		assertTrue(file.exists());
-		SamReader reader = SamReaderFactory.makeDefault().open(file);
-		List<SAMRecord> list = Lists.newArrayList();
-		for (SAMRecord r : reader) {
-			list.add(r);
-		}
-		try {
-			reader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return list;
-	}
 	public List<SAMRecord> getRecords(String extension) {
 		File file = new File(input.getAbsolutePath() + ".idsv.working", input.getName() + extension);
 		return getRecords(file);

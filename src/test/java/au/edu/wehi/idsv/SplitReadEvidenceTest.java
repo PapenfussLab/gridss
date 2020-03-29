@@ -371,7 +371,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		SAMRecord right = withMapq(6, Read(0, 100, "3S3M"))[0];
 		left.setSupplementaryAlignmentFlag(true);
 		right.setSupplementaryAlignmentFlag(true);
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r, left, right), ImmutableSet.of("SA"), false, false, false, false, false, false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r, left, right), ImmutableSet.of("SA"), false, false, false, true, false, false);
 
 		List<SingleReadEvidence> re = SingleReadEvidence.createEvidence(SES(), 0, r);
 		List<SingleReadEvidence> lefte = SingleReadEvidence.createEvidence(SES(), 0, left);

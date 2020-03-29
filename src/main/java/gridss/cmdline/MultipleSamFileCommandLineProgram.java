@@ -196,15 +196,19 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 		}
     }
     public abstract int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException;
+    protected GridssConfiguration getGridssConfiguration() {
+		GridssConfiguration config;
+		try {
+			config = new GridssConfiguration(CONFIGURATION_FILE, WORKING_DIR);
+		} catch (ConfigurationException e) {
+			throw new RuntimeException(e);
+		}
+		return config;
+	}
 	private ProcessingContext processContext = null;
 	public ProcessingContext getContext() {
 		if (processContext == null) {
-			GridssConfiguration config;
-			try {
-				config = new GridssConfiguration(CONFIGURATION_FILE, WORKING_DIR);
-			} catch (ConfigurationException e) {
-				throw new RuntimeException(e);
-			}
+			GridssConfiguration config = getGridssConfiguration();
 			processContext = new ProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, null, getDefaultHeaders(), config);
 			processContext.setCommandLineProgram(this);
 			processContext.setFilterDuplicates(IGNORE_DUPLICATES);

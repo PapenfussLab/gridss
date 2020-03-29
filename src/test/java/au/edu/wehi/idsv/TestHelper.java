@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +25,7 @@ import java.util.stream.StreamSupport;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.*;
+import htsjdk.samtools.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
@@ -67,19 +69,6 @@ import gridss.analysis.CigarSizeDistribution;
 import gridss.analysis.IdsvMetrics;
 import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.DefaultSAMRecordFactory;
-import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMLineParser;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -1303,4 +1292,19 @@ public class TestHelper {
         }
         return rs;
     }
+	public static List<SAMRecord> getRecords(File file) {
+		assertTrue(file.exists());
+		SamReader reader = SamReaderFactory.makeDefault().open(file);
+		List<SAMRecord> list = Lists.newArrayList();
+		for (SAMRecord r : reader) {
+			list.add(r);
+		}
+		try {
+			reader.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return list;
+	}
 }

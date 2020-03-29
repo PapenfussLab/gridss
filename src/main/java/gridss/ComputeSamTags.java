@@ -54,7 +54,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 	public boolean FIX_DUPLICATE_FLAG = true;
 	@Argument(doc="Fixes the SA tag to match the read alignments. Useful for programs such as GATK indel realignment do not update the SA tag when adjusting read alignments.", optional=true)
 	public boolean FIX_SA = true;
-	@Argument(doc="Adds hard clipping CIGAR elements to truncated alignments. Useful for programs such as GATK indel realignment that strip hard clips.", optional=true)
+	@Argument(doc="Adds hard clipping CIGAR elements to truncated alignments. Useful for programs such as GATK indel realignment that strip hard clips. Assumes all alignments form part of the split read thus does not support secondary alignments.", optional=true)
 	public boolean FIX_MISSING_HARD_CLIP = true;
 	@Argument(doc="Recalculates the supplementary flag based on the SA tag. The supplementary flag should be set on all split read alignments except one.", optional=true)
 	public boolean RECALCULATE_SA_SUPPLEMENTARY = true;
