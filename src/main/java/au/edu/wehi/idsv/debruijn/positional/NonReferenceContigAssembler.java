@@ -525,6 +525,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				.collect(Collectors.toList());
 		SupportLookup supportLookup = new SupportLookup(fullContig);
 		List<AssemblyEvidenceSupport> supportList = evidence.stream()
+				// Ignore anchoring KmerEvidence for RP as it's all encoded in the KmerEvidence of the unanchored mate
+				.filter(ke -> !(ke.isAnchored() && ke.evidence() instanceof NonReferenceReadPair))
 				.map(e -> {
 					Range<Integer> si = supportLookup.supportInterval(e);
 					return si == null ? null : new AssemblyEvidenceSupport(e.evidence(), si).adjustForAssemblyTruncation(startBasesToTrim);
