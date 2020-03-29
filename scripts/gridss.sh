@@ -35,11 +35,12 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
 	--useproperpair: use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
 	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. Default: 0.995
+	--keepTempFiles: keep intermediate files. Not recommended except for debugging due to the high disk usage.
 	"
 	
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -65,6 +66,7 @@ jobindex="0"
 jobnodes="1"
 useproperpair="false"
 readpairpdistribution="0.995"
+keepTempFiles="false"
 while true; do
     case "$1" in
         -r|--reference)
@@ -134,6 +136,10 @@ while true; do
 			;;
 		--useproperpair)
 			useproperpair="true"
+			shift 1
+			;;
+		--keepTempFiles)
+			keepTempFiles="true"
 			shift 1
 			;;
 		--)
@@ -385,7 +391,16 @@ if [[ $do_call == "true" ]] ; then
 fi
 echo ". The full log is in $logfile" 2>&1 
 
-jvm_args="
+# For debugging purposes, we want to keep all our 
+if [[ $keepTempFiles == "true" ]] ; then
+	rmcmd="echo rm"
+	jvm_args="-Dgridss.keepTempFiles=true"
+else
+	rmcmd="rm"
+	jvm_args=""
+fi
+
+jvm_args="$jvm_args \
 	-Dreference_fasta=$reference \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
@@ -467,7 +482,7 @@ if [[ $do_preprocess == true ]] ; then
 					/dev/stdin \
 			; } 1>&2 2>> $logfile
 			if [[ -f $tmp_prefix.insert_size_metrics ]] ; then
-				rm $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
+				$rmcmd $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
 			fi
 			echo "$(date)	ComputeSamTags|samtools	$f" | tee -a $timinglogfile
 			{ $timecmd java -Xmx4g $jvm_args \
@@ -500,7 +515,7 @@ if [[ $do_preprocess == true ]] ; then
 					-@ $threads \
 					/dev/stdin \
 			; } 1>&2 2>> $logfile
-			rm $tmp_prefix.namedsorted.bam
+			$rmcmd $tmp_prefix.namedsorted.bam
 			echo "$(date)	SoftClipsToSplitReads	$f" | tee -a $timinglogfile
 			{ $timecmd java -Xmx4g $jvm_args \
 					-Dsamjdk.create_index=false \
@@ -514,22 +529,22 @@ if [[ $do_preprocess == true ]] ; then
 					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 					WORKER_THREADS=$threads \
 					$picardoptions \
-			&& rm $tmp_prefix.coordinate.bam \
+			&& $rmcmd $tmp_prefix.coordinate.bam \
 			&& $timecmd samtools sort \
 					-@ $threads \
 					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 					-Obam \
 					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 					$tmp_prefix.sc2sr.supp.sv.bam \
-			&& rm $tmp_prefix.sc2sr.supp.sv.bam \
+			&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
 			&& $timecmd samtools merge \
 					-@ $threads \
 					$prefix.sv.tmp.bam \
 					$tmp_prefix.sc2sr.primary.sv.bam \
 					$tmp_prefix.sc2sr.suppsorted.sv.bam \
 			&& $timecmd samtools index $prefix.sv.tmp.bam \
-			&& rm $tmp_prefix.sc2sr.primary.sv.bam \
-			&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam \
+			&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
+			&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
 			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
 			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 			; } 1>&2 2>> $logfile
@@ -614,15 +629,15 @@ if [[ $do_assemble == true ]] ; then
 				-Obam \
 				-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 				$tmp_prefix.sc2sr.supp.sv.bam \
-		&& rm $tmp_prefix.sc2sr.supp.sv.bam \
+		&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
 		&& $timecmd samtools merge \
 				-@ $threads \
 				$prefix.sv.tmp.bam \
 				$tmp_prefix.sc2sr.primary.sv.bam \
 				$tmp_prefix.sc2sr.suppsorted.sv.bam \
 		&& $timecmd samtools index $prefix.sv.tmp.bam \
-		&& rm $tmp_prefix.sc2sr.primary.sv.bam \
-		&& rm $tmp_prefix.sc2sr.suppsorted.sv.bam \
+		&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
+		&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
 		&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
 		&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 		; } 1>&2 2>> $logfile
@@ -677,7 +692,7 @@ if [[ $do_call == true ]] ; then
 				$picardoptions \
 				$readpairing_args \
 		; } 1>&2 2>> $logfile
-		rm $prefix.unallocated.vcf
+		$rmcmd $prefix.unallocated.vcf
 		echo "$(date)	AnnotateUntemplatedSequence	$output_vcf" | tee -a $timinglogfile
 		{ $timecmd java -Xmx4g $jvm_args \
 				-Dgridss.output_to_temp_file=true \
@@ -690,7 +705,7 @@ if [[ $do_call == true ]] ; then
 				OUTPUT=$output_vcf \
 				$picardoptions \
 		; } 1>&2 2>> $logfile
-		rm $prefix.allocated.vcf
+		$rmcmd $prefix.allocated.vcf
 	else
 		echo "$(date)	Skipping variant calling	$output_vcf"
 	fi
