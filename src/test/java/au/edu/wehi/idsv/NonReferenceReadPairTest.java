@@ -407,4 +407,12 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertEquals("ACGTT", new String(nrrp.getNonReferenceRead().getReadBases(), StandardCharsets.US_ASCII));
 		assertArrayEquals(new byte[] { 20, 20, 20, 20, 20}, nrrp.getNonReferenceRead().getBaseQualities());
 	}
+	@Test
+	public void supp_alignments_should_not_be_read_pairs() {
+		SAMRecord r = RP(0, 100, 3000, 5)[0];
+		r.setSupplementaryAlignmentFlag(true);
+		r.setProperPairFlag(false);
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(SES(), r);
+		assertNull(nrrp);
+	}
 }

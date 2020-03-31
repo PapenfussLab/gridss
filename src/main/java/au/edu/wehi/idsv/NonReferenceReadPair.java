@@ -49,6 +49,8 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	 */
 	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null || remote == null) return null;
+		if (local.getSupplementaryAlignmentFlag()) return null;
+		if (remote.getSupplementaryAlignmentFlag()) return null;
 		if (SAMRecordUtil.entropy(local) < source.getContext().getConfig().minAnchorShannonEntropy) return null;
 		if (SAMRecordUtil.entropy(remote) < source.getContext().getConfig().minAnchorShannonEntropy) return null;
 		if (!meetsAnchorCriteria(source, local)) return null;
@@ -78,6 +80,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	}
 	public static NonReferenceReadPair create(SAMEvidenceSource source, SAMRecord record) {
 		if (!record.getReadPairedFlag()) return null;
+		if (record.getSupplementaryAlignmentFlag()) return null;
 		SAMRecord remote = new SAMRecord(record.getHeader());
 		remote.setReadUnmappedFlag(record.getMateUnmappedFlag());
 		byte[] r2 = SAMRecord.NULL_SEQUENCE;

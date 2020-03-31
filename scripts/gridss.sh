@@ -557,24 +557,25 @@ if [[ $do_preprocess == true ]] ; then
 		else
 			echo "$(date)	Skipping pre-processing as $prefix.sv.bam already exists. $f"
 		fi
-		if [[ $sanityCheck == "true" ]] ; then 
-			java -Xmx$jvmheap $jvm_args \
-				-cp $gridss_jar gridss.SanityCheckEvidence \
-				TMP_DIR=$workingdir \
-				WORKING_DIR=$workingdir \
-				REFERENCE_SEQUENCE=$reference \
-				WORKER_THREADS=$threads \
-				$input_args \
-				$blacklist_arg \
-				$config_args \
-				ASSEMBLY=ignored \
-				OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt
-		fi
 	done
 else
 	echo "$(date)	Skipping pre-processing."
 fi
-
+if [[ $sanityCheck == "true" ]] ; then 
+	echo "$(date)	Sanity checking *.sv.bam"
+	java -Xmx$jvmheap $jvm_args \
+		-cp $gridss_jar gridss.SanityCheckEvidence \
+		TMP_DIR=$workingdir \
+		WORKING_DIR=$workingdir \
+		REFERENCE_SEQUENCE=$reference \
+		WORKER_THREADS=$threads \
+		$input_args \
+		$blacklist_arg \
+		$config_args \
+		ASSEMBLY=ignored \
+		OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt \
+		1>&2 2>> $logfile
+fi
 if [[ $do_assemble == true ]] ; then
 	echo "$(date)	Start assembly	$assembly" | tee -a $timinglogfile
 	if [[ ! -f $assembly ]] ; then

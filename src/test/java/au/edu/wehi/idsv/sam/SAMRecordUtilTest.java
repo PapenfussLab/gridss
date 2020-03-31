@@ -8,7 +8,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.util.SequenceUtil;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -1130,6 +1132,79 @@ public class SAMRecordUtilTest extends TestHelper {
 		rp[0].setAttribute("SA", new ChimericAlignment(supp).toString());
 		Assert.assertTrue(SAMRecordUtil.isDovetailing(rp[0], PairOrientation.FR, 0));
 		Assert.assertTrue(SAMRecordUtil.isDovetailing(supp, PairOrientation.FR, 0));
+	}
+	@Test
+	public void fixMate_should_set_to_primary() throws CloneNotSupportedException {
+		SAMRecord[] rp = RP(2, 100, 100, 100);
+		rp[0].setCigarString("75M25S");
+		rp[1].setCigarString("25S75M");
+		SAMRecord[] supp = new SAMRecord[] { (SAMRecord)rp[0].clone(), (SAMRecord)rp[1].clone()};
+		supp[0].setSupplementaryAlignmentFlag(true);
+		supp[1].setSupplementaryAlignmentFlag(true);
+		supp[0].setAlignmentStart(200);
+		supp[1].setAlignmentStart(300);
+		supp[0].setCigarString("60S40M");
+		supp[1].setCigarString("10M90S");
+
+		rp[0].setMappingQuality(11);
+		rp[1].setMappingQuality(12);
+		supp[0].setMappingQuality(13);
+		supp[1].setMappingQuality(14);
+		rp[0].setAttribute("SA", new ChimericAlignment(supp[0]).toString());
+		rp[1].setAttribute("SA", new ChimericAlignment(supp[1]).toString());
+		supp[0].setAttribute("SA", new ChimericAlignment(rp[0]).toString());
+		supp[1].setAttribute("SA", new ChimericAlignment(rp[1]).toString());
+
+		List<List<SAMRecord>> fragment = Lists.newArrayList(
+				Lists.newArrayList(supp[0], rp[0]),
+				Lists.newArrayList(supp[1], rp[1]));
+		SAMRecordUtil.fixMates(fragment, true, true);
+
+		Assert.assertEquals("25S75M", rp[0].getStringAttribute("MC"));
+		Assert.assertEquals("75M25S", rp[1].getStringAttribute("MC"));
+		Assert.assertEquals("25S75M", supp[0].getStringAttribute("MC"));
+		Assert.assertEquals("75M25S", supp[1].getStringAttribute("MC"));
+
+		Assert.assertEquals(12, (int)rp[0].getIntegerAttribute("MQ"));
+		Assert.assertEquals(11, (int)rp[1].getIntegerAttribute("MQ"));
+		Assert.assertEquals(12, (int)supp[0].getIntegerAttribute("MQ"));
+		Assert.assertEquals(11, (int)supp[1].getIntegerAttribute("MQ"));
+	}
+	@Test
+	public void matchReadPairPrimaryAlignments_should_pair_primaries() throws CloneNotSupportedException {
+		SAMRecord[] rp = RP(2, 100, 100, 100);
+		rp[0].setCigarString("75M25S");
+		rp[1].setCigarString("25S75M");
+		SAMRecord[] supp = new SAMRecord[] { (SAMRecord)rp[0].clone(), (SAMRecord)rp[1].clone()};
+		supp[0].setSupplementaryAlignmentFlag(true);
+		supp[1].setSupplementaryAlignmentFlag(true);
+		supp[0].setAlignmentStart(200);
+		supp[1].setAlignmentStart(300);
+		supp[0].setCigarString("60S40M");
+		supp[1].setCigarString("10M90S");
+
+		rp[0].setMappingQuality(11);
+		rp[1].setMappingQuality(12);
+		supp[0].setMappingQuality(13);
+		supp[1].setMappingQuality(14);
+		rp[0].setAttribute("SA", new ChimericAlignment(supp[0]).toString());
+		rp[1].setAttribute("SA", new ChimericAlignment(supp[1]).toString());
+		supp[0].setAttribute("SA", new ChimericAlignment(rp[0]).toString());
+		supp[1].setAttribute("SA", new ChimericAlignment(rp[1]).toString());
+
+		SamPairUtil.setMateInfo(rp[0], supp[1], true);
+		SamPairUtil.setMateInfo(rp[1], supp[0], true);
+
+		List<List<SAMRecord>> fragment = Lists.newArrayList(
+				Lists.newArrayList(supp[0], rp[0]),
+				Lists.newArrayList(supp[1], rp[1]));
+		SAMRecordUtil.matchReadPairPrimaryAlignments(fragment);
+
+		Assert.assertEquals("25S75M", rp[0].getStringAttribute("MC"));
+		Assert.assertEquals("75M25S", rp[1].getStringAttribute("MC"));
+
+		Assert.assertEquals(12, (int)rp[0].getIntegerAttribute("MQ"));
+		Assert.assertEquals(11, (int)rp[1].getIntegerAttribute("MQ"));
 	}
 }
 

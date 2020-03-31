@@ -774,12 +774,13 @@ public class SAMRecordUtil {
 			}
 		}
 		if (fixMates || tags.contains(SAMTag.MC.name()) || tags.contains(SAMTag.MQ.name())) {
+			matchReadPairPrimaryAlignments(segments);
 			if (segments.size() >= 2) {
 				// hack to prevent SAMRecord getters from throwing an exception
 				records.stream().forEach(r -> r.setReadPairedFlag(true));
 				segments.get(0).stream().forEach(r -> r.setFirstOfPairFlag(true));
 				segments.get(1).stream().forEach(r -> r.setSecondOfPairFlag(true));
-				fixMates(segments, tags.contains(SAMTag.MC.name()));
+				fixMates(segments, tags.contains(SAMTag.MC.name()), tags.contains(SAMTag.MQ.name()));
 			} else {
 				for (SAMRecord r : records) {
 					clearMateInformation(r, true);
@@ -912,8 +913,35 @@ public class SAMRecordUtil {
 		// supplementary alignments
 		return best.orElse(rec);
 	}
+	public static boolean matchReadPairPrimaryAlignments(List<List<SAMRecord>> segments) {
+		if (segments.size() != 2) return false;
+		List<SAMRecord> segment1 = segments.get(0);
+		List<SAMRecord> segment2 = segments.get(1);
+		if (segment1.size() == 0) return false;
+		if (segment2.size() == 0) return false;
+		List<SAMRecord> primary1 = segment1.stream().filter(r -> !r.isSecondaryOrSupplementary()).collect(Collectors.toList());
+		List<SAMRecord> primary2 = segment2.stream().filter(r -> !r.isSecondaryOrSupplementary()).collect(Collectors.toList());
+		if (primary1.size() == 1 && primary2.size() == 1) {
+			SAMRecord r1 = primary1.get(0);
+			SAMRecord r2 = primary2.get(0);
+			SamPairUtil.setMateInfo(r1, r2, true);
+			r1.removeTransientAttribute(SAMTag.MC.name());
+			r2.removeTransientAttribute(SAMTag.MC.name());
+			if (r2.getReadUnmappedFlag()) {
+				r1.setAttribute(SAMTag.MQ.name(), null);
+			} else {
+				r1.setAttribute(SAMTag.MQ.name(), r2.getMappingQuality());
+			}
+			if (r1.getReadUnmappedFlag()) {
+				r2.setAttribute(SAMTag.MQ.name(), null);
+			} else {
+				r2.setAttribute(SAMTag.MQ.name(), r1.getMappingQuality());
+			}
+		}
+		return true;
+	}
 
-	private static void fixMates(List<List<SAMRecord>> segments, boolean mateCigar) {
+	public static void fixMates(List<List<SAMRecord>> segments, boolean mateCigar, boolean mateQuality) {
 		for (int i = 0; i < segments.size(); i++) {
 			List<SAMRecord> currentSegment = segments.get(i);
 			List<SAMRecord> nextSegment = segments.get((i + 1) % segments.size());
@@ -930,6 +958,9 @@ public class SAMRecordUtil {
 					SAMRecord mate = bestMateFor(primary, nextSegment);
 					if (mate != null) {
 						SamPairUtil.setMateInformationOnSupplementalAlignment(r, mate, mateCigar);
+						if (mateQuality) {
+							r.setAttribute(SAMTag.MQ.name(), mate.getMappingQuality());
+						}
 					} else {
 						clearMateInformation(r, true);
 					}
@@ -937,6 +968,9 @@ public class SAMRecordUtil {
 					SAMRecord mate = bestMateFor(r, nextSegment);
 					if (mate != null) {
 						SamPairUtil.setMateInfo(r, mate, mateCigar);
+						if (mateQuality) {
+							r.setAttribute(SAMTag.MQ.name(), mate.getMappingQuality());
+						}
 					} else {
 						clearMateInformation(r, true);
 					}

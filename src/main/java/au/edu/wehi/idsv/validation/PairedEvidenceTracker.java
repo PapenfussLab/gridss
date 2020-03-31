@@ -78,6 +78,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
     	errors++;
     	if (readNameWriter != null) {
 			readNameWriter.write(evidence.getUnderlyingSAMRecord().getReadName());
+			readNameWriter.write('\n');
 		}
 	}
 
@@ -147,7 +148,6 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 					e.getBreakendSummary().toString(context),
 					e.getBreakpointQual());
 			logError(e, msg, "unpaired evidence");
-			errors++;
 		}
 		return unpaired.isEmpty();
 	}
