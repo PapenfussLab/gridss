@@ -10,7 +10,7 @@ import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -23,6 +23,8 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SanityCheckEvidence.class);
 	@Argument(doc="Margin of error allowed for matching.", optional=true)
 	public double ERROR_MARGIN = 0.0001;
+	@Argument(doc="File to output read names of reads failing sanity check to.", optional=true)
+	public File OUTPUT_ERROR_READ_NAMES;
 
 	public SanityCheckEvidence() {
 		super(false);
@@ -39,20 +41,28 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 		return config;
 	}
 
-	public int sanityCheck(SAMEvidenceSource source) {
+	public int sanityCheck(SAMEvidenceSource source) throws IOException {
 		if (source == null) return 0;
 		if (!source.getFile().exists()) {
 			log.info("Ignoring " + source.getFile());
 		}
-		try (PairedEvidenceTracker<DirectedEvidence> it = new PairedEvidenceTracker<>("sanitycheck", source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition))) {
+		BufferedWriter bw = null;
+		if (OUTPUT_ERROR_READ_NAMES != null) {
+			bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(OUTPUT_ERROR_READ_NAMES)));
+		}
+		try (PairedEvidenceTracker<DirectedEvidence> it = new PairedEvidenceTracker("sanitycheck", source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition), bw)) {
 			while (it.hasNext()) {
 				it.next();
 			}
 			return it.errorCount();
+		} finally {
+			if (bw != null) {
+				bw.close();
+			}
 		}
 	}
 	@Override
-	public int doWork(ExecutorService threadpool) {
+	public int doWork(ExecutorService threadpool) throws IOException {
 		for (SAMEvidenceSource ses : getSamEvidenceSources()) {
 			log.info("Sanity checking " + ses.getFile().getName());
 			if (sanityCheck(ses) != 0) {

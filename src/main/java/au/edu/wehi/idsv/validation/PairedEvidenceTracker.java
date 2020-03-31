@@ -9,6 +9,9 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.*;
 
 /**
@@ -26,8 +29,14 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	private boolean closed = false;
 	private HashSet<String> encountered = new HashSet<>();
 	private int errors = 0;
+	private Writer readNameWriter;
 
-	public int errorCount() {
+    public PairedEvidenceTracker(String sanitycheck, CloseableIterator<T> iterator, Writer readNameWriter) {
+    	this(sanitycheck, iterator);
+    	this.readNameWriter = readNameWriter;
+    }
+
+    public int errorCount() {
 		return errors;
 	}
 
@@ -47,16 +56,32 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	@Override
 	protected T computeNext() {
 		if (closed) return endOfData();
-		if (!it.hasNext()) {
-			allMatched();
-			return endOfData();
+		T evidence;
+		try {
+			if (!it.hasNext()) {
+				allMatched();
+				return endOfData();
+			}
+			evidence = it.next();
+			isValidNext(evidence);
+		} catch (IOException e) {
+			log.error(e);
+			throw new RuntimeException(e);
 		}
-		T evidence = it.next();
-		isValidNext(evidence);
 		return evidence;
 	}
 
-	private boolean isValidNext(T evidence) {
+	private void logError(DirectedEvidence evidence, String msgText, String msgType) throws IOException {
+		if (!MessageThrottler.Current.shouldSupress(log, msgType)) {
+			log.error(msgText);
+		}
+    	errors++;
+    	if (readNameWriter != null) {
+			readNameWriter.write(evidence.getUnderlyingSAMRecord().getReadName());
+		}
+	}
+
+	private boolean isValidNext(T evidence) throws IOException {
 		ProcessingContext context = evidence.getEvidenceSource().getContext();
 		String evidenceId = evidence.getEvidenceID();
 		if (evidence instanceof DirectedBreakpoint) {
@@ -64,10 +89,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			String partnerId = e.getRemoteEvidenceID();
 			if (encountered.contains(evidenceId)) {
 				String msg = String.format("%s: encountered %s multiple times.", name, evidenceId);
-				errors++;
-				if (!MessageThrottler.Current.shouldSupress(log, "duplicate evidence")) {
-					log.error(msg);
-				}
+				logError(evidence, msg, "duplicate evidence");
 				return false;
 			}
 			if (unpaired.containsKey(partnerId)) {
@@ -81,10 +103,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 							partner.getBreakendSummary().toString(context),
 							e.getEvidenceID(),
 							partner.getEvidenceID());
-					errors++;
-					if (!MessageThrottler.Current.shouldSupress(log, "asymmetric breakpoint positions")) {
-						log.error(msg);
-					}
+					logError(evidence, msg, "asymmetric breakpoint positions");
 					return false;
 				}
 				// Scores must be the same
@@ -94,10 +113,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 							partner.getBreakpointQual(),
 							e.getEvidenceID(),
 							partner.getEvidenceID());
-					errors++;
-					if (!MessageThrottler.Current.shouldSupress(log, "asymmetric breakpoint quality")) {
-						log.error(msg);
-					}
+					logError(evidence, msg, "asymmetric breakpoint quality");
 					return false;
 				}
 				encountered.add(evidenceId);
@@ -106,20 +122,14 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 					String msg = String.format("Duplicate evidence %s encountered for read %s", name,
 							e.getBreakpointQual(),
 							e.getEvidenceID());
-					errors++;
-					if (!MessageThrottler.Current.shouldSupress(log, "duplicate evidence")) {
-						log.error(msg);
-					}
+					logError(evidence, msg, "duplicate evidence");
 				}
 				unpaired.put(evidenceId, e);
 			}
 		} else {
 			if (encountered.contains(evidenceId)) {
 				String msg = String.format("%s: encountered %s multiple times.", name, evidenceId);
-				errors++;
-				if (!MessageThrottler.Current.shouldSupress(log, "duplicate evidence")) {
-					log.error(msg);
-				}
+				logError(evidence, msg, "duplicate evidence");
 				return false;
 			}
 			encountered.add(evidenceId);
@@ -127,18 +137,17 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 		return true;
 	}
 
-	private boolean allMatched() {
+	private boolean allMatched() throws IOException {
 		List<DirectedBreakpoint> list = new ArrayList<>(unpaired.values());
 		list.sort(DirectedBreakpoint.ByStartEnd);
 		for (DirectedBreakpoint e : list) {
 			ProcessingContext context = e.getEvidenceSource().getContext();
+			String msg = String.format("%s (%s, %f) unpaired",
+					e.getEvidenceID(),
+					e.getBreakendSummary().toString(context),
+					e.getBreakpointQual());
+			logError(e, msg, "unpaired evidence");
 			errors++;
-			if (!MessageThrottler.Current.shouldSupress(log, "unpaired evidence")) {
-				log.error(String.format("%s (%s, %f) unpaired",
-						e.getEvidenceID(),
-						e.getBreakendSummary().toString(context),
-						e.getBreakpointQual()));
-			}
 		}
 		return unpaired.isEmpty();
 	}

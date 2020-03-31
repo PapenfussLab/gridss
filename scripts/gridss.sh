@@ -567,7 +567,8 @@ if [[ $do_preprocess == true ]] ; then
 				$input_args \
 				$blacklist_arg \
 				$config_args \
-				ASSEMBLY=ignored
+				ASSEMBLY=ignored \
+				OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt
 		fi
 	done
 else
@@ -674,8 +675,8 @@ if [[ $sanityCheck == "true" ]] ; then
 		$blacklist_arg \
 		$config_args \
 		ASSEMBLY=$assembly \
-		$readpairing_args
-	
+		$readpairing_args \
+		OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt
 fi
 if [[ $do_call == true ]] ; then
 	echo "$(date)	Start calling	$output_vcf" | tee -a $timinglogfile
