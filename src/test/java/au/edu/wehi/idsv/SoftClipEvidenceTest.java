@@ -8,6 +8,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.stream.Stream;
 
+import au.edu.wehi.idsv.sam.ChimericAlignment;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SamPairUtil;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Assert;
 import org.junit.Ignore;

@@ -8,22 +8,11 @@ import java.io.File;
  * @author Daniel Cameron
  *
  */
-public interface Hg38Tests {
-	public static File findHg38Reference(String reference) {
-		for (String path : new String[] {
-				"../",
-				"C:/dev/",
-				"~/projects/reference_genomes/human/",
-			}) {
-			File f = new File(path + reference);
-			if (f.exists()) return f;
-		}
-		throw new RuntimeException("Cannot find hg38 reference genome to use for testing.");
-	}
-	public static File findHg38Reference() {
-		File f = findHg38Reference("Homo_sapiens_assembly38.fasta");
+public interface Hg38Tests extends ReferenceTests {
+	static File findHg38Reference() {
+		File f = ReferenceTests.findReference("Homo_sapiens_assembly38.fasta");
 		if (f == null) {
-			f = findHg38Reference("hg38.fa");
+			f = ReferenceTests.findReference("hg38.fa");
 		}
 		return f;
 	}

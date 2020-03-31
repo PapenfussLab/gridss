@@ -4,6 +4,9 @@ bin
 chr12.*
 hg19.*
 hg38.*
+BL21DE3_Genome.*
+C43DE3_Genome.*
 .idea
+.settings
 /example/*.log
 /example/out/

@@ -7,10 +7,7 @@ import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -54,11 +51,16 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 						break;
 				}
 			}
-			if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-				list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
-			}
-			if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-				list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
+			// TODO: min clip length
+			// not dovetailing
+			if (source == null || !SAMRecordUtil.isDovetailing(record, SamPairUtil.PairOrientation.FR, source.getContext().getConfig().dovetailMargin)) {
+				if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+
+					list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
+				}
+				if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+					list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
+				}
 			}
 			list.addAll(IndelEvidence.create(source, minIndelSize, record));
 		} catch (IllegalArgumentException iae) {

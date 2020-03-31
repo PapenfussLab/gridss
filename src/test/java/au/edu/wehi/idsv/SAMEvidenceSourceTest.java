@@ -358,15 +358,21 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertTrue(ses.shouldFilter(e));
 		r = Read(0, 1, "2M3S");
 	}
+
+	/**
+	 * Dovetail filtering has been moved downstream since
+	 * a) we want to keep dovetailing split reads and indels
+	 * b) we need consistent filtering on both sides of split reads
+	 */
 	@Test
-	public void should_filter_dovetailing_reads() {
+	public void should_not_filter_dovetailing_reads() {
 		SAMEvidenceSource ses = permissiveSES();
 		SAMRecord[] rp = RP(0, 100, 100, 20);
 		rp[0].setCigarString("10M10S");
 		rp[1].setCigarString("10S10M");
 		clean(rp[0], rp[1]);
-		assertTrue(ses.shouldFilter(rp[0]));
-		assertTrue(ses.shouldFilter(rp[1]));
+		assertFalse(ses.shouldFilter(rp[0]));
+		assertFalse(ses.shouldFilter(rp[1]));
 		
 		// looks like a dovetail, but is not
 		rp = RP(0, 100, 100, 20);

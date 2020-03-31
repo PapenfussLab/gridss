@@ -11,6 +11,7 @@ import java.util.Arrays;
 
 import htsjdk.samtools.util.SequenceUtil;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -1112,6 +1113,23 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecordUtil.forceValidContigBounds(r, ref.getSequenceDictionary());
 		assertEquals(5, r.getAlignmentEnd());
 		assertEquals("3M3S", r.getCigarString());
+	}
+	//@Test
+	@Ignore("Handled downstream instead so the dovetailing check doesn't need to chase split read alignments")
+	public void isDovetailing_should_also_test_primary_alignment() throws CloneNotSupportedException {
+		SAMRecord[] rp = RP(2, 100, 100, 100);
+		rp[0].setCigarString("75M25S");
+		rp[1].setCigarString("25S75M");
+		rp[0].setAttribute("MC", rp[1].getCigarString());
+		rp[1].setAttribute("MC", rp[0].getCigarString());
+		SAMRecord supp = (SAMRecord) rp[0].clone();
+		supp.setSupplementaryAlignmentFlag(true);
+		supp.setAlignmentStart(200);
+		supp.setCigarString("75S25M");
+		supp.setAttribute("SA", new ChimericAlignment(rp[0]).toString());
+		rp[0].setAttribute("SA", new ChimericAlignment(supp).toString());
+		Assert.assertTrue(SAMRecordUtil.isDovetailing(rp[0], PairOrientation.FR, 0));
+		Assert.assertTrue(SAMRecordUtil.isDovetailing(supp, PairOrientation.FR, 0));
 	}
 }
 

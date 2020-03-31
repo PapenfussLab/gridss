@@ -1,11 +1,15 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import com.google.common.collect.Lists;
+import com.google.common.io.Files;
+import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import org.junit.Assert;
 import org.junit.Test;
@@ -593,5 +597,39 @@ public class SplitReadEvidenceTest extends TestHelper {
 		SplitReadEvidence primaryEvidence = SplitReadEvidence.create(SES(), primary).get(0);
 		SplitReadEvidence suppEvidence = SplitReadEvidence.create(SES(), supp).get(0);
 		Assert.assertEquals(primaryEvidence.getBreakpointQual(), suppEvidence.getBreakpointQual(), 0);
+	}
+	@Test
+	public void split_read_overlapping_alignments_should_make_same_call() {
+		SAMRecord primary = Read(2, 100, "60M40S");
+		SAMRecord supp = Read(2, 200, "60S40M");
+		primary.setReadName("Read");
+		supp.setReadName("Read");
+		primary.setAttribute("SA", "random,200,+,60S40M,0,0");
+		supp.setAttribute("SA", "random,100,+,60M40S,0,0");
+		SplitReadEvidence primaryEvidence = SplitReadEvidence.create(SES(), primary).get(0);
+		SplitReadEvidence suppEvidence = SplitReadEvidence.create(SES(), supp).get(0);
+		Assert.assertEquals(primaryEvidence.getBreakendSummary(), suppEvidence.getBreakendSummary().remoteBreakpoint());
+		Assert.assertEquals(primaryEvidence.getBreakpointQual(), suppEvidence.getBreakpointQual(), 0);
+	}
+	@Test
+	//@Category(EColiTests.class)
+	public void issue278_inconsistent_split_read() throws FileNotFoundException {
+		File ref = ReferenceTests.findReference("C43DE3_Genome.fasta");
+		File input = new File("src/test/resources/issue278/c43_S1.bam");
+		ProcessingContext pc = new ProcessingContext(new FileSystemContext(input.getParentFile(), input.getParentFile(), SAMFileWriterImpl.getDefaultMaxRecordsInRam()), ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
+		ArrayList<DirectedEvidence> evidence = Lists.newArrayList(source.iterator(SAMEvidenceSource.EvidenceSortOrder.SAMRecordStartPosition));
+		Assert.assertEquals(4, evidence.size());
+		Assert.assertTrue(evidence.stream().allMatch(e -> e.getClass() == SplitReadEvidence.class));
+	}
+	@Test
+	public void dovetailing_reads_should_not_provide_soft_clip_support() {
+		SAMRecord[] rp = RP(2, 100, 100, 100);
+		rp[0].setCigarString("75M25S");
+		rp[1].setCigarString("25S75M");
+		rp[0].setAttribute("MC", rp[1].getCigarString());
+		rp[1].setAttribute("MC", rp[0].getCigarString());
+		Assert.assertTrue(SAMRecordUtil.isDovetailing(rp[0], SamPairUtil.PairOrientation.FR, 0));
+		assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, rp[0]).size());
 	}
 }

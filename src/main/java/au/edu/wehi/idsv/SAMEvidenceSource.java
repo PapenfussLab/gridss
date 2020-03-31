@@ -414,9 +414,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (getContext().isFilterDuplicates() && r.getDuplicateReadFlag()) {
 			return true;
 		}
-		if (SAMRecordUtil.isDovetailing(r, PairOrientation.FR, getContext().getConfig().dovetailMargin)) {
-			return true;
-		}
 		if (CigarUtil.widthOfImprecision(r.getCigar()) == 0) {
 			if (r.getAlignmentStart() < 1) {
 				return true;

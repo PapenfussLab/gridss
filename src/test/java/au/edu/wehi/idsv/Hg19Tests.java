@@ -8,23 +8,8 @@ import java.io.File;
  * @author Daniel Cameron
  *
  */
-public interface Hg19Tests {
-	public static File findHg19Reference(String reference) {
-		for (String path : new String[] {
-				"examples/",
-				"",
-				"../",
-				"../../",
-				"C:/dev/",
-				"D:/dev/",
-				"~/projects/reference_genomes/human/",
-			}) {
-			File f = new File(path + reference);
-			if (f.exists()) return f;
-		}
-		throw new RuntimeException("Cannot find hg19 reference genome to use for testing.");
-	}
+public interface Hg19Tests extends ReferenceTests {
 	public static File findHg19Reference() {
-		return findHg19Reference("hg19.fa");
+		return ReferenceTests.findReference("hg19.fa");
 	}
 }

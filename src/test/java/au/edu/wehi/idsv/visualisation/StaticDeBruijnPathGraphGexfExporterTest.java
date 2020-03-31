@@ -6,17 +6,13 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 
+import au.edu.wehi.idsv.*;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.ImmutableList;
 
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.Hg19Tests;
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.FileHelper;
 import gridss.ComputeSamTags;
@@ -29,7 +25,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 	@Category(Hg19Tests.class)
 	public void positional_should_export_dot() throws IOException {
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
-		setReference(Hg19Tests.findHg19Reference("chr12.fa"));
+		setReference(ReferenceTests.findReference("chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.tagged.bam"));
 		BuildBamIndex bbi = new BuildBamIndex();
 		bbi.instanceMain(new String[] {
@@ -62,7 +58,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		File outsq = new File("src/test/resources/chr12-244000.sq.tagged.bam");
 		File out = new File("src/test/resources/chr12-244000.tagged.bam");
 		SAMFileUtil.sort(getFSContext(), in, insq, SortOrder.queryname);
-		File ref = Hg19Tests.findHg19Reference("chr12.fa");
+		File ref = ReferenceTests.findReference("chr12.fa");
 		ComputeSamTags cmd = new ComputeSamTags();
 		cmd.instanceMain(new String[] {
 				"INPUT=" + insq.getAbsolutePath(),
