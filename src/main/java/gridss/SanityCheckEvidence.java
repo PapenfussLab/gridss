@@ -2,6 +2,7 @@ package gridss;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
@@ -22,29 +23,45 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SanityCheckEvidence.class);
 	@Argument(doc="Margin of error allowed for matching.", optional=true)
 	public double ERROR_MARGIN = 0.0001;
+
 	public SanityCheckEvidence() {
 		super(false);
 	}
+
 	public static void main(String[] argv) {
         System.exit(new SanityCheckEvidence().instanceMain(argv));
     }
-	public void sanityCheck(SAMEvidenceSource source) {
-		if (source == null) return;
+
+	@Override
+	protected GridssConfiguration getGridssConfiguration() {
+		GridssConfiguration config = super.getGridssConfiguration();
+		config.hashEvidenceID = false;
+		return config;
+	}
+
+	public int sanityCheck(SAMEvidenceSource source) {
+		if (source == null) return 0;
 		if (!source.getFile().exists()) {
 			log.info("Ignoring " + source.getFile());
 		}
-		try (CloseableIterator<DirectedEvidence> it = new PairedEvidenceTracker<DirectedEvidence>("sanitycheck", source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition))) {
+		try (PairedEvidenceTracker<DirectedEvidence> it = new PairedEvidenceTracker<>("sanitycheck", source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition))) {
 			while (it.hasNext()) {
 				it.next();
 			}
+			return it.errorCount();
 		}
 	}
 	@Override
-	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
+	public int doWork(ExecutorService threadpool) {
 		for (SAMEvidenceSource ses : getSamEvidenceSources()) {
-			sanityCheck(ses);
+			log.info("Sanity checking " + ses.getFile().getName());
+			if (sanityCheck(ses) != 0) {
+				return 1;
+			}
 		}
-		sanityCheck(getAssemblySource());
+		if (sanityCheck(getAssemblySource()) != 0) {
+			return 1;
+		}
 		return 0;
 	}
 }

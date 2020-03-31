@@ -1,4 +1,4 @@
-# Publishes the GRIDSS docker
+#!/bin/bash
 unzip gridss_minimal_reproduction_data_for_error_1.zip
 samtools faidx masked_ref.fa &
 bwa index masked_ref.fa &

@@ -37,10 +37,10 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. Default: 0.995
 	--keepTempFiles: keep intermediate files. Not recommended except for debugging due to the high disk usage.
 	"
-	
+
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -67,6 +67,7 @@ jobnodes="1"
 useproperpair="false"
 readpairpdistribution="0.995"
 keepTempFiles="false"
+sanityCheck="false"
 while true; do
     case "$1" in
         -r|--reference)
@@ -140,6 +141,10 @@ while true; do
 			;;
 		--keepTempFiles)
 			keepTempFiles="true"
+			shift 1
+			;;
+		--sanityCheck)
+			sanityCheck="true"
 			shift 1
 			;;
 		--)
@@ -552,6 +557,18 @@ if [[ $do_preprocess == true ]] ; then
 		else
 			echo "$(date)	Skipping pre-processing as $prefix.sv.bam already exists. $f"
 		fi
+		if [[ $sanityCheck == "true" ]] ; then 
+			java -Xmx$jvmheap $jvm_args \
+				-cp $gridss_jar gridss.SanityCheckEvidence \
+				TMP_DIR=$workingdir \
+				WORKING_DIR=$workingdir \
+				REFERENCE_SEQUENCE=$reference \
+				WORKER_THREADS=$threads \
+				$input_args \
+				$blacklist_arg \
+				$config_args \
+				ASSEMBLY=ignored
+		fi
 	done
 else
 	echo "$(date)	Skipping pre-processing."
@@ -645,6 +662,20 @@ if [[ $do_assemble == true ]] ; then
 	echo "$(date)	Complete assembly	$assembly"
 else
 	echo "$(date)	Skipping assembly	$assembly"
+fi
+if [[ $sanityCheck == "true" ]] ; then 
+	java -Xmx$jvmheap $jvm_args \
+		-cp $gridss_jar gridss.SanityCheckEvidence \
+		TMP_DIR=$workingdir \
+		WORKING_DIR=$workingdir \
+		REFERENCE_SEQUENCE=$reference \
+		WORKER_THREADS=$threads \
+		$input_args \
+		$blacklist_arg \
+		$config_args \
+		ASSEMBLY=$assembly \
+		$readpairing_args
+	
 fi
 if [[ $do_call == true ]] ; then
 	echo "$(date)	Start calling	$output_vcf" | tee -a $timinglogfile
