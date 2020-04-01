@@ -6,11 +6,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import htsjdk.samtools.SamPairUtil;
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import gridss.ComputeSamTags;
+import gridss.SanityCheckEvidence;
+import htsjdk.samtools.*;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -20,12 +29,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import org.junit.experimental.categories.Category;
 
 
 public class SAMRecordUtilTest extends TestHelper {
@@ -1205,6 +1211,49 @@ public class SAMRecordUtilTest extends TestHelper {
 
 		Assert.assertEquals(12, (int)rp[0].getIntegerAttribute("MQ"));
 		Assert.assertEquals(11, (int)rp[1].getIntegerAttribute("MQ"));
+	}
+	@Test
+	@Category(EColiTests.class)
+	public void issue278_inconsistent_read_pair() throws FileNotFoundException {
+		File ref = ReferenceTests.findReference("Escherichia_coli_bl21_de3_.ASM956v1.dna.toplevel.fa");
+		SynchronousReferenceLookupAdapter reflookup = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref));
+		File input = new File("src/test/resources/sanity_failure_debug/bl21_de3_.ASM956v1_S2.bam");
+		ProcessingContext pc = new ProcessingContext(new FileSystemContext(input.getParentFile(), input.getParentFile(), SAMFileWriterImpl.getDefaultMaxRecordsInRam()), ref, reflookup, null, getConfig());
+		List<SAMRecord> results = Lists.newArrayList(new TemplateTagsIterator(Lists.newArrayList(getRecords(input)).iterator(), true, true, true, true, true, true, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name())));
+		List<SAMRecord> primary = results.stream().filter(r -> !r.isSecondaryOrSupplementary()).collect(Collectors.toList());
+		assertEquals(primary.get(0).getCigarString(), primary.get(1).getStringAttribute("MC"));
+		assertEquals(primary.get(1).getCigarString(), primary.get(0).getStringAttribute("MC"));
+	}
+	@Test
+	@Category(EColiTests.class)
+	public void issue278_inconsistent_assembly_scoring() throws IOException {
+		File ref = ReferenceTests.findReference("Escherichia_coli_bl21_de3_.ASM956v1.dna.toplevel.fa");
+		SynchronousReferenceLookupAdapter reflookup = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref));
+		File input = new File("src/test/resources/sanity_failure_debug/bl21_de3_.ASM956v1_assembly.bam");
+		ProcessingContext pc = new ProcessingContext(new FileSystemContext(input.getParentFile(), input.getParentFile(), SAMFileWriterImpl.getDefaultMaxRecordsInRam()), ref, reflookup, null, getConfig());
+		List<SAMRecord> records = getRecords(input).stream()
+				.filter(r -> r.getReadName().equals("asm0-757221"))
+				.collect(Collectors.toList());
+		MockSAMEvidenceSource ses = SES(pc);
+		List<DirectedBreakpoint> evidence = records.stream()
+				.flatMap(r -> SingleReadEvidence.createEvidence(ses, 0, r).stream())
+				.filter(r -> r instanceof DirectedBreakpoint)
+				.map(r -> (DirectedBreakpoint)r)
+				.collect(Collectors.toList());
+		Assert.assertEquals(evidence.get(0).getBreakpointQual(), evidence.get(1).getBreakpointQual(), 0);
+	}
+	@Test
+	public void fixMate_should_not_match_to_supplementary_if_primary_exists() throws CloneNotSupportedException {
+		SAMRecord[] rp = RP(0, 100, 200, 10);
+		SAMRecord primary = (SAMRecord)rp[1].clone();
+		rp[1].setSupplementaryAlignmentFlag(true);
+		primary.setAlignmentStart(300);
+		primary.getMateUnmappedFlag();
+		primary.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+		primary.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+
+		SAMRecordUtil.fixMates(ImmutableList.of(Lists.newArrayList(rp[0]), Lists.newArrayList(rp[1], primary)), true, true);
+		assertEquals(primary.getAlignmentStart(), rp[0].getMateAlignmentStart());
 	}
 }
 

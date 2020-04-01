@@ -45,6 +45,7 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 		if (source == null) return 0;
 		if (!source.getFile().exists()) {
 			log.info("Ignoring " + source.getFile());
+			return 0;
 		}
 		BufferedWriter bw = null;
 		if (OUTPUT_ERROR_READ_NAMES != null) {

@@ -289,4 +289,16 @@ public class SingleReadEvidenceTest extends TestHelper {
 		assertEquals(r1.lowerEndpoint(), r2.lowerEndpoint());
 		assertEquals(r1.upperEndpoint(), r2.upperEndpoint());
 	}
+	@Test
+	public void getBreakendAssemblyContigBreakpointInterval_should_report_indel_interval() {
+		SAMRecord r = Read(0, 1, "2M5I10M");
+		// 0 1 2 3 4 5 6 7 8 9     0-based read coordinates with breakpoint immediately prior to position
+		//  M M           M M M
+		//      I I I I I
+		for (SingleReadEvidence e : SingleReadEvidence.createEvidence(SES(), 0, r)) {
+			Range<Integer> range = e.getBreakendAssemblyContigBreakpointInterval();
+			assertEquals(2, (int)range.lowerEndpoint());
+			assertEquals(7, (int)range.upperEndpoint());
+		}
+	}
 }

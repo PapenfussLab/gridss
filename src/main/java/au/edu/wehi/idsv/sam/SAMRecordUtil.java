@@ -747,26 +747,6 @@ public class SAMRecordUtil {
 				recalculateSupplementaryFromSA(segments.get(i));
 			}
 		}
-		// R2
-		if (tags.contains(SAMTag.R2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] br2 = getConsensusSequence(segments.get((i + 1) % segments.size()));
-				String r2 = br2 != null && br2 != SAMRecord.NULL_SEQUENCE &&  segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.R2.name(), r2);
-				}
-			}
-		}
-		// Q2
-		if (tags.contains(SAMTag.Q2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] bq2 = getConsensusBaseQualities(segments.get((i + 1) % segments.size()));
-				String q2 = bq2 != null && bq2 != SAMRecord.NULL_QUALS && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.Q2.name(), q2);
-				}
-			}
-		}
 		if (Sets.intersection(tags,
 				ImmutableSet.of(SAMTag.CC.name(), SAMTag.CP.name(), SAMTag.HI.name(), SAMTag.IH.name())).size() > 0) {
 			for (int i = 0; i < segments.size(); i++) {
@@ -784,6 +764,26 @@ public class SAMRecordUtil {
 			} else {
 				for (SAMRecord r : records) {
 					clearMateInformation(r, true);
+				}
+			}
+		}
+		// R2
+		if (tags.contains(SAMTag.R2.name())) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] br2 = getConsensusSequence(segments.get((i + 1) % segments.size()));
+				String r2 = br2 != null && br2 != SAMRecord.NULL_SEQUENCE &&  segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.R2.name(), r2);
+				}
+			}
+		}
+		// Q2
+		if (tags.contains(SAMTag.Q2.name())) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] bq2 = getConsensusBaseQualities(segments.get((i + 1) % segments.size()));
+				String q2 = bq2 != null && bq2 != SAMRecord.NULL_QUALS && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.Q2.name(), q2);
 				}
 			}
 		}
@@ -927,16 +927,6 @@ public class SAMRecordUtil {
 			SamPairUtil.setMateInfo(r1, r2, true);
 			r1.removeTransientAttribute(SAMTag.MC.name());
 			r2.removeTransientAttribute(SAMTag.MC.name());
-			if (r2.getReadUnmappedFlag()) {
-				r1.setAttribute(SAMTag.MQ.name(), null);
-			} else {
-				r1.setAttribute(SAMTag.MQ.name(), r2.getMappingQuality());
-			}
-			if (r1.getReadUnmappedFlag()) {
-				r2.setAttribute(SAMTag.MQ.name(), null);
-			} else {
-				r2.setAttribute(SAMTag.MQ.name(), r1.getMappingQuality());
-			}
 		}
 		return true;
 	}
@@ -1013,26 +1003,39 @@ public class SAMRecordUtil {
 	}
 
 	private static SAMRecord bestMateFor(SAMRecord r, List<SAMRecord> mates) {
+		// Mates always point to supp alignments
+		List<SAMRecord> candidates = mates.stream()
+				.filter(m -> !m.getSupplementaryAlignmentFlag())
+				.collect(Collectors.toList());
 		// see if we already point to one of the mates (ie: don't touch existing records)
-		Optional<SAMRecord> best = mates.stream().filter(m -> m.getReadUnmappedFlag() == r.getMateUnmappedFlag())
+		Optional<SAMRecord> best = candidates.stream()
+				.filter(m -> m.getReadUnmappedFlag() == r.getMateUnmappedFlag())
 				.filter(m -> m.getReferenceIndex() == r.getMateReferenceIndex())
 				.filter(m -> m.getAlignmentStart() == r.getMateAlignmentStart())
-				.filter(m -> m.getReadNegativeStrandFlag() == r.getMateNegativeStrandFlag()).findFirst();
-		// see if one of the mates already points to us
+				.filter(m -> m.getReadNegativeStrandFlag() == r.getMateNegativeStrandFlag())
+				.filter(m -> m.getCigarString().equals(r.getStringAttribute("MC")) || r.getStringAttribute("MC")== null)
+				.filter(m -> m.isSecondaryAlignment() == r.isSecondaryAlignment())
+				.findFirst();
 		if (best.isPresent()) return best.get();
-		best = mates.stream().filter(m -> r.getReadUnmappedFlag() == m.getMateUnmappedFlag())
-				.filter(m -> r.getReferenceIndex() == m.getMateReferenceIndex())
-				.filter(m -> r.getAlignmentStart() == m.getMateAlignmentStart())
-				.filter(m -> r.getReadNegativeStrandFlag() == m.getMateNegativeStrandFlag()).findFirst();
-		if (best.isPresent()) return best.get();
+		if (!r.getSupplementaryAlignmentFlag()) {
+			// see if one of the mates already points to us
+			best = candidates.stream()
+					.filter(m -> r.getReadUnmappedFlag() == m.getMateUnmappedFlag())
+					.filter(m -> r.getReferenceIndex() == m.getMateReferenceIndex())
+					.filter(m -> r.getAlignmentStart() == m.getMateAlignmentStart())
+					.filter(m -> r.getReadNegativeStrandFlag() == m.getMateNegativeStrandFlag())
+					.findFirst();
+			if (best.isPresent()) return best.get();
+		}
 		// match primary with primary and secondary with secondary
-		best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
+		best = candidates.stream()
 				.filter(m -> m.isSecondaryAlignment() == r.isSecondaryAlignment())
 				// prefer mapped reads
 				.sorted(Comparator.comparing(SAMRecord::getReadUnmappedFlag)).findFirst();
 		if (best.isPresent()) return best.get();
 		// just get anything that's not a supplementary alignment
-		best = mates.stream().filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
+		best = mates.stream()
+				.filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
 				.findFirst();
 		if (best.isPresent()) return best.get();
 		// we give up - anything will do at this point
