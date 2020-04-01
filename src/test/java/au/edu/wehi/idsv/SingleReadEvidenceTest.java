@@ -11,14 +11,11 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Range;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
+import com.google.common.collect.*;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimaps;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
@@ -267,17 +264,18 @@ public class SingleReadEvidenceTest extends TestHelper {
 		assertEquals(3, (int)r.upperEndpoint());
 
 		r = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,10,+,2M3S,20,0", withSequence("NNNNN", onNegative(Read(0, 1, "1M4S"))))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
-		// 43210
-		// MSSSS
-		// SSSMM
+		// 5 4 3 2 1 0
+		//  M S S S S
+		//  S S S M M
 		assertEquals(2, (int)r.lowerEndpoint());
 		assertEquals(4, (int)r.upperEndpoint());
 	}
 	@Test
 	public void getBreakendReadOffsetInterval_should_consider_homology() {
 		Range<Integer> r = SingleReadEvidence.createEvidence(SES(), 0, withAttr("SA", "polyA,10,+,2S3M,20,0", withSequence("NAAANN", Read(0, 1, "2M4S")))[0]).get(0).getBreakendAssemblyContigBreakpointInterval();
-		// 01234
-		// MMSSS
+		// 0 1 2 3 4 5
+		//  M M S S S
+		//  N A A A N
 		//  ***  homology interval
 		assertEquals(1, (int)r.lowerEndpoint());
 		assertEquals(4, (int)r.upperEndpoint());
@@ -296,6 +294,39 @@ public class SingleReadEvidenceTest extends TestHelper {
 		//  M M           M M M
 		//      I I I I I
 		for (SingleReadEvidence e : SingleReadEvidence.createEvidence(SES(), 0, r)) {
+			Range<Integer> range = e.getBreakendAssemblyContigBreakpointInterval();
+			assertEquals(2, (int)range.lowerEndpoint());
+			assertEquals(7, (int)range.upperEndpoint());
+		}
+	}
+	@Test
+	public void getBreakendAssemblyContigBreakpointInterval_should_report_indel_interval_negative_strand() {
+		SAMRecord r = Read(0, 1, "2M5I3M");
+		r.setReadNegativeStrandFlag(true);
+		// 0 9 8 7 6 5 4 3 2 1 0   0-based read coordinates with breakpoint immediately prior to position
+		//  M M           M M M
+		//      I I I I I
+		for (SingleReadEvidence e : SingleReadEvidence.createEvidence(SES(), 0, r)) {
+			Range<Integer> range = e.getBreakendAssemblyContigBreakpointInterval();
+			assertEquals(3, (int)range.lowerEndpoint());
+			assertEquals(8, (int)range.upperEndpoint());
+		}
+	}
+	@Test
+	public void getBreakendAssemblyContigBreakpointInterval_should_report_homology_interval() {
+		String seq = "nnAAAAAnnn";
+		SAMRecord r1 = withName("r", withSequence(seq, Read(0, 100, "4M6S")))[0];
+		SAMRecord r2 = withName("r", withSequence(seq, Read(0, 200, "4S6M")))[0];
+		r1.setAttribute("SA", new ChimericAlignment(r2).toString());
+		r2.setAttribute("SA", new ChimericAlignment(r1).toString());
+		// 0 1 2 3 4 5 6 7 8 9 0   0-based read coordinates with breakpoint immediately prior to position
+		//  n n A A A A A n n n    seq
+		//  M M m m s s s S S S    r1
+		//  S S s s m m m M M M    r2
+		// (lowercase = microhomology)
+
+		for (SAMRecord r : ImmutableList.of(r1, r2)) {
+			SplitReadEvidence e = (SplitReadEvidence) SingleReadEvidence.createEvidence(SES(), 0, r).get(0);
 			Range<Integer> range = e.getBreakendAssemblyContigBreakpointInterval();
 			assertEquals(2, (int)range.lowerEndpoint());
 			assertEquals(7, (int)range.upperEndpoint());

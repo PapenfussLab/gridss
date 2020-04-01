@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import au.edu.wehi.idsv.sam.TemplateTagsIterator;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import gridss.ComputeSamTags;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import org.junit.Assert;
@@ -612,7 +614,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		Assert.assertEquals(primaryEvidence.getBreakpointQual(), suppEvidence.getBreakpointQual(), 0);
 	}
 	@Test
-	//@Category(EColiTests.class)
+	@Category(EColiTests.class)
 	public void issue278_inconsistent_split_read() throws FileNotFoundException {
 		File ref = ReferenceTests.findReference("C43DE3_Genome.fasta");
 		File input = new File("src/test/resources/issue278/c43_S1.bam");

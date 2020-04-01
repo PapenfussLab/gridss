@@ -1232,7 +1232,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		File input = new File("src/test/resources/sanity_failure_debug/bl21_de3_.ASM956v1_assembly.bam");
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(input.getParentFile(), input.getParentFile(), SAMFileWriterImpl.getDefaultMaxRecordsInRam()), ref, reflookup, null, getConfig());
 		List<SAMRecord> records = getRecords(input).stream()
-				.filter(r -> r.getReadName().equals("asm0-757221"))
+				.filter(r -> r.getReadName().equals("asm0-758922"))
 				.collect(Collectors.toList());
 		MockSAMEvidenceSource ses = SES(pc);
 		List<DirectedBreakpoint> evidence = records.stream()

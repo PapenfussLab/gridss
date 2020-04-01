@@ -26,7 +26,11 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final byte[] breakendBases;
 	private final byte[] breakendQuals;
 	private final boolean isUnanchored;
-	private final int nominalBreakendAfterReadOffset;
+	/**
+	 * Offset in the read alignment of the nominal anchoring base flanking the breakend.
+	 * That is, the aligned base immediately next to the clip/indel for which this is evidence for
+	 */
+	private final int nominalOffset;
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
 	private String associatedAssemblyName;
@@ -167,8 +171,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		if (offsetLocalEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetUnmappedEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetRemoteEnd > record.getReadLength()) throw new IllegalArgumentException();
-		if (offsetUnmappedEnd != offsetRemoteStart && offsetUnmappedStart != offsetRemoteEnd)
-			throw new IllegalArgumentException();
+		if (offsetUnmappedEnd != offsetRemoteStart && offsetUnmappedStart != offsetRemoteEnd) throw new IllegalArgumentException();
 		this.source = source;
 		this.record = record;
 		this.untemplated = new String(Arrays.copyOfRange(record.getReadBases(), offsetUnmappedStart, offsetUnmappedEnd), StandardCharsets.US_ASCII);
@@ -187,8 +190,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			location = location.asValidFor(source.getContext().getReference().getSequenceDictionary());
 		}
 		this.location = location;
-		int nominalOffset = location.direction == BreakendDirection.Forward ? offsetLocalEnd : offsetLocalStart - 1;
-		this.nominalBreakendAfterReadOffset = record.getReadNegativeStrandFlag() ? record.getReadLength() - nominalOffset : nominalOffset;
+		this.nominalOffset = location.direction == BreakendDirection.Forward ? offsetLocalEnd - 1: offsetLocalStart;
 	}
 	private BreakendSummary withExactHomology(BreakendSummary location) {
 		if (!isBreakendExact()) return location;
@@ -439,27 +441,61 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			}
 		}
         Range<Integer> r;
-		if (location instanceof BreakpointSummary) {
-            // Variant has either inserted sequence or homology
-            int insertLength = getUntemplatedSequence().length();
-            if (insertLength > 0) {
-                if ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag()) |
-                        (location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag())) {
-                    r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset + insertLength);
-                } else {
-                    r = Range.closed(nominalBreakendAfterReadOffset - insertLength, nominalBreakendAfterReadOffset);
-                }
-            } else {
-                if (!record.getReadNegativeStrandFlag()) {
-                    r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
-                } else {
-                    r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
-                }
-            }
-        } else {
-            r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset);
-        }
+		int startAnchoringOffset = nominalOffset + location.start - location.nominal;
+		int endAnchoringOffset = nominalOffset + location.end - location.nominal;
+		int insertLength = getUntemplatedSequence().length();
+		if (location instanceof BreakpointSummary && insertLength > 0) {
+			// Inserted sequence - extend the interval over the inserted sequence
+			// so we have symmetry across the inserted sequence
+			if (location.direction == BreakendDirection.Forward) {
+				endAnchoringOffset += insertLength;
+			} else {
+				startAnchoringOffset -= insertLength;
+			}
+		}
+		if (location.direction == BreakendDirection.Forward) {
+			// translate from anchor position coordinates to immediately-before coordinates
+			startAnchoringOffset++;
+			endAnchoringOffset++;
+		}
+		if (record.getReadNegativeStrandFlag()) {
+			// swap to read-based coordinate system
+			r = Range.closed(
+					record.getReadLength() - endAnchoringOffset,
+					record.getReadLength() -startAnchoringOffset);
+		} else {
+			r = Range.closed(startAnchoringOffset, endAnchoringOffset);
+		}
 		return r;
+		/*
+		boolean onNegative = record.getReadNegativeStrandFlag();
+		int nominalBreakendAfterReadOffset = onNegative ? record.getReadLength() - nominalOffset : nominalOffset;
+		if (!(location instanceof BreakpointSummary)) {
+			// breakend is just the actual position
+			assert(location.start == location.nominal);
+			assert(location.end == location.nominal);
+			r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset);
+			return r;
+		}
+		int homologyBasesAfterNominal =
+		// Variant has either inserted sequence or homology
+		int insertLength = getUntemplatedSequence().length();
+		if (insertLength > 0) {
+			if ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag()) |
+					(location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag())) {
+				r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset + insertLength);
+			} else {
+				r = Range.closed(nominalBreakendAfterReadOffset - insertLength + 1, nominalBreakendAfterReadOffset + 1);
+			}
+		} else {
+			if (!record.getReadNegativeStrandFlag()) {
+				r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
+			} else {
+				r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
+			}
+		}
+		return r;
+		*/
 	}
 	public int getBreakendAssemblyContigOffset() {
 		if (assemblyOffset == Integer.MIN_VALUE && AssemblyAttributes.isAssembly(record)) {
