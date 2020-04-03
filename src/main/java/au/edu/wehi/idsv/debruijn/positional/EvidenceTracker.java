@@ -80,6 +80,10 @@ public class EvidenceTracker {
 		// Need to remove all KmerEvidence associated with the evidence
 		// Read pairs can have two: one each of the anchored and unanchored reads
 		Collection<KmerEvidence> trackedKmerEvidenceForEvidence = id.remove(evidence.evidence().getEvidenceID());
+		if (trackedKmerEvidenceForEvidence == null) {
+			// Will happen when we attempt to remove the second KmerEvidence in a read pair
+			return;
+		}
 		removeSet.addAll(trackedKmerEvidenceForEvidence);
 		for (KmerEvidence e : trackedKmerEvidenceForEvidence) {
 			for (int i = 0; i < e.length(); i++) {

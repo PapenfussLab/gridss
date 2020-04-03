@@ -16,6 +16,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import com.google.common.collect.ImmutableSet;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
@@ -136,5 +137,20 @@ public class EvidenceTrackerTest extends TestHelper {
 		list.stream().forEach(ksn -> tracker.track(ksn));
 		Set<KmerEvidence> result = tracker.traverse(ImmutableList.of(new KmerPathSubnode(KPN(k, "AACC", 1, 1, true))), true);
 		assertEquals(2, result.size());
+	}
+	@Test
+	public void remove_should_be_callable_for_both_KmerEvidence_in_read_pair() {
+		int k = 4;
+		SAMRecord[] rp = OEA(3, 1, "4M", true);
+		rp[0].setReadBases(B("AACC"));
+		rp[1].setReadBases(B("ACGT"));
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(rp[0], rp[1], SES(50));
+		KmerEvidence e = KmerEvidence.create(k, nrrp);
+		KmerEvidence e2 = KmerEvidence.createAnchor(k, nrrp, 0, nrrp.getEvidenceSource().getContext().getReference());
+		EvidenceTracker tracker = new EvidenceTracker();
+		Stream.of(e, e2)
+				.flatMap(ev -> IntStream.range(0, ev.length()).mapToObj(i -> ev.node(i)))
+				.forEach(ksn -> tracker.track(ksn));
+		tracker.remove(ImmutableSet.of(e, e2));
 	}
 }
