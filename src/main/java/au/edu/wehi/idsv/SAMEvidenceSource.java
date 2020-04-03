@@ -346,6 +346,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		if (r.getAttribute(SAMTag.SA.name()) != null) {
 			SAMSequenceDictionary dict = getContext().getDictionary();
+			// Need to keep track of original SA tag as if we unmap the primary alignment
+			// the supplementary alignment scoring will be inconsistent since it is based
+			// on the length of the primary alignment soft clip.
+			r.setTransientAttribute("OSA", r.getStringAttribute(SAMTag.SA.name()));
 			r.setAttribute(SAMTag.SA.name(), ChimericAlignment.getChimericAlignments(r).stream()
 					.filter(ca -> isInReference(r, ca, dict))
 					.filter(ca -> !getBlacklistedRegions().overlaps(

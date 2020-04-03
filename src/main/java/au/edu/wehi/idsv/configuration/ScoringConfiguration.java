@@ -40,4 +40,7 @@ public class ScoringConfiguration {
 	public VariantScoringModel getModel() {
 		return model;
 	}
+	public void setModel(VariantScoringModel model) {
+		this.model = model;
+	}
 }

@@ -39,4 +39,17 @@ public class SanityCheckEvidenceTest {
         SanityCheckEvidence sce = new SanityCheckEvidence();
         Assert.assertEquals(0, sce.sanityCheck(source));
     }
+    @Test
+    @Category(Hg19Tests.class)
+    public void colo829_1_inconsistent_split_read_scoring() throws IOException {
+        File ref = ReferenceTests.findReference("Homo_sapiens.GRCh37.GATK.illumina.fasta");
+        SynchronousReferenceLookupAdapter reflookup = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref));
+        File input = new File("src/test/resources/sanity_failure_debug/colo829_1/COLO829v001R_dedup.realigned.bam");
+        GridssConfiguration config = getConfig();
+        config.hashEvidenceID = false;
+        ProcessingContext pc = new ProcessingContext(new FileSystemContext(input.getParentFile(), input.getParentFile(), SAMFileWriterImpl.getDefaultMaxRecordsInRam()), ref, reflookup, null, config);
+        SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
+        SanityCheckEvidence sce = new SanityCheckEvidence();
+        Assert.assertEquals(0, sce.sanityCheck(source));
+    }
 }

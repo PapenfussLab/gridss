@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.*;

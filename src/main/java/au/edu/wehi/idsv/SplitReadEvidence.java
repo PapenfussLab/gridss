@@ -133,8 +133,24 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		if (getSAMRecord().getSupplementaryAlignmentFlag()) {
 			ChimericAlignment caThis = new ChimericAlignment(getSAMRecord());
 			// The first record should be the primary
-			ChimericAlignment caPrimary = ChimericAlignment.getChimericAlignments(getSAMRecord()).get(0);
-			// before 
+			ChimericAlignment caPrimary = ChimericAlignment.getChimericAlignments(getSAMRecord().getStringAttribute(SAMTag.SA.name())).get(0);
+			ChimericAlignment osaPrimary = caPrimary;
+			String osa = (String)getSAMRecord().getTransientAttribute("OSA");
+			if (osa != null) {
+				// Use the original SA if it exists - the primary might be considered unmapped and not in the SA tag
+				osaPrimary = ChimericAlignment.getChimericAlignments(osa).get(0);
+			}
+			if (!caPrimary.equals(osaPrimary)) {
+				// We've stripped the primary alignment.
+				// Since the primary could be in the middle, we'll just take the shorter of the primary soft clips
+				int myOffset = getLocalChimericAlignmentReadOffset();
+				int primaryOffset = osaPrimary.getFirstAlignedBaseReadOffset();
+				int remoteOffset = getRemoteChimericAlignmentReadOffset();
+				if (Math.min(myOffset, remoteOffset) <= primaryOffset && Math.max(myOffset, remoteOffset) >= primaryOffset) {
+					return Math.min(SAMRecordUtil.getStartClipLength(osaPrimary.cigar.getCigarElements()), SAMRecordUtil.getEndClipLength(osaPrimary.cigar.getCigarElements()));
+				}
+				caPrimary = osaPrimary;
+			}
 			BreakendDirection primaryDirectionTowardThis = caThis.getFirstAlignedBaseReadOffset() < caPrimary.getFirstAlignedBaseReadOffset() ^ caPrimary.isNegativeStrand ? BreakendDirection.Backward : BreakendDirection.Forward;
 			softClipLength = SAMRecordUtil.getSoftClipLength(caPrimary.cigar.getCigarElements(), primaryDirectionTowardThis);
 		}
