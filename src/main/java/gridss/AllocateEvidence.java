@@ -52,8 +52,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(sources).build(), true, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(
-					new PairedEvidenceTracker<>("Reads",
-							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)),
+					new PairedEvidenceTracker<>("Reads", new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural), false),
 					evidenceIt);
 		}
 		return evidenceIt;
@@ -63,8 +62,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		evidenceIt = getAssemblySource().iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(
-					new PairedEvidenceTracker<>("Assemblies",
-							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)),
+					new PairedEvidenceTracker<>("Assemblies", new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural), false),
 					evidenceIt);
 		}
 		return evidenceIt;

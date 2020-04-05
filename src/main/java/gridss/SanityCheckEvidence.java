@@ -25,6 +25,8 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 	public double ERROR_MARGIN = 0.0001;
 	@Argument(doc="File to output read names of reads failing sanity check to.", optional=true)
 	public File OUTPUT_ERROR_READ_NAMES;
+	@Argument(doc="Only record the minimum information required for sanity checking. Reduces memory usage but is less useful for debugging.", optional=true)
+	public boolean TRACK_MINIMUM_DETAILS = true;
 
 	public SanityCheckEvidence() {
 		super(false);
@@ -51,7 +53,7 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 		if (OUTPUT_ERROR_READ_NAMES != null) {
 			bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(OUTPUT_ERROR_READ_NAMES)));
 		}
-		try (PairedEvidenceTracker<DirectedEvidence> it = new PairedEvidenceTracker("sanitycheck", source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition), bw)) {
+		try (PairedEvidenceTracker<DirectedEvidence> it = new PairedEvidenceTracker(source.getFile().getName(), source.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition), bw,  !TRACK_MINIMUM_DETAILS)) {
 			while (it.hasNext()) {
 				it.next();
 			}
