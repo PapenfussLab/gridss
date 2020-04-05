@@ -1,0 +1,41 @@
+## htsjdk.samtools.metrics.StringHeader
+# CollectGridssMetrics GRIDSS_PROGRAM=[CollectCigarMetrics, CollectMapqMetrics, CollectTagMetrics, CollectIdsvMetrics, ReportThresholdCoverage] THRESHOLD_COVERAGE=50000 INPUT=gridss/bl21_de3_.ASM956v1_assembly.bam OUTPUT=gridss/bl21_de3_.ASM956v1_assembly.bam.gridss.working//bl21_de3_.ASM956v1_assembly.bam FILE_EXTENSION=null PROGRAM=[QualityScoreDistribution] TMP_DIR=[gridss] REFERENCE_SEQUENCE=Escherichia_coli_bl21_de3_.ASM956v1.dna.toplevel.fa    ASSUME_SORTED=true STOP_AFTER=0 METRIC_ACCUMULATION_LEVEL=[ALL_READS] INCLUDE_UNPAIRED=false VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false GA4GH_CLIENT_SECRETS=client_secrets.json USE_JDK_DEFLATER=false USE_JDK_INFLATER=false
+## htsjdk.samtools.metrics.StringHeader
+# Started on: Wed Apr 01 17:59:06 AEDT 2020
+
+## METRICS CLASS	gridss.analysis.MapqMetrics
+MAX_MAPQ	MIN_MAPQ	MAPPED_READS	UNKNOWN_MAPQ	ZERO_MAPQ	SAMPLE	LIBRARY	READ_GROUP
+60	21	39097	0	0			
+
+## HISTOGRAM	java.lang.Integer
+mapq	All_Reads.
+21	2
+22	2
+26	1
+27	3
+30	1
+31	2
+34	1
+35	1
+37	1
+39	2
+40	7
+43	2
+44	2
+45	4
+46	3
+47	4
+48	8
+49	9
+50	7
+51	2
+52	5
+53	1
+54	7
+55	1
+56	2
+57	1
+58	5
+59	11
+60	39000
+

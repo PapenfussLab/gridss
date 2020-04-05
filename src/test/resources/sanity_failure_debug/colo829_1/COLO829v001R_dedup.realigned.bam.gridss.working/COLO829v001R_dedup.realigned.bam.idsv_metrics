@@ -1,0 +1,10 @@
+## htsjdk.samtools.metrics.StringHeader
+# CollectGridssMetricsAndExtractSVReads MIN_CLIP_LENGTH=5 INSERT_SIZE_METRICS=/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working/tmp.COLO829v001R_dedup.realigned.bam.insert_size_metrics UNMAPPED_READS=false INCLUDE_DUPLICATES=true METRICS_OUTPUT=/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working/COLO829v001R_dedup.realigned.bam.sv_metrics SV_OUTPUT=/dev/stdout GRIDSS_PROGRAM=[CollectCigarMetrics, CollectMapqMetrics, CollectTagMetrics, CollectIdsvMetrics, ReportThresholdCoverage] THRESHOLD_COVERAGE=50000 INPUT=/home/cameron.d/projects/colo829/COLO829v001R_dedup.realigned.bam ASSUME_SORTED=true OUTPUT=/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working/COLO829v001R_dedup.realigned.bam FILE_EXTENSION=null PROGRAM=[CollectInsertSizeMetrics] TMP_DIR=[/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working] COMPRESSION_LEVEL=0    MIN_INDEL_SIZE=1 CLIPPED=true INDELS=true SPLIT=true SINGLE_MAPPED_PAIRED=true DISCORDANT_READ_PAIRS=true STOP_AFTER=0 METRIC_ACCUMULATION_LEVEL=[ALL_READS] INCLUDE_UNPAIRED=false VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false GA4GH_CLIENT_SECRETS=client_secrets.json USE_JDK_DEFLATER=false USE_JDK_INFLATER=false
+## htsjdk.samtools.metrics.StringHeader
+# Started on: Thu Apr 02 16:39:39 AEDT 2020
+
+## METRICS CLASS	gridss.analysis.IdsvMetrics
+MAX_READ_LENGTH	MAX_READ_MAPPED_LENGTH	MAX_PROPER_PAIR_FRAGMENT_LENGTH	MIN_PROPER_PAIR_FRAGMENT_LENGTH	READS	MAPPED_READS	READ_PAIRS	READ_PAIRS_BOTH_MAPPED	READ_PAIRS_ONE_MAPPED	READ_PAIRS_ZERO_MAPPED	SECONDARY_NOT_SPLIT
+151	220	1286	0	755585322	739214002	377377982	368405096	2544140	6428746	0
+
+

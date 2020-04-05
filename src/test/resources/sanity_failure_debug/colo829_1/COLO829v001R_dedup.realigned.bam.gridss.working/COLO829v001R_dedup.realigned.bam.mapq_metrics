@@ -1,0 +1,83 @@
+## htsjdk.samtools.metrics.StringHeader
+# CollectGridssMetricsAndExtractSVReads MIN_CLIP_LENGTH=5 INSERT_SIZE_METRICS=/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working/tmp.COLO829v001R_dedup.realigned.bam.insert_size_metrics UNMAPPED_READS=false INCLUDE_DUPLICATES=true METRICS_OUTPUT=/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working/COLO829v001R_dedup.realigned.bam.sv_metrics SV_OUTPUT=/dev/stdout GRIDSS_PROGRAM=[CollectCigarMetrics, CollectMapqMetrics, CollectTagMetrics, CollectIdsvMetrics, ReportThresholdCoverage] THRESHOLD_COVERAGE=50000 INPUT=/home/cameron.d/projects/colo829/COLO829v001R_dedup.realigned.bam ASSUME_SORTED=true OUTPUT=/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working/COLO829v001R_dedup.realigned.bam FILE_EXTENSION=null PROGRAM=[CollectInsertSizeMetrics] TMP_DIR=[/home/cameron.d/projects/gridss-purple-linx/gridss/colo829_1/COLO829v001R_dedup.realigned.bam.gridss.working] COMPRESSION_LEVEL=0    MIN_INDEL_SIZE=1 CLIPPED=true INDELS=true SPLIT=true SINGLE_MAPPED_PAIRED=true DISCORDANT_READ_PAIRS=true STOP_AFTER=0 METRIC_ACCUMULATION_LEVEL=[ALL_READS] INCLUDE_UNPAIRED=false VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false GA4GH_CLIENT_SECRETS=client_secrets.json USE_JDK_DEFLATER=false USE_JDK_INFLATER=false
+## htsjdk.samtools.metrics.StringHeader
+# Started on: Thu Apr 02 16:39:39 AEDT 2020
+
+## METRICS CLASS	gridss.analysis.MapqMetrics
+MAX_MAPQ	MIN_MAPQ	MAPPED_READS	UNKNOWN_MAPQ	ZERO_MAPQ	SAMPLE	LIBRARY	READ_GROUP
+70	0	745813317	0	31370550			
+
+## HISTOGRAM	java.lang.Integer
+mapq	All_Reads.
+0	31370550
+1	1264010
+2	1021990
+3	1329257
+4	858174
+5	700622
+6	911190
+7	766577
+8	366229
+9	946165
+10	620260
+11	618000
+12	830031
+13	754174
+14	409905
+15	862468
+16	553269
+17	526570
+18	703581
+19	667547
+20	448821
+21	769100
+22	699732
+23	672035
+24	1124084
+25	1580527
+26	164844
+27	2888534
+28	214700
+29	206418
+30	427337
+31	375747
+32	130801
+33	531899
+34	187533
+35	184784
+36	376696
+37	402326
+38	98338
+39	605259
+40	10983737
+41	576214
+42	3124308
+43	774500
+44	573385
+45	441253
+46	195821
+47	225853
+48	555130
+49	693430
+50	3633172
+51	1107353
+52	841165
+53	813642
+54	778350
+55	2532005
+56	913443
+57	877418
+58	780462
+59	707318
+60	655763092
+61	2998
+62	2350
+63	2496
+64	2473
+65	2622
+66	2396
+67	2475
+68	2288
+69	2390
+70	729694
+
