@@ -67,7 +67,13 @@ public enum VcfInfoAttributes {
 	BREAKEND_ASSEMBLY_ID_REMOTE_CONTIG_OFFSET ("BEIDH", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Remote chimeric alignment offset of corresponding BEID assembly."),
 	BREAKEND_ALIGNMENTS ("BEALN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Potential alignment locations of breakend sequence in the format chr:start|strand|cigar|mapq. Depending on the alignment information available, strand and mapq may be empty."),
 	SUPPORTING_BREAKPOINT_READ_NAMES ("BPNAMES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Read names of all reads providing direct breakpoint support."),
-	SUPPORTING_BREAKEND_READ_NAMES ("BENAMES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Read names of all reads providing direct breakend support.");
+	SUPPORTING_BREAKEND_READ_NAMES ("BENAMES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Read names of all reads providing direct breakend support."),
+	MEAN_SUPPORTING_MAPQ ("MQ", 1, VCFHeaderLineType.Float, "Mean MAPQ of breakpoint supporting reads."),
+	MAX_SUPPORTING_MAPQ ("MQX", 1, VCFHeaderLineType.Float, "Maximum MAPQ of breakpoint supporting reads."),
+	MIN_SUPPORTING_MAPQ ("MQN", 1, VCFHeaderLineType.Float, "Minimum MAPQ of breakpoint supporting reads."),
+	BREAKEND_MEAN_SUPPORTING_MAPQ ("BMQ", 1, VCFHeaderLineType.Float, "Mean MAPQ of breakend supporting reads."),
+	BREAKEND_MAX_SUPPORTING_MAPQ ("BMQX", 1, VCFHeaderLineType.Float, "Maximum MAPQ of breakend supporting reads."),
+	BREAKEND_MIN_SUPPORTING_MAPQ ("BMQN", 1, VCFHeaderLineType.Float, "Minimum MAPQ of breakend supporting reads.");
 	private final VCFInfoHeaderLine header;
 	private final String tag;
 	VcfInfoAttributes(String name, String samTag, int count, VCFHeaderLineType type, String description) {

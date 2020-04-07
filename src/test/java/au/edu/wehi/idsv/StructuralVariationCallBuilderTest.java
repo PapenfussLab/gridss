@@ -1080,4 +1080,22 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		VariantContextDirectedBreakpoint high = (VariantContextDirectedBreakpoint)cb.make();
 		assertEquals(high.getBreakendSummary().remoteBreakpoint(), low.getBreakendSummary());
 	}
+	@Test
+	public void should_track_breakend_and_breakpoint_mapq_separately() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, new CalledBreakpointPositionLookup(), (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(BP, "GT").make());
+		cb.addEvidence(new rsc(1, true));
+		cb.addEvidence(new rsc(2, false));
+		cb.addEvidence(new um(0, false));
+		cb.addEvidence(new um(2, false));
+		VariantContextDirectedEvidence de = cb.make();
+		assertEquals( (3+1 + 3+2) / 2.0, de.getAttributeAsDouble("MQ", -1), 0);
+		assertEquals( 8, de.getAttributeAsDouble("MQX", -1), 0);
+		assertEquals( 2, de.getAttributeAsDouble("MQN", -1), 0);
+		assertEquals( 2, de.getAttributeAsDouble("BMQ", -1), 0);
+		assertEquals( 3, de.getAttributeAsDouble("BMQX", -1), 0);
+		assertEquals( 1, de.getAttributeAsDouble("BMQN", -1), 0);
+	}
 }

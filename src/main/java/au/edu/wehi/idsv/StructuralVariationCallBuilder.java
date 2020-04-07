@@ -533,6 +533,18 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				genotypeBuilder.get(i).attribute(VcfFormatAttributes.BREAKEND_QUAL.attribute(), scq[i] + umq[i] + basq[i]);
 			}
 		}
+		if (isUpdateReadInformation()) {
+			if (supportingBreakend.size() > 0) {
+				attribute(VcfInfoAttributes.BREAKEND_MEAN_SUPPORTING_MAPQ, supportingBreakend.stream().mapToDouble(de -> de.getLocalMapq()).average().getAsDouble());
+				attribute(VcfInfoAttributes.BREAKEND_MAX_SUPPORTING_MAPQ, supportingBreakend.stream().mapToDouble(de -> de.getLocalMapq()).max().getAsDouble());
+				attribute(VcfInfoAttributes.BREAKEND_MIN_SUPPORTING_MAPQ, supportingBreakend.stream().mapToDouble(de -> de.getLocalMapq()).min().getAsDouble());
+			}
+			if (supportingBreakpoint.size() > 0) {
+				attribute(VcfInfoAttributes.MEAN_SUPPORTING_MAPQ, supportingBreakpoint.stream().mapToDouble(de -> (de.getLocalMapq() + de.getRemoteMapq()) / 2).average().getAsDouble());
+				attribute(VcfInfoAttributes.MAX_SUPPORTING_MAPQ, supportingBreakpoint.stream().mapToDouble(de -> Math.max(de.getLocalMapq(), de.getRemoteMapq())).max().getAsDouble());
+				attribute(VcfInfoAttributes.MIN_SUPPORTING_MAPQ, supportingBreakpoint.stream().mapToDouble(de -> Math.min(de.getLocalMapq(), de.getRemoteMapq())).min().getAsDouble());
+			}
+		}
 	}
 
 	private Collection<String> getOriginatingFragmentIDs(Map<SingleReadEvidence, AssemblyAttributes> aaLookup, int category, DirectedEvidence e) {
