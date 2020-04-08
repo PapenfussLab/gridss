@@ -154,10 +154,6 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		FileSystemContext fsc = context.getFileSystemContext();
 		File asswd = fsc.getWorkingDirectory(source.getFile());
 		int fatalErrorNumber = errorPackagesCreated.incrementAndGet();
-		if (fatalErrorNumber != 1) {
-			// Only create a reproduction package for the first error
-			return null;
-		}
 		File outFile = new File(asswd, String.format("gridss_minimal_reproduction_data_for_error_%d.zip", fatalErrorNumber));
 		File workingLocation = new File(asswd, outFile.getName() + ".error_package");
 		if (!asswd.exists()) {
