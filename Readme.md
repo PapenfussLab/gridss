@@ -184,6 +184,14 @@ Extract all fragments overlapping your region of interest, then run gridss. See 
 
 - Process as per the region of interest processing outlined above.
 
+### Why does GRIDSS use centre-aligment?
+
+'Normalised' SNV/indel calls are left-aligned. Why does GRIDSS not use this convention? There are two reasons:
+
+For ++ or -- breakpoints, left-aligning the lower breakend will force right-alignment of the upper breakend. Similarly for right-alignment of the lower. This means that it is impossible to univerally left-align, or right-align breakpoints without resulting in an incorrect nominal call position. Centre-alignment is the option that does not cause this problem ( technically speaking, you still have an off-by-one problem for odd-length homology but that's less problematic).
+
+Secondly, using left or right alignment for imprecise call will result in the nominal call being at the edge of the confidence interval bounds. Centre-aligning imprecise calls makes sense as it is (usually) the centre position that is the most likely to be correct.
+
 ## GRIDSS JAR
 
 GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss.sh`.
