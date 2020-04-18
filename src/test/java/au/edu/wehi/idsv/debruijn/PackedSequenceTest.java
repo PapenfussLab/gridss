@@ -150,4 +150,15 @@ public class PackedSequenceTest extends TestHelper {
 			}
 		}
 	}
+
+	@Test
+	public void overlapMatches_should_work_across_words() {
+		PackedSequence seq1 = new PackedSequence(B("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT"), false, false);
+		PackedSequence seq2 = new PackedSequence(B( "ATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATT"), false, false);
+		PackedSequence seq3 = new PackedSequence(B(                              "GCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAAT"), false, false);
+		assertEquals(99, PackedSequence.overlapLength(seq1, seq2, 1));
+		assertEquals(99, PackedSequence.overlapMatches(seq1, seq2, 1));
+		assertEquals(70, PackedSequence.overlapLength(seq1, seq3, 30));
+		assertEquals(70, PackedSequence.overlapMatches(seq1, seq3, 30));
+	}
 }

@@ -1,13 +1,14 @@
 #!/usr/bin/env Rscript
 library(argparser)
 argp = arg_parser("Filters a raw GRIDSS VCF into somatic call subsets.")
-argp = add_argument(argp, "--pondir", default=NA, help="Directory containing Panel Of Normal bed/bedpe used to filter FP somatic events. Use gridss. to generate the PON.")
+argp = add_argument(argp, "--pondir", default=NA, help="Directory containing Panel Of Normal bed/bedpe used to filter FP somatic events. Use gridss.GeneratePonBedpe to generate the PON.")
 argp = add_argument(argp, "--ref", default="", help="Reference genome to use. Must be a valid installed BSgenome package")
 argp = add_argument(argp, "--input", help="GRIDSS VCF")
 argp = add_argument(argp, "--output", help="High confidence somatic subset")
 argp = add_argument(argp, "--fulloutput", help="Full call set excluding obviously germline call.")
 argp = add_argument(argp, "--plotdir", default="", help="Output directory for plots")
 argp = add_argument(argp, "--normalordinal", type="integer", default=1, help="Ordinal of matching normal sample in the VCF")
+argp = add_argument(argp, "--tumourordinal", type="integer", nargs=Inf, help="Ordinal of tumour sample(s) in the VCF. Defaults to all samples not listed as matched normals")
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 # argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
@@ -60,7 +61,7 @@ if (!is.null(argv$ref) & !is.na(argv$ref) & argv$ref != "") {
     refgenome=eval(parse(text=paste0("library(", argv$ref, ")\n", argv$ref)))
   }
 } else {
-  msg = paste("No reference genome supplied using --ref - not performing variant equivalence checks.")
+  msg = paste("No reference genome supplied using --ref. Not performing variant equivalence checks.")
   write(msg, stderr())
 }
 library(ggplot2)
@@ -70,6 +71,23 @@ theme_set(theme_bw())
 # Filter to somatic calls
 write(paste(Sys.time(), "Reading", argv$input), stderr())
 raw_vcf = readVcf(argv$input)
+nsamples = ncol(geno(raw_vcf)$VF)
+if (is.null(argv$tumourordinal) | any(is.na(argv$tumourordinal))) {
+	argv$tumourordinal = seq(ncol(geno(raw_vcf)$VF))[-argv$normalordinal]
+}
+if (any(argv$normalordinal > nsamples)) {
+	msg = paste("Unable to use sample(s)", paste(argv$normalordinal, collapse = ","), "as matched normal - only", nsamples, "samples found in VCF.")
+	write(msg, stderr())
+	stop(msg)
+}
+if (any(argv$tumourordinal > nsamples)) {
+	msg = paste("Unable to use sample(s)", paste(argv$tumourordinal, collapse = ","), "as tumour sample - only", nsamples, "samples found in VCF.")
+	write(msg, stderr())
+	stop(msg)
+}
+
+write(paste("Tumour samples:", paste(colnames(geno(raw_vcf)$VF)[argv$tumourordinal], collapse = ",")), stderr())
+write(paste("Matched normals:", paste(colnames(geno(raw_vcf)$VF)[argv$normalordinal], collapse = ",")), stderr())
 if (argv$plotdir != "") {
   # QUAL distributions of each sample
   plotdf = data.frame(
@@ -94,7 +112,6 @@ if (argv$plotdir != "") {
            labs(fill="Found in samples", title="Raw QUAL breakdown"),
          dpi=dpi, unit="in", width=3840/dpi, height=2160/dpi)
 }
-tumourordinal = seq(ncol(geno(raw_vcf)$VF))[-argv$normalordinal]
 # hard filter variants that are obviously not somatic
 full_vcf = raw_vcf[geno(raw_vcf)$QUAL[,argv$normalordinal] / VariantAnnotation::fixed(raw_vcf)$QUAL < 4 * gridss.allowable_normal_contamination]
 rm(raw_vcf)
@@ -115,13 +132,13 @@ if (is.null(begr$sourceId) & !is.null(begr$vcfId)) {
   stop("StructuralVariantAnnotation version mismatch.")
 }
 write(paste(Sys.time(), "Calculating single breakend VAF", argv$input), stderr())
-begr$af = round(gridss_be_af(begr, full_vcf, tumourordinal), 5)
+begr$af = round(gridss_be_af(begr, full_vcf, argv$tumourordinal), 5)
 begr$af_str = as.character(begr$af)
 if (length(begr) > 0) {
   info(full_vcf[names(begr)])$TAF = begr$af_str
 }
 write(paste(Sys.time(), "Filtering single breakends", argv$input), stderr())
-befiltered = gridss_breakend_filter(begr, full_vcf, pon_dir=argv$pondir, normalOrdinal=argv$normalordinal, tumourOrdinal=tumourordinal)
+befiltered = gridss_breakend_filter(begr, full_vcf, pon_dir=argv$pondir, normalOrdinal=argv$normalordinal, tumourOrdinal=argv$tumourordinal)
 filters[names(begr)] = befiltered
 rm(befiltered)
 full_vcf = full_vcf[passes_very_hard_filters(filters)]
@@ -136,7 +153,7 @@ if (is.null(bpgr$sourceId) & !is.null(bpgr$vcfId)) {
   stop("StructuralVariantAnnotation version mismatch.")
 }
 write(paste(Sys.time(), "Calculating breakpoint VAF", argv$input), stderr())
-bpgr$af = round(gridss_bp_af(bpgr, full_vcf, tumourordinal), 5)
+bpgr$af = round(gridss_bp_af(bpgr, full_vcf, argv$tumourordinal), 5)
 bpgr$af_str = paste(bpgr$af, partner(bpgr)$af, sep=",")
 if (length(bpgr) > 0) {
   info(full_vcf[names(bpgr)])$TAF = bpgr$af_str

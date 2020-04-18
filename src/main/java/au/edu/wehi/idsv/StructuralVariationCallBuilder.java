@@ -275,7 +275,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				np = new CalledBreakpointPositionLookup.NominalPosition((BreakpointSummary)nominalPosition, untemplated, homo, isExact);
 				calledBreakpointLookup.addLower(event, np);
 				if (np.nominalPosition.isHighBreakend()) {
-					log.debug("CalledBreakpointLookup entry missing for " + event);
+					log.info("CalledBreakpointLookup entry missing for " + event);
 				}
 			}
 			if (np.isExact) {

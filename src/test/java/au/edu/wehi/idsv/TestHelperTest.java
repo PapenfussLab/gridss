@@ -2,7 +2,11 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 
+import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class TestHelperTest extends TestHelper {
@@ -35,6 +39,17 @@ public class TestHelperTest extends TestHelper {
 	public void SES_category() {
 		assertEquals(0, SES(false).getSourceCategory());
 		assertEquals(1, SES(true).getSourceCategory());
+	}
+	@Test
+	public void overlapping() {
+		List<SAMRecord> records = overlapping(1, POLY_ACGT, 1, 8, 1, 1);
+		assertEquals("ACGTACGT", records.stream().map(r -> S(r.getReadBases())).collect(Collectors.joining()));
+
+		records = overlapping(1, POLY_ACGT, 2, 8, 1, 1);
+		assertEquals("CGTACGTA", records.stream().map(r -> S(r.getReadBases())).collect(Collectors.joining()));
+
+		records = overlapping(1, POLY_ACGT, 1, 8, 2, 1);
+		assertEquals("ACCGGTTAACCGGTTA", records.stream().map(r -> S(r.getReadBases())).collect(Collectors.joining()));
 	}
 }
 

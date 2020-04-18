@@ -190,7 +190,7 @@ public class PackedSequence implements Serializable {
 		return matches;
 	}
 	public static int overlapLength(PackedSequence s1, PackedSequence s2, int start2RelativeToStart1) {
-		return IntervalUtil.overlapsWidthClosed(0, s1.baseCount - 1, start2RelativeToStart1, s2.baseCount - 1 + start2RelativeToStart1);
+		return IntervalUtil.overlapsWidthClosed(0, s1.baseCount - 1, start2RelativeToStart1, start2RelativeToStart1 + s2.baseCount - 1);
 	}
 
 	/**

@@ -22,5 +22,10 @@ public class IntervalUtilTest {
 		testOverlapsWidthClosed(3, 1, 3, 1, 3);
 		testOverlapsWidthClosed(3, 1, 3, 0, 4);
 		testOverlapsWidthClosed(3, 1, 3, 0, 4);
+
+		testOverlapsWidthClosed(1, 1, 1, 1, 1);
+		testOverlapsWidthClosed(1, 1, 2, 1, 1);
+		testOverlapsWidthClosed(1, 1, 2, 2, 3);
+		testOverlapsWidthClosed(2, 1, 3, 2, 3);
 	}
 }

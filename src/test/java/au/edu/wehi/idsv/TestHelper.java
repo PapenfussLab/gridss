@@ -80,6 +80,7 @@ import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
+import org.junit.Test;
 import picard.analysis.InsertSizeMetrics;
 
 public class TestHelper {
@@ -1307,5 +1308,21 @@ public class TestHelper {
 			e.printStackTrace();
 		}
 		return list;
+	}
+	public List<SAMRecord> overlapping(int startPosition, int readCount, int readLength, int stride) {
+		return overlapping(2, RANDOM, 1, readCount, readLength, stride);
+	}
+	public List<SAMRecord> overlapping(int referenceIndex, byte[] referenceSequence, int startPosition, int readCount, int readLength, int stride) {
+		List<SAMRecord> reads = new ArrayList<>();
+		for (int i = 0; i < readCount; i++) {
+			SAMRecord r = new SAMRecord(getHeader());
+			r.setReadName(String.format("n%d", i));
+			r.setReadBases(B(S(referenceSequence).substring(startPosition - 1 + i * stride, startPosition - 1 + i * stride + readLength)));
+			r.setCigarString(String.format("%dM", readLength));
+			r.setReferenceIndex(referenceIndex);
+			r.setAlignmentStart(startPosition + i * stride);
+			reads.add(r);
+		}
+		return reads;
 	}
 }
