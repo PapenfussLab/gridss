@@ -70,7 +70,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.19.1</version>
 				<configuration>
-					<excludedGroups>au.edu.wehi.idsv.Hg19Tests,au.edu.wehi.idsv.Hg38Tests,au.edu.wehi.idsv.alignment.ExternalAlignerTests</excludedGroups>
+					<excludedGroups>au.edu.wehi.idsv.Hg19Tests,au.edu.wehi.idsv.Hg38Tests,au.edu.wehi.idsv.EColiTests,au.edu.wehi.idsv.alignment.ExternalAlignerTests</excludedGroups>
 					<argLine>-Xmx4g</argLine>
 				</configuration>
 			</plugin>
