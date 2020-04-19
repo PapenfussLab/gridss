@@ -79,6 +79,15 @@ _Warning_: all somatic R scripts treat the first bam file to be the matched norm
 
 Just specify multiple BAMs on the command line. GRIDSS will perform joint calling and provide a per-BAM breakdown of support.
 
+### What aligner should I use?
+
+Although GRIDSS aims to be aligner agnostic, not all aligners output BAM files suitable for processing by GRIDSS. GRIDSS requires:
+* One alignment per read. Supplementary (split read) alignments are ok, but secondary alignments are not.
+  * This means that aligner settings such as the `-a` option of bwa mem and the `-k` and `-a` options of bowtie2 are unsuitable.
+* MAPQ to meaningfully follow the SAM specifications. Aligners that do not follow the specifications (e.g. subreads) will have worse results.
+
+Options such as the `-Y` option of bwa mem, or the fact that bowtie2 does not do split read alignment are not problems 
+
 ### How do I tell GRIDSS multiple BAMs are from the same sample?
 
 Use the `--labels` command line option. Eg: `--labels sample1,sample1,sample2 sample1_library1.bam sample1_library2.bam sample2.bam`
