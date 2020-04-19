@@ -86,7 +86,7 @@ Although GRIDSS aims to be aligner agnostic, not all aligners output BAM files s
   * This means that aligner settings such as the `-a` option of bwa mem and the `-k` and `-a` options of bowtie2 are unsuitable.
 * MAPQ to meaningfully follow the SAM specifications. Aligners that do not follow the specifications (e.g. subreads) will have worse results.
 
-Options such as the `-Y` option of bwa mem, or the fact that bowtie2 does not do split read alignment are not problems 
+Options such as the `-Y` option of bwa mem, or the fact that bowtie2 does not do split read alignment are not problematic as these differences are corrected in the GRIDSS preprocessing step.
 
 ### How do I tell GRIDSS multiple BAMs are from the same sample?
 
