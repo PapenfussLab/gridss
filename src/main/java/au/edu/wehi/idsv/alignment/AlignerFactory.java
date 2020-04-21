@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.alignment;
 
 import au.edu.wehi.idsv.Defaults;
 import com.google.common.io.Files;
+import com.intel.gkl.smithwaterman.IntelSmithWaterman;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
@@ -13,51 +14,75 @@ import java.util.UUID;
 public class AlignerFactory {
 	private static final Log log = Log.getInstance(AlignerFactory.class);
 	private static final String SSW_JNI_JAR_LOCATION = "/libsswjni.so";
-	private static boolean sswjniLoaded;
 	private static final Aligner defaultAligner;
-    static {
-    	if (!Defaults.NO_LIBSSW) {
-    		try {
-            	System.loadLibrary("sswjni");
-            	sswjniLoaded = true;
-            } catch (UnsatisfiedLinkError e) {
-            	sswjniLoaded = false;
-            	log.debug("Unable to load sswjni library");
-            }
-            try {
-            	if (!sswjniLoaded) {
-            		File tmp = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + "-libsswjni.so");
-                	File destination = new File(System.getProperty("java.io.tmpdir"), "libsswjni.so");
-                	try {
-                		unpacksswjni(tmp);
-                		Files.move(tmp, destination);
-                		System.load(destination.getAbsolutePath());
-                		sswjniLoaded = true;
-                	} catch (IOException e) {
-                		log.error("Unable to extract sswjni native library to " + destination.toString());
-                	}
-                }
-            } catch (UnsatisfiedLinkError e) {
-            	sswjniLoaded = false;
-            }
-    	} else {
-    		sswjniLoaded = false;
-    	}
-        defaultAligner = create(1, -4, -4, 6, 1); // bwa mem
-        // defaultAligner = create(2, -6, -1, 5, 3); // bowtie2
-        if (sswjniLoaded) {
-        	try {
-        		log.debug("Testing JNI alignment");
-	        	defaultAligner.align_smith_waterman(new byte[] { 'A' } , new byte[] { 'A' });
-	        	log.info("sswjni library loading successful.");
-        	} catch (Exception e) {
-        		log.error(e, "sswjni JNI call failure. Attempting to recover.");
-        		sswjniLoaded = false;
-        	}
-        }
-        if (!sswjniLoaded) {
-        	log.error("Unable to use sswjni library - inexact homology annotation will be very slow. Please ensure libsswjni for your OS and architecture can be found on java.library.path");
-        }
+	private static boolean sswjniLoaded;
+	private static final IntelSmithWaterman isw;
+
+	static {
+    	File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+    	log.debug("Loading Intel GKL library");
+		IntelSmithWaterman initialisingIsw = new IntelSmithWaterman();
+		if (!Defaults.NO_LIBGKL || !initialisingIsw.load(tmpDir)) {
+			initialisingIsw = null;
+		} else {
+			try {
+				log.debug("Testing Intel GKL alignment");
+				GKLAligner gklAligner = new GKLAligner(1, -4, 6, 1, initialisingIsw);
+				gklAligner.align_smith_waterman(new byte[]{'A'}, new byte[]{'A'});
+				log.info("Intel GKL library loading successful.");
+			} catch (Exception e) {
+				log.error(e, "Intel GKL call failure. Attempting to recover.");
+				initialisingIsw = null;
+			}
+		}
+		isw = initialisingIsw;
+		if (isw == null) {
+			log.error("Unable to use Intel GKL library for accelerated Smith-Waterman alignment");
+			if (!Defaults.NO_LIBSSW) {
+				try {
+					System.loadLibrary("sswjni");
+					sswjniLoaded = true;
+				} catch (UnsatisfiedLinkError e) {
+					sswjniLoaded = false;
+					log.debug("Unable to load sswjni library");
+				}
+				try {
+					if (!sswjniLoaded) {
+						File tmp = new File(tmpDir, UUID.randomUUID().toString() + "-libsswjni.so");
+						File destination = new File(tmpDir, "libsswjni.so");
+						try {
+							unpacksswjni(tmp);
+							Files.move(tmp, destination);
+							System.load(destination.getAbsolutePath());
+							sswjniLoaded = true;
+						} catch (IOException e) {
+							log.error("Unable to extract sswjni native library to " + destination.toString());
+						}
+					}
+				} catch (UnsatisfiedLinkError e) {
+					sswjniLoaded = false;
+				}
+			} else {
+				sswjniLoaded = false;
+			}
+			if (sswjniLoaded) {
+				try {
+					log.debug("Testing ssw alignment");
+					Aligner sswAligner = create(1, -4, -4, 6, 1);
+
+					sswAligner.align_smith_waterman(new byte[]{'A'}, new byte[]{'A'});
+					log.info("sswjni library loading successful.");
+				} catch (Exception e) {
+					log.error(e, "sswjni JNI call failure. Attempting to recover.");
+					sswjniLoaded = false;
+				}
+			}
+			if (!sswjniLoaded) {
+				log.error("Unable to use GKL or sswjni libraries - realignment and inexact homology steps will be very slow. Please ensure Intel GKL and/or libsswjni for your OS and architecture can be found on java.library.path");
+			}
+		}
+		// defaultAligner = create(2, -6, -1, 5, 3); // bowtie2 defaults
+		defaultAligner = create(1, -4, -4, 6, 1); // bwa mem defaults
     }
     private static void unpacksswjni(File destination) throws IOException {
     	if (destination.exists() && destination.length() == AlignerFactory.class.getResource(SSW_JNI_JAR_LOCATION).getFile().length()) {
@@ -76,7 +101,10 @@ public class AlignerFactory {
         log.debug("Created " + destination.toString());
     }
 	public static Aligner create(int match, int mismatch, int ambiguous, int gapOpen, int gapExtend) {
-		if (sswjniLoaded) {
+		if (isw != null) {
+			if (mismatch != ambiguous) throw new IllegalArgumentException("GKL aligner does not support ambiguous scoring");
+			return new GKLAligner(match, mismatch, gapOpen, gapExtend, isw);
+		} else if (sswjniLoaded) {
 			return new SswJniAligner(match, mismatch, ambiguous, gapOpen, gapExtend);
 		} else {
 			return new JAlignerAligner(match, mismatch, ambiguous, gapOpen, gapExtend);
