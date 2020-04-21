@@ -79,6 +79,15 @@ _Warning_: all somatic R scripts treat the first bam file to be the matched norm
 
 Just specify multiple BAMs on the command line. GRIDSS will perform joint calling and provide a per-BAM breakdown of support.
 
+### What aligner should I use?
+
+Although GRIDSS aims to be aligner agnostic, not all aligners output BAM files suitable for processing by GRIDSS. GRIDSS requires:
+* One alignment per read. Supplementary (split read) alignments are ok, but secondary alignments are not.
+  * This means that aligner settings such as the `-a` option of bwa mem and the `-k` and `-a` options of bowtie2 are unsuitable.
+* MAPQ to meaningfully follow the SAM specifications. Aligners that do not follow the specifications (e.g. subreads) will have worse results.
+
+Options such as the `-Y` option of bwa mem, or the fact that bowtie2 does not do split read alignment are not problematic as these differences are corrected in the GRIDSS preprocessing step.
+
 ### How do I tell GRIDSS multiple BAMs are from the same sample?
 
 Use the `--labels` command line option. Eg: `--labels sample1,sample1,sample2 sample1_library1.bam sample1_library2.bam sample2.bam`
@@ -183,6 +192,14 @@ Extract all fragments overlapping your region of interest, then run gridss. See 
 - Expand intervals by at least 10kbp. Too small a window will have a negative impact on GRIDSS QUAL scores (since they're emperically weighted, taking only regions with soft clipped reads will cause GRIDSS to massively downweight soft clips when scoring). Alternatively, for unbiased scoring, run `gridss.CollectGridssMetrics` on your input file and rename the `.gridss.working` directory to the name of your targeted bam file to enable the targeted bam to use the full bam metrics.
 
 - Process as per the region of interest processing outlined above.
+
+### Why does GRIDSS use centre-aligment?
+
+'Normalised' SNV/indel calls are left-aligned. Why does GRIDSS not use this convention? There are two reasons:
+
+For ++ or -- breakpoints, left-aligning the lower breakend will force right-alignment of the upper breakend. Similarly for right-alignment of the lower. This means that it is impossible to univerally left-align, or right-align breakpoints without resulting in an incorrect nominal call position. Centre-alignment is the option that does not cause this problem ( technically speaking, you still have an off-by-one problem for odd-length homology but that's less problematic).
+
+Secondly, using left or right alignment for imprecise call will result in the nominal call being at the edge of the confidence interval bounds. Centre-aligning imprecise calls makes sense as it is (usually) the centre position that is the most likely to be correct.
 
 ## GRIDSS JAR
 
