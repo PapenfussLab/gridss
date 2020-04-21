@@ -278,9 +278,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					log.info("CalledBreakpointLookup entry missing for " + event);
 				}
 			}
+			breakpoint(np.nominalPosition, np.insertedSequenced);
+			homo = np.homologySequence;
 			if (np.isExact) {
-				breakpoint(np.nominalPosition, np.insertedSequenced);
-				homo = np.homologySequence;
 				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
 			} else {
 				if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {

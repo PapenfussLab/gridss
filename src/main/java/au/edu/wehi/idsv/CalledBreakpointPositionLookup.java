@@ -26,9 +26,11 @@ public class CalledBreakpointPositionLookup {
         }
     }
     private HashMap<String, NominalPosition> lookup = new HashMap<>();
+
     public void addLower(String eventId, NominalPosition position) {
         lookup.put(eventId, position.remoteBreakpoint());
     }
+
     public NominalPosition removeUpper(String eventId) {
         return lookup.remove(eventId);
     }

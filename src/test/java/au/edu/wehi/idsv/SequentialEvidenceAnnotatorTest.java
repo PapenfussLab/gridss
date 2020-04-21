@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -37,58 +38,50 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
     public void should_centre_align() {
         ProcessingContext pc = getContext();
         MockSAMEvidenceSource ses = SES(pc);
-        List<SAMRecord> reads = getSplitReadTestData(pc);
-        List<DirectedEvidence> evidence = reads.stream()
-            .map(r -> (DirectedEvidence)SingleReadEvidence.createEvidence(ses, 0, r).get(0))
+        SAMRecord r = withSequence("NAAAAAAN", Read(0, 1, "1M7S"))[0];
+        SAMRecord ra = withReadName("#1",withSequence("AAAAAAN", Read(0, 10, "7M")))[0];
+        SplitReadHelper.convertToSplitRead(r, ImmutableList.of(ra), null, false);
+        List<DirectedEvidence> evidence = ImmutableList.of(r, ra).stream()
+            .map(x -> (DirectedEvidence)SingleReadEvidence.createEvidence(ses, 0, x).get(0))
             .sorted(DirectedEvidenceOrder.ByNatural)
             .collect(Collectors.toList());
         // Call variants
         List<VariantContextDirectedEvidence> calls = Lists.newArrayList(new VariantCallIterator(pc, evidence.iterator()));
-        assertEquals(new BreakpointSummary(new BreakendSummary(0, FWD, 5, 5, 7), new BreakendSummary(0, BWD, 8, 6, 10)), calls.get(0).getBreakendReadCount());
+
+        assertEquals(new BreakpointSummary(new BreakendSummary(0, FWD, 4, 1, 7), new BreakendSummary(0, BWD, 13, 10, 16)), calls.get(0).getBreakendSummary());
         assertEquals(calls.get(0).getBreakendSummary(), ((DirectedBreakpoint)calls.get(1)).getBreakendSummary().remoteBreakpoint());
     }
     @Test
     public void should_force_matching_nominal_positions() {
         ProcessingContext pc = getContext();
         MockSAMEvidenceSource ses = SES(pc);
-        List<SAMRecord> reads = getSplitReadTestData(pc);
-        List<DirectedEvidence> evidence = reads.stream()
+
+        SAMRecord r1 = withSequence("NAAAAAAN", Read(0, 1, "1M7S"))[0];
+        SAMRecord r1a = withReadName("#1",withSequence("AAAAAAN", Read(0, 10, "7M")))[0];
+        SAMRecord r2 = withSequence("NAAAAAAN", Read(0, 1, "7S1M"))[0];
+        SAMRecord r2a = withReadName("#1",withSequence("NAAAAAA", Read(0, 1, "7M")))[0];
+        SplitReadHelper.convertToSplitRead(r1, ImmutableList.of(r1a), null, false);
+        SplitReadHelper.convertToSplitRead(r2, ImmutableList.of(r2a), null, false);
+        List<DirectedEvidence> evidence = ImmutableList.of(r1, r2).stream()
                 .map(r -> (DirectedEvidence)SingleReadEvidence.createEvidence(ses, 0, r).get(0))
                 .sorted(DirectedEvidenceOrder.ByNatural)
                 .collect(Collectors.toList());
         // Set up calls with different nominal positions
         List<VariantContextDirectedEvidence> calls = ImmutableList.of(
-                (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(pc).breakpoint(new BreakpointSummary(0, FWD, 3, 3, 7, 0, BWD, 6, 6, 10), "").make(),
-                (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(pc).breakpoint(new BreakpointSummary(0, BWD, 6, 10, 10, 0, FWD, 3, 7, 7), "").make());
+                (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(pc).phredScore(1).attribute("EVENT", "event").breakpoint(new BreakpointSummary(0, FWD, 3, 3, 7, 0, BWD, 6, 6, 10), "").make(),
+                (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(pc).phredScore(1).attribute("EVENT", "event").breakpoint(new BreakpointSummary(0, BWD, 10, 6, 10, 0, FWD, 7, 3, 7), "").make());
 
         ArrayList<VariantContextDirectedEvidence> annotatatedCalls = Lists.newArrayList(new SequentialEvidenceAnnotator(
-                pc, calls.iterator(), Collections.emptyIterator(), Collections.emptyIterator(), 1000, true, 0, MoreExecutors.newDirectExecutorService()));
+                pc, calls.iterator(), evidence.iterator(), Collections.emptyIterator(), 1000, true, 1, MoreExecutors.newDirectExecutorService()));
         assertEquals(2, annotatatedCalls.size());
-        assertEquals(calls.get(0).getBreakendSummary(), ((DirectedBreakpoint)calls.get(1)).getBreakendSummary().remoteBreakpoint());
+        assertEquals(annotatatedCalls.get(0).getBreakendSummary(), ((DirectedBreakpoint)annotatatedCalls.get(1)).getBreakendSummary().remoteBreakpoint());
     }
     @Test
     public void should_report_reference_base_at_nominal_position() {
         ProcessingContext pc = getContext();
-        MockSAMEvidenceSource ses = SES(pc);
-        // 12345678901234567890
-        // ACGTACGTACGTACGT
-        // nnnn    dddd
-        //     MMMM    NNNN
-        String seq = "nnnnACGTACGTnnnn";
-        List<SAMRecord> reads = Lists.newArrayList(withSequence(seq, Read(0, 1, "8M4D4M")));
-        List<DirectedEvidence> evidence = reads.stream()
-                .map(r -> (DirectedEvidence) SingleReadEvidence.createEvidence(ses, 0, r).get(0))
-                .sorted(DirectedEvidenceOrder.ByNatural)
-                .collect(Collectors.toList());
-        List<VariantContextDirectedEvidence> calls = ImmutableList.of(
-                (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(pc).breakpoint(new BreakpointSummary(0, FWD, 5,  0, BWD, 10), "").make());
-        assertEquals("A", calls.get(0).getReference().getBaseString());
-
-        ArrayList<VariantContextDirectedEvidence> annotatatedCalls = Lists.newArrayList(new SequentialEvidenceAnnotator(
-                pc, calls.iterator(), evidence.iterator(), Collections.emptyIterator(), 1000, true, 0, MoreExecutors.newDirectExecutorService()));
-        // Sanity precondition that we're centre-aligned
-        assertEquals(annotatatedCalls.get(0).getBreakendSummary(), new BreakpointSummary(0, FWD, 6, 4, 8, 0, BWD, 11, 9, 13));
-        // check we are reporting the centre-aligned reference base
-        assertEquals("C", annotatatedCalls.get(0).getReference().getBaseString());
+        assertEquals("A", new IdsvVariantContextBuilder(pc).breakend(new BreakendSummary(1, FWD, 1), "").make().getReference().getBaseString());
+        assertEquals("C", new IdsvVariantContextBuilder(pc).breakend(new BreakendSummary(1, FWD, 2, 1, 5), "").make().getReference().getBaseString());
+        assertEquals("G", new IdsvVariantContextBuilder(pc).breakend(new BreakendSummary(1, FWD, 3, 1, 5), "").make().getReference().getBaseString());
+        assertEquals("T", new IdsvVariantContextBuilder(pc).breakend(new BreakendSummary(1, FWD, 4, 1, 5), "").make().getReference().getBaseString());
     }
 }

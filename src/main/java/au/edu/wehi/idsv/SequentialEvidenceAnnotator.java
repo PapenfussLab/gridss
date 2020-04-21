@@ -17,11 +17,15 @@ import java.util.concurrent.Executor;
  */
 public class SequentialEvidenceAnnotator extends ParallelTransformIterator<VariantEvidenceSupport, VariantContextDirectedEvidence> implements TrackedBuffer {
 	private static final Log log = Log.getInstance(SequentialEvidenceAnnotator.class);
+	private final ProcessingContext context;
+	private final CalledBreakpointPositionLookup lookup = new CalledBreakpointPositionLookup();
+
 	/**
 	 * Creates an ordered evidence annotation
 	 * @param context processing context
 	 * @param calls variant calls ordered by position
-	 * @param evidence evidence order by breakend position
+	 * @param reads reads order by breakend position
+	 * @param assemblies assemblies order by breakend position
 	 * @param maxCallWindowSize
 	 * @param assignEvidenceToSingleBreakpoint uniquely assign evidence to only the highest scoring call
 	 * @param lookahead number of records to annotate in parallel.
@@ -37,11 +41,14 @@ public class SequentialEvidenceAnnotator extends ParallelTransformIterator<Varia
 			int lookahead,
 			Executor threadpool) {
 		super(new SequentialEvidenceAllocator(context, calls, reads, assemblies, maxCallWindowSize, assignEvidenceToSingleBreakpoint),
-			call -> make(context, call), lookahead, threadpool);
+				null, lookahead, threadpool);
+		this.context = context;
 	}
-	private static VariantContextDirectedEvidence make(ProcessingContext context, VariantEvidenceSupport ves) {
+
+	@Override
+	public VariantContextDirectedEvidence transform(VariantEvidenceSupport ves) {
 		try {
-			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, new CalledBreakpointPositionLookup(), ves.variant);
+			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, lookup, ves.variant);
 			for (DirectedEvidence e : ves.support) {
 				builder.addEvidence(e);
 			}

@@ -278,5 +278,11 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	public String getSourceID() {
 		return sourceID;
 	}
+
+	@Override
+	public IdsvVariantContextBuilder id(String ID) {
+		super.id(ID);
+		return this;
+	}
 }
 

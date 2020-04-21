@@ -7,6 +7,7 @@ import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -67,6 +68,10 @@ public class ParallelTransformIterator<T, U> implements Iterator<U> {
 		return dispatched > 0 || it.hasNext();
 	}
 
+	public U transform(T t) {
+		return f.apply(t);
+	}
+
 	@Override
 	public U next() {
 		if (!hasNext()) throw new NoSuchElementException();
@@ -106,7 +111,7 @@ public class ParallelTransformIterator<T, U> implements Iterator<U> {
 	}
 	private void dispatch(final long ordinal, final T record) {
 		threadpool.execute(() -> {
-			completed.add(new TransformResult<U>(ordinal, f.apply(record)));
+			completed.add(new TransformResult<U>(ordinal, transform(record)));
 		});
 	}
 }
