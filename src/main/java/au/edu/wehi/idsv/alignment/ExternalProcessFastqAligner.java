@@ -51,7 +51,7 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 		try (final SAMFileWriter writer = writerFactory.clone().setCompressionLevel(0).makeWriter(header, false, output, reference)) {
 			final SAMRecordIterator it = reader.iterator();
 			while (it.hasNext()) {
-				SAMRecord r= it.next();
+				SAMRecord r = it.next();
 				if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
 					if (!MessageThrottler.Current.shouldSupress(log, "aligner out of bounds")) {
 						log.warn(String.format("Aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
@@ -59,7 +59,17 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 				}
 				writer.addAlignment(r);
 			}
+		} catch (Exception e) {
+			try {
+				writerFactory.clone();
+				// TODO: should we consume the output stream as well?
+			} catch (Exception e1) {
+				// Just swallow as an additional error message will be confusing
+				// This isn't the root cause and doesn't really matter if we fail
+			}
+			ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference, e);
+			throw e;
 		}
-		ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference);
+		ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference, null);
 	}
 }

@@ -11,7 +11,7 @@ class ExternalProcessHelper {
 	 */
 	private static final int SHUTDOWN_GRACE_PERIOD = 60;
 	private static final Log log = Log.getInstance(ExternalProcessHelper.class);	
-	public static void shutdown(Process process, String commandline, String helpfulErrorMessage) {
+	public static void shutdown(Process process, String commandline, String helpfulErrorMessage, Exception underlyingException) {
 		try {
 			process.waitFor(SHUTDOWN_GRACE_PERIOD, TimeUnit.SECONDS);
 		} catch (InterruptedException e) {
@@ -37,14 +37,15 @@ class ExternalProcessHelper {
 					commandline,
 					helpfulErrorMessage);
 			log.error(msg);
-			throw new RuntimeException(msg);
+			throw new RuntimeException(msg, underlyingException);
 		}
 	}
-	public static void shutdownAligner(Process process, String commandline, File reference) {
+	public static void shutdownAligner(Process process, String commandline, File reference, Exception underlyingException) {
 		shutdown(process, commandline, String.format(
 				"Can you run the alignment command from the command line? "
 				+ "Is the aligner on PATH? "
 				+ "Did you build an index with prefix %s?",
-				reference));
+				reference),
+				underlyingException);
 	}
 }
