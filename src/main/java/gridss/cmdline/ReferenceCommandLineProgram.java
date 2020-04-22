@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
@@ -40,7 +41,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 		if (reference.getSequenceDictionary() == null) {
 			Path referenceFile = REFERENCE_SEQUENCE.toPath();
 			log.info("Attempting to create sequence dictionary for " + REFERENCE_SEQUENCE);
-			Path dictPath = referenceFile.resolveSibling(referenceFile.getFileName().toString() + htsjdk.samtools.util.IOUtil.DICT_FILE_EXTENSION);
+			Path dictPath = referenceFile.resolveSibling(referenceFile.getFileName().toString() + FileExtensions.DICT);
 			picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
 			csd.instanceMain(new String[] {
 				"O=" + dictPath.toFile(),
@@ -60,7 +61,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 			Path path = referenceFile.toPath().toAbsolutePath();
 			if (rsf.getSequenceDictionary() == null) {
 				log.info("Attempting to create sequence dictionary for " + referenceFile);
-				Path dictPath = path.resolveSibling(path.getFileName().toString() + htsjdk.samtools.util.IOUtil.DICT_FILE_EXTENSION);
+				Path dictPath = path.resolveSibling(path.getFileName().toString() + FileExtensions.DICT);
 				picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
 				if (program != null) {
 					CommandLineProgramHelper.copyInputs(program, csd);
