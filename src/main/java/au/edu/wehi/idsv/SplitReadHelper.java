@@ -15,6 +15,7 @@ import htsjdk.samtools.util.SequenceUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,6 +42,28 @@ public class SplitReadHelper {
 				new String(seq, StandardCharsets.US_ASCII),
 				"",
 				SAMUtils.phredToFastq(qual));
+		return fastq;
+	}
+	public static FastqRecord getAnchoringBases(SAMRecord r, EvidenceIdentifierGenerator eidgen) {
+		assert(!AssemblyAttributes.isUnanchored(r));
+		String name = eidgen.getAlignmentUniqueName(r);
+		int leftClip = SAMRecordUtil.getStartSoftClipLength(r);
+		int rightClip = SAMRecordUtil.getEndSoftClipLength(r);
+		byte[] seq = r.getReadBases().clone();
+		byte[] quals = r.getBaseQualities().clone();
+		Arrays.fill(seq, 0, leftClip, (byte)'N');
+		Arrays.fill(quals, 0, leftClip, (byte)0);
+		Arrays.fill(seq, r.getReadLength() - rightClip, r.getReadLength(), (byte)'N');
+		Arrays.fill(quals, r.getReadLength() - rightClip, r.getReadLength(), (byte)0);
+		if (r.getReadNegativeStrandFlag()) {
+			SequenceUtil.reverseComplement(seq);
+			ArrayUtils.reverse(quals);
+		}
+		FastqRecord fastq = new FastqRecord(
+				getAnchoringBasesFastqName(name),
+				new String(seq, StandardCharsets.US_ASCII),
+				"",
+				SAMUtils.phredToFastq(seq));
 		return fastq;
 	}
 	/**
@@ -250,6 +273,14 @@ public class SplitReadHelper {
 		String fastqid = alignmentUniqueName + SEPARATOR + Integer.toString(firstAlignedBaseReadOffset);
 		return fastqid;
 	}
+	public static String getAnchoringBasesFastqName(String alignmentUniqueName) {
+		String fastqid = alignmentUniqueName + SEPARATOR + 'A';
+		return fastqid;
+	}
+	public static boolean isAnchoringBasesRecord(SAMRecord r) {
+		String name = r.getReadName();
+		return name.charAt(name.length() - 1) == 'A';
+	}
 	/**
 	 * Replaces the primary alignment with one of the given alignments.
 	 * Replacement preference is given to alignments that partially overlap the originatingRecord alignment
@@ -434,5 +465,46 @@ public class SplitReadHelper {
 			SAMRecordUtil.adjustAlignmentBounds(right, rightExtend, 0);
 		}
 		return bestScore;
+	}
+
+	/**
+	 * Write the primary record with the realignment of the aligned based
+	 * @param primary primary alignment record
+	 * @param r realignment of the record with clipping masked
+	 */
+	public static void rewriteAnchor(SAMRecord primary, SAMRecord r) {
+		if (r.getReadUnmappedFlag()) {
+			primary.setMappingQuality(0);
+			return;
+		}
+		int leftClip = SAMRecordUtil.getStartSoftClipLength(primary);
+		int rightClip = SAMRecordUtil.getEndSoftClipLength(primary);
+		primary.setAttribute("OA", new ChimericAlignment(primary).toString());
+		primary.setMappingQuality(r.getMappingQuality());
+		if (primary.getReadNegativeStrandFlag() != r.getReadNegativeStrandFlag()) {
+			SequenceUtil.reverseComplement(primary.getReadBases());
+			ArrayUtils.reverse(primary.getBaseQualities());
+			primary.setReadNegativeStrandFlag(r.getReadNegativeStrandFlag());
+			int tmp = rightClip;
+			rightClip = leftClip;
+			leftClip = tmp;
+		}
+		primary.setReferenceIndex(r.getReferenceIndex());
+		primary.setAlignmentStart(r.getAlignmentStart());
+
+		List<CigarElement> ce = new ArrayList<>(r.getCigar().getCigarElements());
+		int newLeftClip = CigarUtil.getStartClipLength(ce);
+		if (newLeftClip < leftClip) {
+			int alignmentAdjustment = CigarUtil.offsetOf(new Cigar(ce), leftClip);
+			CigarUtil.trimReadBases(ce, leftClip, 0);
+			CigarUtil.addStartSoftClip(ce, leftClip);
+			primary.setAlignmentStart(r.getAlignmentStart() + alignmentAdjustment);
+		}
+		int newRightClip = CigarUtil.getEndClipLength(ce);
+		if (newRightClip < rightClip) {
+			CigarUtil.trimReadBases(ce, 0, rightClip);
+			CigarUtil.addEndSoftClip(ce, rightClip);
+		}
+		primary.setCigar(new Cigar(ce));
 	}
 }

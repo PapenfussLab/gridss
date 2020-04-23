@@ -161,7 +161,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 				}
 			}
 			// reader thread will have completed when it hits then end of the output stream
-			ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference);
+			ExternalProcessHelper.shutdownAligner(aligner, commandlinestr, reference, null);
 			log.info("External alignments complete");
 			try {
 				reader.join();

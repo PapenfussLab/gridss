@@ -24,6 +24,7 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 			boolean processSecondaryAlignments,
 			boolean realignExistingSplitReads,
 			boolean realignEntireRecord,
+			boolean realignAnchoringBases,
 			EvidenceIdentifierGenerator eidgen) {
 		this(it, new SplitReadFastqExtractor(
 				isSplit,
@@ -32,6 +33,7 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 				processSecondaryAlignments,
 				realignExistingSplitReads,
 				realignEntireRecord,
+				realignAnchoringBases,
 				eidgen));
 	}
 	

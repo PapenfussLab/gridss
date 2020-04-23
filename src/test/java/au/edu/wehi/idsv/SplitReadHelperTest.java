@@ -276,11 +276,6 @@ public class SplitReadHelperTest extends TestHelper {
 		assertEquals("polyA,1,+,3S1M,15,8;polyA,10,+,1S1M2S,17,9", supp2.getStringAttribute("SA"));
 	}
 	@Test
-	@Ignore("NYI")
-	public void convertToSplitRead_should_set_OA() {
-		throw new RuntimeException("NYI");
-	}
-	@Test
 	public void supplementary_alignments_should_have_primary_read_name() {
 		SAMRecord primary = Read(0, 1, "3S1M");
 		primary.setReadName("r");
@@ -402,5 +397,25 @@ public class SplitReadHelperTest extends TestHelper {
 		SAMRecord r = withSequence("NNAAT", Read(0, 1, "2S3M"))[0];
 		int[] distance = SplitReadHelper.getEditDistanceDelta(r, SMALL_FA, false);
 		Assert.assertArrayEquals(new int[] {1, 1, 0, 0, 1}, distance);
+	}
+	@Test
+	public void rewrite_anchor_should_updated_alignment() {
+		SAMRecord r = withSequence("AAAAATTTTTTTTTTNNNNN", Read(0, 10, "5S10M5S"))[0];
+		SAMRecord ra = onNegative(Read(1, 15, "10S4M6S"))[0];
+		SplitReadHelper.rewriteAnchor(r, ra);
+		assertEquals("10S4M6S", r.getCigarString());
+		assertEquals(15, r.getAlignmentStart());
+		assertEquals(1, (int)r.getReferenceIndex());
+		assertEquals("NNNNNAAAAAAAAAATTTTT", S(r.getReadBases()));
+		assertEquals("polyA,10,+,5S10M5S,10,0", r.getStringAttribute("OA"));
+	}
+	@Test
+	public void should_truncate_anchor_alignment_to_not_extend_past_initial_anchor() {
+		SAMRecord r = withSequence("AAAAATTTTTTTTTTNNNNN", Read(0, 10, "8S7M5S"))[0];
+		SAMRecord ra = onNegative(Read(1, 15, "1S17M2S"))[0];
+		SplitReadHelper.rewriteAnchor(r, ra);
+		assertTrue(r.getReadNegativeStrandFlag());
+		assertEquals("5S7M8S", r.getCigarString());
+		assertEquals(19, r.getAlignmentStart());
 	}
 }

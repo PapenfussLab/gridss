@@ -5,6 +5,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,7 @@ public class SplitReadFastqExtractor {
 	private final boolean processSecondaryAlignments;
 	private final boolean realignExistingSplitReads;
 	private final boolean realignEntireRecord;
+	private final boolean realignAnchoringBases;
 	private final EvidenceIdentifierGenerator eidgen;
 	public SplitReadFastqExtractor(
 			boolean isSplit,
@@ -28,6 +30,7 @@ public class SplitReadFastqExtractor {
 			boolean processSecondaryAlignments,
 			boolean realignExistingSplitReads,
 			boolean realignEntireRecord,
+			boolean realignAnchoringBases,
 			EvidenceIdentifierGenerator eidgen) {
 		this.isSplit = isSplit;
 		this.minSoftClipLength = minSoftClipLength;
@@ -35,7 +38,11 @@ public class SplitReadFastqExtractor {
 		this.processSecondaryAlignments = processSecondaryAlignments;
 		this.realignExistingSplitReads = realignExistingSplitReads;
 		this.realignEntireRecord = realignEntireRecord;
+		this.realignAnchoringBases = realignAnchoringBases;
 		this.eidgen = eidgen;
+		if (realignEntireRecord && realignAnchoringBases) {
+			throw new IllegalArgumentException("Cannot realign anchoring bases if realigning entire read");
+		}
 	}
 	public List<FastqRecord> extract(SAMRecord r) {
 		List<FastqRecord> list = new ArrayList<>(2);
@@ -43,6 +50,10 @@ public class SplitReadFastqExtractor {
 		if (!SAMRecordUtil.isSoftClipLengthAtLeast(r, minSoftClipLength)) return list;
 		if (realignEntireRecord && !isSplit && !AssemblyAttributes.isUnanchored(r)) {
 			list.add(SplitReadHelper.getFullRealignment(r, eidgen));
+			return list;
+		}
+		if (isSplit && SplitReadHelper.isAnchoringBasesRecord(r)) {
+			// don't chain realigning the anchoring bases alignments record - it's a once off
 			return list;
 		}
 		// Logic for extending an existing SA alignment not yet complete. Need to:
@@ -56,6 +67,13 @@ public class SplitReadFastqExtractor {
 			if (fqr.getReadLength() < minSoftClipLength) continue;
 			if (averageBaseQuality(fqr) < minClipQuality) continue;
 			list.add(fqr);
+		}
+		if (realignAnchoringBases && !isSplit && !AssemblyAttributes.isUnanchored(r) && list.size() > 0) {
+			// only emit the anchoring bases:
+			// - on the first pass where the anchoring bases are actually the read anchoring bases
+			// - when we actually have anchoring bases
+			// - when we have something that we might actually realign (TODO: is this the best approach?)
+			list.add(SplitReadHelper.getAnchoringBases(r, eidgen));
 		}
 		return list;
 	}

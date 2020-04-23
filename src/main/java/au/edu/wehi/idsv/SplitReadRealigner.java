@@ -34,6 +34,7 @@ public class SplitReadRealigner {
 	private boolean processSecondaryAlignments = false;
 	private boolean realignExistingSplitReads = false;
 	private boolean realignEntireRecord = false;
+	private boolean realignAnchoringBases = false;
 	private boolean adjustPrimary = false;
 	private ReferenceLookup reference = null;
 	/**
@@ -44,7 +45,7 @@ public class SplitReadRealigner {
 	 */
 	private EvidenceIdentifierGenerator eidgen = new HashedEvidenceIdentifierGenerator(); 
 	private List<File> tmpFiles = new ArrayList<>();
-	
+
 	public SplitReadRealigner(GenomicProcessingContext pc) {
 		this.pc = pc;
 		this.readerFactory = SamReaderFactory.makeDefault().referenceSequence(pc.getReferenceFile());
@@ -91,6 +92,7 @@ public class SplitReadRealigner {
 	public void setProcessSecondaryAlignments(boolean processSecondaryAlignments) {
 		this.processSecondaryAlignments = processSecondaryAlignments;
 	}
+
 	private class SplitReadRealignmentInfo {
 		@Override
 		public int hashCode() {
@@ -116,6 +118,7 @@ public class SplitReadRealigner {
 				isProcessSecondaryAlignments(),
 				isRealignExistingSplitReads(),
 				isRealignEntireRecord(),
+				isRealignAnchoringBases(),
 				eidgen);
 		SplitReadFastqExtractor recursiveExtractor = new SplitReadFastqExtractor(true,
 				minSoftClipLength,
@@ -123,6 +126,7 @@ public class SplitReadRealigner {
 				false,
 				isRealignExistingSplitReads(),
 				isRealignEntireRecord(),
+				isRealignAnchoringBases(),
 				eidgen);
 		
 		Map<String, SplitReadRealignmentInfo> realignments = new HashMap<>();
@@ -258,6 +262,17 @@ public class SplitReadRealigner {
 				SAMRecord newPrimaryAlignmentPosition = SplitReadHelper.replaceAlignment(primary, realignments, writeOA);
 				if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
 					throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
+				}
+			} else if (isRealignAnchoringBases()) {
+				// pull out the anchoring base alignment from the list and process it.
+				for (int i = 0; i < realignments.size(); i++) {
+					SAMRecord r = realignments.get(i);
+					if (SplitReadHelper.isAnchoringBasesRecord(r)) {
+						if (!r.getSupplementaryAlignmentFlag()) {
+							SplitReadHelper.rewriteAnchor(primary, r);
+						}
+						realignments.remove(i);
+					}
 				}
 			}
 			SplitReadHelper.convertToSplitRead(primary, realignments, reference, isAdjustPrimaryAlignment() || isRealignEntireRecord());
@@ -411,6 +426,7 @@ public class SplitReadRealigner {
 							!isRecursive && isProcessSecondaryAlignments(),
 							isRealignExistingSplitReads(),
 							isRealignEntireRecord(),
+							isRealignAnchoringBases(),
 							eidgen);
 					while (fastqit.hasNext()) {
 						writer.write(fastqit.next());
@@ -436,6 +452,10 @@ public class SplitReadRealigner {
 	}
 	public ReferenceLookup getReference() {
 		return reference;
+	}
+	public boolean isRealignAnchoringBases() { return this.realignAnchoringBases; }
+	public void setRealignAnchoringBases(boolean realignAnchoringBases) {
+		this.realignAnchoringBases = realignAnchoringBases;
 	}
 	public void setReference(ReferenceLookup reference) {
 		this.reference = reference;

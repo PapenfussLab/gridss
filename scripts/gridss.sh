@@ -640,7 +640,7 @@ if [[ $do_assemble == true ]] ; then
 				I=$assembly \
 				O=$tmp_prefix.sc2sr.primary.sv.bam \
 				OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
-				REALIGN_ENTIRE_READ=true \
+				REALIGN_UNANCHORED_BASES=true \
 				$picardoptions \
 		&& $timecmd samtools sort \
 				-@ $threads \

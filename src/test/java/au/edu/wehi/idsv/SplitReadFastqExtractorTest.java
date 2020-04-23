@@ -11,14 +11,14 @@ import htsjdk.samtools.fastq.FastqRecord;
 public class SplitReadFastqExtractorTest extends TestHelper {
 	@Test
 	public void should_extract_full_sequence() {
-		SplitReadFastqExtractor srfe = new SplitReadFastqExtractor(false, 1, 0, false, false, true, new StringEvidenceIdentifierGenerator());
+		SplitReadFastqExtractor srfe = new SplitReadFastqExtractor(false, 1, 0, false, false, true, false, new StringEvidenceIdentifierGenerator());
 		List<FastqRecord> result = srfe.extract(Read(0, 1, "25M75S"));
 		Assert.assertEquals(1, result.size());
 		Assert.assertEquals(100, result.get(0).getReadLength());
 	}
 	@Test
 	public void should_extract_remaining_sequence() {
-		SplitReadFastqExtractor srfe = new SplitReadFastqExtractor(false, 1, 0, false, false, true, new StringEvidenceIdentifierGenerator());
+		SplitReadFastqExtractor srfe = new SplitReadFastqExtractor(false, 1, 0, false, false, true, false, new StringEvidenceIdentifierGenerator());
 		FastqRecord fqr = srfe.extract(Read(0, 1, "25M75S")).get(0);
 		SAMRecord aligned = new SAMRecord(getHeader());
 		aligned.setReadBases(fqr.getReadBases());
@@ -27,10 +27,17 @@ public class SplitReadFastqExtractorTest extends TestHelper {
 		aligned.setReferenceIndex(0);
 		aligned.setAlignmentStart(0);
 		aligned.setCigarString("10S40M50S");
-		srfe = new SplitReadFastqExtractor(true, 1, 0, false, false, true, new StringEvidenceIdentifierGenerator());
+		srfe = new SplitReadFastqExtractor(true, 1, 0, false, false, true, false, new StringEvidenceIdentifierGenerator());
 		List<FastqRecord> result = srfe.extract(aligned);
 		Assert.assertEquals(2, result.size());
 		Assert.assertEquals(10, result.get(0).getReadLength());
 		Assert.assertEquals(50, result.get(1).getReadLength());
+	}
+	@Test
+	public void should_pad_anchor_with_N() {
+		SplitReadFastqExtractor srfe = new SplitReadFastqExtractor(false, 1, 0, false, false, false, true, new StringEvidenceIdentifierGenerator());
+		List<FastqRecord> result = srfe.extract(Read(0, 1, "1S2M3S"));
+		Assert.assertEquals(3, result.size());
+		Assert.assertEquals("NAANNN", result.get(2).getReadString());
 	}
 }

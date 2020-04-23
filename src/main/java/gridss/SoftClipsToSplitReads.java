@@ -49,6 +49,8 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     public boolean REALIGN_EXISTING_SPLIT_READS = false;
     @Argument(doc="Indicates whether to realign the entire read, or just the soft clipped bases.", optional=true)
     public boolean REALIGN_ENTIRE_READ = false;
+	@Argument(doc="Indicates whether to realign the anchoring bases.", optional=true)
+	public boolean REALIGN_ANCHORING_BASES = false;
     @Argument(doc="Indicates whether to adjust the primary alignment position if the total edit distance can be reduced by extending or contracting the primary alignment. "
     		+ "ComputeSamTags should be rerun to correct any changes in primary alignment position if this operation is performed.", optional=true)
     public boolean READJUST_PRIMARY_ALIGNMENT_POSITON = false;
@@ -80,6 +82,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
     	realigner.setRealignExistingSplitReads(REALIGN_EXISTING_SPLIT_READS);
     	realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
+		realigner.setRealignAnchoringBases(REALIGN_ANCHORING_BASES);
     	realigner.setWorkerThreads(WORKER_THREADS);
     	realigner.setReference(getReference());
     	realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITON);

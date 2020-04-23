@@ -43,7 +43,7 @@ public class CigarUtil {
 	}
 	/**
 	 * Number of indels in the given cigar
-	 * @param list
+	 * @param c
 	 * @return
 	 */
 	public static int countIndels(Cigar c) {
@@ -323,6 +323,7 @@ public class CigarUtil {
 			return currentElement.getOperator();
 		}
 	}
+
 	/**
 	 * Removes the given number of read bases from the given cigar
 	 * @param cigar CIGAR to trim
@@ -332,6 +333,10 @@ public class CigarUtil {
 	 */
 	public static Cigar trimReadBases(Cigar cigar, int startCount, int endCount) {
 		List<CigarElement> cl = Lists.newArrayList(cigar.getCigarElements());
+		trimReadBases(cl, startCount, endCount);
+		return new Cigar(cl);
+	}
+	public static void trimReadBases(List<CigarElement> cl, int startCount, int endCount) {
 		for (int i = 0; i < cl.size(); i++) {
 			CigarElement ce = cl.get(i);
 			if (!ce.getOperator().consumesReadBases()) {
@@ -363,7 +368,6 @@ public class CigarUtil {
 			}
 		}
 		clean(cl);
-		return new Cigar(cl);
 	}
 	/**
 	 * Returns the alignment offset of the given base relative to the starting alignment
