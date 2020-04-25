@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.*;
@@ -80,7 +79,6 @@ import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
-import org.junit.Test;
 import picard.analysis.InsertSizeMetrics;
 
 public class TestHelper {
@@ -178,7 +176,7 @@ public class TestHelper {
 		return SMALL_FA.getSequenceDictionary();
 	}
 
-	static public byte[] GetPolyA(int length) {
+	static public byte[] getPolyA(int length) {
 		byte[] b = new byte[length];
 		for (int i = 0; i < length; i++)
 			b[i] = 'A';
@@ -573,7 +571,7 @@ public class TestHelper {
 			targetLength = 100;
 		if (record.getReadBases() == null
 				|| record.getReadBases().length != targetLength) {
-			record.setReadBases(GetPolyA(targetLength));
+			record.setReadBases(getPolyA(targetLength));
 		}
 		if (record.getBaseQualities() == null
 				|| record.getBaseQualities().length != targetLength) {
@@ -707,7 +705,7 @@ public class TestHelper {
 		record.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
 		record.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
 		record.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
-		record.setReadBases(GetPolyA(readLength));
+		record.setReadBases(getPolyA(readLength));
 		return record;
 	}
 

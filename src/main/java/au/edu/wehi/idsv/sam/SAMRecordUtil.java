@@ -1078,7 +1078,7 @@ public class SAMRecordUtil {
 		}
 	}
 	// TODO support secondary alignments via CC, CP, HI, IH
-	private static void reinterpretAsSplitReadAlignment(List<SAMRecord> list, boolean updateSupplementary) {
+	public static void reinterpretAsSplitReadAlignment(List<SAMRecord> list, boolean updateSupplementary) {
 		if (list == null || list.isEmpty()) return;
 		if (list.size() == 1) {
 			list.get(0).setAttribute(SAMTag.SA.name(), null);
