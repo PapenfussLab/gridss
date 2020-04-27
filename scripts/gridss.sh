@@ -385,6 +385,9 @@ unset DISPLAY # Prevents errors attempting to connecting to an X server when sta
 echo "Max file handles: $(ulimit -n)" 1>&2 
 
 echo -n "$(date)	Running GRIDSS steps" 1>&2
+if [[ $do_setupreference == "true" ]] ; then
+	echo -n " setupreference," 1>&2
+fi
 if [[ $do_preprocess == "true" ]] ; then
 	echo -n " preprocess," 1>&2
 fi
@@ -421,22 +424,17 @@ fi
 
 if [[ $do_setupreference == true ]] ; then
 	if [[ ! -f ${reference}.fai ]] && [[ ! -f $(basename $reference .fa).fai ]] && [[ ! -f $(basename $reference .fasta).fai ]]  ; then
-		echo "$(date)	samtools faidx	(once-off setup)" | tee -a $timinglogfile
+		echo "$(date)	samtools faidx	(once-off setup for reference genome)" | tee -a $timinglogfile
 		$timecmd samtools faidx $reference 1>&2 2>> $logfile
 	fi
-	additional_reference_args=""
-	if [[ "$externalaligner" == true ]] ; then
-		if [[ ! -f ${reference}.bwa  ]] ; then
-			echo "$(date)	bwa index	(once-off setup)" | tee -a $timinglogfile
-			$timecmd bwa index $reference 1>&2 2>> $logfile
-		fi
-		additional_reference_args="CREATE_BWA_INDEX_IMAGE=false"
+	if [[ ! -f ${reference}.bwa  ]] ; then
+		echo "$(date)	bwa index	(once-off setup for reference genome)" | tee -a $timinglogfile
+		$timecmd bwa index $reference 1>&2 2>> $logfile
 	fi
-	echo "$(date)	PrepareReference" | tee -a $timinglogfile
+	echo "$(date)	PrepareReference	(once-off setup for reference genome)" | tee -a $timinglogfile
 	$timecmd java -Xmx4g $jvm_args \
 		-cp $gridss_jar gridss.PrepareReference \
 		REFERENCE_SEQUENCE=$reference \
-		$additional_reference_args \
 		1>&2 2>> $logfile
 fi
 exit

@@ -10,6 +10,8 @@ import org.broadinstitute.hellbender.utils.bwa.BwaMemIndex;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,19 +48,22 @@ public class BwaAligner implements Closeable {
         }
     }
 
-    public static void createBwaIndexFor(File reference) {
+    public static void createBwaIndexFor(File reference) throws IOException {
         File image = getBwaIndexFileFor(reference);
         if (!image.exists()) {
             log.warn("Unable to find " + image.toString() + ". Attempting to create.");
+            File tmpFile = File.createTempFile(image.getName() + ".tmp", ".img", image.getParentFile());
             if (BwaMemIndex.INDEX_FILE_EXTENSIONS.stream().allMatch(suffix -> new File(reference.getAbsolutePath() + suffix).exists())) {
                 log.warn("Found bwa index files. Attempting to create image from bwa index files");
                 System.err.flush();
-                BwaMemIndex.createIndexImageFromIndexFiles(reference.getAbsolutePath(), image.getAbsolutePath());
+                BwaMemIndex.createIndexImageFromIndexFiles(reference.getAbsolutePath(), tmpFile.getAbsolutePath());
+
             } else {
                 log.warn("Could not find bwa index files. Creating bwa image from reference genome. This is a one-time operation and may take several hours.");
                 System.err.flush();
-                BwaMemIndex.createIndexImageFromFastaFile(reference.getAbsolutePath(), image.getAbsolutePath());
+                BwaMemIndex.createIndexImageFromIndexFiles(reference.getAbsolutePath(), image.getAbsolutePath());
             }
+            Files.move(tmpFile.toPath(), image.toPath());
             if (image.exists()) {
                 log.info("Index creation successful");
             } else {
