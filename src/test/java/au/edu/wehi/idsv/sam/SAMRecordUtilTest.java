@@ -1258,6 +1258,20 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecordUtil.fixMates(ImmutableList.of(Lists.newArrayList(rp[0]), Lists.newArrayList(rp[1], primary)), true, true);
 		assertEquals(primary.getAlignmentStart(), rp[0].getMateAlignmentStart());
 	}
+	@Test
+	public void issue312_should_handle_multiple_overlapping_records() {
+		List<SAMRecord> list = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			list.add(Read(0, i, i + "S1M" + (10-i) + "S"));
+			list.add(Read(0, i, i + "S1M" + (10-i) + "S"));
+		}
+		list.stream().forEach(r -> {
+			r.setReadName("r");
+			r.setSupplementaryAlignmentFlag(true);
+		});
+		list.get(0).setSupplementaryAlignmentFlag(false);
+		SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of(SAMTag.SA.name()), false, false,false, true, false, false);
+	}
 }
 
 
