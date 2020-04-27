@@ -7,7 +7,7 @@ argp = add_argument(argp, "--input", help="Input GRIDSS VCF")
 argp = add_argument(argp, "--output", help="Output GRIDSS VCF")
 argp = add_argument(argp, "--repeatmasker", help="RepeatMasker .fa.out file")
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
-# argv = parse_args(argp, c("--input", "D:/hartwig/down/pre.vcf", "--output", "D:/hartwig/down/testrm.vcf","--repeatmasker", "D:/hartwig/hg19.fa.out"))
+# argv = parse_args(argp, c("--input", "test.vcf", "--output", "testout.vcf","--repeatmasker", "D:/hartwig/hg19.fa.out"))
 argv = parse_args(argp)
 
 repeat_notes = data.frame(
@@ -38,9 +38,10 @@ if (file.exists(libgridssfile)) {
   print(argp)
   stop(msg)
 }
-library(VariantAnnotation)
-library(tidyverse)
-library(stringr)
+options(tidyverse.quiet = TRUE)
+library(VariantAnnotation, quietly=TRUE)
+library(tidyverse, warn.conflicts=FALSE, quietly=TRUE)
+library(stringr, quietly=TRUE)
 
 # from http://github.com/PapenfussLab/sv_benchmark
 import.repeatmasker.fa.out <- function(repeatmasker.fa.out) {
@@ -87,7 +88,11 @@ info(vcf)$INSRMP=rep(NA_character_, nrow(info(vcf)))
 insseqgr = with(data.frame(
     sourceId=rep(names(rowRanges(vcf)), lengths(info(vcf)$BEALN)),
     BEALN=unlist(info(vcf)$BEALN)) %>%
-  separate(BEALN, sep="[:|]", into=c("chr", "start", "orientation", "cigar", "maqp")) %>%
+  separate(BEALN, sep="[|]", into=c("chrstart", "orientation", "cigar", "maqp")) %>%
+  mutate(
+    chr=str_match(chrstart, "^(.+):([0-9]+)$")[,2],
+    start=str_match(chrstart, "^(.+):([0-9]+)$")[,3]) %>%
+  dplyr::select(-chrstart) %>%
   mutate(
     start=as.integer(start),
     end=start+GenomicAlignments::cigarWidthAlongReferenceSpace(cigar)),

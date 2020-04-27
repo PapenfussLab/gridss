@@ -1497,7 +1497,7 @@ fix_parid = function(vcf) {
     row.names(info(header(vcf)))[parid_header_ordinal] = "MATEID"
     info(header(vcf))$Description[parid_header_ordinal] = "ID of mate breakends"
     info(vcf)$MATEID = parid
-    write("WARNING: MATEID header not found. Assuming VCF was generated prior to GRIDSS 2.8.0 and rewriting as MATEID.", stderr())
+    write("WARNING: MATEID header not found. Assuming VCF was generated prior to GRIDSS 2.8.0 and rewriting PARID as MATEID.", stderr())
   }
   return(vcf)
 }
