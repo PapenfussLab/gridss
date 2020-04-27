@@ -10,7 +10,7 @@ public class GKLAligner implements Aligner {
 	private final SWParameters parameters;
 
 	public GKLAligner(int match, int mismatch, int gapOpen, int gapExtend, IntelSmithWaterman isw) {
-		this.parameters = new SWParameters(match, mismatch, gapOpen, gapExtend);
+		this.parameters = new SWParameters(match, mismatch, -gapOpen, -gapExtend);
 		this.isw = isw;
 	}
 

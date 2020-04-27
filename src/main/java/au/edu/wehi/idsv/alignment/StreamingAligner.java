@@ -21,13 +21,7 @@ public interface StreamingAligner {
 	void flush() throws IOException;
 
 	/**
-	 * Returns true if there is at least one outstanding alignment completed   
-	 * @return
-	 */
-	boolean hasAlignmentRecord();
-	
-	/**
-	 * Number of fastq records that have been aligned but not yet returned by getAlignment()
+	 * Number of SAM records that have been aligned but not yet returned by getAlignment()
 	 * @return
 	 */
 	int processedAlignmentRecords();
@@ -42,7 +36,7 @@ public interface StreamingAligner {
 	 * Gets an alignment completed by the caller.
 	 * 
 	 * @return
-	 * @throws IllegalStateException thrown when no alignment record is available from the aligner. Check if a record is available using hasAlignmentRecord() 
+	 * @throws IllegalStateException thrown when no alignment record is available from the aligner. Check if a record is available using processedAlignmentRecords()
 	 */
 	SAMRecord getAlignment();
 

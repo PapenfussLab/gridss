@@ -5,8 +5,8 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.TemplateTagsIterator;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.util.*;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
@@ -22,6 +22,7 @@ import picard.cmdline.StandardOptionDefinitions;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -63,7 +64,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			SAMTag.NM.name(),
 			SAMTag.SA.name(),
 			SAMTag.R2.name(),
-			//SAMTag.Q2.name(), // dropping Q2 to improve performance
+			//SAMTag.Q2.name(), // dropping Q2 to improve runtime performance and file size
 			SAMTag.MC.name(),
 			SAMTag.MQ.name());
 	@Override
@@ -88,10 +89,31 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     				// strip sort order header so we can use samtools sorted files
     				header.setSortOrder(SortOrder.unsorted);
     			}
+				ProgressLogger progress = new ProgressLogger(log);
+				String threadPrefix = INPUT.getName() + "-";
     			try (SAMRecordIterator it = reader.iterator()) {
     				File tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.") : OUTPUT;
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY, INPUT.getName() + "-");
+						CloseableIterator<SAMRecord> asyncIn = new AsyncBufferedIterator<>(it, threadPrefix + "raw");
+						Iterator<SAMRecord> perRecord = computePerRecordFields(asyncIn, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
+						// TODO: batched parallel transform iterators are a faster option than a single thread for NM, and a single thread for all the other tags
+						CloseableIterator<SAMRecord> asyncPerRecord = new AsyncBufferedIterator<>(perRecord, threadPrefix + "nm");
+						Iterator<List<SAMRecord>> groupByFragment = TemplateTagsIterator.withGrouping(asyncPerRecord);
+						Iterator<List<SAMRecord>> perFragment = computePerFragmentFields(groupByFragment, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
+						CloseableIterator<List<SAMRecord>> asyncPerFragment = new AsyncBufferedIterator<>(perFragment, threadPrefix + "tags");
+						try {
+							while (asyncPerFragment.hasNext()) {
+								List<SAMRecord> rl = asyncPerFragment.next();
+								for (SAMRecord r : rl) {
+									writer.addAlignment(r);
+									progress.record(r);
+								}
+							}
+						} finally {
+							asyncIn.close();
+							asyncPerFragment.close();
+							asyncPerFragment.close();
+						}
     				}
     				if (tmpoutput != OUTPUT) {
     					FileHelper.move(tmpoutput, OUTPUT, true);
@@ -104,74 +126,76 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		}
     	return 0;
 	}
-	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<String> tags,
-			boolean softenHardClips,
-			boolean fixMates,
-			boolean fixDuplicates,
-		    boolean fixSA,
-		    boolean fixTruncated,
-			boolean recalculateSupplementary,
-			String threadprefix) throws IOException {
-		ProgressLogger progress = new ProgressLogger(log);
-		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, threadprefix + "raw")) {
-			Iterator<SAMRecord> it = aysncit;
-			if (tags.contains(SAMTag.NM.name()) || tags.contains(SAMTag.SA.name())) {
-				it = new AsyncBufferedIterator<SAMRecord>(it, threadprefix + "nm");
-				it = new NmTagIterator(it, reference);
-			}
-			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty() || softenHardClips) {
-				it = new TemplateTagsIterator(it, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary, tags);
-				it = new AsyncBufferedIterator<SAMRecord>(it, threadprefix + "tags");
-			}
-			while (it.hasNext()) {
-				SAMRecord r = it.next();
-				writer.addAlignment(r);
-				progress.record(r);
-			}
+
+	public static Iterator<SAMRecord> computePerRecordFields(Iterator<SAMRecord> rawIt, ReferenceLookup reference, Set<String> tags,
+																	boolean softenHardClips,
+																	boolean fixMates,
+																	boolean fixDuplicates,
+																	boolean fixSA,
+																	boolean fixTruncated,
+																	boolean recalculateSupplementary) {
+		Iterator<SAMRecord> it = rawIt;
+		if (tags.contains(SAMTag.NM.name()) || tags.contains(SAMTag.SA.name())) {
+			it = new NmTagIterator(it, reference);
 		}
+		return it;
 	}
-	private boolean isReferenceRequired() {
+	public static Iterator<List<SAMRecord>> computePerFragmentFields(Iterator<List<SAMRecord>> groupedIt, ReferenceLookup reference, Set<String> tags,
+																		   boolean softenHardClips,
+																		   boolean fixMates,
+																		   boolean fixDuplicates,
+																		   boolean fixSA,
+																		   boolean fixTruncated,
+																		   boolean recalculateSupplementary) {
+		return new TemplateTagsIterator(groupedIt, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary, tags);
+	}
+
+	protected boolean isReferenceRequired() {
 		return TAGS.contains(SAMTag.NM.name()) ||
 				TAGS.contains(SAMTag.SA.name()); // SA requires NM
 	}
-	private void validateParameters() {
+	protected void validateParameters() {
 		if (isReferenceRequired()) {
 			IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		}
     	IOUtil.assertFileIsReadable(INPUT);
     	IOUtil.assertFileIsWritable(OUTPUT);
-    	for (String t : TAGS) {
-    		try {
-    			SAMTag tag = SAMTag.valueOf(t);
-    			switch (tag) {
-        		case CC:
-        		case CP:
-        		case FI:
-        		case HI:
-        		case IH:
-        		case NM:
-        		case Q2:
-        		case R2:
-        		case MC:
-        		case MQ:
-        		case SA:
-        		case TC:
-        			break;
-    			default:
-    				String msg = String.format("%s is not a predefined standard SAM tag able to be computed with no additional information.", t); 
-    				log.error(msg);
-    				throw new RuntimeException(msg);
-        		}
-    		} catch (IllegalArgumentException e) {
-    			// ignore
-    		}
-    	}
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
-		if (isReferenceRequired() && REFERENCE_SEQUENCE == null) {
-            return new String[]{"Must have a non-null REFERENCE_SEQUENCE"};
+		if (isReferenceRequired()) {
+			if (REFERENCE_SEQUENCE == null) {
+				return new String[] { "Must have a non-null REFERENCE_SEQUENCE"};
+			}
+			if (!REFERENCE_SEQUENCE.exists()) {
+				return new String[] { "Missing REFERENCE_SEQUENCE " + REFERENCE_SEQUENCE};
+			}
         }
+		for (String t : TAGS) {
+			try {
+				SAMTag tag = SAMTag.valueOf(t);
+				switch (tag) {
+					case CC:
+					case CP:
+					case FI:
+					case HI:
+					case IH:
+					case NM:
+					case Q2:
+					case R2:
+					case MC:
+					case MQ:
+					case SA:
+					case TC:
+						break;
+					default:
+						String msg = String.format("%s is not a predefined standard SAM tag able to be computed with no additional information.", t);
+						return new String[] { msg } ;
+				}
+			} catch (IllegalArgumentException e) {
+				// ignore
+			}
+		}
 		return super.customCommandLineValidation();
 	}
 	public static void main(String[] argv) {

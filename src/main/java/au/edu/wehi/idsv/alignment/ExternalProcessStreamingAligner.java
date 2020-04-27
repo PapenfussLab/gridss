@@ -85,63 +85,8 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 			reader.start();
 		}
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#flush()
-	 */
 	@Override
 	public void flush() throws IOException {
-		close();
-	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#hasAlignmentRecord()
-	 */
-	@Override
-	public boolean hasAlignmentRecord() {
-		return buffer.size() > 0;
-	}
-	@Override
-	public int processedAlignmentRecords() {
-		return buffer.size();
-	}
-	@Override
-	public int outstandingAlignmentRecord() {
-		return outstandingReads.get();
-	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#getAlignment()
-	 */
-	@Override
-	public SAMRecord getAlignment() {
-		if (!hasAlignmentRecord()) {
-			throw new IllegalStateException("No alignments available. getAlignment() should only be called if at least one alignment record is available.");
-		}
-		SAMRecord r = buffer.poll();
-		if (r == null) {
-			throw new IllegalStateException("Empty buffer after flushing.");
-		}
-		return r;
-	}
-	private void readAllAlignments(final SamReaderFactory readerFactory) {
-		SamReader fromExternalProgram = readerFactory.open(SamInputResource.of(aligner.getInputStream()));
-		SAMRecordIterator it = fromExternalProgram.iterator();
-		while (it.hasNext()) {
-			SAMRecord r = it.next();
-			if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
-				if (!MessageThrottler.Current.shouldSupress(log, "strreaming aligner out of bounds")) {
-					log.warn(String.format("Streamed aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
-				}
-			}
-			buffer.add(r);
-			outstandingReads.decrementAndGet();
-		}
-		log.info(String.format("Reader thread complete. %s reads in output buffer", buffer.size()));
-	}
-	/**
-	 * Flushes outstanding alignments and closes the pipe to the external aligner.
-	 * Alignment records returned by the aligner are still available after closing.
-	 */
-	@Override
-	public synchronized void close() throws IOException {
 		if (aligner != null) {
 			log.info("Waiting for external aligner to complete all alignments.");
 			toExternalProgram.flush();
@@ -172,6 +117,48 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		aligner = null;
 		reader = null;
 		toExternalProgram = null;
+	}
+	@Override
+	public int processedAlignmentRecords() {
+		return buffer.size();
+	}
+	@Override
+	public int outstandingAlignmentRecord() {
+		return outstandingReads.get();
+	}
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#getAlignment()
+	 */
+	@Override
+	public SAMRecord getAlignment() {
+		SAMRecord r = buffer.poll();
+		if (r == null) {
+			throw new IllegalStateException("No alignments available. getAlignment() should only be called if at least one alignment record is available.");
+		}
+		return r;
+	}
+	private void readAllAlignments(final SamReaderFactory readerFactory) {
+		SamReader fromExternalProgram = readerFactory.open(SamInputResource.of(aligner.getInputStream()));
+		SAMRecordIterator it = fromExternalProgram.iterator();
+		while (it.hasNext()) {
+			SAMRecord r = it.next();
+			if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
+				if (!MessageThrottler.Current.shouldSupress(log, "strreaming aligner out of bounds")) {
+					log.warn(String.format("Streamed aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
+				}
+			}
+			buffer.add(r);
+			outstandingReads.decrementAndGet();
+		}
+		log.info(String.format("Reader thread complete. %s reads in output buffer", buffer.size()));
+	}
+	/**
+	 * Flushes outstanding alignments and closes the pipe to the external aligner.
+	 * Alignment records returned by the aligner are still available after closing.
+	 */
+	@Override
+	public synchronized void close() throws IOException {
+		flush();
 		isClosed.set(true);
 	}
 

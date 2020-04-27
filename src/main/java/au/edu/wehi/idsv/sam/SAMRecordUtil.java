@@ -18,6 +18,7 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Ints;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
@@ -1758,6 +1759,21 @@ public class SAMRecordUtil {
 		}
 		return out;
 	}
+
+	public static SAMRecord createSAMRecord(SAMFileHeader header, FastqRecord fq, boolean reverseComp) {
+		SAMRecord r = new SAMRecord(header);
+		byte[] seq = fq.getReadBases();
+		byte[] qual = fq.getBaseQualities();
+		if (reverseComp) {
+			SequenceUtil.reverseComplement(seq);
+			ArrayUtils.reverse(qual);
+		}
+		r.setReadName(fq.getReadName());
+		r.setReadBases(seq);
+		r.setBaseQualities(qual);
+		return r;
+	}
+
 	private static final Ordering<SAMRecord> ByFirstAlignedBaseReadOffset = new Ordering<SAMRecord>() {
 		public int compare(SAMRecord arg1, SAMRecord arg2) {
 			return Ints.compare(getFirstAlignedBaseReadOffset(arg1), getFirstAlignedBaseReadOffset(arg2));

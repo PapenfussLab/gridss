@@ -116,7 +116,7 @@ public class BwaAligner implements Closeable {
     public List<SAMRecord> transform(FastqRecord fq, List<BwaMemAlignment> bma) {
         List<SAMRecord> result = new ArrayList<>(bma.size() == 0 ? 1 : bma.size());
         if (bma.size() == 0 || bma.get(0).getRefId() == -1) {
-            SAMRecord r = createSAMRecord(fq, false);
+            SAMRecord r = SAMRecordUtil.createSAMRecord(header, fq, false);
             r.setReadUnmappedFlag(true);
             result.add(r);
         } else {
@@ -128,21 +128,9 @@ public class BwaAligner implements Closeable {
         }
         return  result;
     }
-    private SAMRecord createSAMRecord(FastqRecord fq, boolean reverseComp) {
-        SAMRecord r = new SAMRecord(header);
-        byte[] seq = fq.getReadBases();
-        byte[] qual = fq.getBaseQualities();
-        if (reverseComp) {
-            SequenceUtil.reverseComplement(seq);
-            ArrayUtils.reverse(qual);
-        }
-        r.setReadName(fq.getReadName());
-        r.setReadBases(seq);
-        r.setBaseQualities(qual);
-        return r;
-    }
+
     private SAMRecord createAlignment(FastqRecord fq, BwaMemAlignment alignment) {
-        SAMRecord r = createSAMRecord(fq, (alignment.getSamFlag() & SAMFlag.READ_REVERSE_STRAND.intValue()) != 0);
+        SAMRecord r = SAMRecordUtil.createSAMRecord(header, fq, (alignment.getSamFlag() & SAMFlag.READ_REVERSE_STRAND.intValue()) != 0);
 
         r.setFlags(alignment.getSamFlag());
         r.setReferenceIndex(alignment.getRefId());

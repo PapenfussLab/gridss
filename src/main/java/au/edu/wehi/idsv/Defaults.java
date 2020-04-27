@@ -25,7 +25,7 @@ public class Defaults {
 		SANITY_CHECK_MEMOIZATION_ALL_OPERATIONS = Boolean.valueOf(System.getProperty("sanitycheck.memoization.alloperations", "false"));
 		SINGLE_THREAD_LIBSSW = Boolean.valueOf(System.getProperty("sswjni.sync", "false"));
 		NO_LIBSSW = Boolean.valueOf(System.getProperty("sswjni.disable", "false"));
-		NO_LIBGKL = Boolean.valueOf(System.getProperty("gkljni.disable", "false"));
+		NO_LIBGKL = Boolean.valueOf(System.getProperty("gkljni.disable", "true"));
 		ASYNC_CACHE_REFERENCE = !Boolean.valueOf(System.getProperty("reference.loading.sync", "false"));
 		CACHE_REFERENCE = !Boolean.valueOf(System.getProperty("reference.cache", "true"));
 		ATTEMPT_ASSEMBLY_RECOVERY = Boolean.valueOf(System.getProperty("assembly.recover", "true"));

@@ -1,8 +1,12 @@
 package au.edu.wehi.idsv.sam;
 
+import au.edu.wehi.idsv.debruijn.positional.MemoizedTraverse;
+import au.edu.wehi.idsv.util.GroupingIterator;
+import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Ordering;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 import java.util.*;
 
@@ -12,18 +16,18 @@ import java.util.*;
  * @author Daniel Cameron
  *
  */
-public class TemplateTagsIterator implements Iterator<SAMRecord> {
+public class TemplateTagsIterator implements Iterator<List<SAMRecord>> {
+	private static final Log log = Log.getInstance(TemplateTagsIterator.class);
 	private final Set<String> tags;
-	private final PeekingIterator<SAMRecord> it;
+	private final Iterator<List<SAMRecord>> it;
 	private final boolean softenHardClips;
 	private final boolean fixMates;
 	private final boolean fixDuplicates;
 	private final boolean fixSA;
 	private final boolean fixTruncated;
 	private final boolean recalculateSupplementary;
-	private final Queue<SAMRecord> queue = new ArrayDeque<>();
 
-	public TemplateTagsIterator(Iterator<SAMRecord> it, boolean softenHardClips, boolean fixMates, boolean fixDuplicates, boolean fixSA, boolean fixTruncated, boolean recalculateSupplementary, Set<String> tags) {
+	public TemplateTagsIterator(Iterator<List<SAMRecord>> it, boolean softenHardClips, boolean fixMates, boolean fixDuplicates, boolean fixSA, boolean fixTruncated, boolean recalculateSupplementary, Set<String> tags) {
 		this.it = Iterators.peekingIterator(it);
 		this.softenHardClips = softenHardClips;
 		this.fixMates = fixMates;
@@ -33,32 +37,25 @@ public class TemplateTagsIterator implements Iterator<SAMRecord> {
 		this.recalculateSupplementary = recalculateSupplementary;
 		this.tags = tags;
 	}
-	private void ensureQueue() {
-		if (!queue.isEmpty()) return;
-		List<SAMRecord> records = new ArrayList<>();
-		if (it.hasNext()) {
-			String readname = it.peek().getReadName();
-			if (readname == null) {
-				queue.add(it.next());
-			} else {
-				while (readname != null && it.hasNext() && readname.equals(it.peek().getReadName())) {
-					records.add(it.next());
-				}
-				SAMRecordUtil.calculateTemplateTags(records, tags, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary);
-				queue.addAll(records);
-			}
-		}
-	}
-	@Override
-	public boolean hasNext() {
-		ensureQueue();
-		return !queue.isEmpty();
-	}
-	
-	@Override
-	public SAMRecord next() {
-		ensureQueue();
-		return queue.poll();
+
+	public static Iterator<List<SAMRecord>> withGrouping(Iterator<SAMRecord> it) {
+		return new GroupingIterator(it, Ordering.natural().onResultOf((SAMRecord r) -> r.getReadName()));
 	}
 
+	@Override
+	public boolean hasNext() {
+		return it.hasNext();
+	}
+
+	@Override
+	public List<SAMRecord> next() {
+		List<SAMRecord> records = it.next();
+		if (records.size() > 16) {
+			if (!MessageThrottler.Current.shouldSupress(log, "many read alignments")) {
+				log.warn(String.format("Found %d records with read name \"%s\". GRIDSS requires read names be unique", records.size(), records.get(0).getReadName()));
+			}
+		}
+		SAMRecordUtil.calculateTemplateTags(records, tags, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary);
+		return records;
+	}
 }

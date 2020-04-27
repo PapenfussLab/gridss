@@ -1,7 +1,10 @@
 package gridss;
 
 import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.IterativeSplitReadRealigner;
 import au.edu.wehi.idsv.SplitReadRealigner;
+import au.edu.wehi.idsv.StreamingSplitReadRealigner;
+import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
 import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import com.google.common.collect.ImmutableList;
@@ -60,6 +63,10 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
+	@Argument(doc="Which aligner to use. GRIDSS supports in-process BWA alignment, as well as external aligners", optional=true)
+	public Aligner ALIGNER = Aligner.EXTERNAL;
+	@Argument(doc="Number of records to buffer when performing in-process or streaming alignment. Not applicable when performing external alignment.", optional=true)
+	public int ALIGNER_BATCH_SIZE = MAX_RECORDS_IN_RAM;
     @Argument(doc="Directly pipe the input and output of the aligner instead of writing to intermediate files."
 			+ " The aligner must support using \"-\" as the input filename when reading from stdin."
 			+ " The sort order of the input file will not be retained.", optional=true)
@@ -68,6 +75,14 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
     public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
+	/**
+	 * Which aligner to perform the alignment with
+	 */
+	public enum Aligner {
+    	BWAMEM,
+		EXTERNAL,
+	}
+
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -76,29 +91,37 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
     	pc.setCommandLineProgram(this);
     	pc.setFilterDuplicates(IGNORE_DUPLICATES);
-    	SplitReadRealigner realigner = new SplitReadRealigner(pc);
-    	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
-    	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
-    	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
-    	realigner.setRealignExistingSplitReads(REALIGN_EXISTING_SPLIT_READS);
-    	realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
-		realigner.setRealignAnchoringBases(REALIGN_ANCHORING_BASES);
-    	realigner.setWorkerThreads(WORKER_THREADS);
-    	realigner.setReference(getReference());
-    	realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITON);
+    	SplitReadRealigner realigner;
     	try {
     		SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
         	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
-        	
-        	if (ALIGNER_STREAMING) {
-        		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS, getReference().getSequenceDictionary());
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS, WRITE_OA, MAX_RECORDS_IN_RAM);
-        	} else {
-        		ExternalProcessFastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
-        		realigner.createSupplementaryAlignments(aligner, INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS, WRITE_OA);
-        	}
-    		
-    		
+        	switch (ALIGNER) {
+				case BWAMEM:
+					BwaStreamingAligner bwaAligner = new BwaStreamingAligner(REFERENCE_SEQUENCE, getReference().getSequenceDictionary(), WORKER_THREADS, ALIGNER_BATCH_SIZE * 150);
+					realigner = new StreamingSplitReadRealigner(pc, bwaAligner, ALIGNER_BATCH_SIZE);
+					break;
+				case EXTERNAL:
+				default:
+					if (ALIGNER_STREAMING) {
+						ExternalProcessStreamingAligner streamingAligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS, getReference().getSequenceDictionary());
+						realigner = new StreamingSplitReadRealigner(pc, streamingAligner, ALIGNER_BATCH_SIZE);
+					} else {
+						ExternalProcessFastqAligner externalAligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
+						realigner = new IterativeSplitReadRealigner(pc, externalAligner);
+					}
+					break;
+			}
+			realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
+			realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
+			realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
+			realigner.setRealignExistingSplitReads(REALIGN_EXISTING_SPLIT_READS);
+			realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
+			realigner.setRealignAnchoringBases(REALIGN_ANCHORING_BASES);
+			realigner.setWorkerThreads(WORKER_THREADS);
+			realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITON);
+			realigner.setWriteOATag(WRITE_OA);
+
+			realigner.createSupplementaryAlignments(INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS);
 		} catch (IOException e) {
 			log.error(e);
 			return -1;
@@ -113,10 +136,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			IOUtil.assertFileIsWritable(OUTPUT_UNORDERED_RECORDS);
 		}
 	}
-	@Override
-	protected String[] customCommandLineValidation() {
-		return super.customCommandLineValidation();
-	}
+
 	public static void main(String[] argv) {
         System.exit(new SoftClipsToSplitReads().instanceMain(argv));
     }

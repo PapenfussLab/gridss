@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import au.edu.wehi.idsv.util.UngroupingIterator;
 import gridss.ComputeSamTags;
 import gridss.SanityCheckEvidence;
 import htsjdk.samtools.*;
@@ -1219,7 +1220,9 @@ public class SAMRecordUtilTest extends TestHelper {
 		SynchronousReferenceLookupAdapter reflookup = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref));
 		File input = new File("src/test/resources/sanity_failure_debug/bl21_de3_.ASM956v1_S2.bam");
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(input.getParentFile(), input.getParentFile(), SAMFileWriterImpl.getDefaultMaxRecordsInRam()), ref, reflookup, null, getConfig());
-		List<SAMRecord> results = Lists.newArrayList(new TemplateTagsIterator(Lists.newArrayList(getRecords(input)).iterator(), true, true, true, true, true, true, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name())));
+		List<SAMRecord> results = Lists.newArrayList(new UngroupingIterator<>(new TemplateTagsIterator(
+				TemplateTagsIterator.withGrouping(getRecords(input).iterator()),
+				true, true, true, true, true, true, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()))));
 		List<SAMRecord> primary = results.stream().filter(r -> !r.isSecondaryOrSupplementary()).collect(Collectors.toList());
 		assertEquals(primary.get(0).getCigarString(), primary.get(1).getStringAttribute("MC"));
 		assertEquals(primary.get(1).getCigarString(), primary.get(0).getStringAttribute("MC"));

@@ -393,6 +393,19 @@ public class SplitReadHelperTest extends TestHelper {
 		Assert.assertEquals("4S5M", right.getCigarString());
 	}
 	@Test
+	public void adjustSplitLocationToMinimiseEditDistance_should_not_shift_optimal_alignments() {
+		String seq = S(RANDOM).substring(0, 50) + S(RANDOM).substring(75, 100) + S(RANDOM).substring(150, 175);
+		SAMRecord r1 = Read(2, 1, "50M50S");
+		SAMRecord r2 = Read(2, 76, "50S25M25S");
+		SAMRecord r3 = Read(2, 151, "75S25M");
+		r1.setReadBases(B(seq));
+		r2.setReadBases(B(seq));
+		r3.setReadBases(B(seq));
+		assertEquals(0, SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(r1, r2, SMALL_FA));
+		assertEquals(0, SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(r2, r3, SMALL_FA));
+		assertEquals(0, SplitReadHelper.adjustSplitLocationToMinimiseEditDistance(r1, r3, SMALL_FA));
+	}
+	@Test
 	public void getEditDistanceDelta_should_force_mismatch_outside_of_chr_bounds() {
 		SAMRecord r = withSequence("NNAAT", Read(0, 1, "2S3M"))[0];
 		int[] distance = SplitReadHelper.getEditDistanceDelta(r, SMALL_FA, false);

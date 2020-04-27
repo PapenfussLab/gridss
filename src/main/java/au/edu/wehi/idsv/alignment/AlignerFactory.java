@@ -17,12 +17,11 @@ public class AlignerFactory {
 	private static final Aligner defaultAligner;
 	private static boolean sswjniLoaded;
 	private static final IntelSmithWaterman isw;
-
 	static {
     	File tmpDir = new File(System.getProperty("java.io.tmpdir"));
     	log.debug("Loading Intel GKL library");
 		IntelSmithWaterman initialisingIsw = new IntelSmithWaterman();
-		if (!Defaults.NO_LIBGKL || !initialisingIsw.load(tmpDir)) {
+		if (Defaults.NO_LIBGKL || !initialisingIsw.load(tmpDir)) {
 			initialisingIsw = null;
 		} else {
 			try {
@@ -113,4 +112,6 @@ public class AlignerFactory {
 	public static Aligner create() {
 		return defaultAligner;
 	}
+
+	public static boolean isSswjniLoaded() { return sswjniLoaded; }
 }
