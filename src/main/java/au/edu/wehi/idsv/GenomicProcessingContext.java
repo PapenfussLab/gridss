@@ -55,7 +55,7 @@ public class GenomicProcessingContext implements Closeable {
 		this.fsContext = fileSystemContext;
 		this.referenceFile = referenceFile;
 		if (this.referenceFile != null) {
-			ReferenceCommandLineProgram.ensureSequenceDictionary(referenceFile, program);
+			ReferenceCommandLineProgram.ensureSequenceDictionary(referenceFile);
 		}
 		if (reference == null) {
 			this.reference = LoadSynchronizedReference(referenceFile);
@@ -100,11 +100,16 @@ public class GenomicProcessingContext implements Closeable {
 				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Allocate more heap memory to the JVM..");
 				throw new RuntimeException("Not enough memory to cache reference fasta.");
 			}
-			File cacheFile = new File(referenceFile.getAbsolutePath() + ".gridsscache");
+			File cacheFile = getGridssCacheFileForReference(referenceFile);
 			return new TwoBitBufferedReferenceSequenceFile(underlying, cacheFile);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Unabled load fasta " + referenceFile, e);
 		}
+	}
+
+	public static File getGridssCacheFileForReference(File reference) {
+		File cacheFile = new File(reference.getAbsolutePath() + ".gridsscache");
+		return cacheFile;
 	}
 
 	protected void BackgroundCacheReference(final File ref) {

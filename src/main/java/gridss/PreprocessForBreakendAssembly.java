@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 )
 public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(PreprocessForBreakendAssembly.class);
+	@Argument(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
 	public int MIN_CLIP_LENGTH = 15;
 	@Argument(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
 	public float MIN_CLIP_QUAL = 5;
@@ -80,7 +81,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 				return new String[]{"TAGS must contain " + tag.name()};
 			}
 		}
-		return new String[]{};
+		return super.customCommandLineValidation();
 	}
 
 	@Override
@@ -90,6 +91,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		// validate parameters
 		IOUtil.assertFileIsReadable(INPUT);
 		IOUtil.assertFileIsWritable(OUTPUT);
+		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		// set up
 		ComputeSamTags cst = new ComputeSamTags();
 		copyInputs(cst);
@@ -105,7 +107,6 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		cst.FIX_MISSING_HARD_CLIP = true;
 		cst.RECALCULATE_SA_SUPPLEMENTARY = true;
 		cst.WORKING_DIR = WORKING_DIR;
-		cst.validateParameters();
 
 		GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
 		StreamingSplitReadRealigner realigner;

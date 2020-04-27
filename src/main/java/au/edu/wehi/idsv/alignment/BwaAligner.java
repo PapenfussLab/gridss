@@ -1,22 +1,18 @@
 package au.edu.wehi.idsv.alignment;
 
-import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SequenceUtil;
-import org.apache.commons.lang3.ArrayUtils;
 import org.broadinstitute.hellbender.utils.bwa.BwaMemAligner;
 import org.broadinstitute.hellbender.utils.bwa.BwaMemAlignment;
 import org.broadinstitute.hellbender.utils.bwa.BwaMemIndex;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -50,8 +46,8 @@ public class BwaAligner implements Closeable {
         }
     }
 
-    public static BwaMemIndex getBwaIndexFor(File reference) {
-        File image = new File(reference.getAbsolutePath() + BwaMemIndex.IMAGE_FILE_EXTENSION);
+    public static void createBwaIndexFor(File reference) {
+        File image = getBwaIndexFileFor(reference);
         if (!image.exists()) {
             log.warn("Unable to find " + image.toString() + ". Attempting to create.");
             if (BwaMemIndex.INDEX_FILE_EXTENSIONS.stream().allMatch(suffix -> new File(reference.getAbsolutePath() + suffix).exists())) {
@@ -71,6 +67,15 @@ public class BwaAligner implements Closeable {
                 throw new RuntimeException(msg);
             }
         }
+    }
+
+    public static File getBwaIndexFileFor(File reference) {
+        File image = new File(reference.getAbsolutePath() + BwaMemIndex.IMAGE_FILE_EXTENSION);
+        return image;
+    }
+
+    public static BwaMemIndex getBwaIndexFor(File reference) {
+        File image = getBwaIndexFileFor(reference);
         log.info("Loading bwa mem index image from " + image);
         System.err.flush(); // ensure our warning error message gets to the console as we're possible about to die in C code
         BwaMemIndex index = new BwaMemIndex(image.getAbsolutePath());

@@ -129,7 +129,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     public static void ensureIndexed(File fa) throws IOException {
     	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
     		if (!reference.isIndexed()) {
-    			String msg = String.format("Unable to find index for %1$s. Please run 'samtools faidx %1$s' or picard tools BuildBamIndex to generate an index file.", fa);
+    			String msg = String.format("Unable to find index for %1$s. Please run 'samtools faidx %1$s' to generate an index file.", fa);
     			log.error(msg);
     			throw new IOException(msg);
     		} else {
@@ -183,7 +183,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	ExecutorService threadpool = null;
     	try {
     		ensureIndexed(REFERENCE_SEQUENCE);
-    		ensureSequenceDictionary(REFERENCE_SEQUENCE, this);
+    		ensureSequenceDictionary(REFERENCE_SEQUENCE);
     		ensureDictionariesMatch();
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
     		threadpool = Executors.newFixedThreadPool(getContext().getWorkerThreadCount(), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());

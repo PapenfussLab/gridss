@@ -29,7 +29,7 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	public ReferenceLookup getReference() {
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		if (reference == null) {
-			ensureSequenceDictionary(REFERENCE_SEQUENCE, this);
+			ensureSequenceDictionary(REFERENCE_SEQUENCE);
 			try {
 				reference = new TwoBitBufferedReferenceSequenceFile(new IndexedFastaSequenceFile(REFERENCE_SEQUENCE));
 			} catch (FileNotFoundException e) {
@@ -38,43 +38,30 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 				throw new RuntimeException(msg);
 			}
 		}
-		if (reference.getSequenceDictionary() == null) {
-			Path referenceFile = REFERENCE_SEQUENCE.toPath();
-			log.info("Attempting to create sequence dictionary for " + REFERENCE_SEQUENCE);
-			Path dictPath = referenceFile.resolveSibling(referenceFile.getFileName().toString() + FileExtensions.DICT);
-			picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
-			csd.instanceMain(new String[] {
-				"O=" + dictPath.toFile(),
-				"R=" + REFERENCE_SEQUENCE.getPath()
-			});
-		}
 		return reference;
 	}
 	/**
 	 * Ensures that a sequence dictionary exists for the given reference
 	 * @param referenceFile reference genome fasta
-	 * @param program invoking program
+	 * @return true if a sequence dictionary was found, false if it had to be created
 	 */
-	public static void ensureSequenceDictionary(File referenceFile, CommandLineProgram program) {
-		try {
-			ReferenceSequenceFile rsf = new FastaSequenceFile(referenceFile, false);
+	public static boolean ensureSequenceDictionary(File referenceFile) {
+		try (ReferenceSequenceFile rsf = new FastaSequenceFile(referenceFile, false)) {
 			Path path = referenceFile.toPath().toAbsolutePath();
 			if (rsf.getSequenceDictionary() == null) {
 				log.info("Attempting to create sequence dictionary for " + referenceFile);
 				Path dictPath = path.resolveSibling(path.getFileName().toString() + FileExtensions.DICT);
 				picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
-				if (program != null) {
-					CommandLineProgramHelper.copyInputs(program, csd);
-				}
-				csd.instanceMain(new String[] {
-					"OUTPUT=" + dictPath.toFile(),
-					"R=" + referenceFile.getPath()
+				csd.instanceMain(new String[]{
+						"OUTPUT=" + dictPath.toFile(),
+						"R=" + referenceFile.getPath()
 				});
+				return true;
 			}
-			rsf.close();
 		} catch (Exception e) {
 			log.error("Sequence dictionary creation failed. Please create using picard CreateSequenceDictionary.", e);
 		}
+		return false;
 	}
 	public void setReference(ReferenceLookup ref) {
 		this.reference = ref;

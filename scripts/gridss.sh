@@ -2,7 +2,7 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.7.3-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
+# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.9.0-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -27,7 +27,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	-j/--jar: location of GRIDSS jar
 	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. Defaults to the current directory.
 	-b/--blacklist: BED file containing regions to ignore
-	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators
+	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Possible steps are: setupreference, preprocess, assemble, call, all
 	-c/--configuration: configuration file use to override default GRIDSS settings.
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS
@@ -38,7 +38,6 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. Default: 0.995
 	--keepTempFiles: keep intermediate files. Not recommended except for debugging due to the high disk usage.
 	"
-
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
 LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner
@@ -163,14 +162,18 @@ while true; do
             ;;
     esac
 done
+do_setupreference=false
 do_preprocess=false
 do_assemble=false
 do_call=false
 for step in $(echo $steps | tr ',' ' ' ) ; do
 	if [[ "$step" == "all" ]] ; then
+		do_setupreference=true
 		do_preprocess=true
 		do_assemble=true
 		do_call=true
+	elif [[ "$step" == "setupreference" ]] ; then
+		do_setupreference=true
 	elif [[ "$step" == "preprocess" ]] ; then
 		do_preprocess=true
 	elif [[ "$step" == "assemble" ]] ; then
@@ -223,18 +226,6 @@ if [ ! -f $reference ] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing reference genome $reference. Specify reference location using the --reference command line argument" 1>&2
 	exit 6
-fi
-if [[ ! -f ${reference}.fai ]] && [[ ! -f $(basename $reference .fa).fai ]] && [[ ! -f $(basename $reference .fasta).fai ]]  ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Unable to find fai index for reference genome." 1>&2
-	echo "Please create using `samtools faidx $reference`" 1>&2
-	exit 7
-fi
-if [[ ! -f ${reference}.bwt  ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Unable to find bwa index ${reference}.bwt for reference genome." 1>&2
-	echo "Please create using bwa index $reference" 1>&2
-	exit 8
 fi
 
 ##### --assembly
@@ -339,7 +330,7 @@ if [[ "$labels" != "" ]] ; then
 fi
 
 # Validate tools exist on path
-for tool in bwa Rscript samtools java ; do
+for tool in Rscript samtools java ; do
 	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
 	echo "Found $(which $tool)" 1>&2 
 done
@@ -352,7 +343,10 @@ else
 fi
 samtools --version-only 1>&2 || ( echo "Your samtools version is so old it does not support --version-only. Update samtools." 1>&2 && exit 19 )
 Rscript --version 1>&2
-echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
+if [[ "$externalaligner" == "true" ]] ; then
+	if ! which bwa >/dev/null; then echo "Error: unable to find bwa on \$PATH" 1>&2 ; exit 2; fi
+	echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
+fi
 if which /usr/bin/time >/dev/null ; then
 	/usr/bin/time --version 1>&2
 fi
@@ -425,6 +419,27 @@ if [[ "$useproperpair" == "true" ]] ; then
 	readpairing_args="READ_PAIR_CONCORDANT_PERCENT=null"
 fi
 
+if [[ $do_setupreference == true ]] ; then
+	if [[ ! -f ${reference}.fai ]] && [[ ! -f $(basename $reference .fa).fai ]] && [[ ! -f $(basename $reference .fasta).fai ]]  ; then
+		echo "$(date)	samtools faidx	(once-off setup)" | tee -a $timinglogfile
+		$timecmd samtools faidx $reference 1>&2 2>> $logfile
+	fi
+	additional_reference_args=""
+	if [[ "$externalaligner" == true ]] ; then
+		if [[ ! -f ${reference}.bwa  ]] ; then
+			echo "$(date)	bwa index	(once-off setup)" | tee -a $timinglogfile
+			$timecmd bwa index $reference 1>&2 2>> $logfile
+		fi
+		additional_reference_args="CREATE_BWA_INDEX_IMAGE=false"
+	fi
+	echo "$(date)	PrepareReference" | tee -a $timinglogfile
+	$timecmd java -Xmx4g $jvm_args \
+		-cp $gridss_jar gridss.PrepareReference \
+		REFERENCE_SEQUENCE=$reference \
+		$additional_reference_args \
+		1>&2 2>> $logfile
+fi
+exit
 
 if [[ $do_preprocess == true ]] ; then
 	if [[ "$jobnodes" != "1" ]] ; then
@@ -571,7 +586,7 @@ if [[ $do_preprocess == true ]] ; then
 						I=$tmp_prefix.namedsorted.bam \
 						O=/dev/stdout \
 						WORKER_THREADS=$threads \
-						ALIGNER=BWAMEM
+						ALIGNER=BWAMEM \
 						ALIGNER_BATCH_SIZE=10000 \
 						$picardoptions \
 				&& $timecmd samtools sort \

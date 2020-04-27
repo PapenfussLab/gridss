@@ -18,7 +18,7 @@ public class ReferenceCommandLineProgramTest extends IntermediateFilesTest {
 		File dict = testFolder.newFile("test.fa.dict");
 		dict.delete();
 		Files.copy(SMALL_FA_FILE, fa);
-		ReferenceCommandLineProgram.ensureSequenceDictionary(fa, null);
+		ReferenceCommandLineProgram.ensureSequenceDictionary(fa);
 		assertTrue(dict.exists());
 	}
 }

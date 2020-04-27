@@ -22,15 +22,14 @@ public class BwaAlignerTest extends TestHelper {
         return hits.stream().filter(x -> x.getReadName().equals(readname)).collect(Collectors.toList());
     }
     @Test
-    public void should_lazily_create_index_from_reference() throws IOException {
+    public void should_create_index_from_reference() throws IOException {
         TemporaryFolder testFolder = new TemporaryFolder();
         try {
             testFolder.create();
             FileUtils.copyFileToDirectory(new File("src/test/resources/small.fa"), testFolder.getRoot());
             File ref = new File(testFolder.getRoot(), "small.fa");
             File image = new File(testFolder.getRoot(), "small.fa.img");
-            try (BwaAligner ba = new BwaAligner(ref, SMALL_FA.getSequenceDictionary(), 2)) {
-            }
+            BwaAligner.createBwaIndexFor(ref);
             assertTrue(image.exists());
         } finally {
             testFolder.delete();
@@ -49,8 +48,7 @@ public class BwaAlignerTest extends TestHelper {
             FileUtils.copyFileToDirectory(new File("src/test/resources/small.fa.sa"), testFolder.getRoot());
             File ref = new File(testFolder.getRoot(), "small.fa");
             File image = new File(testFolder.getRoot(), "small.fa.img");
-            try (BwaAligner ba = new BwaAligner(ref, SMALL_FA.getSequenceDictionary(), 2)) {
-            }
+            BwaAligner.createBwaIndexFor(ref);
             assertTrue(image.exists());
         } finally {
             testFolder.delete();
