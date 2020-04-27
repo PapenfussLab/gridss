@@ -378,6 +378,8 @@ if [[ "$timecmd" != "" ]] ; then
 		timecmd=""
 		echo "Unexpected /usr/bin/time version. Not logging timing information." 1>&2
 	fi
+	# We don't need the echo to be written to our timing log file
+	rm -f $timinglogfile
 fi
 
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
