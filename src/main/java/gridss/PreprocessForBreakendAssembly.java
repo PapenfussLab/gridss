@@ -38,13 +38,13 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 	public int MIN_CLIP_LENGTH = 15;
 	@Argument(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
 	public float MIN_CLIP_QUAL = 5;
-	@Argument(doc="Which aligner to use. GRIDSS supports in-process BWA alignment, as well as external aligners", optional=true)
+	@Argument(doc="Which in-process aligner to use.", optional=true)
 	public SoftClipsToSplitReads.Aligner ALIGNER = SoftClipsToSplitReads.Aligner.BWAMEM;
 	@Argument(doc="Number of records to buffer when performing in-process or streaming alignment. Not applicable when performing external alignment.", optional=true)
 	public int ALIGNER_BATCH_SIZE = 10000;
 	@Argument(shortName= StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
 	public File INPUT;
-	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated BAM file.")
+	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Unsorted BAM file with tags corrected and split reads identified.")
 	public File OUTPUT;
 	@Argument(shortName=StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME, doc="Assume that all records with the same read name are consecutive. "
 			+ "Incorrect tags will be written if this is not the case.", optional=true)
@@ -148,6 +148,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 				}
 				// strip header because our output is unordered
 				header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+
 				try (SAMRecordIterator it = reader.iterator()) {
 					File tmpOutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.PreprocessForBReakendAssembly.") : OUTPUT;
 					try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpOutput)) {

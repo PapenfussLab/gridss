@@ -30,6 +30,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators
 	-c/--configuration: configuration file use to override default GRIDSS settings.
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
+	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS
 	--jvmheap: size of JVM heap for assembly and variant calling. Defaults to 27.5g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8.
 	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored.
 	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
@@ -40,7 +41,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -68,6 +69,7 @@ useproperpair="false"
 readpairpdistribution="0.995"
 keepTempFiles="false"
 sanityCheck="false"
+externalaligner="false"
 while true; do
     case "$1" in
         -r|--reference)
@@ -145,6 +147,10 @@ while true; do
 			;;
 		--sanityCheck)
 			sanityCheck="true"
+			shift 1
+			;;
+		--externalaligner)
+			externalaligner="true"
 			shift 1
 			;;
 		--)
@@ -489,70 +495,96 @@ if [[ $do_preprocess == true ]] ; then
 			if [[ -f $tmp_prefix.insert_size_metrics ]] ; then
 				$rmcmd $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
 			fi
-			echo "$(date)	ComputeSamTags|samtools	$f" | tee -a $timinglogfile
-			{ $timecmd java -Xmx4g $jvm_args \
-					-cp $gridss_jar gridss.ComputeSamTags \
-					TMP_DIR=$dir \
-					WORKING_DIR=$workingdir \
-					REFERENCE_SEQUENCE=$reference \
-					COMPRESSION_LEVEL=0 \
-					I=$tmp_prefix.namedsorted.bam \
-					O=/dev/stdout \
-					RECALCULATE_SA_SUPPLEMENTARY=true \
-					SOFTEN_HARD_CLIPS=true \
-					FIX_MATE_INFORMATION=true \
-					FIX_DUPLICATE_FLAG=true \
-					FIX_SA=true \
-					FIX_MISSING_HARD_CLIP=true \
-					TAGS=null \
-					TAGS=NM \
-					TAGS=SA \
-					TAGS=R2 \
-					TAGS=Q2 \
-					TAGS=MC \
-					TAGS=MQ \
-					ASSUME_SORTED=true \
-					$picardoptions \
-			| $timecmd samtools sort \
-					-T $tmp_prefix.coordinate-tmp \
-					-Obam \
-					-o $tmp_prefix.coordinate.bam \
-					-@ $threads \
-					/dev/stdin \
-			; } 1>&2 2>> $logfile
-			$rmcmd $tmp_prefix.namedsorted.bam
-			echo "$(date)	SoftClipsToSplitReads	$f" | tee -a $timinglogfile
-			{ $timecmd java -Xmx4g $jvm_args \
-					-Dsamjdk.create_index=false \
-					-Dgridss.gridss.output_to_temp_file=true \
-					-cp $gridss_jar gridss.SoftClipsToSplitReads \
-					TMP_DIR=$workingdir \
-					WORKING_DIR=$workingdir \
-					REFERENCE_SEQUENCE=$reference \
-					I=$tmp_prefix.coordinate.bam \
-					O=$tmp_prefix.sc2sr.primary.sv.bam \
-					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
-					WORKER_THREADS=$threads \
-					$picardoptions \
-			&& $rmcmd $tmp_prefix.coordinate.bam \
-			&& $timecmd samtools sort \
-					-@ $threads \
-					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
-					-Obam \
-					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
-					$tmp_prefix.sc2sr.supp.sv.bam \
-			&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
-			&& $timecmd samtools merge \
-					-@ $threads \
-					$prefix.sv.tmp.bam \
-					$tmp_prefix.sc2sr.primary.sv.bam \
-					$tmp_prefix.sc2sr.suppsorted.sv.bam \
-			&& $timecmd samtools index $prefix.sv.tmp.bam \
-			&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
-			&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
-			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
-			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
-			; } 1>&2 2>> $logfile
+			if [[ "$externalaligner" == "true" ]] ; then
+				echo "$(date)	ComputeSamTags|samtools	$f" | tee -a $timinglogfile
+				{ $timecmd java -Xmx4g $jvm_args \
+						-cp $gridss_jar gridss.ComputeSamTags \
+						TMP_DIR=$dir \
+						WORKING_DIR=$workingdir \
+						REFERENCE_SEQUENCE=$reference \
+						COMPRESSION_LEVEL=0 \
+						I=$tmp_prefix.namedsorted.bam \
+						O=/dev/stdout \
+						RECALCULATE_SA_SUPPLEMENTARY=true \
+						SOFTEN_HARD_CLIPS=true \
+						FIX_MATE_INFORMATION=true \
+						FIX_DUPLICATE_FLAG=true \
+						FIX_SA=true \
+						FIX_MISSING_HARD_CLIP=true \
+						TAGS=null \
+						TAGS=NM \
+						TAGS=SA \
+						TAGS=R2 \
+						TAGS=Q2 \
+						TAGS=MC \
+						TAGS=MQ \
+						ASSUME_SORTED=true \
+						$picardoptions \
+				| $timecmd samtools sort \
+						-T $tmp_prefix.coordinate-tmp \
+						-Obam \
+						-o $tmp_prefix.coordinate.bam \
+						-@ $threads \
+						/dev/stdin \
+				; } 1>&2 2>> $logfile
+				$rmcmd $tmp_prefix.namedsorted.bam
+				echo "$(date)	SoftClipsToSplitReads	$f" | tee -a $timinglogfile
+				{ $timecmd java -Xmx4g $jvm_args \
+						-Dsamjdk.create_index=false \
+						-Dgridss.gridss.output_to_temp_file=true \
+						-cp $gridss_jar gridss.SoftClipsToSplitReads \
+						TMP_DIR=$workingdir \
+						WORKING_DIR=$workingdir \
+						REFERENCE_SEQUENCE=$reference \
+						I=$tmp_prefix.coordinate.bam \
+						O=$tmp_prefix.sc2sr.primary.sv.bam \
+						OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
+						WORKER_THREADS=$threads \
+						$picardoptions \
+				&& $rmcmd $tmp_prefix.coordinate.bam \
+				&& $timecmd samtools sort \
+						-@ $threads \
+						-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+						-Obam \
+						-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
+						$tmp_prefix.sc2sr.supp.sv.bam \
+				&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
+				&& $timecmd samtools merge \
+						-@ $threads \
+						$prefix.sv.tmp.bam \
+						$tmp_prefix.sc2sr.primary.sv.bam \
+						$tmp_prefix.sc2sr.suppsorted.sv.bam \
+				&& $timecmd samtools index $prefix.sv.tmp.bam \
+				&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
+				&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
+				&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+				&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+				; } 1>&2 2>> $logfile
+			else
+				echo "$(date)	PreprocessForBreakendAssembly|samtools	$f" | tee -a $timinglogfile
+				{ $timecmd java -Xmx4g $jvm_args \
+						-cp $gridss_jar gridss.PreprocessForBreakendAssembly \
+						TMP_DIR=$dir \
+						WORKING_DIR=$workingdir \
+						REFERENCE_SEQUENCE=$reference \
+						COMPRESSION_LEVEL=0 \
+						I=$tmp_prefix.namedsorted.bam \
+						O=/dev/stdout \
+						WORKER_THREADS=$threads \
+						ALIGNER=BWAMEM
+						ALIGNER_BATCH_SIZE=10000 \
+						$picardoptions \
+				&& $timecmd samtools sort \
+						-@ $threads \
+						-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+						-Obam \
+						-o $prefix.sv.tmp.bam \
+						/dev/stdin \
+				&& $timecmd samtools index $prefix.sv.tmp.bam \
+				&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+				&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+				; } 1>&2 2>> $logfile
+			fi
 			echo "$(date)	Complete pre-processing	$f"
 		else
 			echo "$(date)	Skipping pre-processing as $prefix.sv.bam already exists. $f"
@@ -627,39 +659,69 @@ if [[ $do_assemble == true ]] ; then
 				PROGRAM=QualityScoreDistribution \
 				$picardoptions \
 		; } 1>&2 2>> $logfile
-		echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
-		{ $timecmd java -Xmx4g $jvm_args \
-				-Dgridss.async.buffersize=16 \
-				-Dsamjdk.create_index=false \
-				-Dgridss.gridss.output_to_temp_file=true \
-				-cp $gridss_jar gridss.SoftClipsToSplitReads \
-				TMP_DIR=$dir \
-				WORKING_DIR=$workingdir \
-				REFERENCE_SEQUENCE=$reference \
-				WORKER_THREADS=$threads \
-				I=$assembly \
-				O=$tmp_prefix.sc2sr.primary.sv.bam \
-				OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
-				REALIGN_UNANCHORED_BASES=true \
-				$picardoptions \
-		&& $timecmd samtools sort \
-				-@ $threads \
-				-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
-				-Obam \
-				-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
-				$tmp_prefix.sc2sr.supp.sv.bam \
-		&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
-		&& $timecmd samtools merge \
-				-@ $threads \
-				$prefix.sv.tmp.bam \
-				$tmp_prefix.sc2sr.primary.sv.bam \
-				$tmp_prefix.sc2sr.suppsorted.sv.bam \
-		&& $timecmd samtools index $prefix.sv.tmp.bam \
-		&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
-		&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
-		&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
-		&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
-		; } 1>&2 2>> $logfile
+		if [[ "$externalaligner" == "true" ]] ; then
+			echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
+			{ $timecmd java -Xmx4g $jvm_args \
+					-Dgridss.async.buffersize=16 \
+					-Dsamjdk.create_index=false \
+					-Dgridss.gridss.output_to_temp_file=true \
+					-cp $gridss_jar gridss.SoftClipsToSplitReads \
+					TMP_DIR=$dir \
+					WORKING_DIR=$workingdir \
+					REFERENCE_SEQUENCE=$reference \
+					WORKER_THREADS=$threads \
+					I=$assembly \
+					O=$tmp_prefix.sc2sr.primary.sv.bam \
+					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
+					READJUST_PRIMARY_ALIGNMENT_POSITON=true \
+					$picardoptions \
+			&& $timecmd samtools sort \
+					-@ $threads \
+					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+					-Obam \
+					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
+					$tmp_prefix.sc2sr.supp.sv.bam \
+			&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
+			&& $timecmd samtools merge \
+					-@ $threads \
+					$prefix.sv.tmp.bam \
+					$tmp_prefix.sc2sr.primary.sv.bam \
+					$tmp_prefix.sc2sr.suppsorted.sv.bam \
+			&& $timecmd samtools index $prefix.sv.tmp.bam \
+			&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
+			&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
+			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+			; } 1>&2 2>> $logfile
+		else
+			{ $timecmd java -Xmx4g $jvm_args \
+					-Dgridss.async.buffersize=16 \
+					-Dsamjdk.create_index=false \
+					-Dgridss.gridss.output_to_temp_file=true \
+					-cp $gridss_jar gridss.SoftClipsToSplitReads \
+					TMP_DIR=$dir \
+					WORKING_DIR=$workingdir \
+					REFERENCE_SEQUENCE=$reference \
+					WORKER_THREADS=$threads \
+					I=$assembly \
+					O=/dev/stdout \
+					ALIGNER=BWAMEM \
+					ALIGNER_BATCH_SIZE=10000 \
+					REALIGN_ANCHORING_BASES=true \
+					READJUST_PRIMARY_ALIGNMENT_POSITON=true \
+					COMPRESSION_LEVEL=0 \
+					$picardoptions \
+			&& $timecmd samtools sort \
+					-@ $threads \
+					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+					-Obam \
+					-o $prefix.sv.tmp.bam \
+					/dev/stdin \
+			&& $timecmd samtools index $prefix.sv.tmp.bam \
+			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+			; } 1>&2 2>> $logfile
+		fi
 	fi
 	echo "$(date)	Complete assembly	$assembly"
 else
