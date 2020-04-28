@@ -439,7 +439,6 @@ if [[ $do_setupreference == true ]] ; then
 		REFERENCE_SEQUENCE=$reference \
 		1>&2 2>> $logfile
 fi
-exit
 
 if [[ $do_preprocess == true ]] ; then
 	if [[ "$jobnodes" != "1" ]] ; then
