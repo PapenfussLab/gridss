@@ -28,19 +28,26 @@ public class BedMergingCounter {
         this.merge = merge;
 
     }
+
     public List<Pair<BreakendSummary, Integer>> process(BreakendSummary be) throws IOException {
+        return process(be, 1);
+    }
+
+    public List<Pair<BreakendSummary, Integer>> process(Pair<BreakendSummary, Integer> p) throws IOException {
+        return process(p.getFirst(), p.getSecond());
+    }
+
+    private List<Pair<BreakendSummary, Integer>> process(BreakendSummary be, int weight) throws IOException {
         List<Pair<BreakendSummary, Integer>> flushed = flushInactive(be);
-        process(be, 1);
+        if (addRecord(be, weight, flushed)) return flushed;
         return flushed;
     }
-    public List<Pair<BreakendSummary, Integer>> finish() {
-        return flushInactive(SENTINEL);
-    }
-    private void process(BreakendSummary be, int weight) throws IOException {
+
+    private boolean addRecord(BreakendSummary be, int weight, List<Pair<BreakendSummary, Integer>> flushed) throws IOException {
         Integer existingCount = active.get(be);
         if (existingCount != null) {
             active.put(be, existingCount + weight);
-            return;
+            return true;
         }
         if (merge) {
             BreakendSummary mergeTarget = new BreakendSummary(be.referenceIndex, be.direction, be.start - 1, be.start - 1, be.end + 1);
@@ -50,13 +57,19 @@ public class BedMergingCounter {
                             key.start, Math.min(key.start, be.start), Math.max(key.end, be.end));
                     existingCount = active.remove(key);
                     process(merged, existingCount + weight);
-                    return;
+                    return true;
                 }
             }
         }
         // new record
         active.put(be, weight);
+        return false;
     }
+
+    public List<Pair<BreakendSummary, Integer>> finish() {
+        return flushInactive(SENTINEL);
+    }
+
     private List<Pair<BreakendSummary, Integer>> flushInactive(BreakendSummary be) {
         List<Pair<BreakendSummary, Integer>> result = new ArrayList<>();
         while (!active.isEmpty()) {

@@ -185,6 +185,16 @@ public class IntermediateFilesTest extends TestHelper {
 		reader.close();
 		return list;
 	}
+	public List<IdsvVariantContext> getVcf(final File file, final ProcessingContext pc, final EvidenceSource source) {
+		assertTrue(file.exists());
+		VCFFileReader reader = new VCFFileReader(file, false);
+		List<IdsvVariantContext> list = Lists.newArrayList();
+		for (VariantContext r : reader) {
+			list.add(IdsvVariantContext.create(pc, source, r));
+		}
+		reader.close();
+		return list;
+	}
 	public List<FastqRecord> getFastqRecords(File file) {
 		List<FastqRecord> list = Lists.newArrayList();
 		assertTrue(file.exists());

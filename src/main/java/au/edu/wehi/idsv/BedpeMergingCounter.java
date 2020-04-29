@@ -17,17 +17,25 @@ public class BedpeMergingCounter {
     private final SortedMap<BreakpointSummary, Integer> activeByEnd2 = new TreeMap<>(ByEnd2Start2EndIStartDirection12);
     // how far around the breakpoint position we need to check to ensure we find any potential overlaps
     private int maxWidth2 = 0;
+
     public List<Pair<BreakpointSummary, Integer>> process(BreakpointSummary bp) throws IOException {
+        return process(Pair.create(bp, 1));
+    }
+    public List<Pair<BreakpointSummary, Integer>> process(Pair<BreakpointSummary, Integer> pbp) throws IOException {
+        return process(pbp.getFirst(), pbp.getSecond());
+    }
+
+    public List<Pair<BreakpointSummary, Integer>> process(BreakpointSummary bp, int weight) throws IOException {
         List<Pair<BreakpointSummary, Integer>> flushed = flushInactive(bp);
         if (!bp.isHighBreakend()) {
-            process(bp, 1);
+            process_low(bp, weight);
         }
         return flushed;
     }
     public List<Pair<BreakpointSummary, Integer>> finish() {
         return flushInactive(SENTINEL);
     }
-    private void process(BreakpointSummary bp, int weight) throws IOException {
+    private void process_low(BreakpointSummary bp, int weight) throws IOException {
         maxWidth2 = Math.max(maxWidth2, bp.end2 - bp.start2 + 1);
         if (activeByEnd1.contains(bp)) {
             activeByEnd2.put(bp, activeByEnd2.get(bp) + weight);
@@ -53,7 +61,7 @@ public class BedpeMergingCounter {
                         key.referenceIndex2, key.direction2, key.nominal2, Math.min(key.start2, bp.start2), Math.max(key.end2, bp.end2));
                 int existingWeight = activeByEnd2.remove(key);
                 activeByEnd1.remove(key);
-                process(merged, existingWeight + weight);
+                process_low(merged, existingWeight + weight);
                 return;
             }
         }

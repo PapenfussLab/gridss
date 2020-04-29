@@ -9,7 +9,10 @@ import java.io.File;
  *
  */
 public interface Hg19Tests extends ReferenceTests {
-	public static File findHg19Reference() {
+	static File findHg19Reference() {
 		return ReferenceTests.findReference("hg19.fa");
+	}
+	static File findBroadHg19Reference() {
+		return ReferenceTests.findReference("Homo_sapiens.GRCh37.GATK.illumina.fasta");
 	}
 }

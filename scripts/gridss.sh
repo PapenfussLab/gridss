@@ -429,7 +429,7 @@ if [[ $do_setupreference == true ]] ; then
 		echo "$(date)	samtools faidx	(once-off setup for reference genome)" | tee -a $timinglogfile
 		$timecmd samtools faidx $reference 1>&2 2>> $logfile
 	fi
-	if [[ ! -f ${reference}.bwa  ]] ; then
+	if [[ ! -f ${reference}.bwt  ]] ; then
 		echo "$(date)	bwa index	(once-off setup for reference genome)" | tee -a $timinglogfile
 		$timecmd bwa index $reference 1>&2 2>> $logfile
 	fi

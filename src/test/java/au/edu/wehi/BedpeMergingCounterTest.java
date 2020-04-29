@@ -86,4 +86,15 @@ public class BedpeMergingCounterTest extends TestHelper {
         result.addAll(c.finish());
         assertEquals(0, result.size());
     }
+    @Test
+    public void shouldConsiderWeight() throws IOException {
+        List<Pair<BreakpointSummary, Integer>> result = new ArrayList<>();
+        BedpeMergingCounter c = new BedpeMergingCounter();
+        result.addAll(c.process(new BreakpointSummary(0, FWD, 1, 1, 3, 0, BWD, 3, 3, 3)));
+        result.addAll(c.process(new BreakpointSummary(0, FWD, 1, 1, 3, 0, BWD, 3, 3, 3), 2));
+        result.addAll(c.process(new BreakpointSummary(0, FWD, 1, 1, 3, 0, BWD, 3, 3, 3), 3));
+        result.addAll(c.finish());
+        assertEquals(1, result.size());
+        assertEquals(6, (int)result.get(0).getSecond());
+    }
 }
