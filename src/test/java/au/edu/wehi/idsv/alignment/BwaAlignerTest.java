@@ -26,9 +26,9 @@ public class BwaAlignerTest extends TestHelper {
         TemporaryFolder testFolder = new TemporaryFolder();
         try {
             testFolder.create();
-            FileUtils.copyFileToDirectory(new File("src/test/resources/small.fa"), testFolder.getRoot());
             File ref = new File(testFolder.getRoot(), "small.fa");
             File image = new File(testFolder.getRoot(), "small.fa.img");
+            FileUtils.copyFileToDirectory(new File("src/test/resources/small.fa"), testFolder.getRoot());
             BwaAligner.createBwaIndexFor(ref);
             assertTrue(image.exists());
         } finally {
