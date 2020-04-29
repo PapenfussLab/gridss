@@ -61,7 +61,7 @@ public class BwaAligner implements Closeable {
             } else {
                 log.warn("Could not find bwa index files. Creating bwa image from reference genome. This is a one-time operation and may take several hours.");
                 System.err.flush();
-                BwaMemIndex.createIndexImageFromIndexFiles(reference.getAbsolutePath(), image.getAbsolutePath());
+                BwaMemIndex.createIndexImageFromFastaFile(reference.getAbsolutePath(), image.getAbsolutePath());
             }
             Files.move(tmpFile.toPath(), image.toPath());
             if (image.exists()) {
