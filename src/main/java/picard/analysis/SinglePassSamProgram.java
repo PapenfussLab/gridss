@@ -78,7 +78,7 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
 
     private static final Log log = Log.getInstance(SinglePassSamProgram.class);
 
-    @Argument(doc = "Allocate each metrics program in it's own thread. I/O and record parsing is still shared.")
+    @Argument(doc = "Allocate each metrics program it's own thread. I/O and record parsing is still shared.")
     public boolean PROCESS_IN_PARALLEL = true;
 
     /**
