@@ -191,10 +191,23 @@ if [[ ! -d $workingdir ]] ; then
 	fi
 fi
 workingdir=$(dirname $workingdir/placeholder)
-
 timestamp=$(date +%Y%m%d_%H%M%S)
+# Logging
 logfile=$workingdir/gridss.full.$timestamp.$HOSTNAME.$$.log
+# $1 is message to write
+write_status() {
+	echo "$(date): $1" | tee -a $logfile 1>&2
+}
+write_status "Full log file is: $logfile"
+# Timing instrumentation
 timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
+if which /usr/bin/time >/dev/null ; then
+	timecmd="/usr/bin/time"
+	write_status "Found /usr/bin/time"
+else
+	timecmd=""
+	write_status "Not found /usr/bin/time"
+fi
 if [[ "$timecmd" != "" ]] ; then
 	timecmd="/usr/bin/time --verbose -a -o $timinglogfile"
 	if ! $timecmd echo 2>&1 > /dev/null; then
@@ -202,12 +215,11 @@ if [[ "$timecmd" != "" ]] ; then
 	fi
 	if ! $timecmd echo 2>&1 > /dev/null ; then
 		timecmd=""
-		echo "Unexpected /usr/bin/time version. Not logging timing information." 1>&2
+		write_status "Unexpected /usr/bin/time version. Not logging timing information."
 	fi
-	# We don't need the echo to be written to our timing log file
+	# We don't need timing info of the echo
 	rm -f $timinglogfile
 fi
-echo "Full log file is: $logfile" 2>&1 
 
 
 for step in $(echo $steps | tr ',' ' ' ) ; do
@@ -225,7 +237,7 @@ for step in $(echo $steps | tr ',' ' ' ) ; do
 	elif [[ "$step" == "call" ]] ; then
 		do_call=true
 	else
-		echo "Unknown step \"$step\"" 1>&2
+		write_status "Unknown step \"$step\""
 		exit $EX_USAGE
 	fi
 done
@@ -235,98 +247,98 @@ find_jar() {
 	if [[ -f "${!env_name:-}" ]] ; then
 		echo "${!env_name}"
 	else
-		echo "Unable to find $2 jar. Specify using the environment variant $env_name, or the --jar command line parameter." 1>&2
+		write_status "Unable to find $2 jar. Specify using the environment variant $env_name, or the --jar command line parameter."
 		exit $EX_NOINPUT
 	fi
 }
 gridss_jar=$(find_jar GRIDSS_JAR gridss)
 ##### --reference
-echo "Using reference genome \"$reference\"" 1>&2
+write_status "Using reference genome \"$reference\""
 if [[ "$reference" == "" ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Reference genome must be specified. Specify using the --reference command line argument" 1>&2
+	write_status "$USAGE_MESSAGE"
+	write_status "Reference genome must be specified. Specify using the --reference command line argument"
 	exit $EX_USAGE
 fi
 if [ ! -f $reference ] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Missing reference genome $reference. Specify reference location using the --reference command line argument" 1>&2
+	write_status "$USAGE_MESSAGE"
+	write_status "Missing reference genome $reference. Specify reference location using the --reference command line argument"
 	exit $EX_USAGE
 fi
 
 ##### --assembly
 if [[ $do_assemble == "true" ]] ; then
 	if [[ "$assembly" == "" ]] ; then
-		echo "$USAGE_MESSAGE"  1>&2
-		echo "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory." 1>&2
+		write_status "$USAGE_MESSAGE"
+		write_status "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory."
 		exit $EX_USAGE
 	fi
 	mkdir -p $(dirname $assembly)
 	if [[ ! -d $(dirname $assembly) ]] ; then
-		echo Unable to parent create directory for $assembly 1>&2
+		write_status "Unable to parent create directory for $assembly"
 		exit $EX_CANTCREAT
 	fi
-	echo "Using assembly bam $assembly" 1>&2
+	write_status "Using assembly bam $assembly"
 fi
 
 ##### --output
 if [[ $do_call == "true" ]] ; then
 	if [[ "$output_vcf" == "" ]] ; then
-		echo "$USAGE_MESSAGE"  1>&2
-		echo "Output VCF not specified. Use --output to specify output file." 1>&2
+		write_status "$USAGE_MESSAGE"
+		write_status "Output VCF not specified. Use --output to specify output file."
 		exit $EX_USAGE
 	fi
 	mkdir -p $(dirname $output_vcf)
 	if [[ ! -d $(dirname $output_vcf) ]] ; then
-		echo "Unable to create directory for $output_vcf for output VCF." 1>&2
+		write_status "Unable to create directory for $output_vcf for output VCF."
 		exit $EX_CANTCREAT
 	fi
-	echo "Using output VCF $output_vcf" 1>&2
+	write_status "Using output VCF $output_vcf"
 fi
 ##### --threads
 if [[ "$threads" -lt 1 ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Illegal thread count: $threads. Specify an integer thread count using the --threads command line argument" 1>&2
+	write_status "$USAGE_MESSAGE"
+	write_status "Illegal thread count: $threads. Specify an integer thread count using the --threads command line argument"
 	exit $EX_USAGE
 fi
 if [[ "$threads" -gt 8 ]] ; then
-	echo "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parallelism." 1>&2
+	write_status "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parallelism."
 fi
-echo "Using $threads worker threads." 1>&2
+write_status  "Using $threads worker threads."
 if [[ "$blacklist" == "" ]] ; then
 	blacklist_arg=""
-	echo "Using no blacklist bed. The encode DAC blacklist is recommended for hg19." 1>&2
+	write_status  "Using no blacklist bed. The encode DAC blacklist is recommended for hg19."
 elif [[ ! -f $blacklist ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Missing blacklist file $blacklist" 1>&2
+	write_status  "$USAGE_MESSAGE"
+	write_status  "Missing blacklist file $blacklist"
 	exit $EX_NOINPUT
 else
 	blacklist_arg="BLACKLIST=$blacklist"
-	echo "Using blacklist $blacklist" 1>&2
+	write_status  "Using blacklist $blacklist"
 	if [[ "$(tr -d ' 	\n' <<< "$blacklist_arg")" != "$blacklist_arg" ]] ; then
-		echo "blacklist cannot contain whitespace" 1>&2
+		write_status  "blacklist cannot contain whitespace"
 		exit $EX_USAGE
 	fi
 fi
 if [[ "$jvmheap" == "" ]] ; then
 	if [[ $threads -gt 8 ]] ; then
-		echo "Warning: GRIDSS assembly may stall and run out of memory. with $threads and $jvmheap heap size." 1>&2
+		write_status "Warning: GRIDSS assembly may stall and run out of memory. with $threads and $jvmheap heap size."
 	fi
 fi
-echo "Using JVM maximum heap size of $jvmheap for assembly and variant calling." 1>&2
+write_status  "Using JVM maximum heap size of $jvmheap for assembly and variant calling."
 if [[ "$@" == "" ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "At least one input bam must be specified." 1>&2
+	write_status  "$USAGE_MESSAGE"
+	write_status  "At least one input bam must be specified."
 fi
 for f in $@ ; do
 	if [[ ! -f $f ]] ; then
-		echo "Input file $f does not exist"  1>&2
+		write_status "Input file $f does not exist"
 		exit $EX_NOINPUT
 	fi
 done
 config_args=""
 if [[ "$config_file" != "" ]] ; then
 	if [[ ! -f $config_file ]] ; then
-	echo "Configuration file $config_file does not exist"  1>&2
+		write_status "Configuration file $config_file does not exist"
 		exit $EX_NOINPUT
 	fi
 	config_args="CONFIGURATION_FILE=$config_file"
@@ -334,36 +346,36 @@ fi
 input_args=""
 for f in $@ ; do
 	if [[ "$(tr -d ' 	\n' <<< "$f")" != "$f" ]] ; then
-		echo "input filenames and paths cannot contain whitespace" 1>&2
+		write_status "input filenames and paths cannot contain whitespace"
 		exit $EX_USAGE
 	fi
-	echo "Using input file $f" 1>&2
+	write_status "Using input file $f"
 	input_args="$input_args INPUT=$f"
 done
 if [[ "$labels" != "" ]] ; then
 	nows_labels=$(tr -d ' 	\n' <<< "$labels")
 	if [[ "$nows_labels" != "$labels" ]] ; then
-		echo "input labels cannot contain whitespace" 1>&2
+		write_status "input labels cannot contain whitespace"
 		exit $EX_USAGE
 	fi
 	IFS=',' read -ra LABEL_ARRAY  <<< "$nows_labels"
 	for label in "${LABEL_ARRAY[@]}" ; do
 		input_args="$input_args INPUT_LABEL=$label"
-		echo label is $label
+		write_status "label is $label"
 	done
 	
 fi
 
 for f1 in $@ ; do
 	if [[ "$(basename $f1)" == "$(basename $assembly)" ]] ; then
-		echo "assembly and input files must have different filenames."
-		echo $EX_USAGE
+		write_status "assembly and input files must have different filenames."
+		exit $EX_USAGE
 	fi
 	for f2 in $@ ; do
 		if [[ "$f1" != "$f2" ]] ; then
 			if [[ "$(basename $f1)" == "$(basename $f2)" ]] ; then
-				echo "input files must have different filenames."
-				echo $EX_USAGE
+				write_status "input files must have different filenames."
+				exit $EX_USAGE
 			fi
 		fi
 	done
@@ -372,63 +384,62 @@ done
 # Validate tools exist on path
 for tool in Rscript samtools java ; do
 	if ! which $tool >/dev/null; then
-		echo "Error: unable to find $tool on \$PATH" 1>&2
+		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
 	fi
-	echo "Found $(which $tool)" 1>&2 
+	write_status "Found $(which $tool)"
 done
-if which /usr/bin/time >/dev/null ; then
-	timecmd="/usr/bin/time"
-	echo "Found /usr/bin/time" 1>&2
-else
-	timecmd=""
-	echo "Not found /usr/bin/time" 1>&2
+if $(samtools --version-only 2>&1 >/dev/null) ; then
+	write_status "samtools version: $(samtools --version-only 2>&1)"
+else 
+	write_status "Your samtools version is so old it does not support --version-only. Update samtools."
+	exit $EX_CONFIG
 fi
-samtools --version-only 1>&2 || ( echo "Your samtools version is so old it does not support --version-only. Update samtools." 1>&2 && exit $EX_CONFIG )
-Rscript --version 1>&2
+write_status "R version: $(Rscript --version 2>&1)"
 if [[ "$externalaligner" == "true" ]] ; then
 	if ! which bwa >/dev/null; then
-		echo "Error: unable to find bwa on \$PATH" 1>&2
+		write_status "Error: unable to find bwa on \$PATH"
 		exit $EX_CONFIG
 	fi
-	echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
+	write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
 fi
 if which /usr/bin/time >/dev/null ; then
-	/usr/bin/time --version 1>&2
+	write_status "time version: $(/usr/bin/time --version 2>&1)"
 fi
-/bin/bash --version 2>&1 | head -1 1>&2
+write_status "bash version: $(/bin/bash --version 2>&1 | head -1)"
 
 # check java version is ok using the gridss.Echo entry point
 if java -cp $gridss_jar gridss.Echo ; then
-	java -version 1>&2
+	write_status "java version: $(java -version 2>&1)"
 else
-	echo "Unable to run GRIDSS jar. GRIDSS requires java 1.8 or later." 1>&2
-	java -version 1>&2
+	write_status "Unable to run GRIDSS jar. GRIDSS requires java 1.8 or later."
+	write_status "java version: $(java -version  2>&1)"
 	exit $EX_CONFIG
 fi
 
 if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
-	echo "Failure invoking java with --jvmheap parameter of \"$jvmheap\". Specify a JVM heap size (e.g. \"31g\") that is valid for this machine."
+	write_status "Failure invoking java with --jvmheap parameter of \"$jvmheap\". Specify a JVM heap size (e.g. \"31g\") that is valid for this machine."
 	exit 1
 fi
 
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
-echo "Max file handles: $(ulimit -n)" 1>&2 
+write_status "Max file handles: $(ulimit -n)" 1>&2 
 
-echo -n "$(date)	Running GRIDSS steps" 1>&2
+steps_message="Running GRIDSS steps:"
 if [[ $do_setupreference == "true" ]] ; then
-	echo -n " setupreference," 1>&2
+	steps_message="$steps_message setupreference,"
 fi
 if [[ $do_preprocess == "true" ]] ; then
-	echo -n " preprocess," 1>&2
+	steps_message="$steps_message preprocess,"
 fi
 if [[ $do_assemble == "true" ]] ; then
-	echo -n " assemble," 1>&2
+	steps_message="$steps_message assemble,"
 fi
 if [[ $do_call == "true" ]] ; then
-	echo -n " call," 1>&2
+	steps_message="$steps_message call,"
 fi
+write_status "$steps_message"
 
 # For debugging purposes, we want to keep all our 
 if [[ $keepTempFiles == "true" ]] ; then
@@ -455,14 +466,14 @@ fi
 
 if [[ $do_setupreference == true ]] ; then
 	if [[ ! -f ${reference}.fai ]] && [[ ! -f $(basename $reference .fa).fai ]] && [[ ! -f $(basename $reference .fasta).fai ]]  ; then
-		echo "$(date)	samtools faidx	(once-off setup for reference genome)" | tee -a $timinglogfile
+		write_status "Running	samtools faidx	(once-off setup for reference genome)"
 		$timecmd samtools faidx $reference 1>&2 2>> $logfile
 	fi
 	if [[ ! -f ${reference}.bwt  ]] ; then
-		echo "$(date)	bwa index	(once-off setup for reference genome)" | tee -a $timinglogfile
+		write_status "Running	bwa index	(once-off setup for reference genome)"
 		$timecmd bwa index $reference 1>&2 2>> $logfile
 	fi
-	echo "$(date)	PrepareReference	(once-off setup for reference genome)" | tee -a $timinglogfile
+	write_status "Running	PrepareReference	(once-off setup for reference genome)"
 	$timecmd java -Xmx4g $jvm_args \
 		-cp $gridss_jar gridss.PrepareReference \
 		REFERENCE_SEQUENCE=$reference \
@@ -471,22 +482,22 @@ fi
 
 if [[ $do_preprocess == true ]] ; then
 	if [[ "$jobnodes" != "1" ]] ; then
-		echo "Error: Preprocessing does not support multiple nodes for a given input file." 2>&1
-		echo "	To perform parallel per-input preprocessing, run independent preprocessing per input file." 2>&1
+		write_status "Error: Preprocessing does not support multiple nodes for a given input file."
+		write_status "	To perform parallel per-input preprocessing, run independent preprocessing per input file."
 		exit $EX_USAGE
 	fi
 	for f in $@ ; do
-		echo "$(date)	Start pre-processing	$f"
+		write_status "Start pre-processing	$f"
 		dir=$workingdir/$(basename $f).gridss.working
 		prefix=$workingdir/$(basename $f).gridss.working/$(basename $f)
 		tmp_prefix=$workingdir/$(basename $f).gridss.working/tmp.$(basename $f)
 		mkdir -p $dir
 		if [[ ! -d $dir ]] ; then
-			echo Unable to create directory $dir 1>&2
+			write_status "Unable to create directory $dir"
 			exit $EX_CANTCREAT
 		fi
 		if [[ ! -f $prefix.sv.bam ]] ; then
-			echo "$(date)	CollectInsertSizeMetrics	$f	first $metricsrecords records" | tee -a $timinglogfile
+			write_status "Running	CollectInsertSizeMetrics	$f	first $metricsrecords records"
 			{ $timecmd java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 					TMP_DIR=$dir \
@@ -501,7 +512,7 @@ if [[ $do_preprocess == true ]] ; then
 					STOP_AFTER=$metricsrecords \
 					$picardoptions \
 			; } 1>&2 2>> $logfile
-			echo "$(date)	CollectGridssMetricsAndExtractSVReads|samtools	$f" | tee -a $timinglogfile
+			write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
 			{ $timecmd java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 					TMP_DIR=$dir \
@@ -539,7 +550,7 @@ if [[ $do_preprocess == true ]] ; then
 				$rmcmd $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
 			fi
 			if [[ "$externalaligner" == "true" ]] ; then
-				echo "$(date)	ComputeSamTags|samtools	$f" | tee -a $timinglogfile
+				write_status "Running	ComputeSamTags|samtools	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
 						-cp $gridss_jar gridss.ComputeSamTags \
 						TMP_DIR=$dir \
@@ -571,7 +582,7 @@ if [[ $do_preprocess == true ]] ; then
 						/dev/stdin \
 				; } 1>&2 2>> $logfile
 				$rmcmd $tmp_prefix.namedsorted.bam
-				echo "$(date)	SoftClipsToSplitReads	$f" | tee -a $timinglogfile
+				write_status "Running	SoftClipsToSplitReads	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
 						-Dsamjdk.create_index=false \
 						-Dgridss.gridss.output_to_temp_file=true \
@@ -604,7 +615,7 @@ if [[ $do_preprocess == true ]] ; then
 				&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 				; } 1>&2 2>> $logfile
 			else
-				echo "$(date)	PreprocessForBreakendAssembly|samtools	$f" | tee -a $timinglogfile
+				write_status "Running	PreprocessForBreakendAssembly|samtools	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
 						-cp $gridss_jar gridss.PreprocessForBreakendAssembly \
 						TMP_DIR=$dir \
@@ -629,19 +640,19 @@ if [[ $do_preprocess == true ]] ; then
 				; } 1>&2 2>> $logfile
 			fi
 			if [[ ! -f $prefix.sv.bam ]] ; then
-				echo "$(date) pre-processing failed for $f"
+				write_status "pre-processing failed for $f"
 				exit 1
 			fi
-			echo "$(date)	Complete pre-processing	$f"
+			write_status "Complete pre-processing	$f"
 		else
-			echo "$(date)	Skipping pre-processing as $prefix.sv.bam already exists. $f"
+			write_status "Skipping pre-processing as $prefix.sv.bam already exists. $f"
 		fi
 	done
 else
-	echo "$(date)	Skipping pre-processing."
+	write_status "Skipping pre-processing."
 fi
 if [[ $sanityCheck == "true" ]] ; then 
-	echo "$(date)	Sanity checking *.sv.bam"
+	write_status "Sanity checking *.sv.bam"
 	java -Xmx$jvmheap $jvm_args \
 		-cp $gridss_jar gridss.SanityCheckEvidence \
 		TMP_DIR=$workingdir \
@@ -656,9 +667,9 @@ if [[ $sanityCheck == "true" ]] ; then
 		1>&2 2>> $logfile
 fi
 if [[ $do_assemble == true ]] ; then
-	echo "$(date)	Start assembly	$assembly" | tee -a $timinglogfile
+	write_status "Start assembly	$assembly"
 	if [[ ! -f $assembly ]] ; then
-		echo "$(date)	AssembleBreakends	$assembly	job $jobindex	total jobs $jobnodes" | tee -a $timinglogfile
+		write_status "Running	AssembleBreakends	$assembly	job $jobindex	total jobs $jobnodes"
 		{ $timecmd java -Xmx$jvmheap $jvm_args \
 				-Dgridss.gridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AssembleBreakends \
@@ -676,18 +687,18 @@ if [[ $do_assemble == true ]] ; then
 				$readpairing_args \
 		; } 1>&2 2>> $logfile
 	else
-		echo "$(date)	Skipping assembly as $assembly already exists.	$assembly"
+		write_status  "Skipping assembly as $assembly already exists.	$assembly"
 	fi
 	if [[ "$jobnodes" != "1" ]] ; then
-		echo "Assembly processing for job index $jobindex complete." 2>&1 
-		echo "To perform the gather/reduce after all jobs are complete, run assembly without specifying --jobnodes." 2>&1 
+		write_status "Assembly processing for job index $jobindex complete."
+		write_status "To perform the gather/reduce after all jobs are complete, run assembly without specifying --jobnodes."
 		exit 0
 	fi
 	dir=$workingdir/$(basename $assembly).gridss.working/
 	prefix=$dir/$(basename $assembly)
 	tmp_prefix=$dir/tmp.$(basename $assembly)
 	if [[ ! -f $prefix.sv.bam ]] ; then
-		echo "$(date)	CollectGridssMetrics	$assembly" | tee -a $timinglogfile
+		write_status "Running	CollectGridssMetrics	$assembly"
 		{ $timecmd java -Xmx4g $jvm_args \
 				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 				I=$assembly \
@@ -707,7 +718,7 @@ if [[ $do_assemble == true ]] ; then
 				$picardoptions \
 		; } 1>&2 2>> $logfile
 		if [[ "$externalaligner" == "true" ]] ; then
-			echo "$(date)	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
+			write_status "Running	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
 			{ $timecmd java -Xmx4g $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
@@ -770,11 +781,12 @@ if [[ $do_assemble == true ]] ; then
 			; } 1>&2 2>> $logfile
 		fi
 	fi
-	echo "$(date)	Complete assembly	$assembly"
+	write_status "Complete assembly	$assembly"
 else
-	echo "$(date)	Skipping assembly	$assembly"
+	write_status "Skipping assembly	$assembly"
 fi
 if [[ $sanityCheck == "true" ]] ; then 
+	write_status "Running sanity checks"
 	java -Xmx$jvmheap $jvm_args \
 		-cp $gridss_jar gridss.SanityCheckEvidence \
 		TMP_DIR=$workingdir \
@@ -789,9 +801,9 @@ if [[ $sanityCheck == "true" ]] ; then
 		OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt
 fi
 if [[ $do_call == true ]] ; then
-	echo "$(date)	Start calling	$output_vcf" | tee -a $timinglogfile
+	write_status "Start calling	$output_vcf"
 	if [[ "$jobnodes" != "1" ]] ; then
-		echo "Error: variant calling does not (yet) support multiple nodes for a given input file." 2>&1
+		write_status "Error: variant calling does not (yet) support multiple nodes for a given input file."
 		exit $EX_USAGE
 	fi
 	if [[ ! -f $output_vcf ]] ; then
@@ -799,10 +811,10 @@ if [[ $do_call == true ]] ; then
 		prefix=$dir/$(basename $output_vcf)
 		mkdir -p $dir
 		if [[ ! -d $dir ]] ; then
-			echo Unable to create directory $dir 1>&2
+			write_status "Unable to create directory $dir"
 			exit $EX_CANTCREAT
 		fi
-		echo "$(date)	IdentifyVariants	$output_vcf" | tee -a $timinglogfile
+		write_status "Running	IdentifyVariants	$output_vcf"
 		{ $timecmd java -Xmx$jvmheap $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.IdentifyVariants \
@@ -817,7 +829,7 @@ if [[ $do_call == true ]] ; then
 				OUTPUT_VCF=$prefix.unallocated.vcf \
 				$readpairing_args \
 		; } 1>&2 2>> $logfile
-		echo "$(date)	AnnotateVariants	$output_vcf" | tee -a $timinglogfile
+		write_status "Running	AnnotateVariants	$output_vcf"
 		{ $timecmd java -Xmx$jvmheap $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateVariants \
@@ -835,7 +847,7 @@ if [[ $do_call == true ]] ; then
 				$readpairing_args \
 		; } 1>&2 2>> $logfile
 		$rmcmd $prefix.unallocated.vcf
-		echo "$(date)	AnnotateUntemplatedSequence	$output_vcf" | tee -a $timinglogfile
+		write_status "Running	AnnotateUntemplatedSequence	$output_vcf"
 		{ $timecmd java -Xmx4g $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateUntemplatedSequence \
@@ -849,14 +861,12 @@ if [[ $do_call == true ]] ; then
 		; } 1>&2 2>> $logfile
 		$rmcmd $prefix.allocated.vcf
 	else
-		echo "$(date)	Skipping variant calling	$output_vcf"
+		write_status  "Skipping variant calling	$output_vcf"
 	fi
-	echo "$(date)	Complete calling	$output_vcf" | tee -a $timinglogfile
+	write_status "Complete calling	$output_vcf"
 fi
 if [[ -f $logfile ]] ; then
-	echo "$(date)	Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
-else 
-	echo "$(date)	Run complete with no log file. Output file already exists?"
+	write_status "Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
 fi
 trap - EXIT
 exit 0 # success!
