@@ -17,6 +17,11 @@ trap 'echo "\"${last_command}\" command completed with exit code $?."' EXIT
 #253 forcing C locale for everything
 export LC_ALL=C
 
+EX_USAGE=64
+EX_NOINPUT=66
+EX_CANTCREAT=73
+EX_CONFIG=78
+
 USAGE_MESSAGE="
 Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 25g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 
@@ -46,7 +51,7 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
     #  then getopt has complained about wrong arguments to stdout
 	echo "$USAGE_MESSAGE" 1>&2
-    exit 64
+    exit $EX_USAGE
 fi
 eval set -- "$PARSED"
 workingdir="."
@@ -166,6 +171,45 @@ do_setupreference=false
 do_preprocess=false
 do_assemble=false
 do_call=false
+
+##### --workingdir
+echo "Using working directory \"$workingdir\"" 1>&2
+if [[ "$workingdir" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
+	exit $EX_USAGE
+fi
+if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
+		echo "workingdir cannot contain whitespace" 1>&2
+		exit $EX_USAGE
+	fi
+if [[ ! -d $workingdir ]] ; then
+	mkdir -p $workingdir
+	if [[ ! -d $workingdir ]] ; then
+		echo Unable to create working directory $workingdir 1>&2
+		exit $EX_CANTCREAT
+	fi
+fi
+workingdir=$(dirname $workingdir/placeholder)
+
+timestamp=$(date +%Y%m%d_%H%M%S)
+logfile=$workingdir/gridss.full.$timestamp.$HOSTNAME.$$.log
+timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
+if [[ "$timecmd" != "" ]] ; then
+	timecmd="/usr/bin/time --verbose -a -o $timinglogfile"
+	if ! $timecmd echo 2>&1 > /dev/null; then
+		timecmd="/usr/bin/time -a -o $timinglogfile"
+	fi
+	if ! $timecmd echo 2>&1 > /dev/null ; then
+		timecmd=""
+		echo "Unexpected /usr/bin/time version. Not logging timing information." 1>&2
+	fi
+	# We don't need the echo to be written to our timing log file
+	rm -f $timinglogfile
+fi
+echo "Full log file is: $logfile" 2>&1 
+
+
 for step in $(echo $steps | tr ',' ' ' ) ; do
 	if [[ "$step" == "all" ]] ; then
 		do_setupreference=true
@@ -182,7 +226,7 @@ for step in $(echo $steps | tr ',' ' ' ) ; do
 		do_call=true
 	else
 		echo "Unknown step \"$step\"" 1>&2
-		exit 64
+		exit $EX_USAGE
 	fi
 done
 ### Find the jars
@@ -192,40 +236,21 @@ find_jar() {
 		echo "${!env_name}"
 	else
 		echo "Unable to find $2 jar. Specify using the environment variant $env_name, or the --jar command line parameter." 1>&2
-		exit 66
+		exit $EX_NOINPUT
 	fi
 }
 gridss_jar=$(find_jar GRIDSS_JAR gridss)
-##### --workingdir
-echo "Using working directory \"$workingdir\"" 1>&2
-if [[ "$workingdir" == "" ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
-	exit 3
-fi
-if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
-		echo "workingdir cannot contain whitespace" 1>&2
-		exit 16
-	fi
-if [[ ! -d $workingdir ]] ; then
-	mkdir -p $workingdir
-	if [[ ! -d $workingdir ]] ; then
-		echo Unable to create working directory $workingdir 1>&2
-		exit 2
-	fi
-fi
-workingdir=$(dirname $workingdir/placeholder)
 ##### --reference
 echo "Using reference genome \"$reference\"" 1>&2
 if [[ "$reference" == "" ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Reference genome must be specified. Specify using the --reference command line argument" 1>&2
-	exit 6
+	exit $EX_USAGE
 fi
 if [ ! -f $reference ] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing reference genome $reference. Specify reference location using the --reference command line argument" 1>&2
-	exit 6
+	exit $EX_USAGE
 fi
 
 ##### --assembly
@@ -233,12 +258,12 @@ if [[ $do_assemble == "true" ]] ; then
 	if [[ "$assembly" == "" ]] ; then
 		echo "$USAGE_MESSAGE"  1>&2
 		echo "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory." 1>&2
-		exit 4
+		exit $EX_USAGE
 	fi
 	mkdir -p $(dirname $assembly)
 	if [[ ! -d $(dirname $assembly) ]] ; then
 		echo Unable to parent create directory for $assembly 1>&2
-		exit 2
+		exit $EX_CANTCREAT
 	fi
 	echo "Using assembly bam $assembly" 1>&2
 fi
@@ -248,12 +273,12 @@ if [[ $do_call == "true" ]] ; then
 	if [[ "$output_vcf" == "" ]] ; then
 		echo "$USAGE_MESSAGE"  1>&2
 		echo "Output VCF not specified. Use --output to specify output file." 1>&2
-		exit 9
+		exit $EX_USAGE
 	fi
 	mkdir -p $(dirname $output_vcf)
 	if [[ ! -d $(dirname $output_vcf) ]] ; then
 		echo "Unable to create directory for $output_vcf for output VCF." 1>&2
-		exit 2
+		exit $EX_CANTCREAT
 	fi
 	echo "Using output VCF $output_vcf" 1>&2
 fi
@@ -261,7 +286,7 @@ fi
 if [[ "$threads" -lt 1 ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Illegal thread count: $threads. Specify an integer thread count using the --threads command line argument" 1>&2
-	exit 10
+	exit $EX_USAGE
 fi
 if [[ "$threads" -gt 8 ]] ; then
 	echo "WARNING: GRIDSS scales sub-linearly at high thread count. Up to 8 threads is the recommended level of parallelism." 1>&2
@@ -273,13 +298,13 @@ if [[ "$blacklist" == "" ]] ; then
 elif [[ ! -f $blacklist ]] ; then
 	echo "$USAGE_MESSAGE"  1>&2
 	echo "Missing blacklist file $blacklist" 1>&2
-	exit 11
+	exit $EX_NOINPUT
 else
 	blacklist_arg="BLACKLIST=$blacklist"
 	echo "Using blacklist $blacklist" 1>&2
 	if [[ "$(tr -d ' 	\n' <<< "$blacklist_arg")" != "$blacklist_arg" ]] ; then
 		echo "blacklist cannot contain whitespace" 1>&2
-		exit 16
+		exit $EX_USAGE
 	fi
 fi
 if [[ "$jvmheap" == "" ]] ; then
@@ -295,14 +320,14 @@ fi
 for f in $@ ; do
 	if [[ ! -f $f ]] ; then
 		echo "Input file $f does not exist"  1>&2
-		exit 12
+		exit $EX_NOINPUT
 	fi
 done
 config_args=""
 if [[ "$config_file" != "" ]] ; then
 	if [[ ! -f $config_file ]] ; then
 	echo "Configuration file $config_file does not exist"  1>&2
-		exit 13
+		exit $EX_NOINPUT
 	fi
 	config_args="CONFIGURATION_FILE=$config_file"
 fi
@@ -310,7 +335,7 @@ input_args=""
 for f in $@ ; do
 	if [[ "$(tr -d ' 	\n' <<< "$f")" != "$f" ]] ; then
 		echo "input filenames and paths cannot contain whitespace" 1>&2
-		exit 16
+		exit $EX_USAGE
 	fi
 	echo "Using input file $f" 1>&2
 	input_args="$input_args INPUT=$f"
@@ -319,7 +344,7 @@ if [[ "$labels" != "" ]] ; then
 	nows_labels=$(tr -d ' 	\n' <<< "$labels")
 	if [[ "$nows_labels" != "$labels" ]] ; then
 		echo "input labels cannot contain whitespace" 1>&2
-		exit 16
+		exit $EX_USAGE
 	fi
 	IFS=',' read -ra LABEL_ARRAY  <<< "$nows_labels"
 	for label in "${LABEL_ARRAY[@]}" ; do
@@ -330,17 +355,26 @@ if [[ "$labels" != "" ]] ; then
 fi
 
 for f1 in $@ ; do
-	if [[ "$(basename $f1)" == "$(basename $assembly)" ]] ;
-		echo 1
+	if [[ "$(basename $f1)" == "$(basename $assembly)" ]] ; then
+		echo "assembly and input files must have different filenames."
+		echo $EX_USAGE
 	fi
 	for f2 in $@ ; do
-		if [[ ]]
+		if [[ "$f1" != "$f2" ]] ; then
+			if [[ "$(basename $f1)" == "$(basename $f2)" ]] ; then
+				echo "input files must have different filenames."
+				echo $EX_USAGE
+			fi
+		fi
 	done
 done
 
 # Validate tools exist on path
 for tool in Rscript samtools java ; do
-	if ! which $tool >/dev/null; then echo "Error: unable to find $tool on \$PATH" 1>&2 ; exit 2; fi
+	if ! which $tool >/dev/null; then
+		echo "Error: unable to find $tool on \$PATH" 1>&2
+		exit $EX_CONFIG
+	fi
 	echo "Found $(which $tool)" 1>&2 
 done
 if which /usr/bin/time >/dev/null ; then
@@ -350,10 +384,13 @@ else
 	timecmd=""
 	echo "Not found /usr/bin/time" 1>&2
 fi
-samtools --version-only 1>&2 || ( echo "Your samtools version is so old it does not support --version-only. Update samtools." 1>&2 && exit 19 )
+samtools --version-only 1>&2 || ( echo "Your samtools version is so old it does not support --version-only. Update samtools." 1>&2 && exit $EX_CONFIG )
 Rscript --version 1>&2
 if [[ "$externalaligner" == "true" ]] ; then
-	if ! which bwa >/dev/null; then echo "Error: unable to find bwa on \$PATH" 1>&2 ; exit 2; fi
+	if ! which bwa >/dev/null; then
+		echo "Error: unable to find bwa on \$PATH" 1>&2
+		exit $EX_CONFIG
+	fi
 	echo "bwa $(bwa 2>&1 | grep Version || echo -n)" 1>&2
 fi
 if which /usr/bin/time >/dev/null ; then
@@ -367,28 +404,12 @@ if java -cp $gridss_jar gridss.Echo ; then
 else
 	echo "Unable to run GRIDSS jar. GRIDSS requires java 1.8 or later." 1>&2
 	java -version 1>&2
-	exit 14
+	exit $EX_CONFIG
 fi
 
 if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
 	echo "Failure invoking java with --jvmheap parameter of \"$jvmheap\". Specify a JVM heap size (e.g. \"31g\") that is valid for this machine."
-	exit 15
-fi
-
-timestamp=$(date +%Y%m%d_%H%M%S)
-logfile=$workingdir/gridss.full.$timestamp.$HOSTNAME.$$.log
-timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
-if [[ "$timecmd" != "" ]] ; then
-	timecmd="/usr/bin/time --verbose -a -o $timinglogfile"
-	if ! $timecmd echo 2>&1 > /dev/null; then
-		timecmd="/usr/bin/time -a -o $timinglogfile"
-	fi
-	if ! $timecmd echo 2>&1 > /dev/null ; then
-		timecmd=""
-		echo "Unexpected /usr/bin/time version. Not logging timing information." 1>&2
-	fi
-	# We don't need the echo to be written to our timing log file
-	rm -f $timinglogfile
+	exit 1
 fi
 
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
@@ -408,7 +429,6 @@ fi
 if [[ $do_call == "true" ]] ; then
 	echo -n " call," 1>&2
 fi
-echo ". The full log is in $logfile" 2>&1 
 
 # For debugging purposes, we want to keep all our 
 if [[ $keepTempFiles == "true" ]] ; then
@@ -453,7 +473,7 @@ if [[ $do_preprocess == true ]] ; then
 	if [[ "$jobnodes" != "1" ]] ; then
 		echo "Error: Preprocessing does not support multiple nodes for a given input file." 2>&1
 		echo "	To perform parallel per-input preprocessing, run independent preprocessing per input file." 2>&1
-		exit 16
+		exit $EX_USAGE
 	fi
 	for f in $@ ; do
 		echo "$(date)	Start pre-processing	$f"
@@ -463,7 +483,7 @@ if [[ $do_preprocess == true ]] ; then
 		mkdir -p $dir
 		if [[ ! -d $dir ]] ; then
 			echo Unable to create directory $dir 1>&2
-			exit 2
+			exit $EX_CANTCREAT
 		fi
 		if [[ ! -f $prefix.sv.bam ]] ; then
 			echo "$(date)	CollectInsertSizeMetrics	$f	first $metricsrecords records" | tee -a $timinglogfile
@@ -772,7 +792,7 @@ if [[ $do_call == true ]] ; then
 	echo "$(date)	Start calling	$output_vcf" | tee -a $timinglogfile
 	if [[ "$jobnodes" != "1" ]] ; then
 		echo "Error: variant calling does not (yet) support multiple nodes for a given input file." 2>&1
-		exit 16
+		exit $EX_USAGE
 	fi
 	if [[ ! -f $output_vcf ]] ; then
 		dir=$workingdir/$(basename $output_vcf).gridss.working
@@ -780,7 +800,7 @@ if [[ $do_call == true ]] ; then
 		mkdir -p $dir
 		if [[ ! -d $dir ]] ; then
 			echo Unable to create directory $dir 1>&2
-			exit 2
+			exit $EX_CANTCREAT
 		fi
 		echo "$(date)	IdentifyVariants	$output_vcf" | tee -a $timinglogfile
 		{ $timecmd java -Xmx$jvmheap $jvm_args \
