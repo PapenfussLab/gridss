@@ -7,6 +7,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,7 @@ public class StreamingSplitReadRealigner extends SplitReadRealigner {
 
     public void process(Iterator<SAMRecord> it, SAMFileWriter coordinateSortedWriter, SAMFileWriter unorderedWriter) throws IOException {
         Map<String, SplitReadRealignmentInfo> lookup = new HashMap<>();
+        ProgressLogger progress = new ProgressLogger(log);
         int recordNumber = 0;
         while (it.hasNext()) {
             if (++recordNumber % 1000 == 0) {
@@ -36,8 +38,10 @@ public class StreamingSplitReadRealigner extends SplitReadRealigner {
                     log.info(msg);
                 }
             }
+            SAMRecord r = it.next();
+            progress.record(r);
             processCompletedAsyncRealignments(lookup, coordinateSortedWriter, unorderedWriter);
-            processInputRecord(it.next(), lookup, coordinateSortedWriter);
+            processInputRecord(r, lookup, coordinateSortedWriter);
         }
         // perform nested realignment to ensure all records are fully recursively realigned
         aligner.flush();

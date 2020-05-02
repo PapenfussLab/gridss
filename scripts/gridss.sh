@@ -588,7 +588,7 @@ if [[ $do_preprocess == true ]] ; then
 						ALIGNER=BWAMEM \
 						ALIGNER_BATCH_SIZE=10000 \
 						$picardoptions \
-				&& $timecmd samtools sort \
+				| $timecmd samtools sort \
 						-@ $threads \
 						-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 						-Obam \

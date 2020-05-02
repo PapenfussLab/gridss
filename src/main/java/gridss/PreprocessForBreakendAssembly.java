@@ -58,7 +58,13 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 			//SAMTag.Q2.name(), // dropping Q2 to improve runtime performance and file size
 			SAMTag.MC.name(),
 			SAMTag.MQ.name());
-
+	// ComputeSamTags arguments that we require for GRIDSS
+	private boolean FIX_DUPLICATE_FLAG = true;
+	private boolean FIX_MATE_INFORMATION = true;
+	private boolean FIX_SA = true;
+	private boolean FIX_MISSING_HARD_CLIP = true;
+	private boolean RECALCULATE_SA_SUPPLEMENTARY = true;
+	private boolean SOFTEN_HARD_CLIPS = true;
 	@Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
 			shortName="THREADS")
@@ -92,21 +98,6 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		IOUtil.assertFileIsReadable(INPUT);
 		IOUtil.assertFileIsWritable(OUTPUT);
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
-		// set up
-		ComputeSamTags cst = new ComputeSamTags();
-		copyInputs(cst);
-		cst.TAGS = TAGS;
-		cst.INPUT = INPUT;
-		cst.OUTPUT = OUTPUT;
-		cst.ASSUME_SORTED = ASSUME_SORTED;
-		cst.SOFTEN_HARD_CLIPS = true;
-		cst.TAGS = TAGS;
-		cst.FIX_DUPLICATE_FLAG = true;
-		cst.FIX_MATE_INFORMATION = true;
-		cst.FIX_SA = true;
-		cst.FIX_MISSING_HARD_CLIP = true;
-		cst.RECALCULATE_SA_SUPPLEMENTARY = true;
-		cst.WORKING_DIR = WORKING_DIR;
 
 		GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
 		StreamingSplitReadRealigner realigner;
@@ -128,11 +119,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		realigner.setRealignEntireRecord(false);
 		realigner.setRealignAnchoringBases(false);
 		realigner.setRealignExistingSplitReads(false);
-		ProgressLogger progress = new ProgressLogger(log);
 		String threadPrefix = INPUT.getName() + "-";
-
-
-
 		try {
 			SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
 			SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
@@ -154,14 +141,13 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 					File tmpOutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.PreprocessForBReakendAssembly.") : OUTPUT;
 					try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpOutput)) {
 						CloseableIterator<SAMRecord> asyncIn = new AsyncBufferedIterator<>(it, threadPrefix + "raw");
-						Iterator<SAMRecord> perRecord = cst.computePerRecordFields(asyncIn, cst.getReference(), cst.TAGS, cst.SOFTEN_HARD_CLIPS, cst.FIX_MATE_INFORMATION, cst.FIX_DUPLICATE_FLAG, cst.FIX_SA, cst.FIX_MISSING_HARD_CLIP, cst.RECALCULATE_SA_SUPPLEMENTARY);
+						Iterator<SAMRecord> perRecord = ComputeSamTags.computePerRecordFields(asyncIn, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
 						CloseableIterator<SAMRecord> asyncPerRecord = new AsyncBufferedIterator<>(perRecord, threadPrefix + "nm");
 						Iterator<List<SAMRecord>> groupByFragment = new GroupingIterator(asyncPerRecord, Ordering.natural().onResultOf((SAMRecord r) -> r.getReadName()));
-						Iterator<List<SAMRecord>> perFragment = ComputeSamTags.computePerFragmentFields(groupByFragment, cst.getReference(), cst.TAGS, cst.SOFTEN_HARD_CLIPS, cst.FIX_MATE_INFORMATION, cst.FIX_DUPLICATE_FLAG, cst.FIX_SA, cst.FIX_MISSING_HARD_CLIP, cst.RECALCULATE_SA_SUPPLEMENTARY);
+						Iterator<List<SAMRecord>> perFragment = ComputeSamTags.computePerFragmentFields(groupByFragment, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
 						CloseableIterator<List<SAMRecord>> asyncPerFragment = new AsyncBufferedIterator<>(perFragment, threadPrefix + "tags");
 						Iterator<SAMRecord> computedPerRead = new UngroupingIterator<>(asyncPerFragment);
 						realigner.process(computedPerRead, writer, writer);
-						writer.close();
 					}
 					if (tmpOutput != OUTPUT) {
 						FileHelper.move(tmpOutput, OUTPUT, true);
