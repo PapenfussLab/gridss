@@ -46,7 +46,7 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
     #  then getopt has complained about wrong arguments to stdout
 	echo "$USAGE_MESSAGE" 1>&2
-    exit 2
+    exit 64
 fi
 eval set -- "$PARSED"
 workingdir="."
@@ -158,7 +158,7 @@ while true; do
             ;;
         *)
             echo "Programming error"
-            exit 3
+            exit 1
             ;;
     esac
 done
@@ -182,7 +182,7 @@ for step in $(echo $steps | tr ',' ' ' ) ; do
 		do_call=true
 	else
 		echo "Unknown step \"$step\"" 1>&2
-		exit 18
+		exit 64
 	fi
 done
 ### Find the jars
@@ -192,7 +192,7 @@ find_jar() {
 		echo "${!env_name}"
 	else
 		echo "Unable to find $2 jar. Specify using the environment variant $env_name, or the --jar command line parameter." 1>&2
-		exit 1
+		exit 66
 	fi
 }
 gridss_jar=$(find_jar GRIDSS_JAR gridss)
@@ -328,6 +328,15 @@ if [[ "$labels" != "" ]] ; then
 	done
 	
 fi
+
+for f1 in $@ ; do
+	if [[ "$(basename $f1)" == "$(basename $assembly)" ]] ;
+		echo 1
+	fi
+	for f2 in $@ ; do
+		if [[ ]]
+	done
+done
 
 # Validate tools exist on path
 for tool in Rscript samtools java ; do
@@ -599,6 +608,10 @@ if [[ $do_preprocess == true ]] ; then
 				&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 				; } 1>&2 2>> $logfile
 			fi
+			if [[ ! -f $prefix.sv.bam ]] ; then
+				echo "$(date) pre-processing failed for $f"
+				exit 1
+			fi
 			echo "$(date)	Complete pre-processing	$f"
 		else
 			echo "$(date)	Skipping pre-processing as $prefix.sv.bam already exists. $f"
@@ -725,7 +738,7 @@ if [[ $do_assemble == true ]] ; then
 					READJUST_PRIMARY_ALIGNMENT_POSITON=true \
 					COMPRESSION_LEVEL=0 \
 					$picardoptions \
-			&& $timecmd samtools sort \
+			| $timecmd samtools sort \
 					-@ $threads \
 					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 					-Obam \
