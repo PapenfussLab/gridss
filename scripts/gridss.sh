@@ -42,10 +42,11 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	--useproperpair: use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
 	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. Default: 0.995
 	--keepTempFiles: keep intermediate files. Not recommended except for debugging due to the high disk usage.
+	--nojni: do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
 	"
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -74,6 +75,7 @@ readpairpdistribution="0.995"
 keepTempFiles="false"
 sanityCheck="false"
 externalaligner="false"
+nojni="false"
 while true; do
     case "$1" in
         -r|--reference)
@@ -155,6 +157,10 @@ while true; do
 			;;
 		--externalaligner)
 			externalaligner="true"
+			shift 1
+			;;
+		--nojni)
+			nojni="true"
 			shift 1
 			;;
 		--)
@@ -396,13 +402,11 @@ else
 	exit $EX_CONFIG
 fi
 write_status "R version: $(Rscript --version 2>&1)"
-if [[ "$externalaligner" == "true" ]] ; then
-	if ! which bwa >/dev/null; then
-		write_status "Error: unable to find bwa on \$PATH"
-		exit $EX_CONFIG
-	fi
-	write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
+if ! which bwa >/dev/null; then
+	write_status "Error: unable to find bwa on \$PATH"
+	exit $EX_CONFIG
 fi
+write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
 if which /usr/bin/time >/dev/null ; then
 	write_status "time version: $(/usr/bin/time --version 2>&1)"
 fi
@@ -456,6 +460,17 @@ jvm_args="$jvm_args \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
 	-Dsamjdk.buffer_size=4194304"
+
+if [[ "$nojni" == "true" ]] ; then
+	write_status "Disabling snappy, GKL, SSW, and in-process BWA"
+	jvm_args="$jvm_args \
+		-Dsnappy.disable=true
+		-Dsamjdk.try_use_intel_deflater=false
+		-Dsswjni.disable=true
+		-Dgkljni.disable=true
+		"
+	externalaligner="true"
+fi
 
 readpairing_args=""
 
