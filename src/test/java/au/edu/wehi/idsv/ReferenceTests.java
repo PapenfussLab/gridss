@@ -9,12 +9,17 @@ public interface ReferenceTests {
                 "",
                 "../",
                 "../../",
+                "ref/",
+                "../ref/",
+                "../../ref/",
                 "C:/dev/",
                 "D:/dev/",
                 "~/projects/reference_genomes/human/",
         }) {
             File f = new File(path + reference);
-            if (f.exists()) return f;
+            if (f.exists()) {
+                return f;
+            }
         }
         throw new RuntimeException("Cannot find reference genome to use for testing.");
     }

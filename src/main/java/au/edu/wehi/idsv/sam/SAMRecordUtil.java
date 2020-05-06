@@ -693,10 +693,12 @@ public class SAMRecordUtil {
 	 *            convert hard clips into soft clips if the sequence is
 	 *            available from a chimeric alignment of the same segmentt
 	 * @param fixMates
-	 * @param recalculateSupplementary 
+	 * @param recalculateSupplementary
+	 * @return SAMRecords removed from input list
 	 */
-	public static void calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
+	public static List<SAMRecord> calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
 			boolean restoreHardClips, boolean fixMates, boolean fixDuplicates, boolean fixSA, boolean fixTruncated, boolean recalculateSupplementary) {
+		List<SAMRecord> removed = Collections.emptyList();
 		// TODO: support secondary alignments by switching to templateBySegmentByAlignmentGroup() and handling split secondary reads
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
@@ -737,13 +739,15 @@ public class SAMRecordUtil {
 				}
 			}
 		}
-		// SA
+		// Split read alignments
 		if (fixSA) {
 			for (int i = 0; i < segments.size(); i++) {
-				SAMRecordUtil.reinterpretAsSplitReadAlignment(segments.get(i), recalculateSupplementary);
+				removed = SAMRecordUtil.reinterpretAsSplitReadAlignment(segments.get(i), recalculateSupplementary);
+				if (!removed.isEmpty()) {
+					records.removeAll(removed);
+				}
 			}
-		}
-		if (recalculateSupplementary) {
+		} else if (recalculateSupplementary) {
 			for (int i = 0; i < segments.size(); i++) {
 				recalculateSupplementaryFromSA(segments.get(i));
 			}
@@ -788,6 +792,7 @@ public class SAMRecordUtil {
 				}
 			}
 		}
+		return removed;
 	}
 	private static final Comparator<SAMRecord> ByReadLength = Comparator.comparingInt(r -> r.getReadLength());
 	private static void addMissingHardClipping(List<SAMRecord> list) {
@@ -851,12 +856,19 @@ public class SAMRecordUtil {
 				.compare(arg2.getReadLength(), arg1.getReadLength())
 				// high MAPQ is better
 				.compare(arg2.getMappingQuality(), arg1.getMappingQuality())
+				// in proper pair is better
+				.compareTrueFirst(arg1.getReadPairedFlag() && arg1.getProperPairFlag(), arg1.getReadPairedFlag() &&arg2.getProperPairFlag())
+				// lower edit distance is better
+				.compare(getNM(arg1, 0), getNM(arg2, 0))
 				// Other options are:
 				// - record is flagged as the mate of a read pair (strong support for that record to be the primary)
-				// - best MAPQ
 				.result();
 		}
 	};
+	private static int getNM(SAMRecord r, int defaultValue) {
+		Integer value = r.getIntegerAttribute(SAMTag.NM.name());
+		return value == null ? defaultValue : value;
+	}
 	private static void recalculateSupplementaryFromSA(List<SAMRecord> segments) {
 		HashMap<List<ChimericAlignment>, List<SAMRecord>> saLookup = new HashMap<>();
 		for (SAMRecord r : segments) {
@@ -1079,8 +1091,11 @@ public class SAMRecordUtil {
 		}
 	}
 	// TODO support secondary alignments via CC, CP, HI, IH
-	public static void reinterpretAsSplitReadAlignment(List<SAMRecord> list, boolean updateSupplementary) {
-		if (list == null || list.isEmpty()) return;
+	public static List<SAMRecord> reinterpretAsSplitReadAlignment(List<SAMRecord> list, boolean updateSupplementary) {
+		if (list == null || list.isEmpty()) {
+			return Collections.emptyList();
+		}
+		List<SAMRecord> removalList = new ArrayList<>();
 		if (list.size() == 1) {
 			list.get(0).setAttribute(SAMTag.SA.name(), null);
 		} else {
@@ -1090,14 +1105,16 @@ public class SAMRecordUtil {
 				SAMRecord r2 = list.get(i + 1);
 				if (getFirstAlignedBaseReadOffset(r1) == getFirstAlignedBaseReadOffset(r2)) {
 					if (ByBestPrimarySplitCandidate.compare(r1, r2) <= 0) {
-						list.remove(i);
+						removalList.add(list.remove(i + 1));
 					} else {
-						list.remove(i + 1);
+						removalList.add(list.remove(i));
 					}
-					if (!MessageThrottler.Current.shouldSupress(log, "Overlapping Split Read Alignments")) {
-						String msg = String.format("Found two read alignments starting at the same read offset for read %s. Ignoring one. Note that GRIDSS does not support multiple (non-split) alignments for a single read.", r1.getReadName());
-						log.warn(msg);
-					}
+					// Don't throttle these messages. We want to absolutely spam their log file if they're
+					// attempting to use GRIDSS with a malformed BAM file.
+					//if (!MessageThrottler.Current.shouldSupress(log, "Overlapping Split Read Alignments")) {
+					String msg = String.format("Found two read alignments starting at the same read offset for read %s. Ignoring one. Note that GRIDSS does not support multiple (non-split) alignments for a single read such as those output by 'bwa mem -a'.", r1.getReadName());
+					log.warn(msg);
+					//}
 				}
 			}
 			SAMRecord primary = list.stream().
@@ -1140,8 +1157,14 @@ public class SAMRecordUtil {
 				}
 			}
 		}
-		warnIfInvalidSA(list);
+		//warnIfInvalidSA(list);
+		return removalList;
 	}
+
+	/**
+	 * replaced by reinterpretAsSplitReadAlignment()
+	 */
+	@Deprecated
 	private static void calculateNonoverlappingSplitReadAlignmentSATags(List<SAMRecord> list, boolean recalculateSA) {
 		// TODO use CC, CP, HI, IH tags if they are present
 		// TODO break ties in an other other than just overwriting the previous
