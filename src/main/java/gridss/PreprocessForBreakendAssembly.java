@@ -13,7 +13,6 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.StandardOptionDefinitions;
@@ -24,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Stream;
 
 @CommandLineProgramProperties(
 		summary = "Preprocesses a readname sorted file for use in the GRIDSS assembler. " +
@@ -42,7 +40,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 	@Argument(doc="Which in-process aligner to use.", optional=true)
 	public SoftClipsToSplitReads.Aligner ALIGNER = SoftClipsToSplitReads.Aligner.BWAMEM;
 	@Argument(doc="Number of records to buffer when performing in-process or streaming alignment. Not applicable when performing external alignment.", optional=true)
-	public int ALIGNER_BATCH_SIZE = 10000;
+	public int ALIGNER_BATCH_SIZE = 100000;
 	@Argument(shortName= StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
 	public File INPUT;
 	@Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Unsorted BAM file with tags corrected and split reads identified.")

@@ -5,18 +5,19 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.Log;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Runs bwa mem through a JNI interface.
  */
-public class BwaStreamingAligner implements StreamingAligner {
+public class BwaStreamingAligner implements StreamingAligner, Closeable {
     private static final Log log = Log.getInstance(BwaStreamingAligner.class);
+    private ExecutorService bwaDriver = Executors.newSingleThreadExecutor();
     private final int batchSize;
     private Queue<FastqRecord> bwaInputBuffer;
     private final Queue<SAMRecord> bwaOutputBuffer = new LinkedBlockingDeque<>();
@@ -51,14 +52,14 @@ public class BwaStreamingAligner implements StreamingAligner {
         bwaInputBuffer.add(fq);
         outstandingRecords.incrementAndGet();
         int usedBuffer = outstandingBases.addAndGet(fq.getReadBases().length);
-        // TODO: actually make this asynchronous
         if (usedBuffer >= batchSize) {
             processInput();
         }
     }
 
-    private synchronized void processInput() {
-        ArrayList<FastqRecord> inFlightBuffer = new ArrayList<>(bwaInputBuffer.size() + 16);
+    // synchronized to ensure record ordering is stable
+    private synchronized Future<List<SAMRecord>> processInput() {
+        final ArrayList<FastqRecord> inFlightBuffer = new ArrayList<>(bwaInputBuffer.size() + 16);
         int basesSent = 0;
         while (!bwaInputBuffer.isEmpty() && basesSent < batchSize) {
             FastqRecord fq = bwaInputBuffer.poll();
@@ -66,16 +67,33 @@ public class BwaStreamingAligner implements StreamingAligner {
             basesSent += fq.getReadBases().length;
         }
         if (inFlightBuffer.size() > 0) {
-            List<SAMRecord> results = aligner.align(inFlightBuffer);
-            bwaOutputBuffer.addAll(results);
+            final int actualBasesSent = basesSent;
+            Future<List<SAMRecord>> result = bwaDriver.submit(() -> {
+                List<SAMRecord> results = getAligner().align(inFlightBuffer);
+                bwaOutputBuffer.addAll(results);
+                outstandingBases.addAndGet(-actualBasesSent);
+                outstandingRecords.addAndGet(-inFlightBuffer.size());
+                return results;
+            });
+            return result;
         }
-        outstandingBases.addAndGet(-basesSent);
-        outstandingRecords.addAndGet(-inFlightBuffer.size());
+        return null;
     }
 
     @Override
-    public void flush() throws IOException {
-        processInput();
+    public void flush() {
+        Future<List<SAMRecord>> future = processInput();
+        if (future != null) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                log.error(e, "Exception flushing bwa results.");
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                log.error(e, "Exception flushing bwa results.");
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
@@ -99,6 +117,8 @@ public class BwaStreamingAligner implements StreamingAligner {
 
     @Override
     public void close() throws IOException {
+        flush();
+        this.bwaDriver.shutdown();
         this.aligner.close();
     }
 }
