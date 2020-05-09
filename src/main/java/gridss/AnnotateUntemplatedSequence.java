@@ -3,10 +3,15 @@ package gridss;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
+import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
+import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
+import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.vcf.UntemplatedSequenceAnnotator;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import gridss.cmdline.ReferenceCommandLineProgram;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -39,11 +44,14 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 			"Setting to 'false' will generate annotations only for records without an existing BEALN annotation. ")
 	public boolean OVERWRITE = false;
 	@Argument(doc="Command line arguments to run external aligner. "
+			+ "In-process bwa alignment is used if this value is null. "
 			+ "Aligner output must be written to stdout and the records MUST match the input fastq order."
 			+ " The aligner must support using \"-\" as the input filename when reading from stdin."
 			+ "Java argument formatting is used with %1$s being the fastq file to align, "
 			+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
-	public List<String> ALIGNER_COMMAND_LINE = new SoftClipsToSplitReads().ALIGNER_COMMAND_LINE;
+	public List<String> ALIGNER_COMMAND_LINE = null;
+	@Argument(doc="Number of records to buffer when performing in-process or streaming alignment. Not applicable when performing external alignment.", optional=true)
+	public int ALIGNER_BATCH_SIZE = MAX_RECORDS_IN_RAM;
 	public static void main(String[] argv) {
         System.exit(new AnnotateUntemplatedSequence().instanceMain(argv));
     }
@@ -52,8 +60,16 @@ public class AnnotateUntemplatedSequence extends ReferenceCommandLineProgram {
 		IOUtil.assertFileIsReadable(INPUT);
 		IOUtil.assertFileIsWritable(OUTPUT);
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
-		log.info("Annotating variant untemplated sequence in " + INPUT);
-		try (UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(REFERENCE_SEQUENCE, INPUT, OVERWRITE, ALIGNER_COMMAND_LINE, WORKER_THREADS, new IndexedFastaSequenceFile(REFERENCE_SEQUENCE).getSequenceDictionary())) {
+		log.info("Annotating variant inserted sequence in " + INPUT);
+		try {
+			StreamingAligner sa;
+			SAMSequenceDictionary dict = new IndexedFastaSequenceFile(REFERENCE_SEQUENCE).getSequenceDictionary();
+			if (ALIGNER_COMMAND_LINE == null || ALIGNER_COMMAND_LINE.size() == 0) {
+				sa = new BwaStreamingAligner(REFERENCE_SEQUENCE, dict, WORKER_THREADS, ALIGNER_BATCH_SIZE * 150);
+			} else {
+				sa = new ExternalProcessStreamingAligner(SamReaderFactory.make(), ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS, dict);
+			}
+			UntemplatedSequenceAnnotator ann = new UntemplatedSequenceAnnotator(INPUT, sa, OVERWRITE);
 			saveVcf(INPUT, OUTPUT, ann);
 			log.info("Annotated variants written to " + OUTPUT);
 		} catch (IOException e) {

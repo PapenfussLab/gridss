@@ -1,7 +1,10 @@
 package au.edu.wehi.idsv.vcf;
 
 import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
+import au.edu.wehi.idsv.alignment.StreamingAligner;
+import au.edu.wehi.idsv.alignment.StreamingAlignerIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -29,40 +32,26 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 	public static final byte DEFAULT_QUAL_SCORE = 20;
 	private static final Log log = Log.getInstance(UntemplatedSequenceAnnotator.class);
 	private static final Pattern breakendRegex = Pattern.compile("^(.(?<leftins>.*))?[\\[\\]].*[\\[\\]]((?<rightins>.*).)?$");
-	private final File referenceFile;
 	private final File vcf;
 	private final boolean overwrite;
-	private final List<String> cmd;
-	private final int threads;
-	private final SAMSequenceDictionary dict;
 	private CloseableIterator<VariantContext> vcfStream;
-	private PeekingIterator<SAMRecord> samStream;
-	private ExternalProcessStreamingAligner aligner;
+	private PeekingIterator<SAMRecord> alignerStream;
 	private Thread feedingAligner;
 	private VariantContext nextRecord = null;
-	public UntemplatedSequenceAnnotator(File referenceFile, File vcf, boolean overwrite, List<String> aligner_command_line, int threads, SAMSequenceDictionary dict) {
-		this.referenceFile = referenceFile;
+	public UntemplatedSequenceAnnotator(File vcf, StreamingAligner aligner, boolean overwrite) {
 		this.vcf = vcf;
 		this.overwrite = overwrite;
-		this.cmd = aligner_command_line;
-		this.threads = threads;
 		this.vcfStream = getVcf();
-		createRecordAlignmentStream();
-		this.samStream = Iterators.peekingIterator(this.aligner);
-		this.dict = dict;
+		this.alignerStream = Iterators.peekingIterator(new StreamingAlignerIterator(aligner));
+		this.feedingAligner = new Thread(() -> feedStreamingAligner(aligner));
+		this.feedingAligner.setName("feedAligner");
+		this.feedingAligner.start();
 	}
+
 	private CloseableIterator<VariantContext> getVcf() {
 		VCFFileReader vcfReader = new VCFFileReader(vcf, false);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
 		return new AutoClosingIterator<VariantContext>(it, vcfReader);
-	}
-	private ExternalProcessStreamingAligner createRecordAlignmentStream() {
-		log.debug("Started async external alignment feeder thread.");
-		aligner = new ExternalProcessStreamingAligner(SamReaderFactory.make(), cmd, referenceFile, threads, dict);
-		feedingAligner = new Thread(() -> feedExternalAligner());
-		feedingAligner.setName("async-feedExternalAligner");
-		feedingAligner.start();
-		return aligner;
 	}
 	private boolean shouldAttemptAlignment(VariantContext v) {
 		return overwrite || !v.hasAttribute(VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute());
@@ -86,8 +75,7 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 		}
 		return null;
 	}
-
-	private void feedExternalAligner() {
+	private void feedStreamingAligner(StreamingAligner aligner) {
 		try (CloseableIterator<VariantContext> it = getVcf()) {
 			while (it.hasNext()) {
 				VariantContext vc = it.next();
@@ -132,9 +120,9 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 		}
 		if (!vcfStream.hasNext()) {
 			nextRecord = null;
-			if (aligner.hasNext()) {
+			if (alignerStream.hasNext()) {
 				log.debug("Traversing aligner stream to enable graceful termination.");
-				while(aligner.hasNext()) {
+				while(alignerStream.hasNext()) {
 					// consume the aligner output so everything closes gracefully
 				}
 			}
@@ -146,8 +134,8 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 	private void annotateNextRecord() {
 		String readName = nextRecord.getID();
 		List<SAMRecord> alignments = new ArrayList<>();
-		while (samStream.hasNext() && samStream.peek().getReadName().equals(readName)) {
-			SAMRecord r = samStream.next();
+		while (alignerStream.hasNext() && alignerStream.peek().getReadName().equals(readName)) {
+			SAMRecord r = alignerStream.next();
 			if (!r.getReadUnmappedFlag()) {
 				alignments.add(r);
 			}
@@ -199,10 +187,6 @@ public class UntemplatedSequenceAnnotator implements CloseableIterator<VariantCo
 		log.debug("Closing UntemplatedSequenceAnnotator");
 		// TODO: close feeding thread more cleanly than just shutting down the process
 		vcfStream.close();
-		try {
-			aligner.close();
-		} catch (IOException e) {
-			log.warn(e);
-		}
+		//alignerStream.close();
 	}
 }

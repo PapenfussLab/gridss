@@ -3,9 +3,11 @@ package au.edu.wehi.idsv.alignment;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 
+import java.io.Closeable;
+import java.io.Flushable;
 import java.io.IOException;
 
-public interface StreamingAligner {
+public interface StreamingAligner extends Flushable, Closeable {
 
 	void asyncAlign(FastqRecord fq) throws IOException;
 
@@ -27,7 +29,7 @@ public interface StreamingAligner {
 	int processedAlignmentRecords();
 	
 	/**
-	 * Number of fastq records sent to the aligner for which no response has yet been received
+	 * Number of fastq records queued with asyncAlign() for which no response has yet been received
 	 * @return
 	 */
 	int outstandingAlignmentRecord();
@@ -39,6 +41,4 @@ public interface StreamingAligner {
 	 * @throws IllegalStateException thrown when no alignment record is available from the aligner. Check if a record is available using processedAlignmentRecords()
 	 */
 	SAMRecord getAlignment();
-
-	void close() throws IOException;
 }

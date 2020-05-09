@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * @author Daniel Cameron
  *
  */
-public class ExternalProcessStreamingAligner implements Closeable, Flushable, StreamingAligner, Iterator<SAMRecord> {
+public class ExternalProcessStreamingAligner implements Closeable, Flushable, StreamingAligner {
 	private static final int POLL_INTERVAL = 1000;
 	private static final Log log = Log.getInstance(ExternalProcessStreamingAligner.class);	
 	private final AtomicInteger outstandingReads = new AtomicInteger(0);
@@ -43,7 +43,6 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 	// The following are only needed for pretty error messages
 	private final String commandlinestr;
 	private final File reference;
-	private final AtomicBoolean isClosed = new AtomicBoolean(false);
 	public ExternalProcessStreamingAligner(final SamReaderFactory readerFactory, final List<String> commandline, final File reference, final int threads, final SAMSequenceDictionary dict) {
 		this.readerFactory = readerFactory;
 		this.reference = reference;
@@ -53,9 +52,6 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 				.collect(Collectors.toList());
 		this.commandlinestr = args.stream().collect(Collectors.joining(" "));
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.alignment.StreamingAligner#asyncAlign(htsjdk.samtools.fastq.FastqRecord)
-	 */
 	@Override
 	public synchronized void asyncAlign(FastqRecord fq) throws IOException {
 		ensureAligner();
@@ -143,7 +139,7 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		while (it.hasNext()) {
 			SAMRecord r = it.next();
 			if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
-				if (!MessageThrottler.Current.shouldSupress(log, "strreaming aligner out of bounds")) {
+				if (!MessageThrottler.Current.shouldSupress(log, "streaming aligner out of bounds")) {
 					log.warn(String.format("Streamed aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
 				}
 			}
@@ -152,46 +148,9 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		}
 		log.info(String.format("Reader thread complete. %s reads in output buffer", buffer.size()));
 	}
-	/**
-	 * Flushes outstanding alignments and closes the pipe to the external aligner.
-	 * Alignment records returned by the aligner are still available after closing.
-	 */
-	@Override
-	public synchronized void close() throws IOException {
-		flush();
-		isClosed.set(true);
-	}
 
-	private void syncEnsureNext() {
-		while (!isClosed.get() && buffer.isEmpty()) {
-			try {
-				log.debug(String.format("%d alignments outstanding", outstandingReads.get()));
-				Thread.sleep(POLL_INTERVAL);
-			} catch (InterruptedException e) {
-				log.warn(e);
-				return;
-			}
-		}
-	}
-	/**
-	 * Blocks until it the next alignment record is available. 
-	 */
 	@Override
-	public boolean hasNext() {
-		syncEnsureNext();
-		return buffer.size() > 0;
-	}
-	/**
-	 * Blocks until the aligner returns the next alignment.
-	 */
-	@Override
-	public SAMRecord next() {
-		if (!hasNext()) throw new NoSuchElementException();
-		try {
-			return buffer.take();
-		} catch (InterruptedException e) {
-			log.warn(e);
-			throw new RuntimeException(e);
-		}
+	public void close() throws IOException {
+		flush();
 	}
 }

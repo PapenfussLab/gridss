@@ -6,6 +6,8 @@ import htsjdk.samtools.fastq.FastqRecord;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
@@ -41,14 +43,27 @@ public class BwaStreamingAlignerTest extends TestHelper {
         assertEquals(0, bwamem.processedAlignmentRecords());
         bwamem.getAlignment();
     }
+    private static void waitUntilTrue(Supplier<Boolean> condition) throws InterruptedException {
+        for (int i = 0; i < 1024; i++) {
+            if (condition.get()) {
+                break;
+            } else {
+                Thread.sleep(1);
+            }
+        }
+    }
     @Test
-    public void counts_should_match_aligner_state() throws IOException {
-        BwaStreamingAligner bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1);
+    public void counts_should_match_aligner_state_when_batch_processed() throws IOException, InterruptedException {
+        final BwaStreamingAligner bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1);
         bwamem.asyncAlign(new FastqRecord("noHit", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"));
+        waitUntilTrue(() -> bwamem.outstandingAlignmentRecord() == 0);
         assertEquals(0, bwamem.outstandingAlignmentRecord());
         assertEquals(1, bwamem.processedAlignmentRecords());
         bwamem.close();
-        bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1000);
+    }
+    @Test
+    public void flush_should_force_processing_and_block_till_completed() throws IOException, InterruptedException {
+        final BwaStreamingAligner bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1000);
         bwamem.asyncAlign(new FastqRecord("noHit", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"));
         assertEquals(1, bwamem.outstandingAlignmentRecord());
         assertEquals(0, bwamem.processedAlignmentRecords());
