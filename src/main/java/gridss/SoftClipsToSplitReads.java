@@ -18,8 +18,10 @@ import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.StandardOptionDefinitions;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -91,6 +93,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
     	pc.setCommandLineProgram(this);
     	pc.setFilterDuplicates(IGNORE_DUPLICATES);
+    	List<Closeable> toClose = new ArrayList<>();
     	SplitReadRealigner realigner;
     	try {
     		SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
@@ -99,11 +102,13 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 				case BWAMEM:
 					BwaStreamingAligner bwaAligner = new BwaStreamingAligner(REFERENCE_SEQUENCE, getReference().getSequenceDictionary(), WORKER_THREADS, ALIGNER_BATCH_SIZE * 150);
 					realigner = new StreamingSplitReadRealigner(pc, bwaAligner, ALIGNER_BATCH_SIZE);
+					toClose.add(bwaAligner);
 					break;
 				case EXTERNAL:
 				default:
 					if (ALIGNER_STREAMING) {
 						ExternalProcessStreamingAligner streamingAligner = new ExternalProcessStreamingAligner(readerFactory, ALIGNER_COMMAND_LINE, REFERENCE_SEQUENCE, WORKER_THREADS, getReference().getSequenceDictionary());
+						toClose.add(streamingAligner);
 						realigner = new StreamingSplitReadRealigner(pc, streamingAligner, ALIGNER_BATCH_SIZE);
 					} else {
 						ExternalProcessFastqAligner externalAligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
@@ -120,8 +125,11 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			realigner.setWorkerThreads(WORKER_THREADS);
 			realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITON);
 			realigner.setWriteOATag(WRITE_OA);
-
 			realigner.createSupplementaryAlignments(INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS);
+
+			for (Closeable c : toClose) {
+				c.close();
+			}
 		} catch (IOException e) {
 			log.error(e);
 			return -1;

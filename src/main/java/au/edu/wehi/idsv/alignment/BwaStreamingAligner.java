@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.alignment;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.fastq.FastqRecord;
@@ -17,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BwaStreamingAligner implements StreamingAligner, Closeable {
     private static final Log log = Log.getInstance(BwaStreamingAligner.class);
-    private ExecutorService bwaDriver = Executors.newSingleThreadExecutor();
+    private ExecutorService bwaDriver = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(false).setNameFormat("bwaDriver").build());
     private final int batchSize;
     private Queue<FastqRecord> bwaInputBuffer;
     private final Queue<SAMRecord> bwaOutputBuffer = new LinkedBlockingDeque<>();
@@ -33,12 +34,14 @@ public class BwaStreamingAligner implements StreamingAligner, Closeable {
      * @param reference Reference genome
      * @param dict sequence dictionary for reference genome
      * @param threads number of bwa threads
-     * @param batchSize number of base pairs of sequence to batch before calling BWA
+     * @param bufferSizeInBases number of base pairs of sequence to buffer.
+     *                          This buffer is evenly split across the input buffer and buffer to run to bwa.
+     *                          Actual invocations to bwa will be with a buffer half this size.
      */
-    public BwaStreamingAligner(File reference, SAMSequenceDictionary dict, int threads, int batchSize) {
+    public BwaStreamingAligner(File reference, SAMSequenceDictionary dict, int threads, int bufferSizeInBases) {
         this.bwaInputBuffer = new LinkedBlockingDeque<>();
         this.aligner = new BwaAligner(reference, dict, threads);
-        this.batchSize = batchSize;
+        this.batchSize = bufferSizeInBases / 2 + 1;
     }
 
     /**

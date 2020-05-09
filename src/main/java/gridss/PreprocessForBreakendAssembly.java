@@ -2,6 +2,7 @@ package gridss;
 
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
+import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.util.GroupingIterator;
@@ -98,16 +99,22 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 
 		GenomicProcessingContext pc = new GenomicProcessingContext(getFileSystemContext(), REFERENCE_SEQUENCE, getReference());
+		StreamingAligner sa;
 		StreamingSplitReadRealigner realigner;
 		switch (ALIGNER) {
 			case BWAMEM:
-				BwaStreamingAligner bwaAligner = new BwaStreamingAligner(REFERENCE_SEQUENCE, getReference().getSequenceDictionary(), WORKER_THREADS, ALIGNER_BATCH_SIZE * 150);
-				realigner = new StreamingSplitReadRealigner(pc, bwaAligner, ALIGNER_BATCH_SIZE);
+				// Our bwa interface uses a basepair-based buffer size, not a record-based buffer size
+				// If we choose a number too big, we'll only ever actually invoke bwa when we flush
+				// which will halve our throughput.
+				// 25bp per read ensures we're unlikely to be forced to flush.
+				int bwaBufferSizeInBases = ALIGNER_BATCH_SIZE * 25;
+				sa = new BwaStreamingAligner(REFERENCE_SEQUENCE, getReference().getSequenceDictionary(), WORKER_THREADS, bwaBufferSizeInBases);
 				break;
 			case EXTERNAL:
 			default:
 				throw new IllegalArgumentException("Aligner not supported by PreprocessForBreakendAssembly");
 		}
+		realigner = new StreamingSplitReadRealigner(pc, sa, ALIGNER_BATCH_SIZE);
 		realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
 		realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
 		realigner.setWorkerThreads(WORKER_THREADS);
@@ -152,6 +159,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 					}
 				}
 			}
+			sa.close();
 		} catch (IOException e) {
 			log.error(e);
 			return -1;
