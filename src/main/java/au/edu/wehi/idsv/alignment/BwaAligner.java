@@ -167,6 +167,8 @@ public class BwaAligner implements Closeable {
 
     @Override
     public void close() {
-        this.index.close();
+        // TODO: work out why we get Exception in thread "feedAligner" java.lang.IllegalStateException: Index image hg19.fa.img can't be closed:  it's in use.
+        // this.aligner.close();
+        // this.index.close();
     }
 }

@@ -130,7 +130,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		ArrayList<SAMEvidenceSource> sess = Lists.newArrayList(new MockSAMEvidenceSource(getContext(), new File("src/test/resources/malformedsv.sam")));
 		MockAssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), sess, new File("src/test/resources/empty.bam"));
 		VariantCaller vc = new VariantCaller(getContext(), sess, aes);
-		ExecutorService threadpool = Executors.newFixedThreadPool(2, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Test275-%d").build());
+		ExecutorService threadpool = Executors.newFixedThreadPool(2, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Test275-%d").build());
 		vc.callBreakends(new File(testFolder.getRoot(), "out275.vcf"), threadpool);
 	}
 }

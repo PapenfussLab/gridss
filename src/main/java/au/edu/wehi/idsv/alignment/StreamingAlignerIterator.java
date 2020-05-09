@@ -57,9 +57,9 @@ public class StreamingAlignerIterator implements StreamingAligner, Iterator<SAMR
     }
 
     private void syncEnsureNext() {
-        while (!isClosed.get() && outstandingAlignmentRecord() == 0) {
+        while (!isClosed.get() && processedAlignmentRecords() == 0) {
             try {
-                log.info(String.format("%d alignments outstanding", outstandingAlignmentRecord()));
+                log.debug(String.format("%d alignments outstanding", outstandingAlignmentRecord()));
                 Thread.sleep(POLL_INTERVAL);
             } catch (InterruptedException e) {
                 log.warn(e);
@@ -73,7 +73,7 @@ public class StreamingAlignerIterator implements StreamingAligner, Iterator<SAMR
     @Override
     public boolean hasNext() {
         syncEnsureNext();
-        return outstandingAlignmentRecord() > 0;
+        return processedAlignmentRecords() > 0;
     }
     /**
      * Blocks until the aligner returns the next alignment.

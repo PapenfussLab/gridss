@@ -73,7 +73,12 @@ public enum VcfInfoAttributes {
 	MIN_SUPPORTING_MAPQ ("MQN", 1, VCFHeaderLineType.Float, "Minimum MAPQ of breakpoint supporting reads."),
 	BREAKEND_MEAN_SUPPORTING_MAPQ ("BMQ", 1, VCFHeaderLineType.Float, "Mean MAPQ of breakend supporting reads."),
 	BREAKEND_MAX_SUPPORTING_MAPQ ("BMQX", 1, VCFHeaderLineType.Float, "Maximum MAPQ of breakend supporting reads."),
-	BREAKEND_MIN_SUPPORTING_MAPQ ("BMQN", 1, VCFHeaderLineType.Float, "Minimum MAPQ of breakend supporting reads.");
+	BREAKEND_MIN_SUPPORTING_MAPQ ("BMQN", 1, VCFHeaderLineType.Float, "Minimum MAPQ of breakend supporting reads."),
+	INSERTED_SEQUENCE_REPEATMASKER_REPEAT_TYPE("INSRMRT", 1, VCFHeaderLineType.String, "Inserted sequence repeatmasker repeat type."),
+	INSERTED_SEQUENCE_REPEATMASKER_REPEAT_CLASS("INSRMRC", 1, VCFHeaderLineType.String, "Inserted sequence repeatmasker repeat class."),
+	INSERTED_SEQUENCE_REPEATMASKER_ORIENTATION("INSRMRO", 1, VCFHeaderLineType.String, "Inserted sequence repeatmasker repeat orientation."),
+	INSERTED_SEQUENCE_REPEATMASKER_OVERLAP("INSRMP", 1, VCFHeaderLineType.Float, "Portion of inserted sequence whose alignment overlaps the repeatmasker repeat. 1.0 indicates the inserted sequence entirely mapping to the repeat.");
+
 	private final VCFInfoHeaderLine header;
 	private final String tag;
 	VcfInfoAttributes(String name, String samTag, int count, VCFHeaderLineType type, String description) {

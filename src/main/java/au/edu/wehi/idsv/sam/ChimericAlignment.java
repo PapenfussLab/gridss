@@ -5,6 +5,7 @@ import au.edu.wehi.idsv.BreakendSummary;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 import htsjdk.samtools.*;
+import joptsimple.internal.Strings;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -33,6 +34,14 @@ public class ChimericAlignment {
 		this.cigar = cigar;
 		this.mapq = mapq;
 		this.nm = nm;
+	}
+	public ChimericAlignment(String rname, int pos, boolean isNegativeStrand, Cigar cigar, int mapq) {
+		this.rname = rname;
+		this.pos = pos;
+		this.isNegativeStrand = isNegativeStrand;
+		this.cigar = cigar;
+		this.mapq = mapq;
+		this.nm = null;
 	}
 	public ChimericAlignment(SAMRecord r) {
 		this.rname = r.getReferenceName();
@@ -74,6 +83,20 @@ public class ChimericAlignment {
 	public static List<ChimericAlignment> getChimericAlignments(SAMRecord r) {
 		return getChimericAlignments(r.getStringAttribute(SAMTag.SA.name()));
 	}
+
+	public static ChimericAlignment parseBEALNAlignment(String bealn) {
+		String[] parts = bealn.split("[|]");
+		String chrpos = parts[0];
+		String chr = chrpos.substring(0, chrpos.lastIndexOf(':'));
+		int start = Integer.parseInt(chrpos.substring(chr.length() + 1));
+		return new ChimericAlignment(
+				chr,
+				start,
+				parts[1].equals("-"),
+				TextCigarCodec.decode(parts[2]),
+				(parts.length < 4 || Strings.isNullOrEmpty(parts[3])) ? SAMRecord.UNKNOWN_MAPPING_QUALITY : Integer.parseInt(parts[3]));
+	}
+
 	private BreakendSummary startBreakend(SAMSequenceDictionary dict) {
 		return new BreakendSummary(rnameToReferenceIndex(dict, rname), BreakendDirection.Backward, pos);
 	}

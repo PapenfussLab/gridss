@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.sam;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.List;
 
 import org.junit.Test;
 
 import htsjdk.samtools.TextCigarCodec;
+
+import static org.junit.Assert.*;
 
 
 public class ChimericAlignmentTest {
@@ -37,5 +36,27 @@ public class ChimericAlignmentTest {
 	public void getFirstAlignedBaseReadOffset_should_consider_strand() {
 		assertEquals(1, new ChimericAlignment(null, 0, false, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getFirstAlignedBaseReadOffset());
 		assertEquals(7, new ChimericAlignment(null, 0, true, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getFirstAlignedBaseReadOffset());
+	}
+	@Test
+	public void should_support_BELAN_format_with_HLA_types() {
+		//chr:start|strand|cigar|mapq
+		String bealn = "SN:HLA-DRB1*15:03:01:01:1-1:107870|-|8817S631M318S|30";
+		ChimericAlignment ca = ChimericAlignment.parseBEALNAlignment(bealn);
+		assertEquals("SN:HLA-DRB1*15:03:01:01:1-1", ca.rname);
+		assertEquals(107870, ca.pos);
+		assertTrue(ca.isNegativeStrand);
+		assertEquals("8817S631M318S", ca.cigar.toString());
+		assertEquals(30, ca.mapq);
+		assertNull(ca.nm);
+	}
+
+	/**
+	 * No mapq reported for XA tags
+	 */
+	@Test
+	public void should_support_BELAN_XA() {
+		String bealn = "SN:HLA-DRB1*15:03:01:01:1-1:107870|-|8817S631M318S|";
+		ChimericAlignment ca = ChimericAlignment.parseBEALNAlignment(bealn);
+		assertEquals(255, ca.mapq);
 	}
 }

@@ -8,6 +8,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.Flushable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -16,9 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Runs bwa mem through a JNI interface.
  */
-public class BwaStreamingAligner implements StreamingAligner, Closeable {
+public class BwaStreamingAligner implements StreamingAligner {
     private static final Log log = Log.getInstance(BwaStreamingAligner.class);
-    private ExecutorService bwaDriver = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(false).setNameFormat("bwaDriver").build());
+    private ExecutorService bwaDriver = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(true).setNameFormat("bwaDriver").build());
     private final int batchSize;
     private Queue<FastqRecord> bwaInputBuffer;
     private final Queue<SAMRecord> bwaOutputBuffer = new LinkedBlockingDeque<>();

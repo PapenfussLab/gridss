@@ -1111,10 +1111,17 @@ public class SAMRecordUtil {
 					}
 					// Don't throttle these messages. We want to absolutely spam their log file if they're
 					// attempting to use GRIDSS with a malformed BAM file.
-					//if (!MessageThrottler.Current.shouldSupress(log, "Overlapping Split Read Alignments")) {
-					String msg = String.format("Found two read alignments starting at the same read offset for read %s. Ignoring one. Note that GRIDSS does not support multiple (non-split) alignments for a single read such as those output by 'bwa mem -a'.", r1.getReadName());
-					log.warn(msg);
-					//}
+					// Update: bad idea. bwa writes bad split read alignments on hg38+alt
+					if (!MessageThrottler.Current.shouldSupress(log, "Overlapping Split Read Alignments")) {
+						String msg = String.format("Found two read alignments starting at the same read offset for read %s (%s:%d and %s:%d). " +
+								"Ignoring one. Note that GRIDSS does not support multiple (non-split) alignments for a single read such as those output by 'bwa mem -a'.",
+								r1.getReadName(),
+								r1.getReferenceName(),
+								r1.getAlignmentStart(),
+								r2.getReferenceName(),
+								r2.getAlignmentStart());
+						log.warn(msg);
+					}
 				}
 			}
 			SAMRecord primary = list.stream().

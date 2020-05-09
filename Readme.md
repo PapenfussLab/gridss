@@ -48,7 +48,6 @@ The following scripts are included in GRIDSS releases:
 |---|---|
 gridss.sh|Driver script for running GRIDSS. Use this to run GRIDSS
 gridss_somatic_filter.R|Somatic filtering script. Identifies somatic events for tumour samples with a matched normal. Multiple tumour biopsies are supported
-gridss_annotate_insertions_repeatmaster.R|Annotates single breakend variant calls and breakpoint insert sequences with their RepeatMasker class and type 
 
 ## gridss.sh command-line arguments
 
@@ -100,36 +99,37 @@ This is the [VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf) notation for
 
 Run the [integrated GRIDSS PURPLE LINX pipeline script](https://github.com/hartwigmedical/gridss-purple-linx) or the docker image gridss/gridss-purple-linx:latest.
 
-### How do I do RepeatMasker annotation?
+### How do I do RepeatMasker annotation of breakend sequences?
 
-Run `gridss.AnnotateUntemplatedSequence` from the GRIDSS jar against your reference genome. Then run the repeat masker annotation script. The first step finds potential mapping locations for the sequences, the second annotates with the corresponding RepeatMasker repeat class and type for those locations. For example:
+Run `gridss.AnnotateInsertedSequence` from the GRIDSS jar against your reference genome with `REPEAT_MASKER_BED` set to the RepeatMasker bed for your genome. Make sure your chromosome names match. The RepeatMasker bed can be generated using bedops `rmsk2bed`. For example:
 
 ```
-#258# workaround for https://github.com/Bioconductor/VariantAnnotation/issues/19
-cat $annotated_gridss_output | awk ' { if (length($0) >= 4000) { gsub(":0.00:", ":0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000:")} ; print $0  } ' < location_annotated.vcf > location_annotated_va19hack.vcf
-		Rscript $install_dir/gridss/gridss_annotate_insertions_repeatmaster.R \
-			--input location_annotated_va19hack.vcf \
-			--output repeatmasker_annotated \
-			--repeatmasker hg19.fa.out \
-			--scriptdir $install_dir/gridss/
+java -Xmx3g -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence \
+				REFERENCE_SEQUENCE=$reference \
+				INPUT=$raw_gridss_output \
+				OUTPUT=$annotated_gridss_output \
+				WORKER_THREADS=$threads \
+				ALIGNMENT=REPLACE \
+				REPEAT_MASKER_BED=hg19.fa.out.bed 
 ```
-`--scriptdir` is the location of `libgridss.R` and `gridss.config.R`. Both must be in the same directory.
+
 
 ### How do I do viral annotation?
 
-Run `gridss.AnnotateUntemplatedSequence` from the GRIDSS jar against your viral reference (fasta format). For example:
+Run `gridss.AnnotateInsertedSequence` from the GRIDSS jar against your viral reference (fasta format). For example:
 
 ```
-java -Xmx6g -cp $GRIDSS_JAR gridss.AnnotateUntemplatedSequence \
+java -Xmx6g -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence \
 				REFERENCE_SEQUENCE=$viralreference \
 				INPUT=$raw_gridss_output \
 				OUTPUT=$annotated_gridss_output \
-				WORKER_THREADS=$threads
+				WORKER_THREADS=$threads \
+				ALIGNMENT=APPEND
 ```
 
 This will add a `BEALN` INFO field to the VCF that contains the potential alignment locations in $viralreference for single breakend/breakpoint inserted sequences.
 
-Note: Be aware that low complexity sequences (e.g poly-A) can match viral sequences. This can be mitigated by either first aligning to the human reference (as done by `gridss.sh`), or making a human+viral reference sequence and running `AnnotateUntemplatedSequence` against that.
+Note: Be aware that low complexity sequences (e.g poly-A) can match viral sequences. This can be mitigated by either first aligning to the human reference (as done by `gridss.sh`), or making a human+viral reference sequence and running `AnnotateInsertedSequence` against that.
 
 ### What does `gridss_somatic_filter.R` actually do?
 
