@@ -19,13 +19,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BwaStreamingAligner implements StreamingAligner {
     private static final Log log = Log.getInstance(BwaStreamingAligner.class);
-    private ExecutorService bwaDriver = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(true).setNameFormat("bwaDriver").build());
-    private final int batchSize;
+    private ThreadPoolExecutor bwaDriver = new ThreadPoolExecutor(1, 1,
+            0L, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<Runnable>(1),
+            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("bwaDriver").build());
+    private final int bufferSizeInBytes;
     private Queue<FastqRecord> bwaInputBuffer;
     private final Queue<SAMRecord> bwaOutputBuffer = new LinkedBlockingDeque<>();
     private final BwaAligner aligner;
     private AtomicInteger outstandingRecords = new AtomicInteger(0);
     private AtomicInteger outstandingBases = new AtomicInteger(0);
+    private AtomicInteger queuedBases = new AtomicInteger(0);
     public BwaAligner getAligner() {
         return this.aligner;
     }
@@ -42,7 +46,7 @@ public class BwaStreamingAligner implements StreamingAligner {
     public BwaStreamingAligner(File reference, SAMSequenceDictionary dict, int threads, int bufferSizeInBases) {
         this.bwaInputBuffer = new LinkedBlockingDeque<>();
         this.aligner = new BwaAligner(reference, dict, threads);
-        this.batchSize = bufferSizeInBases / 2 + 1;
+        this.bufferSizeInBytes = bufferSizeInBases / 2 + 1;
     }
 
     /**
@@ -55,8 +59,9 @@ public class BwaStreamingAligner implements StreamingAligner {
     public void asyncAlign(FastqRecord fq) {
         bwaInputBuffer.add(fq);
         outstandingRecords.incrementAndGet();
-        int usedBuffer = outstandingBases.addAndGet(fq.getReadBases().length);
-        if (usedBuffer >= batchSize) {
+        outstandingBases.addAndGet(fq.getReadBases().length);
+        int queuedBytes = queuedBases.addAndGet(fq.getReadBases().length);
+        if (queuedBytes >= bufferSizeInBytes) {
             processInput();
         }
     }
@@ -65,8 +70,9 @@ public class BwaStreamingAligner implements StreamingAligner {
     private synchronized Future<List<SAMRecord>> processInput() {
         final ArrayList<FastqRecord> inFlightBuffer = new ArrayList<>(bwaInputBuffer.size() + 16);
         int basesSent = 0;
-        while (!bwaInputBuffer.isEmpty() && basesSent < batchSize) {
+        while (!bwaInputBuffer.isEmpty()) {
             FastqRecord fq = bwaInputBuffer.poll();
+            queuedBases.addAndGet(-fq.getReadBases().length);
             inFlightBuffer.add(fq);
             basesSent += fq.getReadBases().length;
         }

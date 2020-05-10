@@ -51,19 +51,20 @@ public class StreamingSplitReadRealigner extends SplitReadRealigner {
         }
     }
 
-    private void processCompletedAsyncRealignments(
+    private boolean processCompletedAsyncRealignments(
             Map<String, SplitReadRealignmentInfo> lookup,
             SAMFileWriter coordinateSortedWriter,
             SAMFileWriter unorderedWriter) throws IOException {
-        if (aligner.processedAlignmentRecords() > 0) {
+        if (aligner.outstandingAlignmentRecord() >= maxBufferedRecords) {
+            log.info(String.format("%d records awaiting alignment. Flushing.", maxBufferedRecords));
+            aligner.flush();
+        }
+        while (aligner.processedAlignmentRecords() > 0) {
             SAMRecord realignment = aligner.getAlignment();
             processAlignmentRecord(realignment, lookup, coordinateSortedWriter, unorderedWriter);
+            return true;
         }
-        if (aligner.outstandingAlignmentRecord() >= maxBufferedRecords) {
-            log.info(String.format("%d records awaiting alignment by external aligner. Flushing.", maxBufferedRecords));
-            aligner.flush();
-            processCompletedAsyncRealignments(lookup, coordinateSortedWriter, unorderedWriter);
-        }
+        return false;
     }
 
     private void processInputRecord(SAMRecord record, Map<String, SplitReadRealignmentInfo> realignments, SAMFileWriter coordinateSortedWriter) throws IOException {
