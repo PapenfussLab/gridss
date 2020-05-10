@@ -10,6 +10,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.Flushable;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,7 +22,7 @@ public class BwaStreamingAligner implements StreamingAligner {
     private static final Log log = Log.getInstance(BwaStreamingAligner.class);
     private ThreadPoolExecutor bwaDriver = new ThreadPoolExecutor(1, 1,
             0L, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<Runnable>(1),
+            new AlwaysBlockingQueue<Runnable>(1),
             new ThreadFactoryBuilder().setDaemon(true).setNameFormat("bwaDriver").build());
     private final int bufferSizeInBytes;
     private Queue<FastqRecord> bwaInputBuffer;
@@ -32,6 +33,26 @@ public class BwaStreamingAligner implements StreamingAligner {
     private AtomicInteger queuedBases = new AtomicInteger(0);
     public BwaAligner getAligner() {
         return this.aligner;
+    }
+
+    /**
+     * Hacky queue that will force the calling thread to block until the task can be queued
+     */
+    private static class AlwaysBlockingQueue<E> extends ArrayBlockingQueue<E> {
+        public AlwaysBlockingQueue(int maxSize) {
+            super(maxSize);
+        }
+
+        @Override
+        public boolean offer(E e)  {
+            try {
+                put(e);
+                return true;
+            } catch(InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+            return false;
+        }
     }
 
     /**
