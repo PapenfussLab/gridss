@@ -82,8 +82,18 @@ public class VariantContextRepeatMaskerAnnotator implements Function<VariantCont
                 .make();
     }
 
+    private VariantContext unannotate(VariantContext variantContext) {
+        return new VariantContextBuilder(variantContext)
+                .rmAttribute(VcfInfoAttributes.INSERTED_SEQUENCE_REPEATMASKER_OVERLAP.attribute())
+                .rmAttribute(VcfInfoAttributes.INSERTED_SEQUENCE_REPEATMASKER_REPEAT_TYPE.attribute())
+                .rmAttribute(VcfInfoAttributes.INSERTED_SEQUENCE_REPEATMASKER_REPEAT_CLASS.attribute())
+                .rmAttribute(VcfInfoAttributes.INSERTED_SEQUENCE_REPEATMASKER_ORIENTATION.attribute())
+                .make();
+    }
+
     @Override
     public VariantContext apply(VariantContext variantContext) {
+        variantContext = unannotate(variantContext);
         try {
             List<String> alignments = variantContext.getAttributeAsStringList(VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute(), null);
             if (alignments == null || alignments.size() == 0) {

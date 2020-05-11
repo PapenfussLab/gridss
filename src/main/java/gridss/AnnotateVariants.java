@@ -61,7 +61,7 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		ae.INPUT_VCF = INPUT_VCF; // needed for caching 
 		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(ae.iterator(calls, threadpool), 128, 2, "AllocateEvidence");
 		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(arc.iterator(calls, threadpool), 128, 2, "AnnotateReferenceCoverage");
-		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(ihom.iterator(calls, threadpool), 128, 2, "AnnotateInexactHomology");
+		calls = ihom.iterator(calls, threadpool);
 		return calls;
 	}
 	public static void main(String[] argv) {
