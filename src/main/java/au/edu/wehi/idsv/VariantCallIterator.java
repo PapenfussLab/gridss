@@ -1,6 +1,8 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.util.BatchingIterator;
 import au.edu.wehi.idsv.util.DuplicatingIterable;
+import au.edu.wehi.idsv.util.FlatMapIterator;
 import au.edu.wehi.idsv.visualisation.StateTracker;
 import au.edu.wehi.idsv.visualisation.TrackedState;
 import com.google.common.collect.ImmutableList;
@@ -28,7 +30,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 	private static final int ITERATOR_BUFFER_SIZE = 256;
 	private final VariantContextDirectedEvidence endOfStream;
 	private final ProcessingContext processContext;
-	private final DuplicatingIterable<DirectedEvidence> iterable;
+	private final DuplicatingIterable<List<DirectedEvidence>> iterable;
 	private final QueryInterval[] filterInterval;
 	private final BlockingDeque<VariantContextDirectedEvidence> outBuffer = new LinkedBlockingDeque<>(ITERATOR_BUFFER_SIZE);
 	private VariantContextDirectedEvidence outBufferHeadNextValidRecord = null;
@@ -46,13 +48,13 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 		this.processContext = processContext;
 		boolean callBreakends = processContext.getVariantCallingParameters().callBreakends;
 		this.activeIterators = callBreakends ? 6 : 4;
-		this.iterable = new DuplicatingIterable<>(activeIterators, evidence, ITERATOR_BUFFER_SIZE);
+		this.iterable = new DuplicatingIterable<>(activeIterators, new BatchingIterator<>(evidence, ITERATOR_BUFFER_SIZE), 2);
 		this.filterInterval = interval;
 		for (BreakendDirection localDir : BreakendDirection.values()) {
 			for (BreakendDirection remoteDir : BreakendDirection.values()) {
 				MaximalEvidenceCliqueIterator it = new MaximalEvidenceCliqueIterator(
 						processContext,
-						this.iterable.iterator(),
+						new FlatMapIterator<>(this.iterable.iterator()),
 						localDir,
 						remoteDir,
 						new SequentialIdGenerator(String.format("gridss%d%s%s_", Math.max(intervalNumber, 0), localDir.toChar(), remoteDir.toChar())));
@@ -61,7 +63,7 @@ public class VariantCallIterator implements CloseableIterator<VariantContextDire
 			if (callBreakends) {
 				BreakendMaximalEvidenceCliqueIterator it = new BreakendMaximalEvidenceCliqueIterator(
 						processContext,
-						this.iterable.iterator(),
+						new FlatMapIterator<>(this.iterable.iterator()),
 						localDir,
 						new SequentialIdGenerator(String.format("gridss%d%s_", Math.max(intervalNumber, 0), localDir.toChar())));
 				async.add(new AsyncDirectionalIterator(it, localDir, null));
