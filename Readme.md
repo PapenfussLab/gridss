@@ -90,7 +90,7 @@ _Warning_: all somatic R scripts treat the first bam file to be the matched norm
 The following GRIDSS steps can be specified:
 step|description
 ---|---
-setupreference|Once-off setup generating additional files in the same directory as the reference.
+setupreference|Once-off setup generating additional files in the same directory as the reference. WARNING: multiple instances of GRIDSS attempting to perform `setupreference` at the same time will result in file corruption. Make sure these files are generated before runninng parallel GRIDSS jobs.
 preprocess|Pre-process input BAM files. Can be run per input file.
 assemble|Perform GRIDSS breakend assembly. Can split up using .
 call|Perform variant calling.
@@ -141,7 +141,6 @@ java -Xmx3g -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence \
 				REPEAT_MASKER_BED=hg19.fa.out.bed 
 ```
 
-
 ### How do I do viral annotation?
 
 Run `gridss.AnnotateInsertedSequence` from the GRIDSS jar against your viral reference (fasta format). For example:
@@ -190,6 +189,8 @@ Note that `gridss_somatic_filter.R` requires the files to be named `gridss_pon_b
 Wherever possible, samples should be processed together. Joint calling enables the detection of low allelic fraction SVs, as well as making the downstream analysis much easier (a single VCF with a breakdown of support per sample is much easier to deal with than multiple VCFs - the matching logic required to determine if two SVs are equivalent is non-trivial).
 
 GRIDSS joint calling has been tested on up 12 samples with ~1000x aggregate coverage. If you have hundreds of samples, joint assembly will likely be computationally prohibitive and you will need to perform assembly in batches, them merge the results together.
+
+WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure `setupreference` files have been generated before runninng parallel GRIDSS jobs.
 
 ### I encountered an error. What should I do?
 
@@ -336,7 +337,7 @@ Calculates the size of the inexact homology between the reference sequence and t
 with long inexact homology are possibly due to alignment artifacts causing false positive breakpoint calls between
 regions of homologous sequence.
 
-#### AnnotateUntemplatedSequence
+#### AnnotateInsertedSequence
 
 Finds potential mapping locations for single breakends and breakpoint insert sequences in the given reference. Used for RepeatMasker annotation, and viral integration detection.
 
@@ -453,7 +454,7 @@ configuration file that is used instead of the standard command-line arguments.
 
 When supplying a custom configuration, GRIDSS will use the overriding settings for all properties specified
 and fall back to the default for all properties that have not been overridden. Details on the meaning
-of each parameter can be found in the javadoc documentation of the au.edu.wehi.idsv.configuration classes.
+of each parameter can be found in the javadoc documentation of the `au.edu.wehi.idsv.configuration` classes.
 
 # Output
 

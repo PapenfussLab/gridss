@@ -1,6 +1,6 @@
 #!/bin/bash
 base_dir=/path/to/project/
-ref=$base_dir/ref/mm10.fa
+ref=$base_dir/ref/reference_genome.fa
 working_dir=$base_dir/working
 inputs="$base_dir/input1.bam $base_dir/input2.bam $base_dir/input3.bam"
 inputarr=($inputs)
@@ -15,6 +15,10 @@ cat > $working_dir/gridss.properties << EOF
 chunkSize=1000000
 chunkSequenceChangePenalty=100000
 EOF
+
+#
+# WARNING: assumes GRIDSS setupreference has already been run
+#
 
 # Assumes gridss.sh release artifacts are in $base_dir
 gridss_cmd_common="$base_dir/gridss.sh \
@@ -35,7 +39,7 @@ cat > $working_dir/${job_prefix}_preprocess.sh << EOF
 #PBS -l nodes=1:ppn=$threads,mem=16gb,walltime=144:00:0
 #PBS -j oe
 
-module add bwa samtools R sambamba java
+module add bwa samtools R java
 inputarr=($inputs)
 cd $working_dir
 $gridss_cmd_common -t $threads \
@@ -52,7 +56,7 @@ cat > $working_dir/${job_prefix}_assembly.sh << EOF
 #PBS -t 1-$assembly_jobs
 #PBS -l nodes=1:ppn=$threads,mem=30gb,walltime=144:00:0
 #PBS -j oe
-module add bwa samtools R sambamba java
+module add bwa samtools R java
 inputarr=($inputs)
 cd $working_dir
 $gridss_cmd_common -t $threads \
@@ -71,7 +75,7 @@ cat > $working_dir/${job_prefix}_call.sh << EOF
 ##PBS -o ${job_prefix}_call
 #PBS -l nodes=1:ppn=$threads,mem=30gb,walltime=144:00:0
 #PBS -j oe
-module add bwa samtools R sambamba java
+module add bwa samtools R java
 inputarr=($inputs)
 cd $working_dir
 $gridss_cmd_common -t $threads \

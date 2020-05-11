@@ -33,7 +33,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. Defaults to the current directory.
 	-b/--blacklist: BED file containing regions to ignore
 	--repeatmaskerbed: bedops rmsk2bed BED file for genome.
-	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Possible steps are: setupreference, preprocess, assemble, call, all
+	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Possible steps are: setupreference, preprocess, assemble, call, all. WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure these files are generated before runninng parallel GRIDSS jobs.
 	-c/--configuration: configuration file use to override default GRIDSS settings.
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS

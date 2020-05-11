@@ -14,7 +14,7 @@ RUN gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys E298A3A825C0D65DFD
 RUN gpg -a --export E298A3A825C0D65DFD57CBB651716619E084DAB9 | apt-key add -
 RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/'
 
-RUN apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre-headless samtools sambamba bwa time build-essential make r-base libssl-dev libcurl4-openssl-dev libxml2-dev ; rm -rf /var/lib/apt/lists/*
+RUN apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre-headless samtools bwa time build-essential make r-base libssl-dev libcurl4-openssl-dev libxml2-dev ; rm -rf /var/lib/apt/lists/*
 
 # R packages used by GRIDSS and PURPLE
 ENV R_INSTALL_STAGED=false
