@@ -585,11 +585,11 @@ GRIDSS has attempted to open too many files at once and the OS file handle limit
 On linux 'ulimit -n' displays your current limit. This error likely to be encountered if you have specified a large number of input files or threads. The following solution is recommended:
 * Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
   * Note that many linux systems have a default hard limit on open file handles of 4096 which with many samples is frequently too still too few. Increasing the hard limit requires root access.
-* Added `-Dgridss.defensiveGC=true` to the java command-line used for GRIDSS. Memory mapped file handles are not released to the OS until the buffer is garbage collected . This option add a request forr garbage collection whenever a file handle is no longer used.
+* Increase the chunk size. The default chunk size is 10 million bases. This can be increased by adding a `chunkSize=50000000` line a `gridss.properties` file and adding `CONFIGURATION_FILE=gridss.properties` to the GRIDSS command line. Note that this will increase the number of bases processed by each job thus reduce the level of parallelisation possible.
+* Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
 
 If those options fail, your remaining options are:
-* Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
-* Increase the chunk size. The default chunk size is 10 million bases. This can be increased by adding a `chunkSize=100000000` line a `gridss.properties` file and adding `CONFIGURATION_FILE=gridss.properties` to the GRIDSS command line. Note that this will increase the number of bases processed by each job thus reduce the level of parallelisation possible.
+* Added `-Dgridss.defensiveGC=true` to the java command-line used for GRIDSS. Memory mapped file handles are not released to the OS until the buffer is garbage collected . This option add a request for garbage collection whenever a file handle is no longer used. This is a significant overhead and is not a good option for sparse data samples (such as exome or targetted sequencing) - increasing the chunk size is a much better option for these samples.
 * As a last-ditch effort, you can keep rerunning GRIDSS until it completes. If you are using the default entry point of `gridss.CallVariants` and have `-Dgridss.gridss.output_to_temp_file=true`, then you can rerun GRIDSS and it will continue from where it left off. Assuming it doesn't keep dying at the same spot, it will eventually complete.
 
 ### Reference genome used by _input.bam_ does not match reference genome _reference.fa_. The reference supplied must match the reference used for every input.
