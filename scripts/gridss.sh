@@ -861,6 +861,7 @@ if [[ $do_call == true ]] ; then
 		write_status "Running	AnnotateVariants	$output_vcf"
 		{ $timecmd java -Xmx$jvmheap $jvm_args \
 				-Dgridss.output_to_temp_file=true \
+				-Dgridss.async.buffersize=2048 \
 				-cp $gridss_jar gridss.AnnotateVariants \
 				TMP_DIR=$workingdir \
 				WORKING_DIR=$workingdir \
