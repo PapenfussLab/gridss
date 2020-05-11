@@ -107,10 +107,10 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				contigGeneratedSinceException = false;
 				Set<DirectedEvidence> reloadRecoverySet = getEvidenceInCurrentAssembler();
 				String msg = String.format("Error during assembly of chromosome %s (%d reads in graph). Attempting recovery by rebuilding assembly graph.", currentContig, reloadRecoverySet.size());
-				log.warn(e, msg);
+				log.info(e, msg);
 				StringWriter sw = new StringWriter();
 				e.printStackTrace(new PrintWriter(sw));
-				log.warn(sw);
+				log.info(sw);
 				closeCurrentAssembler();
 				ensureAssembler(attemptRecovery, reloadRecoverySet);
 			} else {
