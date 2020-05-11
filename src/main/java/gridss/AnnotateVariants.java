@@ -3,6 +3,7 @@ package gridss;
 import au.edu.wehi.idsv.*;
 import com.google.common.io.Files;
 import gridss.cmdline.VcfTransformCommandLineProgram;
+import htsjdk.samtools.util.AsyncBufferedIterator;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
@@ -58,9 +59,9 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		copyInputs(arc);
 		copyInputs(ihom);
 		ae.INPUT_VCF = INPUT_VCF; // needed for caching 
-		calls = ae.iterator(calls, threadpool);
-		calls = arc.iterator(calls, threadpool);
-		calls = ihom.iterator(calls, threadpool);
+		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(ae.iterator(calls, threadpool), 128, 2, "AllocateEvidence");
+		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(arc.iterator(calls, threadpool), 128, 2, "AnnotateReferenceCoverage");
+		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(ihom.iterator(calls, threadpool), 128, 2, "AnnotateInexactHomology");
 		return calls;
 	}
 	public static void main(String[] argv) {
