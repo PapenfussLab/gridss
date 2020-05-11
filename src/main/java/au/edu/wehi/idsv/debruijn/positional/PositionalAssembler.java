@@ -14,6 +14,7 @@ import com.google.common.collect.*;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.io.FileUtils;
+import sun.plugin2.message.Message;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -140,7 +141,9 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 					log.error(e, msg);
 				}
 				closeCurrentAssembler();
-				ensureAssembler(false, null); // don't attempt to recover again if our recovery attempt just failed
+				// discard the reads that we already in the graph have and continue
+				// check config as to whether we want to recover from back-to-back failures
+				ensureAssembler(context.getConfig().getAssembly().recoverAfterError, null);
 			}
 		}
 	}

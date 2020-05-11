@@ -19,6 +19,7 @@ public class AssemblyConfiguration {
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
 		realignContigs = config.getBoolean("realignContigs");
 		contigNamePrefix = config.getString("contigNamePrefix");
+		recoverAfterError = config.getBoolean("recoverAfterError");
 	}
 	public ErrorCorrectionConfiguration errorCorrection;
 	public DownsamplingConfiguration downsampling;
@@ -76,4 +77,9 @@ public class AssemblyConfiguration {
 	 * SAM rread name prefix of assembly contigs.
 	 */
 	public String contigNamePrefix;
+	/**
+	 * Continue assembly after encountering an unrecoverable error by
+	 * flushing all evidence in the graph and continuing assembly from the next read.
+	 */
+	public boolean recoverAfterError;
 }

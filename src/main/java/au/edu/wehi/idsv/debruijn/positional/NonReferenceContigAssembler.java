@@ -274,7 +274,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					if (!graphByPosition.isEmpty()) {
 						String msg = String.format("Sanity check failure: non-empty graph with no contigs called " + contigName);
 						if (!MessageThrottler.Current.shouldSupress(log, "non-empty graph with no contigs")) {
-							log.error(msg);
+							log.info(msg);
 						}
 						throw new RuntimeException(msg);
 					}
