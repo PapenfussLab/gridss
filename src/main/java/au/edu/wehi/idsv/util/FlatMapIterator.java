@@ -1,9 +1,7 @@
 package au.edu.wehi.idsv.util;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Iterator equivalent of stream.flatMap()

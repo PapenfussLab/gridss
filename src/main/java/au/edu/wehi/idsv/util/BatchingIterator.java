@@ -13,7 +13,7 @@ public class BatchingIterator<T> implements Iterator<List<T>> {
     private final int batchSize;
 
     public BatchingIterator(Iterator<T> underlying, int batchSize) {
-        if (batchSize <=1 ) throw new IllegalArgumentException("batchSize must be positive");
+        if (batchSize < 1 ) throw new IllegalArgumentException("batchSize must be positive");
         this.underlying = underlying;
         this.batchSize = batchSize;
     }
