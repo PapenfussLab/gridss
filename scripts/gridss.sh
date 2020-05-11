@@ -32,6 +32,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	-j/--jar: location of GRIDSS jar
 	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. Defaults to the current directory.
 	-b/--blacklist: BED file containing regions to ignore
+	--repeatmaskerbed: bedops rmsk2bed BED file for genome.
 	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Possible steps are: setupreference, preprocess, assemble, call, all
 	-c/--configuration: configuration file use to override default GRIDSS settings.
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
@@ -46,7 +47,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	"
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,repeatmaskerbed:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -76,6 +77,7 @@ keepTempFiles="false"
 sanityCheck="false"
 externalaligner="false"
 nojni="false"
+repeatmaskerbed=""
 while true; do
     case "$1" in
         -r|--reference)
@@ -141,6 +143,10 @@ while true; do
 			;;
 		--concordantreadpairdistribution)
 			readpairpdistribution=$2
+			shift 2
+			;;
+		--repeatmaskerbed)
+			repeatmaskerbed=$2
 			shift 2
 			;;
 		--useproperpair)
@@ -226,7 +232,6 @@ if [[ "$timecmd" != "" ]] ; then
 	# We don't need timing info of the echo
 	rm -f $timinglogfile
 fi
-
 
 for step in $(echo $steps | tr ',' ' ' ) ; do
 	if [[ "$step" == "all" ]] ; then
@@ -323,6 +328,12 @@ else
 	if [[ "$(tr -d ' 	\n' <<< "$blacklist_arg")" != "$blacklist_arg" ]] ; then
 		write_status  "blacklist cannot contain whitespace"
 		exit $EX_USAGE
+	fi
+fi
+if [[ "$repeatmaskerbed" != "" ]] ; then
+	if [[ ! -f $repeatmaskerbed ]] ; then
+		write_status "RepeatMasker BED file ($repeatmaskerbed) not found."
+		exit $EX_NOINPUT
 	fi
 fi
 if [[ "$jvmheap" == "" ]] ; then
@@ -566,6 +577,7 @@ if [[ $do_preprocess == true ]] ; then
 			fi
 			if [[ "$externalaligner" == "true" ]] ; then
 				write_status "Running	ComputeSamTags|samtools	$f"
+				rm -f $tmp_prefix.coordinate-tmp*
 				{ $timecmd java -Xmx4g $jvm_args \
 						-cp $gridss_jar gridss.ComputeSamTags \
 						TMP_DIR=$dir \
@@ -631,6 +643,7 @@ if [[ $do_preprocess == true ]] ; then
 				; } 1>&2 2>> $logfile
 			else
 				write_status "Running	PreprocessForBreakendAssembly|samtools	$f"
+				rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
 				{ $timecmd java -Xmx4g $jvm_args \
 						-cp $gridss_jar gridss.PreprocessForBreakendAssembly \
 						TMP_DIR=$dir \
@@ -862,19 +875,24 @@ if [[ $do_call == true ]] ; then
 				$readpairing_args \
 		; } 1>&2 2>> $logfile
 		$rmcmd $prefix.unallocated.vcf
-		write_status "Running	AnnotateUntemplatedSequence	$output_vcf"
+		write_status "Running	AnnotateInsertedSequence	$output_vcf"
+		repeatmaskerbed_cmdline=""
+		if [[ "$repeatmaskerbed" != "" ]] ; then
+			repeatmaskerbed_cmdline="REPEAT_MASKER_BED=$repeatmaskerbed"
+		fi
 		{ $timecmd java -Xmx4g $jvm_args \
 				-Dgridss.output_to_temp_file=true \
-				-cp $gridss_jar gridss.AnnotateUntemplatedSequence \
+				-cp $gridss_jar gridss.AnnotateInsertedSequence \
 				TMP_DIR=$workingdir \
 				WORKING_DIR=$workingdir \
 				REFERENCE_SEQUENCE=$reference \
 				WORKER_THREADS=$threads \
 				INPUT=$prefix.allocated.vcf \
 				OUTPUT=$output_vcf \
+				$repeatmaskerbed_cmdline \
 				$picardoptions \
+		&& $rmcmd $prefix.allocated.vcf \
 		; } 1>&2 2>> $logfile
-		$rmcmd $prefix.allocated.vcf
 	else
 		write_status  "Skipping variant calling	$output_vcf"
 	fi
