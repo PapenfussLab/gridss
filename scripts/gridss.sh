@@ -44,6 +44,8 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. Default: 0.995
 	--keepTempFiles: keep intermediate files. Not recommended except for debugging due to the high disk usage.
 	--nojni: do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
+	--jobindex: zero-based assembly job index (only required when performing parallel assembly across multiple computers)
+	--jobnodes: total number of assembly jobs (only required when performing parallel assembly across multiple computers). Note than an assembly jobs is required after all indexed jobs have been completed to gather the output files together.
 	"
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
