@@ -746,7 +746,7 @@ if [[ $do_assemble == true ]] ; then
 				$picardoptions \
 		; } 1>&2 2>> $logfile
 		if [[ "$externalaligner" == "true" ]] ; then
-			write_status "Running	SoftClipsToSplitReads	$assembly" | tee -a $timinglogfile
+			write_status "Running	SoftClipsToSplitReads	$assembly"
 			{ $timecmd java -Xmx4g $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
@@ -780,6 +780,7 @@ if [[ $do_assemble == true ]] ; then
 			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 			; } 1>&2 2>> $logfile
 		else
+			write_status "Running	SoftClipsToSplitReads|samtools	$assembly"
 			{ $timecmd java -Xmx4g $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
@@ -792,7 +793,7 @@ if [[ $do_assemble == true ]] ; then
 					I=$assembly \
 					O=/dev/stdout \
 					ALIGNER=BWAMEM \
-					ALIGNER_BATCH_SIZE=10000 \
+					ALIGNER_BATCH_SIZE=100000 \
 					REALIGN_ANCHORING_BASES=true \
 					READJUST_PRIMARY_ALIGNMENT_POSITON=true \
 					COMPRESSION_LEVEL=0 \
