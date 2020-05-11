@@ -14,7 +14,6 @@ import com.google.common.collect.*;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.io.FileUtils;
-import sun.plugin2.message.Message;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
