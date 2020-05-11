@@ -268,13 +268,13 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				} else {
 					isExact = false;
 					if (isUpdateAssemblyInformation() && isUpdateReadInformation()) {
-
 						attribute(VcfSvConstants.IMPRECISE_KEY, true);
 					}
 				}
 				np = new CalledBreakpointPositionLookup.NominalPosition((BreakpointSummary)nominalPosition, untemplated, homo, isExact);
 				calledBreakpointLookup.addLower(event, np);
-				if (np.nominalPosition.isHighBreakend()) {
+				// check against parent position as we could have moved
+				if (parent.getBreakendSummary() instanceof BreakpointSummary && ((BreakpointSummary)parent.getBreakendSummary()).isHighBreakend()) {
 					log.info("CalledBreakpointLookup entry missing for " + event);
 				}
 			}
