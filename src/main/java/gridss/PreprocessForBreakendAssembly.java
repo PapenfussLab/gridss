@@ -1,6 +1,8 @@
 package gridss;
 
-import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.StreamingSplitReadRealigner;
 import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;

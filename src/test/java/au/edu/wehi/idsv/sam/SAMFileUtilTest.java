@@ -1,20 +1,18 @@
 package au.edu.wehi.idsv.sam;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SAMFileUtilTest extends IntermediateFilesTest {
 	@Test

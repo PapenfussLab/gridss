@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.util.IntervalUtil;
-import com.google.common.collect.RangeSet;
 
 import java.util.ArrayDeque;
 import java.util.Deque;

@@ -1,9 +1,5 @@
 package samtools.htsjdk;
 
-import java.util.ArrayList;
-
-import org.junit.Test;
-
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
@@ -11,6 +7,9 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReader.AssertingIterator;
 import htsjdk.samtools.util.DelegatingIterator;
+import org.junit.Test;
+
+import java.util.ArrayList;
 
 public class SAMReaderTest {
 	@Test(expected=IllegalStateException.class)

@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import org.junit.Test;
 
 import java.util.List;

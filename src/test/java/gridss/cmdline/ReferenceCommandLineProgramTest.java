@@ -1,15 +1,13 @@
 package gridss.cmdline;
 
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import com.google.common.io.Files;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Test;
-
-import com.google.common.io.Files;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
+import static org.junit.Assert.assertTrue;
 
 public class ReferenceCommandLineProgramTest extends IntermediateFilesTest {
 	@Test

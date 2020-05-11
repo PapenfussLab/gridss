@@ -2,13 +2,12 @@ package gridss;
 
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import com.google.common.io.Files;
-import gridss.cmdline.ReferenceCommandLineProgram;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class PrepareReferenceTest extends IntermediateFilesTest {
     @Test

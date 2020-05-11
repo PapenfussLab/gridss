@@ -1,14 +1,11 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import com.google.common.collect.Lists;
-import org.junit.Test;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 
 public class BreakpointSummaryTest extends TestHelper {

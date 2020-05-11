@@ -1,20 +1,19 @@
 package au.edu.wehi.idsv.metrics;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Test;
-
 import au.edu.wehi.idsv.TestHelper;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.IdsvMetrics;
 import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import org.junit.Test;
 import picard.analysis.InsertSizeMetrics;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 public class IdsvSamFileMetricsTest extends TestHelper {
 	@Test

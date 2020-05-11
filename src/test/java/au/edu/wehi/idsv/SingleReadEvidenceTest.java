@@ -1,8 +1,18 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
+import com.google.common.collect.*;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import htsjdk.samtools.util.SequenceUtil;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,20 +21,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import au.edu.wehi.idsv.sam.ChimericAlignment;
-import com.google.common.collect.*;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
-import htsjdk.samtools.util.SequenceUtil;
+import static org.junit.Assert.*;
 
 public class SingleReadEvidenceTest extends TestHelper {
 	@Test

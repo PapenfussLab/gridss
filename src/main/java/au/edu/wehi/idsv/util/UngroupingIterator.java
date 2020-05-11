@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv.util;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
-import htsjdk.samtools.SAMRecord;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Takes a grouped iterator and ungroups records

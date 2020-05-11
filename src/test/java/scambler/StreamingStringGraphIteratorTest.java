@@ -1,16 +1,14 @@
 package scambler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class StreamingStringGraphIteratorTest extends StringGraphTestHelper {
 	@Test

@@ -1,16 +1,15 @@
 package au.edu.wehi.idsv.alignment;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.fastq.FastqRecord;
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 public class ExternalProcessStreamingAlignerTest {
 	@Test

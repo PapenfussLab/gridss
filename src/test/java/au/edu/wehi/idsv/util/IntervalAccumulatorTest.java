@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.util;
 
-import java.util.stream.IntStream;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.stream.IntStream;
 
 public class IntervalAccumulatorTest {
 	@Test

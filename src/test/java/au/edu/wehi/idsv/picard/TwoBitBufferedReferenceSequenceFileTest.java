@@ -1,18 +1,15 @@
 package au.edu.wehi.idsv.picard;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.TestHelper;
+import htsjdk.samtools.SAMSequenceRecord;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-import htsjdk.samtools.SAMSequenceRecord;
-import org.junit.Test;
-
-import au.edu.wehi.idsv.TestHelper;
-import org.junit.rules.TemporaryFolder;
+import static org.junit.Assert.*;
 
 
 public class TwoBitBufferedReferenceSequenceFileTest extends TestHelper {

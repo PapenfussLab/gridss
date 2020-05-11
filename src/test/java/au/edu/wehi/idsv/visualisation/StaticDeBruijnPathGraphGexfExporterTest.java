@@ -1,23 +1,21 @@
 package au.edu.wehi.idsv.visualisation;
 
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.sam.SAMFileUtil;
+import au.edu.wehi.idsv.util.FileHelper;
+import com.google.common.collect.ImmutableList;
+import gridss.ComputeSamTags;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import picard.sam.BuildBamIndex;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 
-import au.edu.wehi.idsv.*;
-import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.sam.SAMFileUtil;
-import au.edu.wehi.idsv.util.FileHelper;
-import gridss.ComputeSamTags;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import picard.sam.BuildBamIndex;
+import static org.junit.Assert.assertTrue;
 
 
 public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTest {

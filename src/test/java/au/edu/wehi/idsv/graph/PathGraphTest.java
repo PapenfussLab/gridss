@@ -1,17 +1,15 @@
 package au.edu.wehi.idsv.graph;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
+import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
-import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
+import static org.junit.Assert.assertEquals;
 
 public class PathGraphTest extends TestHelper {
 	@Test

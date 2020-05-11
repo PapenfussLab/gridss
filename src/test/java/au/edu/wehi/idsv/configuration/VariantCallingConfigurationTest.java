@@ -1,20 +1,17 @@
 package au.edu.wehi.idsv.configuration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-import org.junit.Test;
-
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import org.junit.Test;
 
 import java.util.Set;
+
+import static org.junit.Assert.*;
 
 
 public class VariantCallingConfigurationTest extends TestHelper {

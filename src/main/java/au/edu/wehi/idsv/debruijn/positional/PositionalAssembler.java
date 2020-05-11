@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
@@ -11,19 +11,14 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import com.google.common.collect.*;
-import com.google.common.io.MoreFiles;
-import com.google.common.io.RecursiveDeleteOption;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**

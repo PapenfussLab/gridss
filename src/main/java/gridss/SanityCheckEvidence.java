@@ -5,13 +5,11 @@ import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
-import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
 import java.io.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 @CommandLineProgramProperties(

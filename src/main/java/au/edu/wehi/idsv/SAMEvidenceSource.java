@@ -23,7 +23,6 @@ import gridss.cmdline.CommandLineProgramHelper;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;

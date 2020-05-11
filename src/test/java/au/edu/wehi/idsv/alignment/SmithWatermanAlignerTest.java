@@ -1,11 +1,9 @@
 package au.edu.wehi.idsv.alignment;
 
 import au.edu.wehi.idsv.TestHelper;
-import com.intel.gkl.smithwaterman.IntelSmithWaterman;
-import org.broadinstitute.gatk.nativebindings.smithwaterman.SWParameters;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public abstract class SmithWatermanAlignerTest extends TestHelper {
     protected abstract Aligner create(int match, int mismatch, int ambiguous, int gapOpen, int gapExtend);

@@ -10,7 +10,6 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import gridss.SoftClipsToSplitReads;
@@ -19,7 +18,6 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
 import picard.sam.GatherBamFiles;
 
 import java.io.File;

@@ -1,14 +1,13 @@
 package gridss.analysis;
 
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
+import static org.junit.Assert.assertTrue;
 
 public class CollectGridssMetricsTest extends IntermediateFilesTest {
 	@Test

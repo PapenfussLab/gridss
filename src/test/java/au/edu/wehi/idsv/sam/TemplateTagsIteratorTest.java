@@ -1,18 +1,14 @@
 package au.edu.wehi.idsv.sam;
 
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.util.GroupingIterator;
 import au.edu.wehi.idsv.util.UngroupingIterator;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;

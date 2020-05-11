@@ -3,7 +3,6 @@ package au.edu.wehi.idsv.util;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.PeekingIterator;
-import htsjdk.samtools.SAMRecord;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
 

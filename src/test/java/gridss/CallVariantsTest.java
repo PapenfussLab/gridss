@@ -1,7 +1,14 @@
 package gridss;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.SoftClipEvidence;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -11,17 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CallVariantsTest extends IntermediateFilesTest {
 	@Test

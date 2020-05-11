@@ -1,16 +1,15 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import com.google.common.collect.Sets;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.google.common.collect.Sets;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 
 public class MemoizedContigCallerTest extends ContigCallerTest {

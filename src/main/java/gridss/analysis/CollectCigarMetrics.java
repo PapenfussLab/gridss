@@ -25,7 +25,6 @@
 package gridss.analysis;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
-import com.google.common.collect.Iterables;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;

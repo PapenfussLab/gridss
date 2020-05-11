@@ -1,22 +1,20 @@
 package gridss;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import com.google.common.io.Files;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.readers.LineIterator;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.google.common.io.Files;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.tribble.bed.BEDFeature;
-import htsjdk.tribble.readers.LineIterator;
+import static org.junit.Assert.assertEquals;
 
 public class ComputeCoverageTest extends IntermediateFilesTest {
 	private static final double DELTA = 0.00001;

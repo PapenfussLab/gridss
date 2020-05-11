@@ -1,19 +1,12 @@
 package au.edu.wehi.idsv.model;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.*;
+import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import java.util.ArrayList;
 
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.MockDirectedBreakpoint;
-import au.edu.wehi.idsv.MockDirectedEvidence;
-import au.edu.wehi.idsv.TestHelper;
+import static org.junit.Assert.assertEquals;
 
 public class ModelsTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)

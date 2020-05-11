@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.collect.ImmutableList;
+import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
+import static org.junit.Assert.assertEquals;
 
 
 public class PathCollapseIteratorTest extends CollapseIteratorTest {

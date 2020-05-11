@@ -10,7 +10,6 @@ import gridss.analysis.CollectStructuralVariantReadMetrics;
 import gridss.cmdline.ProcessStructuralVariantReadsCommandLineProgram;
 import gridss.filter.*;
 import htsjdk.samtools.*;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.Log;

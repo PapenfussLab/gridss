@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv.sim;
 
-import static org.junit.Assert.assertEquals;
-
+import au.edu.wehi.idsv.sim.SequentialVariantPlacer.ContigExhaustedException;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.sim.SequentialVariantPlacer.ContigExhaustedException;
+import static org.junit.Assert.assertEquals;
 
 
 public class SequentialVariantPlacerTest extends au.edu.wehi.idsv.TestHelper {

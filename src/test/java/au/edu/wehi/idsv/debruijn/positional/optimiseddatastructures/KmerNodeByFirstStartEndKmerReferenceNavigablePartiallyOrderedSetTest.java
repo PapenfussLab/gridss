@@ -9,7 +9,7 @@ import java.util.NavigableSet;
 import java.util.Random;
 import java.util.TreeSet;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class KmerNodeByFirstStartEndKmerReferenceNavigablePartiallyOrderedSetTest extends TestHelper {
     @Test

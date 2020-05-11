@@ -4,11 +4,10 @@ import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ReadOverlapSuccessorTest extends TestHelper {
     @Test

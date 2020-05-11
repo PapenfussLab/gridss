@@ -1,18 +1,17 @@
 package au.edu.wehi.idsv.model;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.ArrayList;
-
-import org.junit.Test;
-
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.IdsvMetrics;
 import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
+import org.junit.Test;
 import picard.analysis.InsertSizeMetrics;
+
+import java.util.ArrayList;
+
+import static org.junit.Assert.assertEquals;
 
 public class EmpiricalReferenceLikelihoodModelTest extends TestHelper {
 	private static final EmpiricalReferenceLikelihoodModel model = new EmpiricalReferenceLikelihoodModel();

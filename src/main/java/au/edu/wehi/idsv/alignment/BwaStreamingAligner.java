@@ -6,12 +6,11 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.Log;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.Flushable;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 

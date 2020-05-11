@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.graph;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
-import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
+import static org.junit.Assert.assertEquals;
 
 
 public class MaximumCliqueIntervalGraphTest {

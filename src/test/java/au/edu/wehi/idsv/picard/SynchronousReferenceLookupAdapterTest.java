@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv.picard;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.Hg19Tests;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.util.Random;
 
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import au.edu.wehi.idsv.Hg19Tests;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import static org.junit.Assert.assertEquals;
 
 public class SynchronousReferenceLookupAdapterTest {
 	private Exception e;

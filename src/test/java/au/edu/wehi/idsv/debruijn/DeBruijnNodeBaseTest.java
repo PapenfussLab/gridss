@@ -1,12 +1,9 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import au.edu.wehi.idsv.TestHelper;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
+import static org.junit.Assert.*;
 
 
 public class DeBruijnNodeBaseTest extends TestHelper {

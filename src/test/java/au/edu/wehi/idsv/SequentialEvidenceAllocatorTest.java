@@ -1,21 +1,19 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SequentialEvidenceAllocatorTest extends TestHelper {
 	@Test

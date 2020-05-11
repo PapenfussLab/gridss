@@ -1,27 +1,15 @@
 package au.edu.wehi.idsv;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.util.UngroupingIterator;
-import com.google.common.collect.*;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.ExternalAlignerTests;
 import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import au.edu.wehi.idsv.alignment.FastqAligner;
-import au.edu.wehi.idsv.alignment.SmithWatermanFastqAligner;
-import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import au.edu.wehi.idsv.util.UngroupingIterator;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
@@ -29,6 +17,15 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.*;
 

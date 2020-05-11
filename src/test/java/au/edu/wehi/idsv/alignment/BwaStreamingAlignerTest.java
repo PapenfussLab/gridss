@@ -6,10 +6,10 @@ import htsjdk.samtools.fastq.FastqRecord;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BwaStreamingAlignerTest extends TestHelper {
     @Test

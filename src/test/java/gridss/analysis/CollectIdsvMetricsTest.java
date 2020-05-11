@@ -1,17 +1,15 @@
 package gridss.analysis;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-
-import org.junit.Test;
-
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
-import picard.analysis.SinglePassSamProgram;
+import org.junit.Test;
 import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
+
+import java.io.File;
+
+import static org.junit.Assert.assertEquals;
 
 public class CollectIdsvMetricsTest extends IntermediateFilesTest {
 	@Test

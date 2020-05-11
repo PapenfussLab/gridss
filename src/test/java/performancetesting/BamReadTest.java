@@ -1,13 +1,12 @@
 package performancetesting;
 
-import java.io.File;
-
-import org.junit.Ignore;
-import org.junit.Test;
-
 import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.io.File;
 
 public class BamReadTest extends TestHelper {
 	@Ignore // TODO: performance testing group

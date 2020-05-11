@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv.picard;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.TestHelper;
+import org.junit.Test;
 
 import java.io.IOException;
 
-import org.junit.Test;
-
-import au.edu.wehi.idsv.TestHelper;
+import static org.junit.Assert.assertEquals;
 
 
 public class InMemoryReferenceSequenceFileTest extends TestHelper {

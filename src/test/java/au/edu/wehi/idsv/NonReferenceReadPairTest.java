@@ -1,8 +1,7 @@
 package au.edu.wehi.idsv;
 
-import org.junit.Test;
-
 import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 

@@ -1,12 +1,10 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.assertEquals;
-
+import au.edu.wehi.idsv.TestHelper;
+import com.google.common.collect.ImmutableList;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.TestHelper;
+import static org.junit.Assert.assertEquals;
 
 
 public class PackedSequenceTest extends TestHelper {

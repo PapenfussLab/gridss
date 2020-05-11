@@ -1,15 +1,13 @@
 package au.edu.wehi.idsv.alignment;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 
 public class BreakpointHomologyTest extends TestHelper {

@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.metrics.Header;
 import org.junit.Assert;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-import htsjdk.samtools.metrics.Header;
+import java.util.ArrayList;
 
 public class VcfBreakendSummaryTest extends TestHelper {
 	@Test

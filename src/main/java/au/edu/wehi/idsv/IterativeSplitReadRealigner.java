@@ -18,7 +18,9 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class IterativeSplitReadRealigner extends SplitReadRealigner {
 	private static final Log log = Log.getInstance(IterativeSplitReadRealigner.class);

@@ -1,9 +1,14 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -12,16 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import au.edu.wehi.idsv.*;
-import com.google.common.collect.*;
-import gridss.cmdline.programgroups.Assembly;
-import htsjdk.samtools.CigarOperator;
-import org.junit.Assert;
-import org.junit.Test;
-
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.*;
 
 
 public class NonReferenceContigAssemblerTest extends TestHelper {

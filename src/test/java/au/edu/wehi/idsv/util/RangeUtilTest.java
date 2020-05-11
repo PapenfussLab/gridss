@@ -1,17 +1,16 @@
 package au.edu.wehi.idsv.util;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.TreeRangeMap;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map.Entry;
 
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
-import com.google.common.collect.TreeRangeMap;
+import static org.junit.Assert.assertEquals;
 
 public class RangeUtilTest {
 	@Test

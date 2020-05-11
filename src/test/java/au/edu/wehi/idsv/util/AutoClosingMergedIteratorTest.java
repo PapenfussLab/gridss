@@ -1,23 +1,17 @@
 package au.edu.wehi.idsv.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.List;
-
-import org.junit.Test;
-
+import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
-
-import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.util.CloseableIterator;
+import org.junit.Test;
+
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 
 public class AutoClosingMergedIteratorTest extends TestHelper {

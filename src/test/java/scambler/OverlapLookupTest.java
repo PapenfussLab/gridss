@@ -1,13 +1,12 @@
 package scambler;
 
-import static org.junit.Assert.*;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
 
 public class OverlapLookupTest extends StringGraphTestHelper {
 	@Test

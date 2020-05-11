@@ -7,7 +7,8 @@ import org.broadinstitute.gatk.nativebindings.smithwaterman.SWParameters;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @Ignore("It's broken: https://github.com/Intel-HLS/GKL/issues/104")
 public class GKLAlignerTest extends SmithWatermanAlignerTest {

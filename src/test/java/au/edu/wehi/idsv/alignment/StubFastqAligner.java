@@ -1,23 +1,22 @@
 package au.edu.wehi.idsv.alignment;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import htsjdk.samtools.*;
-import org.apache.commons.lang3.ArrayUtils;
-
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceIdentifierGenerator;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.SplitReadHelper;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.SequenceUtil;
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Performs full Smith-Waterman align across an entire chromosome. Only suitable for very small chromosomes.

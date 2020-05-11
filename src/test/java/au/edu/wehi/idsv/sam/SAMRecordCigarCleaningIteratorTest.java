@@ -1,17 +1,15 @@
 package au.edu.wehi.idsv.sam;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.util.ArrayList;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class SAMRecordCigarCleaningIteratorTest {

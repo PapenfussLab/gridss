@@ -1,11 +1,10 @@
 package gridss.filter;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import au.edu.wehi.idsv.TestHelper;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class ClippedReadFilterTest extends TestHelper {

@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.*;
-import java.util.logging.Logger;
 
 /**
  * Helper class for performing asynchronous reading.

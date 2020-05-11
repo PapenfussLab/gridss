@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.stream.IntStream;
-
 import au.edu.wehi.idsv.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 

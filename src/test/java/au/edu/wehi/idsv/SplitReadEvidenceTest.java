@@ -1,36 +1,28 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.model.EmpiricalReferenceLikelihoodModel;
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.*;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
-import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.model.EmpiricalReferenceLikelihoodModel;
-import au.edu.wehi.idsv.sam.TemplateTagsIterator;
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
-import gridss.ComputeSamTags;
-import gridss.cmdline.ReferenceCommandLineProgram;
-import htsjdk.samtools.*;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
-import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-import au.edu.wehi.idsv.sam.ChimericAlignment;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 import static org.junit.Assert.*;
 

@@ -1,7 +1,13 @@
 package gridss;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.FileHelper;
+import com.google.common.collect.*;
+import com.google.common.util.concurrent.MoreExecutors;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,31 +20,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.UnmodifiableIterator;
-import com.google.common.util.concurrent.MoreExecutors;
-
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DirectedEvidenceOrder;
-import au.edu.wehi.idsv.DiscordantReadPair;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.VariantCaller;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.FileHelper;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AllocateEvidenceTest extends IntermediateFilesTest {
 	private void assertSymmetricalCalls(List<VariantContextDirectedEvidence> calls) {

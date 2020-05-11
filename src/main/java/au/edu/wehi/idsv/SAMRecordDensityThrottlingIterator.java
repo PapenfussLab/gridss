@@ -4,7 +4,6 @@ import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.util.DensityThrottlingIterator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.Log;
 
 import java.util.Iterator;
 

@@ -1,26 +1,17 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.stream.Stream;
-
-import au.edu.wehi.idsv.sam.ChimericAlignment;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SamPairUtil;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import com.google.common.collect.ImmutableList;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
+import java.util.stream.Stream;
 
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
+import static org.junit.Assert.*;
 
 public class SoftClipEvidenceTest extends TestHelper {
 	static {

@@ -1,18 +1,15 @@
 package au.edu.wehi.idsv.bed;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.TestHelper;
+import htsjdk.samtools.QueryInterval;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import au.edu.wehi.idsv.TestHelper;
-import htsjdk.samtools.QueryInterval;
+import static org.junit.Assert.*;
 
 
 public class IntervalBedTest extends TestHelper {

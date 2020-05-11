@@ -1,10 +1,19 @@
 package au.edu.wehi.idsv.sam;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import au.edu.wehi.idsv.util.UngroupingIterator;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.*;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,25 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import au.edu.wehi.idsv.*;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-import au.edu.wehi.idsv.util.UngroupingIterator;
-import gridss.ComputeSamTags;
-import gridss.SanityCheckEvidence;
-import htsjdk.samtools.*;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
-import htsjdk.samtools.util.SequenceUtil;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-import org.junit.experimental.categories.Category;
+import static org.junit.Assert.*;
 
 
 public class SAMRecordUtilTest extends TestHelper {

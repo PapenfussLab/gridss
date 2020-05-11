@@ -1,9 +1,8 @@
 package au.edu.wehi.idsv.util;
 
+import htsjdk.samtools.util.Log;
 import org.junit.Assert;
 import org.junit.Test;
-
-import htsjdk.samtools.util.Log;
 
 public class MessageThrottlerTest {
 	private static final Log log = Log.getInstance(MessageThrottlerTest.class);

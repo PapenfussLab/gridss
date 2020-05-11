@@ -1,21 +1,19 @@
 package gridss.analysis;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import com.google.common.collect.ImmutableList;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import org.junit.Test;
+import picard.analysis.SinglePassSamProgram;
+import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ReportThresholdCoverageTest extends IntermediateFilesTest {
 	@Test

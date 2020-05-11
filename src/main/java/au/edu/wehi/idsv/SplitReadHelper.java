@@ -15,7 +15,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.sql.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 

@@ -1,8 +1,13 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.DiscordantReadPair;
+import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.util.IntervalUtil;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.Test;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -13,16 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.DiscordantReadPair;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.util.IntervalUtil;
+import static org.junit.Assert.*;
 
 public abstract class ContigCallerTest extends TestHelper {
 	public abstract ContigCaller getCaller(Iterable<KmerPathNode> input, int maxEvidenceWidth);

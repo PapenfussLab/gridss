@@ -1,6 +1,9 @@
 package gridss;
 
-import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.Hg19Tests;
+import au.edu.wehi.idsv.IdsvVariantContext;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.ProcessingContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import org.apache.commons.math3.util.Pair;

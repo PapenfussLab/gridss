@@ -3,8 +3,6 @@ package au.edu.wehi.idsv;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.SmithWatermanFastqAligner;
 
-import static org.junit.Assert.*;
-
 public class IterativeSplitReadRealignerTest extends SplitReadRealignerTest {
     private static final SmithWatermanFastqAligner aligner = new SmithWatermanFastqAligner(AlignerFactory.create(), 2);
 

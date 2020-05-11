@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-
+import au.edu.wehi.idsv.bed.IntervalBed;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.bed.IntervalBed;
+import static org.junit.Assert.assertEquals;
 
 
 public class SequentialCoverageThresholdTest extends TestHelper {

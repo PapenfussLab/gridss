@@ -1,15 +1,13 @@
 package gridss.filter;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.TestHelper;
+import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.SamRecordFilter;
+import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class UnionAggregateFilterTest extends TestHelper {

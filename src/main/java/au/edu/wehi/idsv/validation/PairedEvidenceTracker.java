@@ -3,12 +3,10 @@ package au.edu.wehi.idsv.validation;
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Ordering;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.*;

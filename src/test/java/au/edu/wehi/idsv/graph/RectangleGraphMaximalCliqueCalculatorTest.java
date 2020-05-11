@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv.graph;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
+import static org.junit.Assert.assertEquals;
 
 public class RectangleGraphMaximalCliqueCalculatorTest {
 	private RectangleGraphNode N(long startX, long endX, long startY, long endY) {

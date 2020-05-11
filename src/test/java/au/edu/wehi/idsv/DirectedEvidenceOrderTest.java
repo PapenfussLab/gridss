@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
+import static org.junit.Assert.assertEquals;
 
 public class DirectedEvidenceOrderTest extends TestHelper {
 	@Test

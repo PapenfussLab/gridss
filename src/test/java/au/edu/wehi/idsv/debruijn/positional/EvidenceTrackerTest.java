@@ -1,8 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.TestHelper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,17 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import com.google.common.collect.ImmutableSet;
-import htsjdk.samtools.SAMRecord;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.TestHelper;
+import static org.junit.Assert.*;
 
 
 public class EvidenceTrackerTest extends TestHelper {

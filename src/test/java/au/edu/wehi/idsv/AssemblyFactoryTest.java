@@ -1,22 +1,16 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.stream.DoubleStream;
 
-import com.google.common.collect.ImmutableSet;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.*;
 
 
 public class AssemblyFactoryTest extends TestHelper {

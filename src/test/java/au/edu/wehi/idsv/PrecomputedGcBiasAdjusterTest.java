@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
-import java.io.IOException;
-
+import com.google.common.io.Files;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.google.common.io.Files;
+import java.io.IOException;
 
 public class PrecomputedGcBiasAdjusterTest extends IntermediateFilesTest {
 	@Test

@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.model;
 
-import java.util.List;
-
-import org.junit.Test;
-
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.CigarSizeDistributionTest;
+import org.junit.Test;
+
+import java.util.List;
 
 public class ScoringComparisonTest extends TestHelper {
 	private static int[] mapq = new int[] { 0, 5, 10, 15, 20, 25, 30, 35, 40 };

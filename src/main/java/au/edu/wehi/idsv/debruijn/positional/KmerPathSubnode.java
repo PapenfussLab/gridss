@@ -2,11 +2,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
-import au.edu.wehi.idsv.util.RangeUtil;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.IntHeapPriorityQueue;
 

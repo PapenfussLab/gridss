@@ -4,7 +4,6 @@ import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.ImmutableSet;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamPairUtil;
 
 public class SoftClipEvidence extends SingleReadEvidence {
 	private final int clipLength;

@@ -3,7 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 import au.edu.wehi.idsv.debruijn.positional.KmerNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerNodeUtil;
 
-import java.util.*;
+import java.util.Comparator;
 
 /**
  * Backed by ArrayList under the assumption that the number of entries at each position will be small.

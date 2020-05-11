@@ -9,11 +9,8 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
 
 import java.io.*;
-import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
-import java.time.OffsetTime;
 import java.util.BitSet;
-import java.util.stream.Stream;
 
 /**
  * 2bit encodes and buffers the entire reference to enable efficient random lookup of small subsequences

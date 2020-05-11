@@ -1,10 +1,6 @@
 package assfolder;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.visualisation.GexfHelper;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Doubles;
 import htsjdk.samtools.SAMRecord;
 import it.uniroma1.dis.wsngroup.gexf4j.core.*;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.Attribute;
@@ -13,10 +9,12 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeList;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeType;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.GexfImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
-import scambler.OverlapLookup;
 
 import java.io.File;
-import java.util.*;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

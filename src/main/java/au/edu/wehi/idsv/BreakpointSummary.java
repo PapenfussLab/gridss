@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;

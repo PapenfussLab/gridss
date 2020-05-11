@@ -1,17 +1,16 @@
 package au.edu.wehi.idsv.bed;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 
-import org.junit.Test;
-
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.IntermediateFilesTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class BedpeWriterTest extends IntermediateFilesTest {

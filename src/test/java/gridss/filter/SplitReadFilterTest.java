@@ -1,10 +1,9 @@
 package gridss.filter;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class SplitReadFilterTest extends TestHelper {
 	@Test

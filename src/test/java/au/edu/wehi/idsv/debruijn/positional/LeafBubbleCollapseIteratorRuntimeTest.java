@@ -1,17 +1,15 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.TestHelper;
+import com.google.common.collect.Lists;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.TestHelper;
+import static org.junit.Assert.assertEquals;
 
 
 public class LeafBubbleCollapseIteratorRuntimeTest extends TestHelper {

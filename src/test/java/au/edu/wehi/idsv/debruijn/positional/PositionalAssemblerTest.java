@@ -1,22 +1,16 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.*;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import au.edu.wehi.idsv.*;
-import au.edu.wehi.idsv.sam.SamTags;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Range;
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.*;
 
 
 public class PositionalAssemblerTest extends TestHelper {

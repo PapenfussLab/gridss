@@ -1,8 +1,12 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,15 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
-
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import static org.junit.Assert.*;
 
 
 public class VcfBreakendToReadPairTest extends IntermediateFilesTest {

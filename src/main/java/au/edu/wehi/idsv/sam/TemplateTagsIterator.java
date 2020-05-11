@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.sam;
 
-import au.edu.wehi.idsv.debruijn.positional.MemoizedTraverse;
 import au.edu.wehi.idsv.util.GroupingIterator;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.Iterators;
@@ -8,7 +7,9 @@ import com.google.common.collect.Ordering;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Ensures that every aligned record has an associated NM tag 

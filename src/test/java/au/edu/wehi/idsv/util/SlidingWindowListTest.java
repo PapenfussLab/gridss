@@ -1,15 +1,12 @@
 package au.edu.wehi.idsv.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
-import java.util.List;
-
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class SlidingWindowListTest {
 

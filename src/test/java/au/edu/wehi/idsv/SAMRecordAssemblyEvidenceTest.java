@@ -1,31 +1,24 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.common.collect.Lists;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
+import static org.junit.Assert.*;
 
 
 public class SAMRecordAssemblyEvidenceTest extends TestHelper {

@@ -1,16 +1,14 @@
 package scambler;
 
-import static org.junit.Assert.assertEquals;
+import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
 
 public class StringGraphTransitiveCompressorTest extends StringGraphTestHelper {
 	@Test

@@ -1,19 +1,17 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
-import org.junit.Test;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 
 public class KmerPathSubnodeTest extends TestHelper {

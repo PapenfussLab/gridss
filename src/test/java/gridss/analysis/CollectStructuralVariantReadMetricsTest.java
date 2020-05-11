@@ -1,17 +1,15 @@
 package gridss.analysis;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.metrics.MetricsFile;
+import org.junit.Test;
 
 import java.io.File;
 
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.metrics.MetricsFile;
+import static org.junit.Assert.assertEquals;
 
 public class CollectStructuralVariantReadMetricsTest extends IntermediateFilesTest {
 	private static <T> T getMetrics(File file, Class<T> clazz) {

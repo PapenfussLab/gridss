@@ -1,9 +1,18 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.alignment.StubFastqAligner;
+import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.io.Files;
+import htsjdk.samtools.QueryInterval;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,21 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Ordering;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
-
-import au.edu.wehi.idsv.alignment.StubFastqAligner;
-import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import static org.junit.Assert.*;
 
 public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test

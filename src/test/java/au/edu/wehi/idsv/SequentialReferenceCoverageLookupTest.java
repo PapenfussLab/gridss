@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
+import static org.junit.Assert.assertEquals;
 
 
 public class SequentialReferenceCoverageLookupTest extends TestHelper {

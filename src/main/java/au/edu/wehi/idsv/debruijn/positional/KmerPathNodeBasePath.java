@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
-import au.edu.wehi.idsv.util.RangeUtil;
-import com.google.common.collect.*;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayDeque;

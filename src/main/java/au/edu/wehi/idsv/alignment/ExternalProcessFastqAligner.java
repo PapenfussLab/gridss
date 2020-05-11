@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.alignment;
 
-import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import htsjdk.samtools.*;

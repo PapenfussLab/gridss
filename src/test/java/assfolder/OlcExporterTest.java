@@ -1,18 +1,13 @@
 package assfolder;
 
-import au.edu.wehi.idsv.Hg19Tests;
 import au.edu.wehi.idsv.TestHelper;
-import com.google.common.collect.Lists;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class OlcExporterTest extends TestHelper {
     @Test

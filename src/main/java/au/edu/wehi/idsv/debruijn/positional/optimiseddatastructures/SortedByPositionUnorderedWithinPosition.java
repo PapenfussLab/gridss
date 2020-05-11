@@ -1,9 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Queue;
-import java.util.stream.Stream;
 
 /**
  * Implements a priority queue keyed only by position.

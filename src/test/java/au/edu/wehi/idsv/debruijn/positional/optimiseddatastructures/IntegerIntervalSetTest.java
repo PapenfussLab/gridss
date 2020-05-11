@@ -11,7 +11,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class IntegerIntervalSetTest extends TestHelper {
     private final List<Range<Integer>> ALL_RANGES_10 = allRanges(0, 10);

@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv.alignment;
 
-import java.io.File;
-import java.util.List;
-
+import gridss.SoftClipsToSplitReads;
 import org.apache.commons.lang3.SystemUtils;
 
-import gridss.SoftClipsToSplitReads;
+import java.io.File;
+import java.util.List;
 
 /**
  * Tests requiring Hg19 

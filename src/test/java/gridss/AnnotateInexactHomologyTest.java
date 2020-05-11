@@ -1,17 +1,15 @@
 package gridss;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
+import com.google.common.collect.ImmutableList;
+import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import au.edu.wehi.idsv.*;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
+import static org.junit.Assert.assertEquals;
 
 public class AnnotateInexactHomologyTest extends TestHelper {
 	@Test

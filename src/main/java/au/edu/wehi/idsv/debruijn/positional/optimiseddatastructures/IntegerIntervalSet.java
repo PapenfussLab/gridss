@@ -5,7 +5,6 @@ import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Set;
 
 /**

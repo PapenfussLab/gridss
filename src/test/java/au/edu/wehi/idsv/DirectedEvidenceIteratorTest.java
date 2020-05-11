@@ -1,12 +1,10 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-
+import com.google.common.collect.ImmutableList;
+import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
 
 public class DirectedEvidenceIteratorTest extends TestHelper {
 	private SAMRecord sampleSplitRead() {

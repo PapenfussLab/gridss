@@ -1,15 +1,12 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.List;
-
+import htsjdk.samtools.SAMRecord;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import htsjdk.samtools.SAMRecord;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class IndelEvidenceTest extends TestHelper {
 	@Test

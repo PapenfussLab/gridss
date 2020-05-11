@@ -1,7 +1,16 @@
 package gridss.analysis;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import com.google.common.collect.ImmutableList;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.Histogram.Bin;
+import org.junit.Ignore;
+import org.junit.Test;
+import picard.analysis.SinglePassSamProgram;
+import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,19 +19,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.Histogram;
-import htsjdk.samtools.util.Histogram.Bin;
-import picard.analysis.SinglePassSamProgram;
-import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class CollectMapqMetricsTest extends IntermediateFilesTest {

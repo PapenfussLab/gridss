@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class AdapterHelperTest extends TestHelper {

@@ -1,58 +1,9 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-import java.util.SortedSet;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
-import au.edu.wehi.idsv.sam.SamTags;
-import com.google.common.collect.*;
-import htsjdk.samtools.*;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.base.Function;
-
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
-import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
-import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
-import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
-import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.PackedKmerList;
-import au.edu.wehi.idsv.debruijn.ReadKmer;
-import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
-import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
-import au.edu.wehi.idsv.debruijn.positional.ImmutableKmerNode;
-import au.edu.wehi.idsv.debruijn.positional.KmerNode;
-import au.edu.wehi.idsv.debruijn.positional.KmerNodeUtil;
-import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
-import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
-import au.edu.wehi.idsv.debruijn.positional.KmerSupportNode;
-import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
-import au.edu.wehi.idsv.debruijn.positional.PathNodeIteratorTest;
-import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
+import au.edu.wehi.idsv.debruijn.*;
+import au.edu.wehi.idsv.debruijn.positional.*;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
@@ -62,13 +13,13 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
-import gridss.analysis.CigarDetailMetrics;
-import gridss.analysis.CigarSizeDistribution;
-import gridss.analysis.IdsvMetrics;
-import gridss.analysis.InsertSizeDistribution;
-import gridss.analysis.MapqMetrics;
+import com.google.common.base.Function;
+import com.google.common.collect.*;
+import gridss.analysis.*;
+import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -79,7 +30,23 @@ import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.lang3.StringUtils;
 import picard.analysis.InsertSizeMetrics;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestHelper {
 	public static final long LCCB = GenomicProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;

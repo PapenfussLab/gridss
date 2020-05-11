@@ -1,22 +1,18 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Collection;
-
-import org.junit.Ignore;
-import org.junit.Test;
-
+import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.util.Collection;
+
+import static org.junit.Assert.*;
 
 public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test

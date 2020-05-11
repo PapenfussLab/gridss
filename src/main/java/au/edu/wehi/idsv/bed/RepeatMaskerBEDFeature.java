@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.bed;
 
 import htsjdk.tribble.annotation.Strand;
-import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.bed.FullBEDFeature;
 

@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 import java.util.Collection;
 

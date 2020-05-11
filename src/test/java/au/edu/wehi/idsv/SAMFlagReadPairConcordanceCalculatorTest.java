@@ -1,9 +1,8 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
 import org.junit.Assert;
 import org.junit.Test;
-
-import htsjdk.samtools.SAMRecord;
 
 public class SAMFlagReadPairConcordanceCalculatorTest extends TestHelper {
 	@Test

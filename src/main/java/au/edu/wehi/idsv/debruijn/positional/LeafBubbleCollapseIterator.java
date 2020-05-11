@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.IntegerIntervalSet;
-import com.google.common.collect.Range;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.*;

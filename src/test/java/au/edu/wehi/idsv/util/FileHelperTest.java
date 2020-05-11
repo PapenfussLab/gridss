@@ -1,7 +1,8 @@
 package au.edu.wehi.idsv.util;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,10 +11,8 @@ import java.nio.file.Files;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import au.edu.wehi.idsv.IntermediateFilesTest;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 public class FileHelperTest extends IntermediateFilesTest {

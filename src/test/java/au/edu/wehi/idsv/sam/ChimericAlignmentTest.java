@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv.sam;
 
-import java.util.List;
-
+import htsjdk.samtools.TextCigarCodec;
 import org.junit.Test;
 
-import htsjdk.samtools.TextCigarCodec;
+import java.util.List;
 
 import static org.junit.Assert.*;
 

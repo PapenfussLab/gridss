@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;

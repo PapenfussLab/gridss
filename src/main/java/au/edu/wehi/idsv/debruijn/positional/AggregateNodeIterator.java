@@ -2,8 +2,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator.KmerNodeAggregator.KmerNodeAggregatorSnapshot;
-import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartPriorityQueue;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeAggregatorSnapshotByEndPriorityQueue;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartPriorityQueue;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;

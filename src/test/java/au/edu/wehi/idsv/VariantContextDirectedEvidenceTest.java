@@ -1,13 +1,10 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import htsjdk.variant.variantcontext.VariantContextBuilder;
+import static org.junit.Assert.*;
 
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test

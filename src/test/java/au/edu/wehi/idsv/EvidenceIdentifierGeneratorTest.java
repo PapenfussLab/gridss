@@ -1,18 +1,16 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public abstract class EvidenceIdentifierGeneratorTest extends TestHelper {
 	protected EvidenceIdentifierGenerator gen;

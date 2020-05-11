@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
-import java.util.regex.Pattern;
-
+import htsjdk.samtools.SAMRecord;
 import org.junit.Assert;
 import org.junit.Test;
 
-import htsjdk.samtools.SAMRecord;
+import java.util.regex.Pattern;
 
 public class HashedEvidenceIdentifierGeneratorTest extends EvidenceIdentifierGeneratorTest {
 	@Override

@@ -6,9 +6,6 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 
-import java.io.File;
-import java.util.Iterator;
-
 /**
  * Basic data structure for a BEDPE record
  * @author Daniel Cameron

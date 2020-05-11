@@ -1,17 +1,15 @@
 package gridss;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.List;
-
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.bed.BedpeIterator;
 import au.edu.wehi.idsv.bed.BedpeRecord;
+import com.google.common.collect.Lists;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.List;
 
 public class AnnotateInexactHomologyBedpeTest extends IntermediateFilesTest {
 	@Test

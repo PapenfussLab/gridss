@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.alignment;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class SswJniAlignerTest extends SmithWatermanAlignerTest {
     @Override

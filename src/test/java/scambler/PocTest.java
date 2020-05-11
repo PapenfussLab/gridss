@@ -1,14 +1,13 @@
 package scambler;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import htsjdk.samtools.SAMRecord;
 import org.junit.Assert;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.IntermediateFilesTest;
-import htsjdk.samtools.SAMRecord;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PocTest extends IntermediateFilesTest {
 	@Test

@@ -4,7 +4,6 @@
 package au.edu.wehi.idsv.sam;
 
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -25,7 +24,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.core.config.Order;
 
 import java.util.*;
 import java.util.stream.Collectors;

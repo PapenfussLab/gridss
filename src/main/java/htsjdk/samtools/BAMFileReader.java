@@ -29,8 +29,10 @@ import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
 
 import java.io.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Class for reading and querying BAM files.

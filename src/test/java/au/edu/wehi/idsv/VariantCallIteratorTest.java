@@ -1,25 +1,21 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import au.edu.wehi.idsv.util.ErrorIterator;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import htsjdk.samtools.QueryInterval;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
-import au.edu.wehi.idsv.util.ErrorIterator;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import htsjdk.samtools.*;
-import htsjdk.samtools.util.CloseableIterator;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class VariantCallIteratorTest extends IntermediateFilesTest {
 	@Test

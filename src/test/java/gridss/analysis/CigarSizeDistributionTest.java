@@ -1,13 +1,12 @@
 package gridss.analysis;
 
-import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.CigarOperator;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
-import htsjdk.samtools.CigarOperator;
+import static org.junit.Assert.assertEquals;
 
 
 public class CigarSizeDistributionTest {

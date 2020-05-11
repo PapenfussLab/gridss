@@ -1,6 +1,9 @@
 package au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.NavigableSet;
+import java.util.SortedSet;
 
 /**
  * Backed by ArrayList under the assumption that the number of entries at each position will be small

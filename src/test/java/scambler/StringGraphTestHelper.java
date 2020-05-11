@@ -1,11 +1,11 @@
 package scambler;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class StringGraphTestHelper extends TestHelper {
 	public static List<SAMRecord> overlapping(byte[] seq, int readLength, int seqlength, int stride, boolean isCircular) {

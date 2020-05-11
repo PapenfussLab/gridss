@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv.picard;
 
-import java.util.List;
-
+import au.edu.wehi.idsv.TestHelper;
+import htsjdk.samtools.QueryInterval;
 import org.junit.Assert;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-import htsjdk.samtools.QueryInterval;
+import java.util.List;
 
 public class ReferenceLookupTest extends TestHelper {
 	@Test

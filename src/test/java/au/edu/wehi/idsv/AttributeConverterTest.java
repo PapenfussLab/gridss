@@ -1,12 +1,10 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-
+import com.google.common.collect.ImmutableList;
+import htsjdk.variant.vcf.VCFConstants;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
-import htsjdk.variant.vcf.VCFConstants;
+import static org.junit.Assert.assertEquals;
 
 
 public class AttributeConverterTest {
