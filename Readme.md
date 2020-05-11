@@ -64,13 +64,41 @@ argument|description
 -j, --jar|location of GRIDSS jar
 -b/--blacklist|BED file containing regions to ignore. The ENCODE DAC blacklist is recommended for hg19. (Optional)
 --jvmheap|size of JVM heap for assembly and variant calling. Defaults to 25g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8
--c, --configuration|configuration file use to override default GRIDSS settings (Optional)
 --maxcoverage|maximum coverage. Regions with coverage in excess of this are ignored. (Default: 50000)
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
---picardoptions|additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
+--repeatmaskerbed|bedops rmsk2bed BED file for reference genome. Optional parameter for annotating inserted sequences with RepeatMasker repeat type/class (Optional)
+--jobindex|zero-based index of this assembly job node. Used to spread GRIDSS assembly across multiple compute nodes. Used to spread GRIDSS assembly across multiple compute nodes. Use only with `-s assemble`. Once all jobs have completed, a `-s assemble` or `-s all` job should be run to gather the results together.
+--jobnodes|total number of assmebly jobs scheduled.
 
+The following additional optional arguments may be useful if GRIDSS fails to run in your environment, or you want to run with non-standard parameters.
+
+argument|description
+---|---
+-c, --configuration|configuration file use to override default GRIDSS settings
+--externalaligner|use the system version of bwa instead of the in-process version packaged with GRIDSS
+--picardoptions|additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
+--useproperpair|use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
+--concordantreadpairdistribution|portion of read pairs distribution considered concordantly mapped. Default: 0.995
+--keepTempFiles|keep intermediate files. Not recommended except for debugging due to the high disk usage.
+	--nojni|do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
+	
 _Warning_: all somatic R scripts treat the first bam file to be the matched normal, and any subsequent as tumour sample. If you are doing somatic calling, make sure you follow this convention.
+
+### grids.sh steps
+
+The following GRIDSS steps can be specified:
+step|description
+---|---
+setupreference|Once-off setup generating additional files in the same directory as the reference.
+preprocess|Pre-process input BAM files. Can be run per input file.
+assemble|Perform GRIDSS breakend assembly. Can split up using .
+call|Perform variant calling.
+all| Run all steps (Default)
+
+At present, command line valiation is performed independently of which steps are run. When splitting GRIDSS into multiple cluster jobs, the same command line parameters should be specified for every job except for:
+- `--input` on preprocess jobs (one input per file)
+- `--jobindex` and `--jobnodes` on assembly jobs
 
 # FAQ
 
