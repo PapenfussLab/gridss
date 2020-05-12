@@ -655,7 +655,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			}
 		} else {
 			String msg = String.format("Sanity check failure: found path with no support (%s:%d)", contigName, rawcontig.getFirst().firstStart());
-			log.error(msg);
+			log.info(msg);
 			throw new RuntimeException(msg);
 		}
 		contigsCalled++;
