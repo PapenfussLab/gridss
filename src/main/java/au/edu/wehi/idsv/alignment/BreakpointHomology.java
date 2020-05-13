@@ -89,10 +89,15 @@ public class BreakpointHomology {
 				}
 			}
 			if (remote != null && remote.length > 0) {
+				// #344 rev-comp remote so we always have the anchor on the same side
+				// This ensures that we'll choose the same alignment on both sides if there
+				// are multiple equally good alignments
+				SequenceUtil.reverseComplement(breakend);
+				SequenceUtil.reverseComplement(remote);
 				Alignment remoteAlignment = aligner.align_smith_waterman(breakend, remote);
 				List<CigarElement> cigar = TextCigarCodec.decode(remoteAlignment.getCigar()).getCigarElements();
-				localHomologyBaseCount = Math.max(0, localBsSeq.length() - SAMRecordUtil.getStartSoftClipLength(cigar));
-				if (SAMRecordUtil.getEndSoftClipLength(cigar) > 0) {
+				localHomologyBaseCount = Math.max(0, localBsSeq.length() - SAMRecordUtil.getEndSoftClipLength(cigar));
+				if (SAMRecordUtil.getStartSoftClipLength(cigar) > 0) {
 					// anchor is not aligned - something went wrong
 					localHomologyBaseCount = 0;
 				}
