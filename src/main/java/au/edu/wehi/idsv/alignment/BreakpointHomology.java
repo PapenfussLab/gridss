@@ -45,6 +45,9 @@ public class BreakpointHomology {
 		if (insertedSequence == null) {
 			insertedSequence = "";
 		}
+		if (bs.direction == BreakendDirection.Backward) {
+			insertedSequence = SequenceUtil.reverseComplement(insertedSequence);
+		}
 		int seqLength = maxBreakendLength;
 		int refLength = maxBreakendLength + insertedSequence.length() + margin;
 		if (bs.getEventSize() != null) {
@@ -58,12 +61,12 @@ public class BreakpointHomology {
 		// localSeq           remoteSeq
 		//      >>>>       >>>>
 		//      localRef   remoteRef
-		String localSeq = getAnchorSeq(lookup, bs, refLength);
-		String localBsSeq = getAnchorSeq(lookup, bs, seqLength);
-		String localRef = getAnchorSeq(lookup, advance(bs, refLength), refLength);
-		String remoteSeq = SequenceUtil.reverseComplement(getAnchorSeq(lookup, bs.remoteBreakend(), refLength));
-		String remoteBsSeq = SequenceUtil.reverseComplement(getAnchorSeq(lookup, bs.remoteBreakend(), seqLength));
-		String remoteRef = SequenceUtil.reverseComplement(getAnchorSeq(lookup, advance(bs.remoteBreakend(), refLength), refLength));
+		String localSeq = bs.getAnchorSequence(lookup, refLength);
+		String localBsSeq = bs.getAnchorSequence(lookup, seqLength);
+		String localRef = bs.advance(refLength).getAnchorSequence(lookup, refLength);
+		String remoteSeq = SequenceUtil.reverseComplement(bs.remoteBreakend().getAnchorSequence(lookup, refLength));
+		String remoteBsSeq = SequenceUtil.reverseComplement(bs.remoteBreakend().getAnchorSequence(lookup, seqLength));
+		String remoteRef = SequenceUtil.reverseComplement(bs.remoteBreakend().advance(refLength).getAnchorSequence(lookup, refLength));
 		String strBreakend = localBsSeq + insertedSequence + remoteBsSeq;
 		String strLocal = localSeq + localRef;
 		String strRemote = remoteRef + remoteSeq;
@@ -96,47 +99,6 @@ public class BreakpointHomology {
 			}
 		}
 		return new BreakpointHomology(localHomologyBaseCount, remoteHomologyBaseCount);
-	}
-	/**
-	 * Moves the given breakend forward by the given amount. 
-	 */
-	private static BreakendSummary advance(BreakendSummary bs, int bases) {
-		int offset = bases;
-		if (bs.direction == BreakendDirection.Backward) {
-			offset *= -1;
-		}
-		return new BreakendSummary(bs.referenceIndex, bs.direction, bs.nominal + offset, bs.start + offset, bs.end + offset);
-	}
-	private static String getAnchorSeq(final ReferenceLookup lookup, final BreakendSummary bs, final int length) {
-		final SAMSequenceRecord refseq = lookup.getSequenceDictionary().getSequence(bs.referenceIndex);
-		int start;
-		int end;
-		if (bs.direction == BreakendDirection.Forward) {
-			end = bs.start;
-			start = end - length + 1;
-		} else {
-			start = bs.start;
-			end = start + length - 1;
-		}
-		int startPadding = Math.max(0, 1 - start);
-		int endPadding = Math.max(0, end - refseq.getSequenceLength());
-		start = Math.max(1, start);
-		end = Math.min(refseq.getSequenceLength(), end);
-		if (start > end) {
-			// anchor is outside of contig bounds
-			return StringUtils.repeat('N', end - start + 1);
-		}
-		byte[] bseq = lookup.getSubsequenceAt(refseq.getSequenceName(), start, end).getBases();
-		if (startPadding > 0 || endPadding > 0) {
-			byte[] arr = new byte[startPadding + bseq.length + endPadding];
-			Arrays.fill(arr, (byte)'N');
-			System.arraycopy(bseq, 0, arr, startPadding, bseq.length);
-		}
-		if (bs.direction == BreakendDirection.Backward) {
-			SequenceUtil.reverseComplement(bseq);
-		}
-		String seq = new String(bseq);
-		return seq;
 	}
 	public int getLocalHomologyLength() {
 		return localHomologyLength;

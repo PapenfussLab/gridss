@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MathUtil;
 import com.google.common.collect.ComparisonChain;
@@ -8,9 +9,13 @@ import com.google.common.math.IntMath;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.SequenceUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -58,6 +63,48 @@ public class BreakendSummary {
 		this.nominal = nominal;
 		this.end = end;
 	}
+
+	/**
+	 * Gets the anchoring sequence
+	 * @param lookup reference genome
+	 * @param length anchoring sequence length
+	 * @return anchoring sequence when approaching towards the breakend.
+	 */
+	public String getAnchorSequence(final ReferenceLookup lookup, final int length) {
+		if (start != end) {
+			throw new IllegalArgumentException("Breakend position cannot be an interval");
+		}
+		final SAMSequenceRecord refseq = lookup.getSequenceDictionary().getSequence(referenceIndex);
+		int anchorStart;
+		int anchorEnd;
+		if (direction == BreakendDirection.Forward) {
+			anchorEnd = this.start;
+			anchorStart = anchorEnd - length + 1;
+		} else {
+			anchorStart = this.start;
+			anchorEnd = anchorStart + length - 1;
+		}
+		int startPadding = Math.max(0, 1 - anchorStart);
+		int endPadding = Math.max(0, anchorEnd - refseq.getSequenceLength());
+		anchorStart = Math.max(1, anchorStart);
+		anchorEnd = Math.min(refseq.getSequenceLength(), anchorEnd);
+		if (anchorStart > anchorEnd) {
+			// anchor is outside of contig bounds
+			return StringUtils.repeat('N', anchorEnd - anchorStart + 1);
+		}
+		byte[] bseq = lookup.getSubsequenceAt(refseq.getSequenceName(), anchorStart, anchorEnd).getBases();
+		if (startPadding > 0 || endPadding > 0) {
+			byte[] arr = new byte[startPadding + bseq.length + endPadding];
+			Arrays.fill(arr, (byte)'N');
+			System.arraycopy(bseq, 0, arr, startPadding, bseq.length);
+		}
+		if (direction == BreakendDirection.Backward) {
+			SequenceUtil.reverseComplement(bseq);
+		}
+		String seq = new String(bseq);
+		return seq;
+	}
+
 	/**
 	 * This breakend is fully contained by the given breakend
 	 * @param other
@@ -159,6 +206,16 @@ public class BreakendSummary {
 		return new BreakendSummary(referenceIndex, direction, nominal + anchorShift, start + startAdjust, end + endAdjust);
 	}
 	/**
+	 * Moves the given breakend forward by the given amount.
+	 */
+	public BreakendSummary advance(int bases) {
+		int offset = bases;
+		if (direction == BreakendDirection.Backward) {
+			offset *= -1;
+		}
+		return new BreakendSummary(referenceIndex, direction, nominal + offset, start + offset, end + offset);
+	}
+	/**
 	 * Reduces size of the breakend location interval
 	 * @param by bases to reduce each side of the bounds by 
 	 * @return breakend with bounds reduced
@@ -255,6 +312,7 @@ public class BreakendSummary {
 	public String toString(GenomicProcessingContext processContext) {
 		return toString(direction, referenceIndex, nominal, start, end, processContext);
 	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.alignment.BreakpointHomology;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -176,5 +178,46 @@ public class BreakendSummaryTest extends TestHelper {
 	@Test
 	public void adjustPosition_should_retain_nominal_position() {
 		assertEquals(new BreakendSummary(0, FWD, 10, 10, 20), new BreakendSummary(0, FWD, 10).adjustPosition(0, 10, false));
+	}
+	@Test
+	public void getAnchorSequence_should_extend_anchor() {
+		BreakendSummary bs = new BreakendSummary(2, FWD, 500);
+		String seq = bs.getAnchorSequence(getContext().getReference(), 200);
+		for (int i = 1; i < 200; i++) {
+			String seqi = bs.getAnchorSequence(getContext().getReference(), i);
+			Assert.assertTrue(seq.endsWith(seqi));
+		}
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void getAnchorSequence_should_use_nominal_position() {
+		Assert.assertEquals(
+				new BreakendSummary(2, FWD, 500, 400, 600).getAnchorSequence(getContext().getReference(), 10),
+				new BreakendSummary(2, FWD, 500).getAnchorSequence(getContext().getReference(), 10));
+	}
+	@Test
+	public void getAnchorSequence_should_truncate_outside_contig_bounds() {
+		BreakendSummary bs = new BreakendSummary(2, FWD, 5);
+		Assert.assertEquals("CATTA", bs.getAnchorSequence(SMALL_FA, 5));
+		Assert.assertEquals("CATTA", bs.getAnchorSequence(SMALL_FA, 6));
+		Assert.assertEquals("CATTA", bs.getAnchorSequence(SMALL_FA, 7));
+
+		bs = new BreakendSummary(0, BWD, POLY_A.length);
+		Assert.assertEquals("T", bs.getAnchorSequence(SMALL_FA, 1));
+		Assert.assertEquals("T", bs.getAnchorSequence(SMALL_FA, 2));
+		Assert.assertEquals("T", bs.getAnchorSequence(SMALL_FA, 3));
+	}
+	@Test
+	public void getAnchorSequence_should_reverse_comp_bwd_breakends() {
+		BreakendSummary bs = new BreakendSummary(2, BWD, 1);
+		Assert.assertEquals("TAATG", bs.getAnchorSequence(SMALL_FA, 5));
+	}
+	@Test
+	public void advance_should_move_in_breakend_direction() {
+		Assert.assertEquals(new BreakendSummary(0, FWD, 100), new BreakendSummary(0, FWD, 100).advance(0));
+		Assert.assertEquals(new BreakendSummary(0, FWD, 101), new BreakendSummary(0, FWD, 100).advance(1));
+		Assert.assertEquals(new BreakendSummary(0, FWD, 102, 101, 103), new BreakendSummary(0, FWD, 100, 99, 101).advance(2));
+		Assert.assertEquals(new BreakendSummary(1, BWD, 100), new BreakendSummary(1, BWD, 100).advance(0));
+		Assert.assertEquals(new BreakendSummary(1, BWD, 99), new BreakendSummary(1, BWD, 100).advance(1));
+		Assert.assertEquals(new BreakendSummary(1, BWD, 101), new BreakendSummary(1, BWD, 100).advance(-1));
 	}
 }

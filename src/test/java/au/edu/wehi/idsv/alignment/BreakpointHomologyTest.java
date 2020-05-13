@@ -1,11 +1,19 @@
 package au.edu.wehi.idsv.alignment;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
+import au.edu.wehi.idsv.util.SequenceUtil;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import java.io.File;
+import java.io.FileNotFoundException;
 
 import static org.junit.Assert.assertEquals;
 
@@ -155,8 +163,61 @@ public class BreakpointHomologyTest extends TestHelper {
 						B("AGAACCGGCACCCTTAACATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"),
 						B("AGAACCGGCACCCTTAACACCGCCTACAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"), });
 
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 27, 1, BWD, 28), "GGGGG", 20, 5);
+		BreakpointSummary bp = new BreakpointSummary(0, FWD, 27, 1, BWD, 28);
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, bp, "GGGGG", 20, 5);
 		assertEquals(0, bh.getLocalHomologyLength());
 		assertEquals(20, bh.getRemoteHomologyLength());
+
+		bh = BreakpointHomology.calculate(ref, bp.remoteBreakpoint(), "GGGGG", 20, 5);
+		assertEquals(0, bh.getRemoteHomologyLength());
+		assertEquals(20, bh.getLocalHomologyLength());
+	}
+	@Test
+	@Category(Hg19Tests.class)
+	public void issue344_regression_ihompos_should_be_symmetrical() throws FileNotFoundException {
+		InMemoryReferenceSequenceFile zref = new InMemoryReferenceSequenceFile(
+				new String[] { "0", "1", },
+				new byte[][] {
+						//    0        1         2         3         4         5         6
+						//    123456789012345678901234567890123456789012345678901234567890
+						B("AGAACCGGCACCCTTAACATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"),
+						B("AGAACCGGCACCCTTAACACCGCCTACAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC"), });
+
+		IndexedFastaSequenceFile ref = new IndexedFastaSequenceFile(Hg19Tests.findBroadHg19Reference());
+		ReferenceLookup hg19ref = new SynchronousReferenceLookupAdapter(ref);
+		SAMSequenceDictionary dict = ref.getSequenceDictionary();
+		BreakpointSummary bs = new BreakpointSummary(dict.getSequenceIndex("1"), FWD, 145396172, dict.getSequenceIndex("1"), BWD, 145396592);
+		BreakpointHomology bhLeft = BreakpointHomology.calculate(hg19ref, bs, "TC", 20, 5);
+		BreakpointHomology bhRight = BreakpointHomology.calculate(hg19ref, bs.remoteBreakpoint(), "TC", 20, 5);
+		Assert.assertEquals(bhLeft.getLocalHomologyLength(), bhRight.getRemoteHomologyLength());
+		Assert.assertEquals(bhLeft.getRemoteHomologyLength(), bhRight.getLocalHomologyLength());
+	}
+
+	/**
+	 * Technically we should report the full homology length but that's tricky to calculate
+	 */
+	@Test
+	public void should_report_single_instance_homology_for_small_event_when_ref_is_homologous() {
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(
+				new String[] { "0",},
+				new byte[][] {
+						//    0        1         2         3         4         5         6
+						//    123456789012345678901234567890123456789012345678901234567890
+						B("CATTAATCGCAAGAGCGGGCAAGAGCGGGCAAGAGCGGGCAAGAGCGGGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACC")});
+
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 30, 0, BWD, 41), "", 20, 10);
+		assertEquals(10, bh.getLocalHomologyLength());
+		assertEquals(10, bh.getRemoteHomologyLength());
+	}
+
+	@Test
+	public void should_report_insertion_homology() {
+		BreakpointSummary bp = new BreakpointSummary(0, FWD, 100, 0, BWD, 500);
+		BreakpointHomology bh = BreakpointHomology.calculate(SMALL_FA, bp, "AAAAA", 10, 50);
+		assertEquals(10, bh.getLocalHomologyLength());
+		assertEquals(10, bh.getRemoteHomologyLength());
+		bh = BreakpointHomology.calculate(SMALL_FA, bp.remoteBreakpoint(), "AAAAA", 10, 50);
+		assertEquals(10, bh.getLocalHomologyLength());
+		assertEquals(10, bh.getRemoteHomologyLength());
 	}
 }
