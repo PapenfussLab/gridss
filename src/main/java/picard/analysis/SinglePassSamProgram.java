@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Super class that is designed to provide some consistent structure between subclasses that
@@ -163,8 +164,8 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
             }
         }
 
-        final BlockingQueue<Exception> completion = new LinkedBlockingDeque<>();
         final List<ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>>> buffers = new ArrayList<>(programs.size());
+        final List<SinglePassSamProgramRunner> workers = new ArrayList<>(programs.size());
         // Call the abstract setup method!
         boolean anyUseNoRefReads = false;
         for (final SinglePassSamProgram program : programs) {
@@ -176,8 +177,10 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
 
             if (parallel) {
                 ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer = new ArrayBlockingQueue<>(IN_FLIGHT_BATCHES);
+                SinglePassSamProgramRunner runner = new SinglePassSamProgramRunner(program, buffer);
                 buffers.add(buffer);
-                Thread t = new Thread(new SinglePassSamProgramRunner(program, buffer, completion));
+                workers.add(runner);
+                Thread t = new Thread(runner);
                 t.setName(program.toString());
                 t.setDaemon(true);
                 t.start();
@@ -199,19 +202,8 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
                 if (parallel) {
                     batch.add(new Tuple<>(ref, rec));
                     if (batch.size() >= BATCH_SIZE) {
-                        for (ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer : buffers) {
-                            buffer.put(batch);
-                        }
+                        asyncAcceptReads(buffers, workers, batch);
                         batch = new ArrayList<>();
-                    }
-                    // Raise any encountered exceptions as early as possible
-                    Exception ex = completion.peek();
-                    if (ex != null && ex != EOS_SENTINEL) {
-                        if (ex instanceof RuntimeException) {
-                            throw (RuntimeException) ex;
-                        } else {
-                            throw new RuntimeException(ex);
-                        }
                     }
                 } else {
                     for (final SinglePassSamProgram program : programs) {
@@ -232,62 +224,93 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
                 }
             }
             if (parallel) {
-                batch.add(new Tuple<>(null, null)); // Add EOS indicator
-                for (ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer : buffers) {
-                    buffer.put(batch);
+                if (batch.size() > 0) {
+                    asyncAcceptReads(buffers, workers, batch);
                 }
-                for (int i = 0; i < programs.size(); i++) {
-                    Exception ex = completion.take();
-                    if (ex != EOS_SENTINEL) {
-                        if (ex instanceof RuntimeException) {
-                            throw (RuntimeException) ex;
-                        } else {
-                            throw new RuntimeException(ex);
-                        }
-                    }
-                }
+                asyncAcceptReads(buffers, workers, new ArrayList<>()); // Empty batch is the EOS indicator
+                asyncWaitForCompletion(workers);
             } else {
                 for (final SinglePassSamProgram program : programs) {
                     program.finish();
                 }
             }
-        } catch (InterruptedException ex) {
+        } catch (Exception ex) {
             throw new RuntimeException(ex);
         } finally {
             CloserUtil.close(in);
         }
     }
+    private static void asyncAcceptReads(
+            final List<ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>>> buffers,
+            final List<SinglePassSamProgramRunner> workers,
+            final List<Tuple<ReferenceSequence, SAMRecord>> batch) throws InterruptedException {
+        for (int i = 0; i < workers.size(); i++) {
+            asyncAcceptRead(buffers.get(i), workers.get(i), batch);
+        }
+    }
+    private static void asyncAcceptRead(
+            final ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer,
+            final SinglePassSamProgramRunner worker,
+            final List<Tuple<ReferenceSequence, SAMRecord>> batch) throws InterruptedException {
+        // Propagate exceptions on worker threads back to main
+        while (!buffer.offer(batch, 1, TimeUnit.SECONDS)) {
+            // Check if the worker thread is still alive
+            raiseAsyncException(worker);
+            if (worker.isComplete()) {
+                throw new RuntimeException(worker.program.getClass().getName() + " terminated before all records read.");
+            }
+        }
+    }
+    private static void raiseAsyncException(final SinglePassSamProgramRunner worker) {
+        Exception e = worker.getException();
+        if (e != null) {
+            throw new RuntimeException("Exception when running " + worker.program.getClass().getName(), e);
+        }
+    }
+    private static void asyncWaitForCompletion(final List<SinglePassSamProgramRunner> workers) throws InterruptedException {
+        for (SinglePassSamProgramRunner worker : workers) {
+            asyncWaitForCompletion(worker);
+        }
+    }
+    private static void asyncWaitForCompletion(final SinglePassSamProgramRunner worker) throws InterruptedException {
+        while (!worker.isComplete()) {
+            raiseAsyncException(worker);
+            Thread.sleep(50);
+        }
+    }
     private static class SinglePassSamProgramRunner implements Runnable {
         private final ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer;
         private final SinglePassSamProgram program;
-        private final BlockingQueue<Exception> completion;
-        public SinglePassSamProgramRunner(SinglePassSamProgram program,
-                                          ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer,
-                                          BlockingQueue<Exception> completion) {
+        private volatile boolean isComplete = false;
+        private volatile Exception exception = null;
+        public SinglePassSamProgramRunner(SinglePassSamProgram program,  ArrayBlockingQueue<List<Tuple<ReferenceSequence, SAMRecord>>> buffer) {
             this.program = program;
             this.buffer = buffer;
-            this.completion = completion;
+        }
+
+        public boolean isComplete() {
+            return isComplete;
+        }
+
+        public Exception getException() {
+            return exception;
         }
 
         @Override
         public void run() {
-            Exception exception = EOS_SENTINEL;
             try {
                 List<Tuple<ReferenceSequence, SAMRecord>> batch = buffer.take();
-                while (true) {
+                while (batch.size() > 0) {
                     for (Tuple<ReferenceSequence, SAMRecord> r : batch) {
-                        if (r.b == null) {
-                            program.finish();
-                            throw EOS_SENTINEL;
-                        }
                         program.acceptRead(r.b, r.a);
                     }
                     batch = buffer.take();
                 }
+                program.finish();
             } catch (Exception e) {
                 exception = e;
             } finally {
-                completion.add(exception);
+                isComplete = true;
             }
         }
     }
