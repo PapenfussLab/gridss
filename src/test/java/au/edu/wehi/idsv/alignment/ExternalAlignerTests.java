@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.alignment;
 
+import au.edu.wehi.idsv.Hg19Tests;
+import au.edu.wehi.idsv.ReferenceTests;
 import gridss.SoftClipsToSplitReads;
 import org.apache.commons.lang3.SystemUtils;
 
@@ -14,7 +16,7 @@ import java.util.List;
  */
 public interface ExternalAlignerTests {
 	public static final List<String> COMMAND_LINE = getDefaultAlignerCommandLine();
-	public static final File REFERENCE = new File("chr12.fa");
+	public static final File REFERENCE = ReferenceTests.findReference("chr12.fa");
 	static List<String> getDefaultAlignerCommandLine() {
 		List<String> cmd = new SoftClipsToSplitReads().ALIGNER_COMMAND_LINE;
 		if (SystemUtils.IS_OS_WINDOWS) {
