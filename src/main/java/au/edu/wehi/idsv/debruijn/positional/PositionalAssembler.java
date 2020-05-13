@@ -117,7 +117,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				try {
 					packagedFile = packageMinimalAssemblyErrorReproductionData(getEvidenceInCurrentAssembler());
 				} catch (Exception ex) {
-					log.error("Error packaging assembly error reproduction data.", ex);
+					log.error(ex, "Error packaging assembly error reproduction data.");
 				}
 				String msg = "Error assembling " + currentContig + ". Please raise an issue at https://github.com/PapenfussLab/gridss/issues";
 				if (packagedFile != null && packagedFile.exists()) {
@@ -216,10 +216,15 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 						.map(bs -> Range.closed(bs.start2 - paddingMargin, bs.end2 + paddingMargin)))
 					.collect(Collectors.toList()));
 				byte[] bases = rl.getSequence(seq.getSequenceName()).getBases().clone();
-				for (Range<Integer> nRange : rs.complement().asRanges()) {
-					int lowerBound = Math.max(0, nRange.hasLowerBound() ? nRange.lowerEndpoint() : 0);
-					int upperBound = Math.min(bases.length, nRange.hasUpperBound() ? nRange.upperEndpoint() : bases.length);
-					Arrays.fill(bases, lowerBound, upperBound, (byte)'N');
+				if (rs.isEmpty()) {
+					Arrays.fill(bases, (byte)'N');
+				} else {
+					for (Range<Integer> nRange : rs.complement().asRanges()) {
+						int lowerBound = Math.max(0, nRange.hasLowerBound() ? nRange.lowerEndpoint() : 0);
+						int upperBound = Math.min(bases.length, nRange.hasUpperBound() ? nRange.upperEndpoint() : bases.length);
+						upperBound = Math.max(lowerBound, upperBound);
+						Arrays.fill(bases, lowerBound, upperBound, (byte) 'N');
+					}
 				}
 				fso.write(bases);
 				fso.write(new byte[] { '\n'});
