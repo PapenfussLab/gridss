@@ -122,6 +122,7 @@ public class AnnotateInsertedSequence extends ReferenceCommandLineProgram {
             if (REPEAT_MASKER_BED != null) {
                 log.info("Loading RepeatMasker bed file from " + REPEAT_MASKER_BED);
                 VariantContextRepeatMaskerAnnotator rma = new VariantContextRepeatMaskerAnnotator(REPEAT_MASKER_BED);
+                log.info("RepeatMasker bed file loaded from " + REPEAT_MASKER_BED);
                 Set<String> commonContigs = Sets.intersection(Sets.newHashSet(rma.getRepeatMaskerContigs()), dict.getSequences().stream().map(s -> s.getContig()).collect(Collectors.toSet()));
                 if (commonContigs.size() < Math.min(rma.getRepeatMaskerContigs().size(), dict.size()) * 0.5) {
                     log.warn(String.format("Only %d chromosomes in common between REFERENCE_SEQUENCE and REPEAT_MASKER_BED. Are you sure your chromosome names match?", commonContigs.size()));
