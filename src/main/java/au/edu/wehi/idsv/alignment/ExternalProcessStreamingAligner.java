@@ -11,8 +11,8 @@ import org.apache.commons.lang3.SystemUtils;
 import java.io.*;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -28,9 +28,10 @@ import java.util.stream.Collectors;
  */
 public class ExternalProcessStreamingAligner implements Closeable, Flushable, StreamingAligner {
 	private static final int POLL_INTERVAL = 1000;
-	private static final Log log = Log.getInstance(ExternalProcessStreamingAligner.class);	
+	private static final int OUTPUT_BUFFER_SIZE = 1024;
+	private static final Log log = Log.getInstance(ExternalProcessStreamingAligner.class);
 	private final AtomicInteger outstandingReads = new AtomicInteger(0);
-	private final BlockingQueue<SAMRecord> buffer = new LinkedBlockingQueue<>();
+	private final BlockingQueue<SAMRecord> buffer = new ArrayBlockingQueue<>(OUTPUT_BUFFER_SIZE);
 	private final List<String> args;
 	private final SamReaderFactory readerFactory;
 	private final SAMSequenceDictionary dict;
@@ -131,19 +132,23 @@ public class ExternalProcessStreamingAligner implements Closeable, Flushable, St
 		return r;
 	}
 	private void readAllAlignments(final SamReaderFactory readerFactory) {
-		SamReader fromExternalProgram = readerFactory.open(SamInputResource.of(aligner.getInputStream()));
-		SAMRecordIterator it = fromExternalProgram.iterator();
-		while (it.hasNext()) {
-			SAMRecord r = it.next();
-			if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
-				if (!MessageThrottler.Current.shouldSupress(log, "streaming aligner out of bounds")) {
-					log.warn(String.format("Streamed aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
+		try {
+			SamReader fromExternalProgram = readerFactory.open(SamInputResource.of(aligner.getInputStream()));
+			SAMRecordIterator it = fromExternalProgram.iterator();
+			while (it.hasNext()) {
+				SAMRecord r = it.next();
+				if (SAMRecordUtil.forceValidContigBounds(r, dict)) {
+					if (!MessageThrottler.Current.shouldSupress(log, "streaming aligner out of bounds")) {
+						log.warn(String.format("Streamed aligner returned out of bounds alignment. %s adjusted to %s:%d %s", dict.getSequence(r.getReferenceIndex()).getSequenceName(), r.getAlignmentStart(), r.getCigarString()));
+					}
 				}
+				buffer.put(r);
+				outstandingReads.decrementAndGet();
 			}
-			buffer.add(r);
-			outstandingReads.decrementAndGet();
+			log.info(String.format("Reader thread complete. %s reads in output buffer", buffer.size()));
+		} catch (InterruptedException ie) {
+			log.warn(ie, "reader thread interrupted");
 		}
-		log.info(String.format("Reader thread complete. %s reads in output buffer", buffer.size()));
 	}
 
 	@Override
