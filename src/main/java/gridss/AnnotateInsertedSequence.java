@@ -48,10 +48,10 @@ public class AnnotateInsertedSequence extends ReferenceCommandLineProgram {
             + " The aligner must support using \"-\" as the input filename when reading from stdin."
             + "Java argument formatting is used with %1$s being the fastq file to align, "
             + "%2$s the reference genome, and %3$d the number of threads to use.", optional = true)
-    public List<String> ALIGNER_COMMAND_LINE = new SoftClipsToSplitReads().ALIGNER_COMMAND_LINE;
+    public List<String> ALIGNER_COMMAND_LINE = null;
     @Argument(doc = "Number of records to buffer when performing in-process or streaming alignment. Not applicable when performing external alignment.", optional = true)
     public int ALIGNER_BATCH_SIZE = MAX_RECORDS_IN_RAM;
-    @Argument(doc = "Whether to align inserted seqeunces to REFERENCE_GENOME. Valid values are:" +
+    @Argument(doc = "Whether to align inserted sequences to REFERENCE_GENOME. Valid values are:" +
             "APPEND (Append alignments to REFERENCE_GENOME to the BEALN field), " +
             "REPLACE (Replace all BEALN fields)  (default)," +
             "ADD_MISSING (Add alignments to records missing a BEALN field, and" +
