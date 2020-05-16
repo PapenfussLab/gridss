@@ -12,7 +12,7 @@ argp = add_argument(argp, "--tumourordinal", type="integer", nargs=Inf, help="Or
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 # argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
-# argv = parse_args(argp, argv=c("--input", "W:/projects/gridss/regression/v2.8.0-SNAPSHOT/colo829/output.vcf.gz", "--output", "C:/temp/tmp.vcf", "-f", "C:/temp/tmp-full.vcf", "-p", "D:/hartwig/pon", "--scriptdir", "D:/dev/gridss/scripts", "--gc"))
+# argv = parse_args(argp, argv=c("--input", "C:/dev/colo829hg38/out.vcf", "--output", "C:/temp/tmp.vcf", "-f", "C:/temp/tmp-full.vcf", "-p", "S:/hartwig/pon", "--scriptdir", "C:/dev/gridss/scripts", "--gc", "--tumourordinal", "2"))
 argv = parse_args(argp)
 
 for (argname in c("input")) {
@@ -159,7 +159,7 @@ if (length(bpgr) > 0) {
   info(full_vcf[names(bpgr)])$TAF = bpgr$af_str
 }
 write(paste(Sys.time(), "Filtering breakpoints", argv$input), stderr())
-bpfiltered = gridss_breakpoint_filter(bpgr, full_vcf, bsgenome=refgenome, pon_dir=argv$pondir, normalOrdinal=argv$normalordinal, tumourOrdinal=tumourordinal)
+bpfiltered = gridss_breakpoint_filter(bpgr, full_vcf, bsgenome=refgenome, pon_dir=argv$pondir, normalOrdinal=argv$normalordinal, tumourOrdinal=argv$tumourordinal)
 filters[names(bpgr)] = bpfiltered
 if (argv$gc) { gc() }
 
