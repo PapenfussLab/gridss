@@ -44,4 +44,13 @@ public class RepeatMaskerBEDCodecTest extends TestHelper {
         Assert.assertEquals("Satellite/telo", records.get(1).getRepeatClass());
         Assert.assertEquals(Strand.NEGATIVE, records.get(1).getStrand());
     }
+    @Test
+    public void should_cache_strings() throws IOException {
+        List<RepeatMaskerBEDFeature> records = Lists.newArrayList(AbstractFeatureReader.getFeatureReader(
+                new File("src/test/resources/hg19.rm.bedops.bed").getPath(),
+                new RepeatMaskerBEDCodec(), false).iterator())
+                .stream()
+                .map(x -> (RepeatMaskerBEDFeature) x).collect(Collectors.toList());
+        Assert.assertTrue(records.get(0).getContig() == records.get(1).getContig());
+    }
 }

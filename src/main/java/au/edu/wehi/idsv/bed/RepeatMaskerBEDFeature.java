@@ -7,6 +7,7 @@ import htsjdk.tribble.bed.FullBEDFeature;
 import java.awt.*;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * See https://bedops.readthedocs.io/en/latest/content/reference/file-management/conversion/rmsk2bed.html#column-mapping for format
@@ -20,14 +21,23 @@ public class RepeatMaskerBEDFeature implements BEDFeature {
     private final Strand strand;
     private final String repeatClass;
 
-    public RepeatMaskerBEDFeature(BEDFeature feature, String[] tokens) {
+    public RepeatMaskerBEDFeature(Map<String, String> stringCache, BEDFeature feature, String[] tokens) {
+        this.contig = getCached(stringCache, feature.getContig());
         this.start = feature.getStart();
         this.end = feature.getEnd();
         this.strand = feature.getStrand();
         this.swScore = feature.getScore();
-        this.repeatType = feature.getName();
-        this.contig = feature.getContig();
-        this.repeatClass = tokens[10];
+        this.repeatType = getCached(stringCache, feature.getName());
+        this.repeatClass = getCached(stringCache, tokens[10]);
+    }
+
+    private static String getCached(Map<String, String> stringCache, String s) {
+        String cached = stringCache.get(s);
+        if (cached == null) {
+            cached = s;
+            stringCache.put(s, s);
+        }
+        return cached;
     }
 
     public String getRepeatType() {
