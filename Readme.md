@@ -68,8 +68,8 @@ argument|description
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
 --repeatmaskerbed|bedops rmsk2bed BED file for reference genome. Optional parameter for annotating inserted sequences with RepeatMasker repeat type/class (Optional)
---jobindex|zero-based index of this assembly job node. Used to spread GRIDSS assembly across multiple compute nodes. Used to spread GRIDSS assembly across multiple compute nodes. Use only with `-s assemble`. Once all jobs have completed, a `-s assemble` or `-s all` job should be run to gather the results together.
---jobnodes|total number of assmebly jobs scheduled.
+--jobindex|zero-based index of this assembly job node. Used to spread GRIDSS assembly across multiple compute nodes. Use only with `-s assemble`. Once all jobs have completed, a `-s assemble` or `-s all` job should be run to gather the results together.
+--jobnodes|total number of assembly jobs scheduled.
 
 The following additional optional arguments may be useful if GRIDSS fails to run in your environment, or you want to run with non-standard parameters.
 
@@ -81,16 +81,16 @@ argument|description
 --useproperpair|use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
 --concordantreadpairdistribution|portion of read pairs distribution considered concordantly mapped. Default: 0.995
 --keepTempFiles|keep intermediate files. Not recommended except for debugging due to the high disk usage.
-	--nojni|do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
+--nojni|do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
 	
 _Warning_: all somatic R scripts treat the first bam file to be the matched normal, and any subsequent as tumour sample. If you are doing somatic calling, make sure you follow this convention.
 
-### grids.sh steps
+### gridss.sh steps
 
 The following GRIDSS steps can be specified:
 step|description
 ---|---
-setupreference|Once-off setup generating additional files in the same directory as the reference. WARNING: multiple instances of GRIDSS attempting to perform `setupreference` at the same time will result in file corruption. Make sure these files are generated before runninng parallel GRIDSS jobs.
+setupreference|Once-off setup generating additional files in the same directory as the reference. WARNING: multiple instances of GRIDSS attempting to perform `setupreference` at the same time will result in file corruption. Make sure these files are generated before running parallel GRIDSS jobs.
 preprocess|Pre-process input BAM files. Can be run per input file.
 assemble|Perform GRIDSS breakend assembly. Can split up across multiple nodes using `--jobindex` and `--jobnodes`.
 call|Perform variant calling.
@@ -188,9 +188,9 @@ Note that `gridss_somatic_filter.R` requires the files to be named `gridss_pon_b
 
 Wherever possible, samples should be processed together. Joint calling enables the detection of low allelic fraction SVs, as well as making the downstream analysis much easier (a single VCF with a breakdown of support per sample is much easier to deal with than multiple VCFs - the matching logic required to determine if two SVs are equivalent is non-trivial).
 
-GRIDSS joint calling has been tested on up 12 samples with ~1000x aggregate coverage. If you have hundreds of samples, joint assembly will likely be computationally prohibitive and you will need to perform assembly in batches, them merge the results together.
+GRIDSS joint calling has been tested on up 12 samples with ~1000x aggregate coverage. If you have hundreds of samples, joint assembly will likely be computationally prohibitive and you will need to perform assembly in batches, then merge the results together.
 
-WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure `setupreference` files have been generated before runninng parallel GRIDSS jobs.
+WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure `setupreference` files have been generated before running parallel GRIDSS jobs.
 
 ### I encountered an error. What should I do?
 
