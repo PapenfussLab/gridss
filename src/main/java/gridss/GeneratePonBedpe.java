@@ -220,7 +220,7 @@ public class GeneratePonBedpe extends CommandLineProgram {
 		VCFFileReader vcfReader = new VCFFileReader(file, false);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
 		Iterator<Pair<BreakendSummary, Integer>> idsvIt = Iterators.transform(it, variant -> getBreakendSummary(pc, variant, ordinals));
-		Iterator<Pair<BreakendSummary, Integer>> idsvFilteredIt = Iterators.filter(idsvIt, pair -> pair.getSecond() > 0);
+		Iterator<Pair<BreakendSummary, Integer>> idsvFilteredIt = Iterators.filter(idsvIt, pair -> pair != null && pair.getSecond() > 0);
 		Iterator<Pair<BreakendSummary, Integer>> bpit = new PairBreakendSummaryWindowedSortingIterator(pc.getLinear(), idsvFilteredIt, MAX_BREAKPOINT_HOMOLOGY_LENGTH);
 		return new AutoClosingIterator<>(bpit, it, vcfReader);
 	}
