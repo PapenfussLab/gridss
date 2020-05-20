@@ -92,7 +92,7 @@ step|description
 ---|---
 setupreference|Once-off setup generating additional files in the same directory as the reference. WARNING: multiple instances of GRIDSS attempting to perform `setupreference` at the same time will result in file corruption. Make sure these files are generated before runninng parallel GRIDSS jobs.
 preprocess|Pre-process input BAM files. Can be run per input file.
-assemble|Perform GRIDSS breakend assembly. Can split up using .
+assemble|Perform GRIDSS breakend assembly. Can split up across multiple nodes using `--jobindex` and `--jobnodes`.
 call|Perform variant calling.
 all| Run all steps (Default)
 
