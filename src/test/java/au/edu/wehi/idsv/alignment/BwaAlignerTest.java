@@ -5,11 +5,13 @@ import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 import org.apache.commons.io.FileUtils;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -87,6 +89,34 @@ public class BwaAlignerTest extends TestHelper {
             assertEquals(1, result.size());
             assertEquals("20S100M", result.get(0).getCigarString());
             assertEquals(1, result.get(0).getAlignmentStart());
+        }
+    }
+    @Test
+    public void should_have_min_alignment_length() throws IOException {
+        String s = S(getPolyA(120));
+        try (BwaAligner ba = new BwaAligner(new File("src/test/resources/small.fa"), SMALL_FA.getSequenceDictionary(), 2)) {
+            List<FastqRecord> input = new ArrayList<>();
+            for (int i = 0; i < 100; i++) {
+                input.add(new FastqRecord("read" + i, s.substring(0, i), "", s.substring(0, i)));
+            }
+            List<SAMRecord> result = ba.align(input);
+            for (int i = 0; i < 100; i++) {
+                Assert.assertEquals(i, result.get(i).getReadLength());
+            }
+        }
+    }
+    @Test
+    public void should_handle_Ns() throws IOException {
+        String s = S(getPolyA(120));
+        try (BwaAligner ba = new BwaAligner(new File("src/test/resources/small.fa"), SMALL_FA.getSequenceDictionary(), 2)) {
+            List<FastqRecord> input = new ArrayList<>();
+            for (int i = 0; i < 100; i++) {
+                input.add(new FastqRecord("read" + i, getPoly(i, 'N'), "", getPolyA(i)));
+            }
+            List<SAMRecord> result = ba.align(input);
+            for (int i = 0; i < 100; i++) {
+                Assert.assertEquals(i, result.get(i).getReadLength());
+            }
         }
     }
 }

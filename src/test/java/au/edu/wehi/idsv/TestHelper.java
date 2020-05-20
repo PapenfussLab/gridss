@@ -150,6 +150,13 @@ public class TestHelper {
 		return b;
 	}
 
+	static public byte[] getPoly(int length, char c) {
+		byte[] b = new byte[length];
+		for (int i = 0; i < length; i++)
+			b[i] = (byte)c;
+		return b;
+	}
+
 	static public List<SAMRecord> sorted(List<SAMRecord> list) {
 		List<SAMRecord> out = Lists.newArrayList(list);
 		Collections.sort(out, new SAMRecordCoordinateComparator());
