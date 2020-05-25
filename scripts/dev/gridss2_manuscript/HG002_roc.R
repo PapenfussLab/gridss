@@ -48,7 +48,9 @@ df$repeatclass = str_replace(df$repeatClass, "/.*$", "")
 df$distanceToRegionEdge = dtn(dfgr, gaps(giab_tier1_regions))
 df$distanceToNearestVariant = dtn(dfgr, giab_tier1_gr)
 df$distanceToNearestGridssTp = dtn(dfgr, gr[gr$tp])
-df = df %>% mutate(BEbias =(BASSR +- BASRP - BSC + BUM) / (BASSR + BASRP + BSC + BUM))
+df = df %>% mutate(
+	BEbias=(BASSR + BASRP - BSC - BUM) / (BASSR + BASRP + BSC + BUM),
+	BPbias=(ASSR + ASRP - SR - RP) / (ASSR + ASRP + SR + RP))
 bpdf = df %>% filter(!isSingleBreakend)
 bedf = df %>% filter(isSingleBreakend)
 
@@ -200,6 +202,11 @@ ggplot(rocqual(bedf %>% mutate(BAQpctbin=cut(BAQ/QUAL, seq(0, 1, 0.2))), BAQpctb
 
 ggplot(bedf) +
 	aes(x=BEbias, fill= tp) +
+	facet_wrap( ~ FILTER, scales="free") + 
+	geom_histogram()
+
+ggplot(bpdf) +
+	aes(x=BPbias, fill= tp) +
 	facet_wrap( ~ FILTER, scales="free") + 
 	geom_histogram()
 
