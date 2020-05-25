@@ -11,6 +11,7 @@ import java.util.List;
 
 public class VariantCallingConfiguration {
 	public static final String CONFIGURATION_PREFIX = "variantcalling";
+
 	public VariantCallingConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
 		minReads = config.getDouble("minReads");
@@ -24,9 +25,9 @@ public class VariantCallingConfiguration {
 		breakendLowQuality = config.getDouble("breakendLowQuality");
 		maxBreakendHomologyLength = config.getInt("maxBreakendHomologyLength");
 		breakendHomologyAlignmentMargin = config.getInt("breakendHomologyAlignmentMargin");
-		requireAssemblyCategorySupport = config.getBoolean("requireAssemblyCategorySupport");
 		callBreakends = config.getBoolean("callBreakends");
 		includeSupportingReadNames = config.getBoolean("includeSupportingReadNames");
+		breakendMaxAssemblySupportBias = config.getDouble("breakendMaxAssemblySupportBias");
 	}
 	/**
 	 * Minimum number of reads supporting variant either directly or indirectly through assembly
@@ -58,7 +59,6 @@ public class VariantCallingConfiguration {
 	 */
 	private int fullMarginMultiple = 2;
 	public boolean writeFiltered;
-	//public boolean placeholderBreakend;
 	public double breakpointLowQuality;
 	public double breakendLowQuality;
 	/**
@@ -70,12 +70,6 @@ public class VariantCallingConfiguration {
 	 */
 	public int breakendHomologyAlignmentMargin;
 	/**
-	 * Require that an anchored assembly is supported on both sides for each category
-	 * Corrects for somatic calls with a flanking germline indel being called as somatic
-	 * due to the non-zero germline support of the contig. 
-	 */
-	public boolean requireAssemblyCategorySupport;
-	/**
 	 * Include unpaired breakends in variant calls
 	 */
 	public boolean callBreakends;
@@ -83,6 +77,13 @@ public class VariantCallingConfiguration {
 	 * Include read names of all supporting reads
 	 */
 	public boolean includeSupportingReadNames;
+	/**
+	 * Single breakend maximum support bias.
+	 * Bias of 0 indicates the same number of directly supporting reads and read supporting via assembly (typically these are the same reads, although this is not strictly necessary)
+	 * Bias of -1 indicates no assembly support
+	 * Bias of 1 indicates no direct read support
+	 */
+	private double breakendMaxAssemblySupportBias;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));
@@ -167,6 +168,23 @@ public class VariantCallingConfiguration {
 			}
 			if (variant.getPhredScaledQual() < processContext.getVariantCallingParameters().breakendLowQuality) {
 				filters.add(VcfFilter.LOW_QUAL.filter());
+			}
+			// more filters
+			int bassr = variant.getBreakendEvidenceCountAssemblySoftClip();
+			int basrp = variant.getBreakendEvidenceCountAssemblyReadPair();
+			int bsc = variant.getBreakendEvidenceCountSoftClip();
+			int bum = variant.getBreakendEvidenceCountReadPair();
+			int asmSupport = bassr + basrp;
+			int directSupport = bsc + bum;
+			double bebias = (asmSupport - directSupport) / (double)(asmSupport + directSupport);
+			if (Math.abs(bebias) > breakendMaxAssemblySupportBias) {
+				filters.add(VcfFilter.ASSEMBLY_BIAS.filter());
+			}
+			if (bsc == 0) {
+				filters.add(VcfFilter.NO_SR.filter());
+			}
+			if (bum == 0) {
+				filters.add(VcfFilter.NO_RP.filter());
 			}
 		}
 		VariantContextDirectedEvidence filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, variant).filters(filters.toArray(new String[0])).make();

@@ -323,7 +323,6 @@ public class TestHelper {
 		config.getSoftClip().minAverageQual = 0;
 		config.getVariantCalling().breakendMargin = 3;
 		config.getVisualisation().buffers = false;
-		config.getVariantCalling().requireAssemblyCategorySupport = true;
 		config.getVariantCalling().callBreakends = true;
 		return config;
 	}

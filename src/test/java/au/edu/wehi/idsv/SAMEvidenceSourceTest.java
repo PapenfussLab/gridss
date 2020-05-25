@@ -10,11 +10,13 @@ import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -492,5 +494,16 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_not_filter_XNX_placholder_outside_of_bounds() {
 		SAMEvidenceSource ses = permissiveSES();
 		assertFalse(ses.shouldFilter(Read(0, -10, "10S1X1N1X")));
+	}
+	@Test
+	@Category(Hg19Tests.class)
+	public void v272_colo829_10_55476344_regression_() throws FileNotFoundException {
+		File ref = Hg19Tests.findBroadHg19Reference();
+		FileSystemContext fsc = new FileSystemContext(new File("src/test/resources/colo829/v2.7.2_regression"), 100000);
+		ProcessingContext pc = new ProcessingContext(fsc, ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, new File("src/test/resources/colo829/v2.7.2_regression/COLO829v003T_dedup.realigned.bam"), null, 0);
+		ArrayList<DirectedEvidence> evidence = Lists.newArrayList(ses.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
+		List<NonReferenceReadPair> rp = evidence.stream().filter(e -> e instanceof NonReferenceReadPair).map(e -> (NonReferenceReadPair) e).collect(Collectors.toList());
+		Assert.assertEquals(5, rp.size());
 	}
 }

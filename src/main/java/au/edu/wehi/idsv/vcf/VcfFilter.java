@@ -18,6 +18,9 @@ public enum VcfFilter {
 	NO_ASSEMBLY ("NO_ASSEMBLY", "No assembly supporting this variant could be found."),
 	SINGLE_ASSEMBLY ("SINGLE_ASSEMBLY", "Only one side of the breakpoint could be assembled."),
 	ASSEMBLY_ONLY ("ASSEMBLY_ONLY", "Variant is supported only by assembly evidence."),
+	ASSEMBLY_BIAS ("ASSEMBLY_BIAS", "Mismatch between number of directly supporting reads and reads supporting via assembly."),
+	NO_RP ("NO_RP", "Variant does not have any direct read pair support."),
+	NO_SR ("NO_SR", "Variant does not have any direct split read support."),
 	LOW_QUAL ("LOW_QUAL", "Low quality call as specified by 'variantcalling.lowQuality'");
 
     private final VCFFilterHeaderLine filterheader;
