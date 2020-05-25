@@ -664,6 +664,7 @@ if [[ $do_preprocess == true ]] ; then
 						-Obam \
 						-o $prefix.sv.tmp.bam \
 						/dev/stdin \
+				&& $rmcmd $tmp_prefix.namedsorted.bam \
 				&& $timecmd samtools index $prefix.sv.tmp.bam \
 				&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
 				&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
