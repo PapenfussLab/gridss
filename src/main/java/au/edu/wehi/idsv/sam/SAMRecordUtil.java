@@ -1802,6 +1802,16 @@ public class SAMRecordUtil {
 		return r;
 	}
 
+	/**
+	 * Determines whether the alignments overlap on the same strand
+	 * @param r1 first record
+	 * @param r2 second record
+	 * @return true if the alignments overlap, false otherwise
+	 */
+	public static boolean alignmentOverlaps(SAMRecord r1, SAMRecord r2) {
+		return !r1.getReadUnmappedFlag() && !r2.getReadUnmappedFlag() && r1.getReadNegativeStrandFlag() == r2.getReadNegativeStrandFlag() && r1.overlaps(r2);
+	}
+
 	private static final Ordering<SAMRecord> ByFirstAlignedBaseReadOffset = new Ordering<SAMRecord>() {
 		public int compare(SAMRecord arg1, SAMRecord arg2) {
 			return Ints.compare(getFirstAlignedBaseReadOffset(arg1), getFirstAlignedBaseReadOffset(arg2));

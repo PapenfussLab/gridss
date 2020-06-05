@@ -7,6 +7,8 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Booleans;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.fastq.FastqRecord;
@@ -466,6 +468,19 @@ public class SplitReadHelper {
 		return bestScore;
 	}
 
+	/**
+	 * Write the primary record with the realignment of the aligned based
+	 * @param primary primary alignment record
+	 * @param list realignment records
+	 */
+	public static void rewriteAnchor(SAMRecord primary, List<SAMRecord> list) {
+		if (list.size() == 0) return;
+		// Overlapping, primary, then longest length
+		Comparator<SAMRecord> recordOrdering = Comparator.comparing((SAMRecord r) -> SAMRecordUtil.alignmentOverlaps(primary, r)).reversed()
+				.thenComparing((SAMRecord r) -> r.getSupplementaryAlignmentFlag())
+				.thenComparing(Comparator.comparing((SAMRecord r) -> r.getReadUnmappedFlag() ? 0 : r.getAlignmentEnd() - r.getAlignmentStart() + 1).reversed());
+		rewriteAnchor(primary, Collections.min(list, recordOrdering));
+	}
 	/**
 	 * Write the primary record with the realignment of the aligned based
 	 * @param primary primary alignment record

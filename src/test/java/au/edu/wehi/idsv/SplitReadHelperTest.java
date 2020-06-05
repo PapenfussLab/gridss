@@ -426,4 +426,32 @@ public class SplitReadHelperTest extends TestHelper {
 		assertEquals("5S7M8S", r.getCigarString());
 		assertEquals(19, r.getAlignmentStart());
 	}
+	@Test
+	public void rewriteAnchor_should_prefer_overlapping() {
+		SAMRecord r = Read(0, 100, "10S10M");
+		SAMRecord ra1 = Read(0, 105, "10S1M9S");
+		SAMRecord ra2 = Read(1, 15, "10S9M1S");
+		ra1.setSupplementaryAlignmentFlag(true);
+		SplitReadHelper.rewriteAnchor(r, ImmutableList.of(ra1, ra2));
+		assertEquals("10S1M9S", r.getCigarString());
+	}
+	@Test
+	public void rewriteAnchor_should_prefer_primary() {
+		SAMRecord r = Read(0, 100, "10S10M");
+		SAMRecord ra1 = Read(0, 105, "10S1M9S");
+		SAMRecord ra2 = Read(0, 101, "10S9M1S");
+		ra2.setSupplementaryAlignmentFlag(true);
+		SplitReadHelper.rewriteAnchor(r, ImmutableList.of(ra1, ra2));
+		assertEquals("10S1M9S", r.getCigarString());
+	}
+	@Test
+	public void rewriteAnchor_should_prefer_longer_alignment() {
+		SAMRecord r = Read(0, 100, "10S10M");
+		SAMRecord ra1 = Read(0, 105, "10S1M9S");
+		SAMRecord ra2 = Read(0, 101, "10S9M1S");
+		ra2.setSupplementaryAlignmentFlag(true);
+		ra1.setSupplementaryAlignmentFlag(true);
+		SplitReadHelper.rewriteAnchor(r, ImmutableList.of(ra1, ra2));
+		assertEquals("10S9M1S", r.getCigarString());
+	}
 }

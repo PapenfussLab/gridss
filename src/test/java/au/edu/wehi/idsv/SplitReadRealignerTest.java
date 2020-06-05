@@ -17,6 +17,7 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import joptsimple.internal.Strings;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -309,6 +310,30 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		srr.createSupplementaryAlignments(input, output, output);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(0, list.size());
+	}
+
+	@Test
+	public void realign_anchoring_bases_should_only_write_primary_or_overlapping_anchoring_base_alignment() throws IOException {
+		SAMRecord r = new SAMRecord(getHeader());
+		r.setReferenceIndex(2);
+		r.setAlignmentStart(100);
+		r.setCigarString("100S300M");
+		r.setReadBases(B(S(RANDOM).substring(300, 400) + S(RANDOM).substring(100, 150) + S(RANDOM).substring(1000, 1250)));
+		r.setBaseQualities(getPolyA(200));
+		r.setReadName("anchor_realign_test");
+
+		createBAM(input, getHeader(), r);
+		SplitReadRealigner aligner = createAligner();
+		srr.setRealignEntireRecord(true);
+		srr.createSupplementaryAlignments(input, output, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(2, list.size());
+		assertEquals(false, list.get(0).getSupplementaryAlignmentFlag());
+		assertEquals("100S50M250S", list.get(0).getCigarString());
+		assertEquals("100S300M", list.get(0).getStringAttribute("OA"));
+		assertEquals(true, list.get(1).getSupplementaryAlignmentFlag());
+		assertEquals("100M300S", list.get(1).getCigarString());
+		assertEquals("100S300M", list.get(1).getStringAttribute("OA"));
 	}
 
 	/**

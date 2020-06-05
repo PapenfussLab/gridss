@@ -78,15 +78,16 @@ public abstract class SplitReadRealigner {
                 }
             } else if (isRealignAnchoringBases()) {
                 // pull out the anchoring base alignment from the list and process it.
+                List<SAMRecord> anchorRealignments = new ArrayList<>();
                 for (int i = 0; i < realignments.size(); i++) {
                     SAMRecord r = realignments.get(i);
                     if (SplitReadHelper.isAnchoringBasesRecord(r)) {
-                        if (!r.getSupplementaryAlignmentFlag()) {
-                            SplitReadHelper.rewriteAnchor(primary, r);
-                        }
+                        anchorRealignments.get(i);
                         realignments.remove(i);
+                        i--;
                     }
                 }
+                SplitReadHelper.rewriteAnchor(primary, anchorRealignments);
             }
             SplitReadHelper.convertToSplitRead(primary, realignments, getReference(), isAdjustPrimaryAlignment() || isRealignEntireRecord());
             for (int i = 0; i < realignments.size(); i++) {
