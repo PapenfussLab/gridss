@@ -3,9 +3,14 @@ library(rtracklayer)
 library(tidyverse)
 library(ggrepel)
 library(cowplot)
-datadir = "C:/dev/gridss/scripts/dev/gridss2_manuscript/data/"
-figdir = "C:/dev/gridss/scripts/dev/gridss2_manuscript/figures/"
+library(BSgenome.Hsapiens.UCSC.hg19)
+options(stringsAsFactors = FALSE)
+datadir = "./publicdata/"
+privatedatadir = "./protecteddata/"
+figdir = "./figures/"
 
+gridss_fig_tp_colours = c("#6baed6", "#3182bd", "#08519c")
+gridss_fig_fp_colours = c("#fb6a4a", "#de2d26", "#a50f15")
 
 figsave = function(figureName, ...) {
 	if(!dir.exists(figdir)) { dir.create(figdir) }
@@ -48,15 +53,21 @@ score_for_caller = function(caller_name, vcf) {
 	return(qual)
 }
 
-calc_roc_pass_all = function(truth_gr, caller_gr, ...) {
+calc_roc_pass_all = function(truth_gr, caller_gr, sample_name, ...) {
 	all_calls=calc_roc(truth_gr, caller_gr, ...)
 	all_calls$roc$subset = "All calls"
 	all_calls$roc_by_type$subset = "All calls"
 	all_calls$gr$subset = "All calls"
+	all_calls$gr$sample_name = sample_name
+	all_calls$roc$sample_name = sample_name
+	all_calls$roc_by_type$sample_name = sample_name
 	pass_calls=calc_roc(truth_gr, caller_gr[is.na(caller_gr$FILTER) | caller_gr$FILTER %in% c("PASS", "", ".")], ...)
 	pass_calls$roc$subset = "PASS only"
 	pass_calls$roc_by_type$subset = "PASS only"
 	pass_calls$gr$subset = "PASS only"
+	pass_calls$gr$sample_name = sample_name
+	pass_calls$roc$sample_name = sample_name
+	pass_calls$roc_by_type$sample_name = sample_name
 	return(list(roc=bind_rows(all_calls$roc, pass_calls$roc), gr=c(all_calls$gr, pass_calls$gr), roc_by_type=bind_rows(all_calls$roc_by_type, pass_calls$roc_by_type)))
 }
 calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=FALSE, additional_filter=function(gr) { gr } ) {
@@ -74,10 +85,13 @@ calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100,
 				start=pmin(start(caller_gr), start(caller_gr[caller_gr$partner %na% names(caller_gr)])),
 				end=pmax(end(caller_gr), end(caller_gr[caller_gr$partner %na% names(caller_gr)]))))
 		caller_gr$fullyContainedInRegion = overlapsAny(caller_interval_gr, filter_to_region_gr, type="within")
-		caller_gr = caller_gr[caller_gr$breakendInRegion & caller_gr$isIntrachromosomal & caller_gr$fullyContainedInRegion]
+		caller_gr = caller_gr[caller_gr$breakendInRegion & caller_gr$isIntrachromosomal ]#& caller_gr$fullyContainedInRegion]
+		caller_gr = caller_gr[is.na(caller_gr$partner) | caller_gr$partner %in% names(caller_gr)]
 	}
-	truth_gr = additional_filter(truth_gr)
-	caller_gr = additional_filter(caller_gr)
+	if (!is.null(additional_filter)) {
+		truth_gr = additional_filter(truth_gr)
+		caller_gr = additional_filter(caller_gr)
+	}
 	truth_gr = truth_gr[is.na(truth_gr$partner) | truth_gr$partner %in% names(truth_gr)]
 	caller_bpgr = caller_gr[!is.na(caller_gr$partner)]
 	caller_begr = caller_gr[is.na(caller_gr$partner)]
@@ -175,3 +189,107 @@ calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100,
 		filter(QUAL >= 0)
 	return(list(roc=roc, roc_by_type=roc_by_type, gr=roc_gr, caller_gr=c(caller_bpgr, caller_begr)))
 }
+# Consistency with SV calls:
+# segments
+# segments supported by SV
+# distance to SV
+evaluate_cn_transitions = function (cngr, svgr, margin=100000, distance=c("cn_transition", "sv")) {
+	distance <- match.arg(distance)
+	cn_transitions = with(cngr %>% as.data.frame(), IRanges::reduce(c(
+		GRanges(seqnames=seqnames, ranges=IRanges(start=start, width=1)),
+		GRanges(seqnames=seqnames, ranges=IRanges(start=end + 1, width=1)))))
+	cn_transitions$caller = unique(cngr$caller)
+	cn_transitions$cn_left = NA
+	cn_transitions$cn_right = NA
+	hits = findOverlaps(cn_transitions, with(cngr %>% as.data.frame(), GRanges(seqnames=seqnames, ranges=IRanges(start=start, width=1))))
+	cn_transitions$cn_right[queryHits(hits)] = cngr[subjectHits(hits)]$cn
+	hits = findOverlaps(cn_transitions, with(cngr %>% as.data.frame(), GRanges(seqnames=seqnames, ranges=IRanges(start=end + 1, width=1))))
+	cn_transitions$cn_left[queryHits(hits)] = cngr[subjectHits(hits)]$cn
+	cn_transitions$cn_delta = cn_transitions$cn_right - cn_transitions$cn_left
+	
+	hits = findOverlaps(svgr, cn_transitions, maxgap=margin, ignore.strand=TRUE) %>% as.data.frame() %>%
+		mutate(distance=pmax(1, abs(start(svgr)[queryHits] - start(cn_transitions)[subjectHits])))
+	best_sv_hit = hits %>% group_by(queryHits) %>% filter(distance==min(distance)) %>% ungroup()
+	best_cn_hit = hits %>% group_by(subjectHits) %>% filter(distance==min(distance)) %>% ungroup()
+	cn_transitions$distance = NA
+	cn_transitions[best_cn_hit$subjectHits]$distance = best_cn_hit$distance
+	svgr$distance = NA
+	svgr[best_sv_hit$queryHits]$distance = best_sv_hit$distance
+	exact_bp_hit = best_sv_hit %>%
+		mutate(queryHits.p=match(svgr[queryHits]$partner, names(svgr))) %>%
+		filter(!is.na(queryHits.p)) %>%
+		inner_join(best_sv_hit, by=c("queryHits.p"="queryHits"), suffix=c("", ".p")) %>%
+		filter(distance == 1 & distance.p == 1) %>%
+		mutate(
+			ori_local = as.character(strand(svgr))[queryHits],
+			ori_remote = as.character(strand(svgr))[queryHits.p],
+			sv_cn = cn_transitions$cn_delta[subjectHits.p] * ifelse(ori_remote == "+", -1, 1),
+			cn_left = cn_transitions$cn_left[subjectHits] + ifelse(ori_local == "+", 0, sv_cn),
+			cn_right = cn_transitions$cn_right[subjectHits] + ifelse(ori_local == "+", sv_cn, 0),
+			cn_error=abs(cn_left - cn_right))
+	sv_hit_count = best_sv_hit %>% group_by(subjectHits) %>% summarise(n=n())
+	cn_transitions$sv_matches = 0
+	cn_transitions$sv_matches[sv_hit_count$subjectHits] = sv_hit_count$n
+	cn_transitions$sv_match_classification = "Missing SV"
+	cn_transitions$sv_match_classification[best_sv_hit %>% filter(is.na(svgr$partner[queryHits])) %>% pull(subjectHits)] = "Single Breakend"
+	cn_transitions$sv_match_classification[best_sv_hit %>% filter(!is.na(svgr$partner[queryHits])) %>% pull(subjectHits)] = "Breakpoint"
+	cn_transitions$sv_match_rescued = FALSE
+	if (!is.null(svgr$Recovered)) {
+		cn_transitions$sv_match_rescued[best_sv_hit %>% filter(svgr$Recovered[queryHits]) %>% pull(subjectHits)] = TRUE
+	}
+	cn_transitions$sv_partner_matches = 0
+	cn_transitions$sv_partner_matches[exact_bp_hit$subjectHits] = cn_transitions$sv_matches[exact_bp_hit$subjectHits.p]
+	cn_transitions$can_evaluate_cn_error = cn_transitions$sv_matches == 1 & cn_transitions$sv_partner_matches == 1
+	cn_transitions$cn_error = NA
+	cn_transitions$cn_error[exact_bp_hit$subjectHits] = exact_bp_hit$cn_error
+	cn_transitions$cn_error[!cn_transitions$can_evaluate_cn_error] = NA
+	
+	if (distance == "cn_transition") {
+		return(cn_transitions)
+	} else {
+		return(svgr)
+	}
+}
+lnx_to_gr <- function(lnx_svs) {
+	lnx_svs = lnx_svs %>% replace_na(list(InsertSeq=""))
+	grs = GRanges(
+		seqnames=lnx_svs$ChrStart,
+		ranges=IRanges(start=lnx_svs$PosStart, width=1),
+		strand=ifelse(lnx_svs$OrientStart == 1, "+", "-"),
+		InsertSeq=lnx_svs$InsertSeq,
+		partner=ifelse(lnx_svs$ChrEnd == 0, NA_character_, paste0(lnx_svs$Id, "h")),
+		Id=lnx_svs$Id,
+		SampleId=lnx_svs$SampleId,
+		beid=paste0(lnx_svs$Id, ifelse(is.na(lnx_svs$ChrEnd), "b",  "o")))
+	mcols(grs) = bind_cols(as.data.frame(mcols(grs)), lnx_svs %>% dplyr::select(-SampleId, Id))
+	names(grs) = grs$beid
+	lnx_svs = lnx_svs %>% filter(ChrEnd != 0)
+	rc_insert_sequence = lnx_svs$InsertSeq
+	rc_insert_sequence[!str_detect(rc_insert_sequence, "[^ACGTN]")] = as.character(reverseComplement(DNAStringSet(rc_insert_sequence[!str_detect(rc_insert_sequence, "[^ACGTN]")])))
+	grh = GRanges(
+		seqnames=lnx_svs$ChrEnd,
+		ranges=IRanges(start=lnx_svs$PosEnd, width=1),
+		strand=ifelse(lnx_svs$OrientEnd == 1, "+", "-"),
+		insertSequence=ifelse(lnx_svs$OrientStart != lnx_svs$OrientEnd, lnx_svs$InsertSeq, rc_insert_sequence),
+		partner=paste0(lnx_svs$Id, "o"),
+		Id=lnx_svs$Id,
+		SampleId=lnx_svs$SampleId,
+		beid=paste0(lnx_svs$Id, "h"))
+	mcols(grh) = bind_cols(as.data.frame(mcols(grh)), lnx_svs %>% dplyr::select(-SampleId, Id))
+	names(grh)=grh$beid
+	return(c(grs, grh))
+}
+
+# UCSC table export
+hg19_gaps = with(read_tsv(paste0(datadir, "hg19_gap")),
+								 GRanges(seqnames=str_replace(chrom, "chr", ""), ranges=IRanges(start=chromStart, end=chromEnd), type=type))
+# http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/cytoBand.txt.gz
+hg19_cytobands =  with(read_tsv(
+	file=paste0(datadir, "cytoband.txt"),
+	col_names=c("chr", "start", "end", "band", "type"),
+	col_type= "ciicc"),
+	GRanges(seqnames=chr, ranges=IRanges(start=start+1, end=end), band=band, type=type))
+seqlevelsStyle(hg19_cytobands) = "NCBI"
+hg19_centromeres = hg19_cytobands[hg19_cytobands$type == "acen"]
+
+

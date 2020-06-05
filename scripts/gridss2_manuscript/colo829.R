@@ -1,11 +1,11 @@
-source("gridss2_manuscript/libbenchmark.R")
+source("libbenchmark.R")
 
 colo829truth = readVcf(paste0(datadir, "COLO829.somatic.overlapped.vcf"))
 colo829truthgr = breakpointRanges(colo829truth, inferMissingBreakends=TRUE)
 colo829truthgr$FILTER = "PASS"
 colo829truthgr$QUAL = 20
-regression_callers = list.files(datadir, pattern="^v.*")
-pipeline_regression_callers = list.files(datadir, pattern="^[0-9]{6}_.*")
+regression_callers = list.files(paste0(datadir, "regressiontest"), pattern="^v.*")
+pipeline_regression_callers = list.files(paste0(datadir, "regressiontest"), pattern="^[0-9]{6}_.*")
 callers = c("gridss", "manta", "novobreak", "svaba")
 samples = c(
   "colo829_1",
@@ -67,14 +67,14 @@ load_somatic = function(caller, sample_name) {
            "colo829_2"="COLO829v002",
            "colo829_3"="COLO829v003",
            sample_name)
-    filename = paste0(datadir, caller, "/structuralVariants/gridss/", hmfsamplename, "R_", hmfsamplename, "T/", hmfsamplename, "T.gridss.somatic.vcf.gz")
+    filename = paste0(datadir, "regressiontest/", caller, "/structuralVariants/gridss/", hmfsamplename, "R_", hmfsamplename, "T/", hmfsamplename, "T.gridss.somatic.vcf.gz")
     if (!file.exists(filename)) {
-      # HMF location changed in v5.8
-      filename = paste0(datadir, caller, "/structural_caller/", hmfsamplename, "T.gridss.somatic.filtered.vcf.gz")
+      # HMF pipeline location changed in v5.8
+      filename = paste0(datadir, "regressiontest/", caller, "/structural_caller/", hmfsamplename, "T.gridss.somatic.filtered.vcf.gz")
     }
     if (!file.exists(filename)) {
-      # HMF location changed v5
-      filename = paste0(datadir, caller, "/structural_caller/", hmfsamplename, "T.gridss.somatic.vcf.gz")
+      # HMF pipeline location changed v5
+      filename = paste0(datadir, "regressiontest/", caller, "/structural_caller/", hmfsamplename, "T.gridss.somatic.vcf.gz")
     }
   }
   if (file.exists(filename)) {
@@ -92,10 +92,7 @@ load_somatic = function(caller, sample_name) {
     }
     gr$caller = caller
     gr$sample_name = sample_name
-    roc = calc_roc_pass_all(colo829truthgr, gr, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=TRUE)
-    roc$roc$sample_name = sample_name
-    roc$gr$sample_name = sample_name
-    roc$roc_by_type$sample_name = sample_name
+    roc = calc_roc_pass_all(colo829truthgr, gr, sample_name=sample_name, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=TRUE)
   } else {
     warning(paste("Missing", filename))
     return(NULL)
@@ -140,7 +137,8 @@ ggplot(summarydf %>% filter(str_detect(sample_name, "purity")) %>% filter(subset
   geom_text_repel() +
   #geom_text(vjust="inward",hjust="inward") +
   geom_point() +
-  scale_color_brewer(palette="Dark2") +
+  scale_color_manual(values = c("#000000", "#0072B2", "#d95f02", "#1b9e77")) +
+  #scale_color_brewer(palette="Dark2") +
   scale_x_continuous(limits = c(0,1), expand=c(0, 0), labels = scales::percent) +
   scale_y_continuous(limits = c(0,1.01), expand=c(0, 0), labels = scales::percent) +
   theme(plot.margin = margin(0,0,0,0),
@@ -151,24 +149,27 @@ ggplot(summarydf %>% filter(str_detect(sample_name, "purity")) %>% filter(subset
         panel.background = element_blank())
 figsave("colo829_purity_downsampling", width=6, height=5)
 
-
-ggplot(bind_rows(
-    summarydf %>% filter(str_detect(sample_name, "purity")) %>% filter(subset == "PASS only"),
-    summarydf %>% filter(!str_detect(sample_name, "purity") & subset == "PASS only" & caller %in% callers))) + 
-  aes(x=recall, y=precision, colour=caller, label=paste0(sample_purity[sample_name]*sample_depth[sample_name], "x")) +
-  geom_text_repel() +
-  #geom_text(vjust="inward",hjust="inward") +
-  geom_point() +
-  scale_color_brewer(palette="Dark2") +
+mergeddf = bind_rows(
+  summarydf %>% filter(str_detect(sample_name, "purity") & subset == "PASS only") %>% mutate(dataset="40x/60x purity downsample"),
+  summarydf %>% filter(!str_detect(sample_name, "purity") & subset == "PASS only" & caller %in% callers) %>% mutate(dataset="40x/100x replicate")) %>%
+  mutate(purity=sample_purity[sample_name])
+ggplot(mergeddf) + 
+  aes(x=recall, y=precision, colour=caller, shape=dataset) +
+  #geom_text_repel() +
+  geom_point(aes(size=purity)) +
+  geom_line(data=mergeddf %>% filter(dataset=="40x/60x purity downsample")) +
+  #scale_color_brewer(palette="Dark2") +
+  scale_color_manual(values = c("#000000", "#0072B2", "#d95f02", "#1b9e77")) +
   scale_x_continuous(limits = c(0,1), expand=c(0, 0), labels = scales::percent) +
   scale_y_continuous(limits = c(0,1.01), expand=c(0, 0), labels = scales::percent) +
+  scale_shape_manual(values=c(4,0)) +
   theme(plot.margin = margin(0,0,0,0),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank())
-figsave("colo829_combined_roc", width=5, height=4)
+figsave("colo829_combined_roc", width=7, height=4)
 
 ggplot(bind_rows(
   summarydf %>% filter(str_detect(sample_name, "purity")),
