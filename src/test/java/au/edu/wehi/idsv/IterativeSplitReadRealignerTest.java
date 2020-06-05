@@ -10,4 +10,5 @@ public class IterativeSplitReadRealignerTest extends SplitReadRealignerTest {
     protected SplitReadRealigner createAligner() {
         return new IterativeSplitReadRealigner(getContext(), aligner);
     }
+
 }

@@ -177,9 +177,11 @@ public class IterativeSplitReadRealigner extends SplitReadRealigner {
 				try (FastqWriter writer = new AsyncFastqWriter(new BasicFastqWriter(fq), AsyncFastqWriter.DEFAULT_QUEUE_SIZE)) {
 					while (bufferedIt.hasNext()) {
 						SAMRecord r = bufferedIt.next();
-						for (FastqRecord fqr : extract(r, isRecursive)) {
-							writer.write(fqr);
-							recordsWritten++;
+						if (!shouldDropInputRecord(r)) {
+							for (FastqRecord fqr : extract(r, isRecursive)) {
+								writer.write(fqr);
+								recordsWritten++;
+							}
 						}
 					}
 				}
