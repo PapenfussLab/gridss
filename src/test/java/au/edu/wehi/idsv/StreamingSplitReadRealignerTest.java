@@ -26,6 +26,12 @@ public class StreamingSplitReadRealignerTest extends SplitReadRealignerTest {
         return new StreamingSplitReadRealigner(getContext(), aligner, 10);
     }
 
+    @Override
+    protected SplitReadRealigner createAligner(ProcessingContext pc) {
+        BwaStreamingAligner bwaAligner = new BwaStreamingAligner(pc.getReferenceFile(), pc.getDictionary(), pc.getWorkerThreadCount(), 10000);
+        return new StreamingSplitReadRealigner(getContext(), bwaAligner, 10000);
+    }
+
     public class StubStreamingAligner implements StreamingAligner {
         private int out = 0;
         private int in = 0;
@@ -108,36 +114,6 @@ public class StreamingSplitReadRealignerTest extends SplitReadRealignerTest {
         createBAM(input, header, arr);
 
         srr = new StreamingSplitReadRealigner(pc, aligner, 16);
-        srr.createSupplementaryAlignments(input, output, output);
-        List<SAMRecord> list = getRecords(output);
-        assertEquals(4, list.size());
-    }
-
-    @Test
-    @Category(ExternalAlignerTests.class)
-    public void realign_full_read_should_not_repeat_primary_alignment() throws IOException {
-        ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, ExternalAlignerTests.REFERENCE, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
-        BufferedReferenceSequenceFile lookup = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(ExternalAlignerTests.REFERENCE));
-        ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), ExternalAlignerTests.REFERENCE, lookup, Lists.newArrayList(), getConfig(testFolder.getRoot()));
-
-        this.createAligner();
-
-        SAMFileHeader header = new SAMFileHeader();
-        header.setSequenceDictionary(lookup.getSequenceDictionary());
-        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-
-        SAMRecord r = new SAMRecord(header);
-        r.setReferenceIndex(0);
-        r.setAlignmentStart(1399998);
-        r.setCigarString("301S103M");
-        r.setReadBases(B("GGATATATAGGGATAGAAGCTTGAATAGTCTGGACATATATTTGTATTGAAATACAAATGTAAGATTTCAGTTAATCAATTTAAACATTTTTATTTTCAAGGGCTTCCAGCGTCCACTTCCTACGGCAAGCAGGAGGAGACAAGCGCCACCCTGCGCTCGCGGAGCCGACCCCGGCTCTCCCCTCCCGTGGCCGCAGGGGTCTGACAGAAAGGGGTCACTAATCTACTTGGCCTTTTGAGGACTGATCCTTAAGAATAATTTTTTTTTTTTTATGATCTTGAAGGCTGAGAAGTATTAGAGTAGGTTTTTTTCTCCTTCATAAGGCCAGATTCTTCTTTCTGTCACAGATTTCAAGTCCCCGCCTCAGCAGCCTTTCACTGTCAGTTCTTTCTCACGTGACCCT"));
-        r.setBaseQualities(B("?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA"));
-        r.setReadName("four_way_split_read");
-
-        createBAM(input, header, r);
-
-        srr = new StreamingSplitReadRealigner(pc, aligner, 100);
-        srr.setRealignEntireRecord(true);
         srr.createSupplementaryAlignments(input, output, output);
         List<SAMRecord> list = getRecords(output);
         assertEquals(4, list.size());

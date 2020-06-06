@@ -149,6 +149,7 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		srr = createAligner();
 	}
 	protected abstract SplitReadRealigner createAligner();
+	protected abstract SplitReadRealigner createAligner(ProcessingContext pc);
 	@Test
 	public void should_output_new_records_to_modified_file() throws IOException {
 		File outputModified = new File(output.toPath() + ".modified.bam");
@@ -319,12 +320,12 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		r.setAlignmentStart(100);
 		r.setCigarString("100S300M");
 		r.setReadBases(B(S(RANDOM).substring(300, 400) + S(RANDOM).substring(100, 150) + S(RANDOM).substring(1000, 1250)));
-		r.setBaseQualities(getPolyA(200));
+		r.setBaseQualities(getPolyA(400));
 		r.setReadName("anchor_realign_test");
 
 		createBAM(input, getHeader(), r);
-		SplitReadRealigner aligner = createAligner();
-		srr.setRealignEntireRecord(true);
+		srr.setRealignEntireRecord(false);
+		srr.setRealignAnchoringBases(true);
 		srr.createSupplementaryAlignments(input, output, output);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(2, list.size());
@@ -344,15 +345,11 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 	@Category({Hg19Tests.class, ExternalAlignerTests.class})
 	public void realign_should_not_overalign_one_side() throws IOException {
 		File hg19 = Hg19Tests.findHg19Reference();
-		SynchronousReferenceLookupAdapter ref = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(hg19));
-		ExternalProcessStreamingAligner aligner = new ExternalProcessStreamingAligner(SamReaderFactory.makeDefault(), ExternalAlignerTests.COMMAND_LINE, hg19, 4, new IndexedFastaSequenceFile(ExternalAlignerTests.REFERENCE).getSequenceDictionary());
-		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), hg19, ref, Lists.newArrayList(), getConfig(testFolder.getRoot()));
-		SplitReadRealigner srr = new StreamingSplitReadRealigner(pc, aligner, 1);
+		ProcessingContext pc = ReferenceTests.createProcessingContext(testFolder.getRoot(), hg19, getConfig(testFolder.getRoot()));
+		srr = createAligner(pc);
 		srr.setRealignEntireRecord(true);
-		SAMFileHeader header = new SAMFileHeader();
-		header.setSequenceDictionary(ref.getSequenceDictionary());
-		header.setSortOrder(SortOrder.coordinate);
-		
+		SAMFileHeader header = pc.getBasicSamHeader();
+
 		SAMRecord r = new SAMRecord(header);
 		r.setReferenceIndex(0);
 		r.setAlignmentStart(1);
@@ -367,5 +364,74 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals(2, list.size());
 		Assert.assertEquals("282S618M", list.get(0).getCigarString());
 	}
+	@Test
+	@Category(ExternalAlignerTests.class)
+	public void realign_full_read_should_not_repeat_primary_alignment() throws IOException {
+		ProcessingContext pc = ReferenceTests.createProcessingContext(testFolder.getRoot(), ExternalAlignerTests.REFERENCE, getConfig());
+		srr = createAligner(pc);
 
+		SAMFileHeader header = pc.getBasicSamHeader();
+		header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+
+		SAMRecord r = new SAMRecord(header);
+		r.setReferenceIndex(0);
+		r.setAlignmentStart(1399998);
+		r.setCigarString("301S103M");
+		r.setReadBases(B("GGATATATAGGGATAGAAGCTTGAATAGTCTGGACATATATTTGTATTGAAATACAAATGTAAGATTTCAGTTAATCAATTTAAACATTTTTATTTTCAAGGGCTTCCAGCGTCCACTTCCTACGGCAAGCAGGAGGAGACAAGCGCCACCCTGCGCTCGCGGAGCCGACCCCGGCTCTCCCCTCCCGTGGCCGCAGGGGTCTGACAGAAAGGGGTCACTAATCTACTTGGCCTTTTGAGGACTGATCCTTAAGAATAATTTTTTTTTTTTTATGATCTTGAAGGCTGAGAAGTATTAGAGTAGGTTTTTTTCTCCTTCATAAGGCCAGATTCTTCTTTCTGTCACAGATTTCAAGTCCCCGCCTCAGCAGCCTTTCACTGTCAGTTCTTTCTCACGTGACCCT"));
+		r.setBaseQualities(B("?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA?????BBBB@DEDDDDGGGGGEIEHIHEFHIHIIEHHIEIIIIIIEHII?HHFHHHHDIHIHEHHFIIBCHI=GHIH@HFCEIGIHIDHHHGCIIHDHHFA"));
+		r.setReadName("four_way_split_read");
+
+		createBAM(input, header, r);
+
+		srr.setRealignEntireRecord(true);
+		srr.createSupplementaryAlignments(input, output, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(4, list.size());
+	}
+	@Test
+	@Category(Hg19Tests.class)
+	public void regression_hg002_should_call_del_of_refduplicated_sine_element() throws IOException {
+		ProcessingContext pc = ReferenceTests.createProcessingContext(testFolder.getRoot(), Hg19Tests.findHg19Reference(), getConfig());
+		srr = createAligner(pc);
+		// TODO: get the failing HG002 assembly
+
+		Assert.fail("TODO");
+	}
+
+	@Test
+	public void design_goal_should_adjust_overaligned_reference_bases_to_other_side() throws IOException {
+		Assert.fail("TODO");
+	}
+
+	@Test
+	public void design_goal_should_not_include_inserted_bases_if_anchor_is_overaligned() throws IOException {
+		Assert.fail("TODO");
+	}
+
+	/**
+	 * Technically we're perfectly happy to do this but only if our assembly was restricted
+	 * to fragments that actually support this particular breakend. We currently don't have this
+	 */
+	@Test
+	public void design_goal_should_not_include_remote_alignments_on_anchored_side() throws IOException {
+		SAMRecord r = new SAMRecord(getHeader());
+		r.setReferenceIndex(2);
+		r.setAlignmentStart(100);
+		r.setCigarString("100S300M");
+		r.setReadBases(B(S(RANDOM).substring(300, 400) + S(RANDOM).substring(100, 150) + S(RANDOM).substring(1000, 1250)));
+		r.setBaseQualities(getPolyA(400));
+		r.setReadName("anchor_realign_test");
+
+		createBAM(input, getHeader(), r);
+		srr.setRealignEntireRecord(true);
+		srr.createSupplementaryAlignments(input, output, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(2, list.size());
+		assertEquals(false, list.get(0).getSupplementaryAlignmentFlag());
+		assertEquals("100S50M250S", list.get(0).getCigarString());
+		assertEquals("100S300M", list.get(0).getStringAttribute("OA"));
+		assertEquals(true, list.get(1).getSupplementaryAlignmentFlag());
+		assertEquals("100M300S", list.get(1).getCigarString());
+		assertEquals("100S300M", list.get(1).getStringAttribute("OA"));
+	}
 }

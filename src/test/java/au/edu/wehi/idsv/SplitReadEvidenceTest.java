@@ -261,13 +261,10 @@ public class SplitReadEvidenceTest extends TestHelper {
 	@Test
 	@Category(Hg19Tests.class)
 	public void indel_mismapping_false_positive_assembly_should_not_throw_homology_error() throws IOException {
-		File ref = Hg19Tests.findHg19Reference();
-		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
 		TemporaryFolder folder = new TemporaryFolder();
 		folder.create();
-		ProcessingContext pc = new ProcessingContext(
-				new FileSystemContext(folder.getRoot(), folder.getRoot(), 500000), ref, new SynchronousReferenceLookupAdapter(indexed), new ArrayList<Header>(),
-				getConfig());
+		File ref = Hg19Tests.findHg19Reference();
+		ProcessingContext pc = ReferenceTests.createProcessingContext(folder.getRoot(), ref, getConfig());
 		//File bam = new File(folder.getRoot(), "input.bam");
 		//Files.copy(new File("src/test/resources/indel_mismapping_false_positive_assembly.sv.bam"), bam);
 		SAMEvidenceSource ses = new MockSAMEvidenceSource(pc);
