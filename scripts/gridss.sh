@@ -401,7 +401,7 @@ for f1 in $@ ; do
 done
 
 # Validate tools exist on path
-for tool in Rscript samtools java ; do
+for tool in Rscript samtools java bwa minimap2 ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
@@ -415,11 +415,8 @@ else
 	exit $EX_CONFIG
 fi
 write_status "R version: $(Rscript --version 2>&1)"
-if ! which bwa >/dev/null; then
-	write_status "Error: unable to find bwa on \$PATH"
-	exit $EX_CONFIG
-fi
 write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
+write_status "minimap2 $(minimap2 --version)"
 if which /usr/bin/time >/dev/null ; then
 	write_status "time version: $(/usr/bin/time --version 2>&1)"
 fi
@@ -475,7 +472,7 @@ jvm_args="$jvm_args \
 	-Dsamjdk.buffer_size=4194304"
 
 if [[ "$nojni" == "true" ]] ; then
-	write_status "Disabling snappy, GKL, SSW, and in-process BWA"
+	write_status "Disabling snappy, GKL, SSW, and in-process alignment"
 	jvm_args="$jvm_args \
 		-Dsnappy.disable=true
 		-Dsamjdk.try_use_intel_deflater=false
@@ -484,6 +481,43 @@ if [[ "$nojni" == "true" ]] ; then
 		"
 	externalaligner="true"
 fi
+
+aligner_args_bwa='
+	ALIGNER_COMMAND_LINE=null
+	ALIGNER_COMMAND_LINE=bwa
+	ALIGNER_COMMAND_LINE=mem
+	ALIGNER_COMMAND_LINE=-L
+	ALIGNER_COMMAND_LINE=0,0
+	ALIGNER_COMMAND_LINE=-t
+	ALIGNER_COMMAND_LINE=%3$d
+	ALIGNER_COMMAND_LINE=%2$s
+	ALIGNER_COMMAND_LINE=%1$s
+	'
+aligner_args_bowtie2='
+	ALIGNER_COMMAND_LINE=null
+	ALIGNER_COMMAND_LINE=bowtie2
+	ALIGNER_COMMAND_LINE=--threads
+	ALIGNER_COMMAND_LINE=%3$d
+	ALIGNER_COMMAND_LINE=--local
+	ALIGNER_COMMAND_LINE=--mm
+	ALIGNER_COMMAND_LINE=--reorder
+	ALIGNER_COMMAND_LINE=-x
+	ALIGNER_COMMAND_LINE=%2$s
+	ALIGNER_COMMAND_LINE=-U
+	ALIGNER_COMMAND_LINE=%1$s
+	'
+aligner_args_minimap2='
+	ALIGNER_COMMAND_LINE=null
+	ALIGNER_COMMAND_LINE=minimap2
+	ALIGNER_COMMAND_LINE=%1$s.idx
+	ALIGNER_COMMAND_LINE=-x
+	ALIGNER_COMMAND_LINE=sr
+	ALIGNER_COMMAND_LINE=-Y
+	ALIGNER_COMMAND_LINE=-a
+	ALIGNER_COMMAND_LINE=-t
+	ALIGNER_COMMAND_LINE=%3$d
+	ALIGNER_COMMAND_LINE=%2$s
+	'
 
 readpairing_args=""
 
@@ -500,6 +534,10 @@ if [[ $do_setupreference == true ]] ; then
 	if [[ ! -f ${reference}.bwt  ]] ; then
 		write_status "Running	bwa index	(once-off setup for reference genome)"
 		$timecmd bwa index $reference 1>&2 2>> $logfile
+	fi
+	if [[ ! -f ${reference}.idx  ]] ; then
+		write_status "Running	minimap2 index	(once-off setup for reference genome)"
+		$timecmd minimap2 -d ${reference}.idx ${reference} 1>&2 2>> $logfile
 	fi
 	write_status "Running	PrepareReference	(once-off setup for reference genome)"
 	$timecmd java -Xmx4g $jvm_args \
@@ -748,6 +786,9 @@ if [[ $do_assemble == true ]] ; then
 				PROGRAM=QualityScoreDistribution \
 				$picardoptions \
 		; } 1>&2 2>> $logfile
+		# TODO: get JNI minimap2 working
+		# in the meantime, we always use external alignment for the assembly contigs
+		externalaligner=true
 		if [[ "$externalaligner" == "true" ]] ; then
 			write_status "Running	SoftClipsToSplitReads	$assembly"
 			{ $timecmd java -Xmx4g $jvm_args \
@@ -762,7 +803,9 @@ if [[ $do_assemble == true ]] ; then
 					I=$assembly \
 					O=$tmp_prefix.sc2sr.primary.sv.bam \
 					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
-					READJUST_PRIMARY_ALIGNMENT_POSITON=true \
+					REALIGN_ENTIRE_READ=true \
+					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
+					$aligner_args_minimap2 \
 					$picardoptions \
 			&& $timecmd samtools sort \
 					-@ $threads \
@@ -795,10 +838,10 @@ if [[ $do_assemble == true ]] ; then
 					WORKER_THREADS=$threads \
 					I=$assembly \
 					O=/dev/stdout \
-					ALIGNER=BWAMEM \
+					ALIGNER=MINIMAP2 \
 					ALIGNER_BATCH_SIZE=100000 \
-					REALIGN_ANCHORING_BASES=true \
-					READJUST_PRIMARY_ALIGNMENT_POSITON=true \
+					REALIGN_ENTIRE_READ=true \
+					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
 					COMPRESSION_LEVEL=0 \
 					$picardoptions \
 			| $timecmd samtools sort \

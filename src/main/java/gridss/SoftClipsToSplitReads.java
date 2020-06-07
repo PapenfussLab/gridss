@@ -54,11 +54,9 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     public boolean REALIGN_EXISTING_SPLIT_READS = false;
     @Argument(doc="Indicates whether to realign the entire read, or just the soft clipped bases.", optional=true)
     public boolean REALIGN_ENTIRE_READ = false;
-	@Argument(doc="Indicates whether to realign the anchoring bases.", optional=true)
-	public boolean REALIGN_ANCHORING_BASES = false;
     @Argument(doc="Indicates whether to adjust the primary alignment position if the total edit distance can be reduced by extending or contracting the primary alignment. "
     		+ "ComputeSamTags should be rerun to correct any changes in primary alignment position if this operation is performed.", optional=true)
-    public boolean READJUST_PRIMARY_ALIGNMENT_POSITON = false;
+    public boolean READJUST_PRIMARY_ALIGNMENT_POSITION = false;
 	@Argument(doc="Write the original alignment to the OA SAM tag. Only relevant when REALIGN_ENTIRE_READ is true.", optional=true)
     public boolean WRITE_OA = true;
     @Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
@@ -76,7 +74,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     @Argument(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
-    public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
+		public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
 	/**
 	 * Which aligner to perform the alignment with
 	 */
@@ -121,9 +119,8 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
 			realigner.setRealignExistingSplitReads(REALIGN_EXISTING_SPLIT_READS);
 			realigner.setRealignEntireRecord(REALIGN_ENTIRE_READ);
-			realigner.setRealignAnchoringBases(REALIGN_ANCHORING_BASES);
 			realigner.setWorkerThreads(WORKER_THREADS);
-			realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITON);
+			realigner.setAdjustPrimaryAlignment(READJUST_PRIMARY_ALIGNMENT_POSITION);
 			realigner.setWriteOATag(WRITE_OA);
 			realigner.createSupplementaryAlignments(INPUT, OUTPUT, OUTPUT_UNORDERED_RECORDS);
 

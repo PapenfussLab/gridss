@@ -1,23 +1,15 @@
 package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.alignment.ExternalAlignerTests;
-import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
 import au.edu.wehi.idsv.alignment.FastqAligner;
-import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.util.UngroupingIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import joptsimple.internal.Strings;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,7 +29,6 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 			boolean processSecondaryAlignments,
 			boolean realignExistingSplitReads,
 			boolean realignEntireRecord,
-			boolean realignAnchoringBases,
 			EvidenceIdentifierGenerator eidgen) {
 		SplitReadRealigner srr = new StreamingSplitReadRealigner(getContext(), null, 1);
 		srr.setMinSoftClipLength(minSoftClipLength);
@@ -45,7 +36,6 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		srr.setProcessSecondaryAlignments(processSecondaryAlignments);
 		srr.setRealignExistingSplitReads(realignExistingSplitReads);
 		srr.setRealignEntireRecord(realignEntireRecord);
-		srr.setRealignAnchoringBases(realignAnchoringBases);
 		srr.setEvidenceIdentifierGenerator(eidgen);
 		return srr;
 	}
@@ -59,19 +49,19 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 			boolean realignEntireRecord,
 			boolean realignAnchoringBases,
 			EvidenceIdentifierGenerator eidgen) {
-		SplitReadRealigner srfe = getSplitReadFastqExtractor(minSoftClipLength, minClipQuality, processSecondaryAlignments, realignExistingSplitReads, realignEntireRecord, realignAnchoringBases, eidgen);
+		SplitReadRealigner srfe = getSplitReadFastqExtractor(minSoftClipLength, minClipQuality, processSecondaryAlignments, realignExistingSplitReads, realignEntireRecord, eidgen);
 		return new UngroupingIterator<>(Iterators.transform(it, (SAMRecord r) -> srfe.extract(r, recursive)));
 	}
 	@Test
 	public void should_extract_full_sequence() {
-		SplitReadRealigner srfe = getSplitReadFastqExtractor(1, 0, false, false, true, false, new StringEvidenceIdentifierGenerator());
+		SplitReadRealigner srfe = getSplitReadFastqExtractor(1, 0, false, false, true, new StringEvidenceIdentifierGenerator());
 		List<FastqRecord> result = srfe.extract(Read(0, 1, "25M75S"), false);
 		Assert.assertEquals(1, result.size());
 		Assert.assertEquals(100, result.get(0).getReadLength());
 	}
 	@Test
 	public void should_extract_remaining_sequence() {
-		SplitReadRealigner srfe  = getSplitReadFastqExtractor(1, 0, false, false, true, false, new StringEvidenceIdentifierGenerator());
+		SplitReadRealigner srfe  = getSplitReadFastqExtractor(1, 0, false, false, true, new StringEvidenceIdentifierGenerator());
 		FastqRecord fqr = srfe.extract(Read(0, 1, "25M75S"), false).get(0);
 		SAMRecord aligned = new SAMRecord(getHeader());
 		aligned.setReadBases(fqr.getReadBases());
@@ -80,7 +70,7 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		aligned.setReferenceIndex(0);
 		aligned.setAlignmentStart(0);
 		aligned.setCigarString("10S40M50S");
-		srfe = getSplitReadFastqExtractor(1, 0, false, false, true, false, new StringEvidenceIdentifierGenerator());
+		srfe = getSplitReadFastqExtractor(1, 0, false, false, true, new StringEvidenceIdentifierGenerator());
 		List<FastqRecord> result = srfe.extract(aligned, true);
 		Assert.assertEquals(2, result.size());
 		Assert.assertEquals(10, result.get(0).getReadLength());
@@ -88,7 +78,7 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_pad_anchor_with_N() {
-		SplitReadRealigner srfe  = getSplitReadFastqExtractor( 1, 0, false, false, false, true, new StringEvidenceIdentifierGenerator());
+		SplitReadRealigner srfe  = getSplitReadFastqExtractor( 1, 0, false, false, false, new StringEvidenceIdentifierGenerator());
 		List<FastqRecord> result = srfe.extract(Read(0, 1, "1S2M3S"), false);
 		Assert.assertEquals(3, result.size());
 		Assert.assertEquals("NAANNN", result.get(2).getReadString());
@@ -313,30 +303,6 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals(0, list.size());
 	}
 
-	@Test
-	public void realign_anchoring_bases_should_only_write_primary_or_overlapping_anchoring_base_alignment() throws IOException {
-		SAMRecord r = new SAMRecord(getHeader());
-		r.setReferenceIndex(2);
-		r.setAlignmentStart(100);
-		r.setCigarString("100S300M");
-		r.setReadBases(B(S(RANDOM).substring(300, 400) + S(RANDOM).substring(100, 150) + S(RANDOM).substring(1000, 1250)));
-		r.setBaseQualities(getPolyA(400));
-		r.setReadName("anchor_realign_test");
-
-		createBAM(input, getHeader(), r);
-		srr.setRealignEntireRecord(false);
-		srr.setRealignAnchoringBases(true);
-		srr.createSupplementaryAlignments(input, output, output);
-		List<SAMRecord> list = getRecords(output);
-		assertEquals(2, list.size());
-		assertEquals(false, list.get(0).getSupplementaryAlignmentFlag());
-		assertEquals("100S50M250S", list.get(0).getCigarString());
-		assertEquals("100S300M", list.get(0).getStringAttribute("OA"));
-		assertEquals(true, list.get(1).getSupplementaryAlignmentFlag());
-		assertEquals("100M300S", list.get(1).getCigarString());
-		assertEquals("100S300M", list.get(1).getStringAttribute("OA"));
-	}
-
 	/**
 	 * bwa mem primary alignment record over-aligns across apparent SNVs and an indels which should just be placed on the other side  
 	 * @throws IOException
@@ -400,38 +366,24 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 
 	@Test
 	public void design_goal_should_adjust_overaligned_reference_bases_to_other_side() throws IOException {
-		Assert.fail("TODO");
-	}
-
-	@Test
-	public void design_goal_should_not_include_inserted_bases_if_anchor_is_overaligned() throws IOException {
-		Assert.fail("TODO");
-	}
-
-	/**
-	 * Technically we're perfectly happy to do this but only if our assembly was restricted
-	 * to fragments that actually support this particular breakend. We currently don't have this
-	 */
-	@Test
-	public void design_goal_should_not_include_remote_alignments_on_anchored_side() throws IOException {
+		String seq = "ATGGGTCCCCTATATGTAAGAACCGTTACGATACCTTCTGTCACAATCACACTGTGTGCAGAAGGGACTGGCTTATTTCCGTGGTCGCCCGGGCACAGTCTTCCACCAGCCGCCACGCCCGCTTGGTTCTCGT" +
+				"CAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCGAACGGGCGAATCTACCTAGGT";
 		SAMRecord r = new SAMRecord(getHeader());
+		r.setReadName("r");
 		r.setReferenceIndex(2);
-		r.setAlignmentStart(100);
-		r.setCigarString("100S300M");
-		r.setReadBases(B(S(RANDOM).substring(300, 400) + S(RANDOM).substring(100, 150) + S(RANDOM).substring(1000, 1250)));
-		r.setBaseQualities(getPolyA(400));
-		r.setReadName("anchor_realign_test");
+		r.setAlignmentStart(56);
+		r.setReadBases(B(seq));
+		r.setBaseQualities(B(seq));
+		r.setCigarString("128S113M");
+		// anchor sequence has 5bp over-aligned. They should be on the other side
+		createBAM(input, r.getHeader(), r);
 
-		createBAM(input, getHeader(), r);
+		//srr.setRealignAnchoringBases(true);
 		srr.setRealignEntireRecord(true);
 		srr.createSupplementaryAlignments(input, output, output);
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(2, list.size());
-		assertEquals(false, list.get(0).getSupplementaryAlignmentFlag());
-		assertEquals("100S50M250S", list.get(0).getCigarString());
-		assertEquals("100S300M", list.get(0).getStringAttribute("OA"));
-		assertEquals(true, list.get(1).getSupplementaryAlignmentFlag());
-		assertEquals("100M300S", list.get(1).getCigarString());
-		assertEquals("100S300M", list.get(1).getStringAttribute("OA"));
+		assertEquals("133S108M", list.get(0).getCigarString());
+		assertEquals("133M108S", list.get(1).getCigarString());
 	}
 }

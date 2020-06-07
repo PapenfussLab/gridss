@@ -186,6 +186,11 @@
 			<version>1.0.5</version>
 		</dependency>
 		<dependency>
+			<groupId>org.broadinstitute</groupId>
+			<artifactId>gatk-minimap2-jni</artifactId>
+			<version>1.0.2</version>
+		</dependency>
+		<dependency>
 			<groupId>com.intel.gkl</groupId>
 			<artifactId>gkl</artifactId>
 			<version>0.8.6</version>

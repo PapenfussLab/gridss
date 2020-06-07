@@ -24,7 +24,6 @@ public abstract class SplitReadRealigner {
     private boolean realignExistingSplitReads = false;
     private boolean realignEntireRecord = false;
     private boolean processSecondaryAlignments = false;
-    private boolean realignAnchoringBases = false;
     private boolean adjustPrimary = false;
     private boolean writeOA = true;
 
@@ -76,18 +75,6 @@ public abstract class SplitReadRealigner {
                 if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
                     throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
                 }
-            } else if (isRealignAnchoringBases()) {
-                // pull out the anchoring base alignment from the list and process it.
-                List<SAMRecord> anchorRealignments = new ArrayList<>();
-                for (int i = 0; i < realignments.size(); i++) {
-                    SAMRecord r = realignments.get(i);
-                    if (SplitReadHelper.isAnchoringBasesRecord(r)) {
-                        anchorRealignments.get(i);
-                        realignments.remove(i);
-                        i--;
-                    }
-                }
-                SplitReadHelper.rewriteAnchor(primary, anchorRealignments);
             }
             SplitReadHelper.convertToSplitRead(primary, realignments, getReference(), isAdjustPrimaryAlignment() || isRealignEntireRecord());
             for (int i = 0; i < realignments.size(); i++) {
@@ -108,9 +95,6 @@ public abstract class SplitReadRealigner {
     public List<FastqRecord> extract(SAMRecord r, boolean isRecursiveRealignment) {
         if (!isRecursiveRealignment && shouldDropInputRecord(r)) {
             throw new IllegalArgumentException("Record should have been dropped.");
-        }
-        if (isRealignEntireRecord() && isRealignAnchoringBases()) {
-            throw new IllegalArgumentException("Cannot realign anchoring bases if realigning entire read");
         }
         List<FastqRecord> list = new ArrayList<>(2);
         if (r.getReadUnmappedFlag()) return list;
@@ -134,13 +118,6 @@ public abstract class SplitReadRealigner {
             if (fqr.getReadLength() < getMinSoftClipLength()) continue;
             if (averageBaseQuality(fqr) < getMinSoftClipQuality()) continue;
             list.add(fqr);
-        }
-        if (isRealignAnchoringBases() && !isRecursiveRealignment && !AssemblyAttributes.isUnanchored(r) && list.size() > 0) {
-            // only emit the anchoring bases:
-            // - on the first pass where the anchoring bases are actually the read anchoring bases
-            // - when we actually have anchoring bases
-            // - when we have something that we might actually realign (TODO: is this the best approach?)
-            list.add(SplitReadHelper.getAnchoringBases(r, getEvidenceIdentifierGenerator()));
         }
         return list;
     }
@@ -202,12 +179,6 @@ public abstract class SplitReadRealigner {
 
     public void setRealignEntireRecord(boolean realignEntireRecord) {
         this.realignEntireRecord = realignEntireRecord;
-    }
-
-    public boolean isRealignAnchoringBases() { return this.realignAnchoringBases; }
-
-    public void setRealignAnchoringBases(boolean realignAnchoringBases) {
-        this.realignAnchoringBases = realignAnchoringBases;
     }
 
     public void setAdjustPrimaryAlignment(boolean adjustPrimary) {

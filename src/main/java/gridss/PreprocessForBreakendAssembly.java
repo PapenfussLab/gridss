@@ -124,7 +124,6 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		realigner.setRealignExistingSplitReads(false);
 		realigner.setAdjustPrimaryAlignment(false);
 		realigner.setRealignEntireRecord(false);
-		realigner.setRealignAnchoringBases(false);
 		realigner.setRealignExistingSplitReads(false);
 		String threadPrefix = INPUT.getName() + "-";
 		try {
