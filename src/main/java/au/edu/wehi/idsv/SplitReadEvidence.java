@@ -8,7 +8,9 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.Log;
+import joptsimple.internal.Strings;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.ArrayList;
@@ -28,8 +30,9 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 			int offsetUnmappedStart, int offsetUnmappedEnd,
 			int offsetRemoteStart, int offsetRemoteEnd,
 			ChimericAlignment remoteAlignment,
-			int localUnanchoredWidth, int remoteUnanchoredWidth) {
-		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, localUnanchoredWidth, remoteUnanchoredWidth);
+			int localUnanchoredWidth, int remoteUnanchoredWidth,
+			boolean isInAssemblyAnchor) {
+		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, localUnanchoredWidth, remoteUnanchoredWidth, isInAssemblyAnchor);
 		this.remoteAlignment = remoteAlignment;
 	}
 	public static List<SplitReadEvidence> create(SAMEvidenceSource source, SAMRecord record) {
@@ -66,14 +69,16 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 						rl - startOffset, rl - preEndOffset,
 						rl - preEndOffset, rl - preStartOffset,
 						pre,
-						CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(pre.cigar)));
+						CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(pre.cigar),
+						isEntirelyContainedInAssemblyAnchor(record, chim, pre)));
 			} else {
 				list.add(new SplitReadEvidence(source, record, bs,
-					startOffset, INCLUDE_CLIPPED_ANCHORING_BASES ? record.getReadLength() : endOffset,
-					preEndOffset, startOffset,
-					preStartOffset, preEndOffset,
-					pre,
-					CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(pre.cigar)));
+						startOffset, INCLUDE_CLIPPED_ANCHORING_BASES ? record.getReadLength() : endOffset,
+						preEndOffset, startOffset,
+						preStartOffset, preEndOffset,
+						pre,
+						CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(pre.cigar),
+						isEntirelyContainedInAssemblyAnchor(record, chim, pre)));
 			}
 		}
 		if (post != null) {
@@ -87,14 +92,16 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 						rl - postStartOffset, rl - endOffset, 
 						rl - postEndOffset, rl - postStartOffset, 
 						post,
-						CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(post.cigar)));
+						CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(post.cigar),
+						isEntirelyContainedInAssemblyAnchor(record, chim, post)));
 			} else {
 				list.add(new SplitReadEvidence(source, record, bs,
 					INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : startOffset, endOffset,
 					endOffset, postStartOffset,
 					postStartOffset, postEndOffset,
 					post,
-					CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(post.cigar)));
+					CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(post.cigar),
+					isEntirelyContainedInAssemblyAnchor(record, chim, post)));
 			}
 		}
 		return list;
@@ -197,6 +204,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 			// the first record in the SA tag should be the primary read alignment 
 			|| ChimericAlignment.getChimericAlignments(getSAMRecord()).get(0).equals(remoteAlignment);
 	}
+
 	/**
 	 * Evidence provides support for no structural variant call
 	 * This can be due to sequence homology allowing the alignment

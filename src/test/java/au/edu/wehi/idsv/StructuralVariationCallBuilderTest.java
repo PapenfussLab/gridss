@@ -32,7 +32,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected sc(int offset, boolean tumour) {
 			super(SES(tumour), withSequence("NNNNNNNNNN", withReadName(String.format("sc%d",offset), Read(0, 10, "5S5M")))[0],
 				new BreakendSummary(0, BWD, 10, 10, 10),
-				0, 5, 5, 10, 0);
+				0, 5, 5, 10, 0, false);
 			this.offset = offset;
 		}
 		int offset;
@@ -46,7 +46,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected rsc(int offset, boolean tumour) {
 			super(SES(tumour), withAttr("SA", "polyACGT,100,5M,-,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rsc%d",offset), Read(0, 10, "5S5M"))))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
-					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
+					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0, false);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -66,7 +66,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected rsc_not_supporting_breakpoint(int offset, boolean tumour) {
 			super(SES(tumour), withAttr("SA", "random,100,5M,-,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rsc_ns%d",offset), Read(0, 10, "5S5M"))))[0],
 					new BreakpointSummary(0, BWD, 10, 2, BWD, 100),
-					0, 5, 5, 5, 5, 10, new ChimericAlignment("random,100,-,5M,0,0"),0, 0);
+					0, 5, 5, 5, 5, 10, new ChimericAlignment("random,100,-,5M,0,0"),0, 0, false);
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
@@ -79,7 +79,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected rrsc(int offset, boolean tumour) {
 			super(SES(tumour), asSupplementary(withAttr("SA", "polyACGT,100,-,5M,0,0", withSequence("NNNNNNNNNN", withReadName(String.format("rrsc%d",offset), Read(0, 10, "5S5M")))))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
-					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
+					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0, false);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import static au.edu.wehi.idsv.sam.SamTags.IS_ASSEMBLY;
 import static org.junit.Assert.*;
 
 
@@ -696,5 +697,25 @@ public class SplitReadEvidenceTest extends TestHelper {
 		SingleReadEvidence supp2e = SingleReadEvidence.createEvidence(ses, 0, supp2).stream().filter(e -> e instanceof SplitReadEvidence).findFirst().get();
 		assertTrue(primary.getReadUnmappedFlag()); // blacklisted
 		assertEquals(supp1e.getBreakendQual(), supp2e.getBreakendQual(), 0);
+	}
+	@Test
+	public void should_not_include_assembly_support_composed_entirely_of_anchored_sequence() {
+		SAMRecord assOA = Read(0, 100, "50S150M");
+		SAMRecord assRealign1 = Read(0, 100, "50S100M50S");
+		SAMRecord assRealign2 = Read(0, 100, "150S50M");
+		assRealign1.setAttribute("SA", new ChimericAlignment(assRealign2).toString());
+		assRealign2.setAttribute("SA", new ChimericAlignment(assRealign1).toString());
+		for (SAMRecord r : ImmutableList.of(assRealign1, assRealign2)) {
+			r.setAttribute("OA", new ChimericAlignment(assOA).toString());
+			r.setAttribute(IS_ASSEMBLY, 1);
+		}
+		SAMEvidenceSource ses = SES();
+		ses.getContext().getVariantCallingParameters().callFullyAnchoredAssemblyVariants = true;
+		List<SplitReadEvidence> e1 = SplitReadEvidence.create(ses, assRealign1);
+		List<SplitReadEvidence> e2 = SplitReadEvidence.create(ses, assRealign2);
+		Assert.assertEquals(1, e1.size());
+		Assert.assertEquals(1, e2.size());
+		Assert.assertTrue(e1.get(0).isEntirelyContainedInAssemblyAnchor());
+		Assert.assertTrue(e2.get(0).isEntirelyContainedInAssemblyAnchor());
 	}
 }

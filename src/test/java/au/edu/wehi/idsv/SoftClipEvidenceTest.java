@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -9,8 +10,10 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.stream.Stream;
 
+import static au.edu.wehi.idsv.sam.SamTags.IS_ASSEMBLY;
 import static org.junit.Assert.*;
 
 public class SoftClipEvidenceTest extends TestHelper {
@@ -307,5 +310,14 @@ public class SoftClipEvidenceTest extends TestHelper {
 	public void isReference_should_match_breakend_to_reference() {
 		Assert.assertTrue(SingleReadEvidence.createEvidence(SES(), 0, withSequence("AAAAAAAAAA",Read(0, 1, "5M5S"))[0]).get(0).isReference());
 		Assert.assertFalse(SingleReadEvidence.createEvidence(SES(), 0, withSequence("AAAAAAAAAT",Read(0, 1, "5M5S"))[0]).get(0).isReference());
+	}
+	@Test
+	public void should_not_include_assembly_support_composed_entirely_of_anchored_sequence() {
+		SAMRecord assOA = Read(0, 100, "50S150M");
+		SAMRecord assRealign = Read(0, 100, "50S100M50S");
+		assRealign.setAttribute("OA", new ChimericAlignment(assOA).toString());
+		assRealign.setAttribute(IS_ASSEMBLY, 1);
+		Assert.assertFalse(SoftClipEvidence.create(SES(), BWD, assRealign).isEntirelyContainedInAssemblyAnchor());
+		Assert.assertTrue(SoftClipEvidence.create(SES(), FWD, assRealign).isEntirelyContainedInAssemblyAnchor());
 	}
 }

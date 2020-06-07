@@ -1,11 +1,15 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.ChimericAlignment;
+import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
 
+import static au.edu.wehi.idsv.sam.SamTags.IS_ASSEMBLY;
 import static org.junit.Assert.*;
 
 public class IndelEvidenceTest extends TestHelper {
@@ -222,5 +226,35 @@ public class IndelEvidenceTest extends TestHelper {
 	public void should_handle_hard_clipped_reads() {
 		SAMRecord r = Read(2, 1, "10H1M10D1M");
 		IndelEvidence.create(null, 0, r);
+	}
+	@Test
+	public void should_not_include_assembly_support_composed_entirely_of_anchored_sequence() {
+		SAMRecord assOA = Read(0, 100, "50S150M");
+		SAMRecord assRealign = Read(0, 100, "50S50M50D100M");
+		assRealign.setAttribute("OA", new ChimericAlignment(assOA).toString());
+		assRealign.setAttribute(IS_ASSEMBLY, 1);
+		List<IndelEvidence> e = IndelEvidence.create(SES(), 1, assRealign);
+		Assert.assertEquals(2, e.size());
+		Assert.assertTrue(e.get(0).isEntirelyContainedInAssemblyAnchor());
+		Assert.assertTrue(e.get(1).isEntirelyContainedInAssemblyAnchor());
+
+		assRealign = Read(0, 100, "50M100D150M");
+		assRealign.setAttribute("OA", new ChimericAlignment(assOA).toString());
+		assRealign.setAttribute(IS_ASSEMBLY, 1);
+		e = IndelEvidence.create(SES(), 1, assRealign);
+		Assert.assertEquals(2, e.size());
+		Assert.assertFalse(e.get(0).isEntirelyContainedInAssemblyAnchor());
+		Assert.assertFalse(e.get(1).isEntirelyContainedInAssemblyAnchor());
+	}
+	@Test
+	public void isEntirelyContainedInAssemblyAnchor_should_require_assembly_tag() {
+		SAMRecord assOA = Read(0, 100, "50S150M");
+		SAMRecord assRealign = Read(0, 100, "50M20D50M50D100M");
+		assRealign.setAttribute("OA", new ChimericAlignment(assOA).toString());
+		List<SingleReadEvidence> el = SingleReadEvidence.createEvidence(SES(), 1, assRealign);
+		Assert.assertEquals(4, el.size());
+		for (SingleReadEvidence e : el) {
+			Assert.assertFalse(e.isEntirelyContainedInAssemblyAnchor());
+		}
 	}
 }

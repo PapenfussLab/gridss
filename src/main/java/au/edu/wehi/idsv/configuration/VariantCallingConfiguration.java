@@ -12,7 +12,7 @@ import java.util.List;
 public class VariantCallingConfiguration {
 	public static final String CONFIGURATION_PREFIX = "variantcalling";
 
-	public VariantCallingConfiguration(Configuration config) {
+    public VariantCallingConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
 		minReads = config.getDouble("minReads");
 		minScore = config.getDouble("minScore");
@@ -28,6 +28,7 @@ public class VariantCallingConfiguration {
 		callBreakends = config.getBoolean("callBreakends");
 		includeSupportingReadNames = config.getBoolean("includeSupportingReadNames");
 		breakendMaxAssemblySupportBias = config.getDouble("breakendMaxAssemblySupportBias");
+		callFullyAnchoredAssemblyVariants = config.getBoolean("callFullyAnchoredAssemblyVariants");
 	}
 	/**
 	 * Minimum number of reads supporting variant either directly or indirectly through assembly
@@ -84,6 +85,15 @@ public class VariantCallingConfiguration {
 	 * Bias of 1 indicates no direct read support
 	 */
 	private double breakendMaxAssemblySupportBias;
+	/**
+	 * Determine whether include assembly evidence when the assembled variant is composed entirely of
+	 * anchored assembly bases.
+	 *
+	 * We exclude these as the positional de Bruijn graph based GRIDSS assembler does not restrict assembly to
+	 * reads contributing to this breakend. This means we may have reads in our anchored assembly that occur on
+	 * a different haplotype to the reads assembled into the breakend potion of the contig
+	 */
+	public boolean callFullyAnchoredAssemblyVariants;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));

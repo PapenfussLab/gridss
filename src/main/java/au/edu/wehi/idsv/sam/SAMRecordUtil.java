@@ -1400,16 +1400,18 @@ public class SAMRecordUtil {
 	 *         base order
 	 */
 	public static final int getFirstAlignedBaseReadOffset(SAMRecord r) {
-		Cigar c = r.getCigar();
+		return getFirstAlignedBaseReadOffset(r.getCigar(), r.getReadNegativeStrandFlag());
+
+	}
+	public static final int getFirstAlignedBaseReadOffset(Cigar c, boolean onNegativeStrand) {
 		if (c == null || c.getCigarElements().size() == 0)
 			return -1;
-		if (r.getReadNegativeStrandFlag()) {
+		if (onNegativeStrand) {
 			return getEndClipLength(c.getCigarElements());
 		} else {
 			return getStartClipLength(c.getCigarElements());
 		}
 	}
-
 	/**
 	 * Gets the read offset of the final aligned base.
 	 * 
@@ -1418,7 +1420,9 @@ public class SAMRecordUtil {
 	 *         sequencing base order
 	 */
 	public static final int getLastAlignedBaseReadOffset(SAMRecord r) {
-		Cigar c = r.getCigar();
+		return getLastAlignedBaseReadOffset(r.getCigar(), r.getReadNegativeStrandFlag());
+	}
+	public static final int getLastAlignedBaseReadOffset(Cigar c, boolean onNegativeStrand) {
 		if (c == null || c.getCigarElements().size() == 0)
 			return -1;
 		int length = c.getReadLength();
@@ -1428,8 +1432,7 @@ public class SAMRecordUtil {
 		if (c.getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
 			length += c.getLastCigarElement().getLength();
 		}
-
-		if (r.getReadNegativeStrandFlag()) {
+		if (onNegativeStrand) {
 			return length - getStartClipLength(c.getCigarElements()) - 1;
 		} else {
 			return length - getEndClipLength(c.getCigarElements()) - 1;

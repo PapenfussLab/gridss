@@ -10,17 +10,20 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import static au.edu.wehi.idsv.sam.SamTags.IS_ASSEMBLY;
 import static org.junit.Assert.*;
 
 public class SingleReadEvidenceTest extends TestHelper {
@@ -328,5 +331,35 @@ public class SingleReadEvidenceTest extends TestHelper {
 			assertEquals(2, (int)range.lowerEndpoint());
 			assertEquals(7, (int)range.upperEndpoint());
 		}
+	}
+	/**
+	 * Technically we're perfectly happy to do this but only if our assembly was restricted
+	 * to fragments that actually support this particular breakend. We currently don't have this
+	 */
+	@Test
+	public void should_not_include_assembly_support_composed_entirely_of_anchored_sequence() {
+		SAMRecord assOA = Read(0, 100, "50S150M");
+		SAMRecord assRealign1 = Read(0, 100, "50S100M50S");
+		SAMRecord assRealign2 = Read(0, 100, "150S50M");
+		assRealign1.setAttribute("SA", new ChimericAlignment(assRealign2).toString());
+		assRealign2.setAttribute("SA", new ChimericAlignment(assRealign1).toString());
+		for (SAMRecord r : ImmutableList.of(assRealign1, assRealign2)) {
+			r.setAttribute("OA", new ChimericAlignment(assOA).toString());
+			r.setAttribute(IS_ASSEMBLY, 1);
+		}
+		SAMEvidenceSource ses = SES();
+		ses.getContext().getVariantCallingParameters().callFullyAnchoredAssemblyVariants = true;
+		List<SingleReadEvidence> e1 = SingleReadEvidence.createEvidence(ses, 1, assRealign1);
+		List<SingleReadEvidence> e2 = SingleReadEvidence.createEvidence(ses, 1, assRealign2);
+		Assert.assertEquals(2, e1.size());
+		Assert.assertEquals(1, e2.size());
+
+		ses.getContext().getVariantCallingParameters().callFullyAnchoredAssemblyVariants = false;
+		e1 = SingleReadEvidence.createEvidence(ses, 1, assRealign1);
+		e2 = SingleReadEvidence.createEvidence(ses, 1, assRealign2);
+		// e2 lies in the assembly anchor sequence so should not be called until
+		// we fix the assembler to only assemble fragments actually supporting this variant
+		Assert.assertEquals(1, e1.size());
+		Assert.assertEquals(0, e2.size());
 	}
 }

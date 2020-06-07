@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import com.google.common.collect.ImmutableSet;
 import htsjdk.samtools.CigarElement;
@@ -23,12 +24,14 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 			int offsetUnmappedStart, int offsetUnmappedEnd,
 			int offsetRemoteStart, int offsetRemoteEnd,
 			List<CigarElement> indel,
-			int indelCigarElementOffset) {
-		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, 0, 0);
+			int indelCigarElementOffset,
+		  	boolean isInAssemblyAnchor) {
+		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, 0, 0, isInAssemblyAnchor);
 		this.indel = indel;
 		this.indelCigarElementOffset = indelCigarElementOffset;
 	}
 	public static IndelEvidence create(SAMEvidenceSource source, SAMRecord record, int indelCigarElementOffset) {
+		boolean isInAssemblyAnchor = isEntirelyContainedInAssemblyAnchor(record, new ChimericAlignment(record), null);
 		List<CigarElement> cl = record.getCigar().getCigarElements();
 		int indelEndOffset = indelCigarElementOffset; // exclusive end offset
 		while (cl.get(indelEndOffset).getOperator().isIndelOrSkippedRegion() && indelEndOffset < cl.size()) {
@@ -63,9 +66,9 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 			postEndOffset -= CigarUtil.getEndSoftClipLength(post);
 		}
 		IndelEvidence left = new IndelEvidence(source, record, location,
-				preStartOffset, preEndOffset, unmappedStartOffset, unmappedEndOffset, postStartOffset, postEndOffset, indel, indelCigarElementOffset);
+				preStartOffset, preEndOffset, unmappedStartOffset, unmappedEndOffset, postStartOffset, postEndOffset, indel, indelCigarElementOffset, isInAssemblyAnchor);
 		IndelEvidence right = new IndelEvidence(source, record, location.remoteBreakpoint(),
-				postStartOffset, postEndOffset, unmappedStartOffset, unmappedEndOffset, preStartOffset, preEndOffset, indel, indelCigarElementOffset);
+				postStartOffset, postEndOffset, unmappedStartOffset, unmappedEndOffset, preStartOffset, preEndOffset, indel, indelCigarElementOffset, isInAssemblyAnchor);
 		left.remote = right;
 		right.remote = left;
 		return left;

@@ -10,6 +10,7 @@ import com.google.common.collect.Range;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import joptsimple.internal.Strings;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -31,6 +32,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	 * That is, the aligned base immediately next to the clip/indel for which this is evidence for
 	 */
 	private final int nominalOffset;
+	private final boolean isInAssemblyAnchor;
 	private String evidenceid;
 	private boolean unableToCalculateHomology = false;
 	private String associatedAssemblyName;
@@ -59,7 +61,6 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			// not dovetailing
 			if (source == null || !SAMRecordUtil.isDovetailing(record, SamPairUtil.PairOrientation.FR, source.getContext().getConfig().dovetailMargin)) {
 				if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-
 					list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
 				}
 				if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
@@ -98,27 +99,37 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				}
 			}
 		}
+		if (source != null && source.getContext() != null && !source.getContext().getVariantCallingParameters().callFullyAnchoredAssemblyVariants) {
+			for (int i = list.size() - 1; i >= 0; i--) {
+				if (list.get(i).isEntirelyContainedInAssemblyAnchor()) {
+					list.remove(i);
+				}
+			}
+		}
 		return list;
 	}
 
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 								 int offsetLocalStart, int offsetLocalEnd,
 								 int offsetUnmappedStart, int offsetUnmappedEnd,
-								 int localInexactMargin) {
+								 int localInexactMargin,
+								 boolean isInAssemblyAnchor) {
 		this(source, record, location,
 				offsetLocalStart, offsetLocalEnd,
 				offsetUnmappedStart, offsetUnmappedEnd,
 				offsetLocalStart < offsetUnmappedStart ? offsetUnmappedEnd : offsetUnmappedStart,
 				offsetLocalStart < offsetUnmappedStart ? offsetUnmappedEnd : offsetUnmappedStart,
-				localInexactMargin, 0);
+				localInexactMargin, 0,
+				isInAssemblyAnchor);
 	}
 
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 								 int offsetLocalStart, int offsetLocalEnd,
 								 int offsetUnmappedStart, int offsetUnmappedEnd,
 								 int offsetRemoteStart, int offsetRemoteEnd,
-								 int localInexactMargin, int remoteInexactMargin) {
-
+								 int localInexactMargin, int remoteInexactMargin,
+								 boolean isInAssemblyAnchor) {
+		this.isInAssemblyAnchor = isInAssemblyAnchor;
 		// TODO: we could use this to infer the unmapped bounds
 		assert (offsetLocalEnd == offsetUnmappedStart || offsetLocalStart == offsetUnmappedEnd);
 		assert (offsetUnmappedEnd == offsetRemoteStart || offsetRemoteEnd == offsetUnmappedStart);
@@ -467,35 +478,6 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			r = Range.closed(startAnchoringOffset, endAnchoringOffset);
 		}
 		return r;
-		/*
-		boolean onNegative = record.getReadNegativeStrandFlag();
-		int nominalBreakendAfterReadOffset = onNegative ? record.getReadLength() - nominalOffset : nominalOffset;
-		if (!(location instanceof BreakpointSummary)) {
-			// breakend is just the actual position
-			assert(location.start == location.nominal);
-			assert(location.end == location.nominal);
-			r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset);
-			return r;
-		}
-		int homologyBasesAfterNominal =
-		// Variant has either inserted sequence or homology
-		int insertLength = getUntemplatedSequence().length();
-		if (insertLength > 0) {
-			if ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag()) |
-					(location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag())) {
-				r = Range.closed(nominalBreakendAfterReadOffset, nominalBreakendAfterReadOffset + insertLength);
-			} else {
-				r = Range.closed(nominalBreakendAfterReadOffset - insertLength + 1, nominalBreakendAfterReadOffset + 1);
-			}
-		} else {
-			if (!record.getReadNegativeStrandFlag()) {
-				r = Range.closed(nominalBreakendAfterReadOffset + (location.start - location.nominal), nominalBreakendAfterReadOffset + (location.end - location.nominal));
-			} else {
-				r = Range.closed(nominalBreakendAfterReadOffset - (location.end - location.nominal), nominalBreakendAfterReadOffset - (location.start - location.nominal));
-			}
-		}
-		return r;
-		*/
 	}
 	public int getBreakendAssemblyContigOffset() {
 		if (assemblyOffset == Integer.MIN_VALUE && AssemblyAttributes.isAssembly(record)) {
@@ -515,5 +497,29 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	@Override
 	public SAMRecord getUnderlyingSAMRecord() {
 		return getSAMRecord();
+	}
+
+	public boolean isEntirelyContainedInAssemblyAnchor() {
+		return isBreakendExact() && isInAssemblyAnchor;
+	}
+
+	/**
+	 * Determines whether this variant is entirely contained within anchored assembly sequence.
+	 * @return true if completely anchored, false otherwise.
+	 */
+	protected static boolean isEntirelyContainedInAssemblyAnchor(SAMRecord underlying, ChimericAlignment local, ChimericAlignment remote) {
+		if (!AssemblyAttributes.isAssembly(underlying)) return false;
+		String oaTag = underlying.getStringAttribute(SAMTag.OA.name());
+		if (Strings.isNullOrEmpty(oaTag)) return false;
+		ChimericAlignment oa = new ChimericAlignment(oaTag);
+		int anchorMin = SAMRecordUtil.getFirstAlignedBaseReadOffset(oa.cigar, oa.isNegativeStrand);
+		int anchorMax = SAMRecordUtil.getLastAlignedBaseReadOffset(oa.cigar, oa.isNegativeStrand);
+		int localMin = SAMRecordUtil.getFirstAlignedBaseReadOffset(local.cigar, local.isNegativeStrand);
+		int localMax = SAMRecordUtil.getLastAlignedBaseReadOffset(local.cigar, local.isNegativeStrand);
+		if (remote != null) {
+			localMin = Math.min(localMin, SAMRecordUtil.getFirstAlignedBaseReadOffset(remote.cigar, remote.isNegativeStrand));
+			localMax = Math.max(localMax, SAMRecordUtil.getLastAlignedBaseReadOffset(remote.cigar, remote.isNegativeStrand));
+		}
+		return localMin >= anchorMin && localMax <= anchorMax;
 	}
 }
