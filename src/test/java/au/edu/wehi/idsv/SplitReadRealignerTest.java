@@ -77,13 +77,6 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		Assert.assertEquals(50, result.get(1).getReadLength());
 	}
 	@Test
-	public void should_pad_anchor_with_N() {
-		SplitReadRealigner srfe  = getSplitReadFastqExtractor( 1, 0, false, false, false, new StringEvidenceIdentifierGenerator());
-		List<FastqRecord> result = srfe.extract(Read(0, 1, "1S2M3S"), false);
-		Assert.assertEquals(3, result.size());
-		Assert.assertEquals("NAANNN", result.get(2).getReadString());
-	}
-	@Test
 	public void should_extract_above_min_soft_clip_length() {
 		assertEquals(0, Iterators.size(getSplitReadFastqExtractionIterator(ImmutableList.of(Read(0, 1, "1S10M")).iterator(), false, 2, 0, true, false, false, false, getContext().getEvidenceIDGenerator())));
 		assertEquals(1, Iterators.size(getSplitReadFastqExtractionIterator(ImmutableList.of(Read(0, 1, "2S10M")).iterator(), false, 2, 0, true, false, false, false, getContext().getEvidenceIDGenerator())));
