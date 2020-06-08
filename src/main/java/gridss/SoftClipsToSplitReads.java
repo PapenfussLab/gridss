@@ -45,7 +45,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 			"This parameter is useful for off-loading the sort and merge steps to an external tool with better sorting performance than htsjdk (e.g. sambamba)", optional=true)
 	public File OUTPUT_UNORDERED_RECORDS = null;
     @Argument(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
-    public int MIN_CLIP_LENGTH = 15;
+    public int MIN_CLIP_LENGTH = 20;
     @Argument(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
     public float MIN_CLIP_QUAL = 5;
     @Argument(doc="Indicates whether to perform split read identification on secondary read alignments.", optional=true)

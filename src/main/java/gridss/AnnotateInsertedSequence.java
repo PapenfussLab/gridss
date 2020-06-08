@@ -42,6 +42,8 @@ public class AnnotateInsertedSequence extends ReferenceCommandLineProgram {
     public File INPUT;
     @Argument(shortName = StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc = "Annotated VCF file")
     public File OUTPUT;
+    @Argument(doc="Minimum inserted sequence length for realignment. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
+    public int MIN_SEQUENCE_LENGTH = 20;
     @Argument(doc = "Command line arguments to run external aligner. "
             + "In-process bwa alignment is used if this value is null. "
             + "Aligner output must be written to stdout and the records MUST match the input fastq order."
@@ -112,6 +114,7 @@ public class AnnotateInsertedSequence extends ReferenceCommandLineProgram {
                 InsertedSequenceAnnotator ann = new InsertedSequenceAnnotator(
                         INPUT,
                         sa,
+                        MIN_SEQUENCE_LENGTH,
                         ALIGNMENT == AlignmentStatus.REPLACE,
                         ALIGNMENT == AlignmentStatus.ADD_MISSING);
                 it = ann;

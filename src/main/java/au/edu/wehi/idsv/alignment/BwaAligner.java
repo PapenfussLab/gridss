@@ -117,8 +117,9 @@ public class BwaAligner implements Closeable {
         }
         log.debug(String.format("Aligning %d sequences using BWA JNI", inputs.size()));
         if (Defaults.EXPORT_INPROCESS_ALIGNMENTS) {
-            String fqFile = String.format("gridss.bwa.export.%d.fq", exportId.incrementAndGet());
-            String seqFile = String.format("gridss.bwa.export.%d.seq", exportId.incrementAndGet());
+            int id = exportId.incrementAndGet();
+            String fqFile = String.format("gridss.bwa.export.%d.fq", id);
+            String seqFile = String.format("gridss.bwa.export.%d.seq", id);
             log.info("Exporting to " + fqFile);
             try (FastqWriter writer = new FastqWriterFactory().newWriter(new File(fqFile))) {
                 for (FastqRecord fq : input) {
@@ -128,7 +129,7 @@ public class BwaAligner implements Closeable {
             try {
                 Files.write(
                         new File(seqFile).toPath(),
-                        inputs.stream().map(b -> new String(b) + "\n").collect(Collectors.toList()),
+                        inputs.stream().map(b -> new String(b)).collect(Collectors.toList()),
                         StandardCharsets.UTF_8);
             } catch (IOException e) {
             }

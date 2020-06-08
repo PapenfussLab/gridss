@@ -30,14 +30,16 @@ public class InsertedSequenceAnnotator implements CloseableIterator<VariantConte
 	private static final Log log = Log.getInstance(InsertedSequenceAnnotator.class);
 	private static final Pattern breakendRegex = Pattern.compile("^(.(?<leftins>.*))?[\\[\\]].*[\\[\\]]((?<rightins>.*).)?$");
 	private final File vcf;
+	private final int minRealignmentLength;
 	private final boolean stripExistingBEALN;
 	private final boolean skipExistingBEALN;
 	private CloseableIterator<VariantContext> vcfStream;
 	private PeekingIterator<SAMRecord> alignerStream;
 	private Thread feedingAligner;
 	private VariantContext nextRecord = null;
-	public InsertedSequenceAnnotator(File vcf, StreamingAligner aligner, boolean stripExistingBEALN, boolean skipExistingBEALN) {
+	public InsertedSequenceAnnotator(File vcf, StreamingAligner aligner, int minRealignmentLength, boolean stripExistingBEALN, boolean skipExistingBEALN) {
 		this.vcf = vcf;
+		this.minRealignmentLength = minRealignmentLength;
 		this.stripExistingBEALN = stripExistingBEALN;
 		this.skipExistingBEALN = skipExistingBEALN;
 		this.vcfStream = getVcf();
@@ -91,7 +93,7 @@ public class InsertedSequenceAnnotator implements CloseableIterator<VariantConte
 					// skip this record
 				} else {
 					String seqstr = getBreakendSequence(vc);
-					if (!Strings.isNullOrEmpty(seqstr)) {
+					if (!Strings.isNullOrEmpty(seqstr) && seqstr.length() >= minRealignmentLength) {
 						byte[] seq = seqstr.getBytes(StandardCharsets.UTF_8);
 						byte[] qual = new byte[seq.length];
 						Arrays.fill(qual, DEFAULT_QUAL_SCORE);
