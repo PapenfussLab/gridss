@@ -509,14 +509,14 @@ aligner_args_bowtie2='
 aligner_args_minimap2='
 	ALIGNER_COMMAND_LINE=null
 	ALIGNER_COMMAND_LINE=minimap2
-	ALIGNER_COMMAND_LINE=%1$s.idx
+	ALIGNER_COMMAND_LINE=%2$s.idx
 	ALIGNER_COMMAND_LINE=-x
 	ALIGNER_COMMAND_LINE=sr
 	ALIGNER_COMMAND_LINE=-Y
 	ALIGNER_COMMAND_LINE=-a
 	ALIGNER_COMMAND_LINE=-t
 	ALIGNER_COMMAND_LINE=%3$d
-	ALIGNER_COMMAND_LINE=%2$s
+	ALIGNER_COMMAND_LINE=%1$s
 	'
 
 readpairing_args=""
@@ -786,9 +786,7 @@ if [[ $do_assemble == true ]] ; then
 				PROGRAM=QualityScoreDistribution \
 				$picardoptions \
 		; } 1>&2 2>> $logfile
-		# TODO: get JNI minimap2 working
-		# in the meantime, we always use external alignment for the assembly contigs
-		externalaligner=true
+		#externalaligner=true # TODO: get JNI minimap2 working
 		if [[ "$externalaligner" == "true" ]] ; then
 			write_status "Running	SoftClipsToSplitReads	$assembly"
 			{ $timecmd java -Xmx4g $jvm_args \
@@ -805,7 +803,7 @@ if [[ $do_assemble == true ]] ; then
 					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 					REALIGN_ENTIRE_READ=true \
 					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
-					$aligner_args_minimap2 \
+					$aligner_args_bwa \
 					$picardoptions \
 			&& $timecmd samtools sort \
 					-@ $threads \
@@ -838,7 +836,7 @@ if [[ $do_assemble == true ]] ; then
 					WORKER_THREADS=$threads \
 					I=$assembly \
 					O=/dev/stdout \
-					ALIGNER=MINIMAP2 \
+					ALIGNER=BWA \
 					ALIGNER_BATCH_SIZE=100000 \
 					REALIGN_ENTIRE_READ=true \
 					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
