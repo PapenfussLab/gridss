@@ -652,7 +652,6 @@ if [[ $do_preprocess == true ]] ; then
 				write_status "Running	SoftClipsToSplitReads	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
 						-Dsamjdk.create_index=false \
-						-Dgridss.gridss.output_to_temp_file=true \
 						-cp $gridss_jar gridss.SoftClipsToSplitReads \
 						TMP_DIR=$workingdir \
 						WORKING_DIR=$workingdir \
@@ -740,7 +739,7 @@ if [[ $do_assemble == true ]] ; then
 	if [[ ! -f $assembly ]] ; then
 		write_status "Running	AssembleBreakends	$assembly	job $jobindex	total jobs $jobnodes"
 		{ $timecmd java -Xmx$jvmheap $jvm_args \
-				-Dgridss.gridss.output_to_temp_file=true \
+				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AssembleBreakends \
 				JOB_INDEX=$jobindex \
 				JOB_NODES=$jobnodes \
@@ -792,7 +791,7 @@ if [[ $do_assemble == true ]] ; then
 			{ $timecmd java -Xmx4g $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
-					-Dgridss.gridss.output_to_temp_file=true \
+					-Dgridss.output_to_temp_file=true \
 					-cp $gridss_jar gridss.SoftClipsToSplitReads \
 					TMP_DIR=$dir \
 					WORKING_DIR=$workingdir \
@@ -828,7 +827,6 @@ if [[ $do_assemble == true ]] ; then
 			{ $timecmd java -Xmx4g $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
-					-Dgridss.gridss.output_to_temp_file=true \
 					-cp $gridss_jar gridss.SoftClipsToSplitReads \
 					TMP_DIR=$dir \
 					WORKING_DIR=$workingdir \
@@ -836,7 +834,7 @@ if [[ $do_assemble == true ]] ; then
 					WORKER_THREADS=$threads \
 					I=$assembly \
 					O=/dev/stdout \
-					ALIGNER=BWA \
+					ALIGNER=BWAMEM \
 					ALIGNER_BATCH_SIZE=100000 \
 					REALIGN_ENTIRE_READ=true \
 					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
