@@ -1,8 +1,11 @@
 package au.edu.wehi.idsv.alignment;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.fastq.FastqWriter;
+import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.hellbender.utils.bwa.BwaMemAligner;
 import org.broadinstitute.hellbender.utils.bwa.BwaMemAlignment;
@@ -11,10 +14,13 @@ import org.broadinstitute.hellbender.utils.bwa.BwaMemIndex;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +32,7 @@ public class BwaAligner implements Closeable {
     private final BwaMemAligner aligner;
     private final SAMSequenceDictionary dict;
     private final SAMFileHeader header;
+    private final AtomicInteger exportId = new AtomicInteger();
 
     public BwaMemAligner getAligner() {
         return this.aligner;
@@ -109,6 +116,23 @@ public class BwaAligner implements Closeable {
             inputs.add(fq.getReadBases());
         }
         log.debug(String.format("Aligning %d sequences using BWA JNI", inputs.size()));
+        if (Defaults.EXPORT_INPROCESS_ALIGNMENTS) {
+            String fqFile = String.format("gridss.bwa.export.%d.fq", exportId.incrementAndGet());
+            String seqFile = String.format("gridss.bwa.export.%d.seq", exportId.incrementAndGet());
+            log.info("Exporting to " + fqFile);
+            try (FastqWriter writer = new FastqWriterFactory().newWriter(new File(fqFile))) {
+                for (FastqRecord fq : input) {
+                    writer.write(fq);
+                }
+            }
+            try {
+                Files.write(
+                        new File(seqFile).toPath(),
+                        inputs.stream().map(b -> new String(b) + "\n").collect(Collectors.toList()),
+                        StandardCharsets.UTF_8);
+            } catch (IOException e) {
+            }
+        }
         List<List<BwaMemAlignment>> bwaResult = aligner.alignSeqs(inputs);
         if (bwaResult.size() != input.size()) {
             throw new IllegalStateException(String.format("bwa returned alignments for %d reads, when input with %d reads.", bwaResult.size(), input.size()));

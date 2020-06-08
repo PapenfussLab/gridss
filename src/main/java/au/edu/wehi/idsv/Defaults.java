@@ -16,7 +16,9 @@ public class Defaults {
 	public static final boolean CACHE_REFERENCE;
 	public static final boolean ATTEMPT_ASSEMBLY_RECOVERY;
 	public static final boolean USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES;
-	static {
+    public static final boolean EXPORT_INPROCESS_ALIGNMENTS;
+
+    static {
 		SANITY_CHECK_ASSEMBLY_GRAPH = Boolean.valueOf(System.getProperty("sanitycheck.assembly", "false"));
 		SANITY_CHECK_EVIDENCE_TRACKER = Boolean.valueOf(System.getProperty("sanitycheck.evidencetracker", "false"));
 		SANITY_CHECK_CLIQUE = Boolean.valueOf(System.getProperty("sanitycheck.clique", "false"));
@@ -30,5 +32,6 @@ public class Defaults {
 		CACHE_REFERENCE = !Boolean.valueOf(System.getProperty("reference.cache", "true"));
 		ATTEMPT_ASSEMBLY_RECOVERY = Boolean.valueOf(System.getProperty("assembly.recover", "true"));
 		USE_OPTIMISED_ASSEMBLY_DATA_STRUCTURES = Boolean.valueOf(System.getProperty("assembly.optimised_data_structures", "true"));
+		EXPORT_INPROCESS_ALIGNMENTS = Boolean.valueOf(System.getProperty("bwa.export", "false"));
 	}
 }
