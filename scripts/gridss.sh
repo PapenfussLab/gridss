@@ -401,7 +401,7 @@ for f1 in $@ ; do
 done
 
 # Validate tools exist on path
-for tool in Rscript samtools java bwa minimap2 ; do
+for tool in Rscript samtools java bwa ; do #minimap2
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
@@ -416,7 +416,7 @@ else
 fi
 write_status "R version: $(Rscript --version 2>&1)"
 write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
-write_status "minimap2 $(minimap2 --version)"
+#write_status "minimap2 $(minimap2 --version)"
 if which /usr/bin/time >/dev/null ; then
 	write_status "time version: $(/usr/bin/time --version 2>&1)"
 fi
@@ -535,10 +535,10 @@ if [[ $do_setupreference == true ]] ; then
 		write_status "Running	bwa index	(once-off setup for reference genome)"
 		$timecmd bwa index $reference 1>&2 2>> $logfile
 	fi
-	if [[ ! -f ${reference}.idx  ]] ; then
-		write_status "Running	minimap2 index	(once-off setup for reference genome)"
-		$timecmd minimap2 -d ${reference}.idx ${reference} 1>&2 2>> $logfile
-	fi
+	#if [[ ! -f ${reference}.idx  ]] ; then
+	#	write_status "Running	minimap2 index	(once-off setup for reference genome)"
+	#	$timecmd minimap2 -d ${reference}.idx ${reference} 1>&2 2>> $logfile
+	#fi
 	write_status "Running	PrepareReference	(once-off setup for reference genome)"
 	$timecmd java -Xmx4g $jvm_args \
 		-cp $gridss_jar gridss.PrepareReference \
