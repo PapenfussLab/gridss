@@ -352,9 +352,14 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 	public void regression_hg002_should_call_del_of_refduplicated_sine_element() throws IOException {
 		ProcessingContext pc = ReferenceTests.createProcessingContext(testFolder.getRoot(), Hg19Tests.findHg19Reference(), getConfig());
 		srr = createAligner(pc);
-		// TODO: get the failing HG002 assembly
 
-		Assert.fail("TODO");
+		srr.createSupplementaryAlignments(new File("src/test/resources/del_of_duplicated_sine.sam"), output, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(6, list.size());
+		for (SAMRecord r : list) {
+			Assert.assertTrue(r.getAlignmentStart() == 44783681 || r.getAlignmentEnd() == 44783588 ||
+					r.getCigarString().contains("93D"));
+		}
 	}
 
 	@Test
