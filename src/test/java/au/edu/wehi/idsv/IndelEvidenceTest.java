@@ -257,4 +257,13 @@ public class IndelEvidenceTest extends TestHelper {
 			Assert.assertFalse(e.isEntirelyContainedInAssemblyAnchor());
 		}
 	}
+	@Test
+	public void insertion_deletion_should_be_treated_as_one_event() {
+		SAMRecord r = Read(2, 1, "10M5I7D20M");
+		List<IndelEvidence> el = IndelEvidence.create(SES(), 0, r);
+		Assert.assertEquals(2, el.size());
+		for (IndelEvidence ie : el) {
+			Assert.assertEquals(5, ie.getUntemplatedSequence().length());
+		}
+	}
 }

@@ -384,4 +384,23 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals("133S108M", list.get(0).getCigarString());
 		assertEquals("133M108S", list.get(1).getCigarString());
 	}
+
+	@Test
+	@Category(Hg19Tests.class)
+	public void assembly_realignment_should_treat_inversionlike_events_as_indel() throws IOException {
+		ProcessingContext pc = ReferenceTests.createProcessingContext(testFolder.getRoot(), Hg19Tests.findHg19Reference(), getConfig());
+		srr = createAligner(pc);
+		SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
+		r.setReferenceIndex(2);
+		r.setAlignmentStart(79041357);
+		r.setCigarString("59M15I6M5D3M10D81M");
+		r.setReadBases(B("CCATGGCTACCCAACATGTTTCAGGTGAAAGTGATACCAATCCTGGATCCTGGTGTAGATCTCGGTGGTCGCCGTATCATTAAAAAAGTCATTTCCTTGGTACGTTTATTGGTGCAAAGGTAGTATTTATCTGAAGGTGGCTCAATAAGACTGATGGGAAGGGC"));
+		r.setReadName("should_be_clean_alignment");
+		createBAM(input, r.getHeader(), r);
+
+		srr.createSupplementaryAlignments(input, output, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(1, list.size());
+		Assert.assertEquals("60M27I27D77M", list.get(0).getCigarString());
+	}
 }

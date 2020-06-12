@@ -433,16 +433,20 @@ public class SAMEvidenceSource extends EvidenceSource {
 			File coverageBlacklist = getContext().getFileSystemContext().getCoverageBlacklistBed(getFile());
 			if (!coverageBlacklist.exists()) {
 				// Fall back to generic blacklist if we haven't calculated a coverage blacklist yet 
-				return getContext().getBlacklistedRegions();
-			}
-			try {
-				blacklist = IntervalBed.merge(getContext().getLinear(), ImmutableList.of(
-						getContext().getBlacklistedRegions(),
-						new IntervalBed(getContext().getLinear(), coverageBlacklist)
-						));
-			} catch (IOException e) {
-				log.error(e);
 				blacklist = getContext().getBlacklistedRegions();
+			} else {
+				try {
+					blacklist = IntervalBed.merge(getContext().getLinear(), ImmutableList.of(
+							getContext().getBlacklistedRegions(),
+							new IntervalBed(getContext().getLinear(), coverageBlacklist)
+					));
+				} catch (IOException e) {
+					log.error(e);
+					blacklist = getContext().getBlacklistedRegions();
+				}
+			}
+			if (blacklist == null) {
+				blacklist = new IntervalBed(getContext().getLinear());
 			}
 		}
 		return blacklist;
