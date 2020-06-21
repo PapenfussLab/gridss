@@ -29,7 +29,8 @@ apply_gridss293_filters = function(caller_name, vcf) {
 }
 caller_files = list(
   hg002 = list(
-    gridss=paste0(datadir, "hg002/gridss_2.9.1_mapq10.vcf"),
+  	gridss=paste0(datadir, "hg002/gridss_2.9.3.vcf"),
+    #gridss=paste0(datadir, "hg002/gridss_2.9.1_mapq10.vcf"),
     svaba=paste0(datadir, "svaba/HG002_60x/HG002_60x.svaba.unfiltered.germline.sv.vcf"),
     breakdancer=paste0(datadir, "hg002/breakdancer_1.4.5.vcf"),
     crest=paste0(datadir, "hg002/crest.vcf"),
@@ -58,7 +59,7 @@ for (sample_name in names(caller_files)) {
       caller_file = caller_files[[sample_name]][[caller_name]]
       write(paste("Processing", sample_name, caller_name), stderr())
       caller_vcf = readVcf(caller_file)
-      caller_vcf = apply_gridss293_filters(caller_name, caller_vcf)
+      #caller_vcf = apply_gridss293_filters(caller_name, caller_vcf)
       VariantAnnotation::fixed(caller_vcf)$QUAL = score_for_caller(caller_name, caller_vcf)
       caller_bpgr = breakpointRanges(caller_vcf)
       caller_begr = breakendRanges(caller_vcf)
@@ -76,7 +77,7 @@ for (sample_name in names(caller_files)) {
 #bponly = bponly[!is.na(bponly$partner)]
 #cgrs[[unique(bponly$caller)]] = bponly
 
-# GRIDSS 1.6.1 was run with the then-beta non-standard breakend reporting capability - drop it as that's a GRIDSS2 feature
+# GRIDSS 1.6.1 was run with the then-beta non-default breakend reporting capability - drop it as that's a GRIDSS2 feature
 cgrs$hg002$gridss1 = cgrs$hg002$gridss1[!is.na(cgrs$hg002$gridss1$partner)]
 cgrs$na12878$gridss1 = cgrs$hg002$gridss1[!is.na(cgrs$na12878$gridss1$partner)]
 
@@ -101,11 +102,11 @@ rocdf %>% group_by(sample_name, caller) %>%
 
 require("viridis")
 ggplot(rocdf %>% 
-    mutate(caller=factor(caller, levels=c("gridss", "gridss1", "breakdancer", "crest", "delly", "hydra", "manta", "pindel", "svaba"))) %>%
-    filter(sample_name=="hg002")) +
+    mutate(caller=factor(caller, levels=c("gridss", "gridss1", "breakdancer", "crest", "delly", "hydra", "manta", "pindel", "svaba")))) +
   aes(x=recall, y=precision, colour=caller, linetype=subset) +
   #scale_shape_manual(values=c(3,4)) +
   geom_line() +
+	facet_wrap(~ sample_name) +
   scale_linetype_manual(values=c("dashed", "solid")) +
   #scale_color_viridis() +
   #scale_color_brewer(palette="Paired") +

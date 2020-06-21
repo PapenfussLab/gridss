@@ -191,6 +191,15 @@ ggplot(bind_rows(
 
 
 
+# Paper numbers
+mergeddf %>% filter(dataset=="40x/100x replicate") %>%
+  group_by(caller, subset, sample_name) %>%
+  filter(cumtp == max(cumtp)) %>%
+  group_by(caller, subset) %>%
+  summarise(
+    precision=mean(precision),
+    recall=mean(recall))
+
 ## COLO829 regression tests
 ggplot(summarydf %>% filter(sample_depth[sample_name] == 100)) +
   aes(x=recall, y=precision, colour=caller, label=str_replace(caller, "^[0-9]{6}_COLO829v00[1-3]_", "")) +
