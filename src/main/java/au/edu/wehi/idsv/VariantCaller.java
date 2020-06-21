@@ -114,7 +114,7 @@ public class VariantCaller {
 		}
 		log.info("Complete ", msg);
 		if (gridss.Defaults.DEFENSIVE_GC) {
-			log.debug("Requesting defensive GC to ensure OS file handles are closed");
+			log.info("Requesting defensive GC to ensure OS file handles are closed");
 			System.gc();
 			System.runFinalization();
 		}
