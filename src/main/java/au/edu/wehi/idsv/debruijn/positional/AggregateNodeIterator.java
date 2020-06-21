@@ -40,7 +40,8 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 	@Override
 	public KmerNode next() {
 		ensureBuffer();
-		return outputSortBuffer.poll();
+		KmerNode node = outputSortBuffer.poll();
+		return node;
 	}
 	@Override
 	public KmerNode peek() {

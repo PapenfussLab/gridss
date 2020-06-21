@@ -311,9 +311,16 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				}
 			}
 			Set<KmerEvidence> toRemove = evidenceTracker.untrack(nodes);
-			if (!toRemove.isEmpty()) {
-				removeFromGraph(toRemove);
+			if (!nodes.isEmpty() && toRemove.isEmpty()) {
+				if (flushReferenceNodes_debug_message_count == 0) {
+					int start = nodes.stream().mapToInt(ke -> ke.firstStart()).min().getAsInt();
+					int end = nodes.stream().mapToInt(ke -> ke.lastEnd()).max().getAsInt();
+					String msg = String.format("Sanity check failure when flushing reference nodes in interval %s:%d-%d. Found no supporting evidence.", contigName, start, end);
+					log.warn(msg);
+					throw new RuntimeException(msg);
+				}
 			}
+			removeFromGraph(toRemove);
 			if (getTelemetry() != null) {
 				long currentTime = System.nanoTime();
 				getTelemetry().flushReferenceNodes(referenceIndex, startPosition, endPosition, toRemove.size(), currentTime - telemetryLastflushReferenceNodes);
@@ -763,7 +770,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 						if (actualWeight != expectedWeight) {
 							List<KmerEvidence> overlappingEvidence = evidence.stream()
 									.filter(ke -> IntStream.range(0, ke.length()).filter(
-											j -> kmers.contains(ke.kmer(j)) && IntervalUtil.overlapsClosed(start, end, ke.startPosition() + j, ke.endPosition() + j)).count() > 0)
+											j -> ke.node(j) != null && kmers.contains(ke.kmer(j)) && IntervalUtil.overlapsClosed(start, end, ke.startPosition() + j, ke.endPosition() + j)).count() > 0)
 									.collect(Collectors.toList());
 							throw new IllegalStateException("Mismatch between actual and expected kmer weights");
 						}
@@ -1168,14 +1175,14 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private class KmerPosWeightDelta {
 		public final long kmer;
 		public final int pos;
-		public final int expectedWeight;
-		public final int actualWeight;
+		public final int graphWeight;
+		public final int evidenceWeight;
 		public final Set<KmerEvidence> overlappingEvidence = new HashSet<>();
-		public KmerPosWeightDelta(long kmer, int pos, int expectedWeight, int actualWeight) {
+		public KmerPosWeightDelta(long kmer, int pos, int graphWeight, int evidenceWeight) {
 			this.kmer = kmer;
 			this.pos = pos;
-			this.expectedWeight = expectedWeight;
-			this.actualWeight = actualWeight;
+			this.graphWeight = graphWeight;
+			this.evidenceWeight = evidenceWeight;
 		}
 	}
 	private boolean sanityCheckCompareKmerPosWeights(Long2ObjectMap<Int2IntMap> expectedKmerPosWeight, Long2ObjectMap<Int2IntMap> actualKmerPosWeight, int maxPosition) {

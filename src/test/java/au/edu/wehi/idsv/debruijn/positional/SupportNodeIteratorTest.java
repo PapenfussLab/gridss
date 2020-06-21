@@ -1,10 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -68,5 +70,12 @@ public class SupportNodeIteratorTest extends TestHelper {
 		assertEquals((10-3) + (10-3-2), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true, 5)).size());
 		input = ImmutableList.of(NRRP(withSequence("AAAAAAAATA", OEA(0, 1, "10M", true))));
 		assertEquals((10-3) + (10-3-2), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true, 5)).size());
+	}
+	@Test
+	public void should_exclude_ambiguous_kmers() {
+		int k = 4;
+		DirectedEvidence nrrp = NRRP(withSequence("NNNNNACGTT", OEA(0, 1, "10M", true)));
+		List<KmerSupportNode> list = Lists.newArrayList(new SupportNodeIterator(k, ImmutableList.of(nrrp).iterator(), 100, null, true, 0));
+		Assert.assertEquals(4, list.size());
 	}
 }

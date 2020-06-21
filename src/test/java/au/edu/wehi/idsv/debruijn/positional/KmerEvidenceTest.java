@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.*;
+import htsjdk.samtools.SAMRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -373,5 +374,19 @@ public class KmerEvidenceTest extends TestHelper {
 		//           <<<< or further this direction
 		ke = KmerEvidence.create(1, NRRP(ses, OEA(0, 20, "1M4D1M2S", false)));
 		assertEquals(19, ke.node(0).lastEnd());
+	}
+
+	/**
+	 * Regression edge case in which KmerEvidence was using {start, evidenceID} for equality.
+	 * Turns out with just the right length anchoring soft clip, you can get both the anchor
+	 * and the read to start at the same position.
+	 */
+	@Test
+	public void rp_should_have_anchor_and_record_not_equal_issue349() {
+		NonReferenceReadPair dp = NRRP(SES(0, 1000), DP(0, 100, "73S26M1S", true, 0, 51, "1S99M", true));
+		KmerEvidence ke = KmerEvidence.create(2, dp);
+		KmerEvidence keAnchor = KmerEvidence.createAnchor(1, dp, 0, SMALL_FA);
+		Assert.assertNotSame(ke, keAnchor);
+		Assert.assertNotEquals(ke, keAnchor);
 	}
 }

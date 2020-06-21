@@ -86,11 +86,10 @@ public class EvidenceTracker {
 		removeSet.addAll(trackedKmerEvidenceForEvidence);
 		for (KmerEvidence e : trackedKmerEvidenceForEvidence) {
 			for (int i = 0; i < e.length(); i++) {
-				// Note that since we're not checking for ambiguous bases, this kmer set will be larger than required.
-				// Similarly, we're not checking
-				// This means we will be checking more kmers that we actually have in the evidence set.
-				long kmer = e.kmer(i);
-				kmersInSet.add(kmer);
+				KmerSupportNode node = e.node(i);
+				if (node != null) {
+					kmersInSet.add(node.firstKmer());
+				}
 			}
 		}
 	}

@@ -144,11 +144,15 @@ class MisassemblyFixer {
 	}
 	private void addSupport(int[] transitionSupport, KmerEvidence evidence, int offset) {
 		for (Entry<Integer, ImmutableTriple<Integer, LongList, LongList>> entry : contigTransitionOffsetLookup.subMap(offset, offset + evidence.length() - 1).entrySet()) {
-			long readKmerPreTransition = evidence.kmer(entry.getKey() - offset);
-			long readKmerPostTransition = evidence.kmer(entry.getKey() - offset + 1);
-			ImmutableTriple<Integer, LongList, LongList> transition = entry.getValue();
-			if (transition.middle.contains(readKmerPreTransition) && transition.right.contains(readKmerPostTransition)) {
-				transitionSupport[transition.left]++;
+			KmerSupportNode preNode = evidence.node(entry.getKey() - offset);
+			KmerSupportNode postNode = evidence.node(entry.getKey() - offset + 1);
+			if (preNode != null && postNode != null) {
+				long readKmerPreTransition = preNode.firstKmer();
+				long readKmerPostTransition = postNode.firstKmer();
+				ImmutableTriple<Integer, LongList, LongList> transition = entry.getValue();
+				if (transition.middle.contains(readKmerPreTransition) && transition.right.contains(readKmerPostTransition)) {
+					transitionSupport[transition.left]++;
+				}
 			}
 		}
 	}

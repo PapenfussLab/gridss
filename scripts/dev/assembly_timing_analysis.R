@@ -1,7 +1,7 @@
 library(tidyverse)
 library(readr)
 
-posdf = bind_rows(lapply(list.files(path="D:/colo829/chr1/bench/visualisation/", pattern="positional-1_.*.csv", full.names=TRUE), function (x) {
+posdf = bind_rows(lapply(list.files(path="C:/dev/debug_gridss/testForIssue139/visualisation", pattern="positional-.*.csv", full.names=TRUE), function (x) {
 #posdf = bind_rows(lapply(list.files(path="D:/colo829/telemetry/", pattern="positional.*.csv", full.names=TRUE), function (x) {
   df = read_csv(x)
   df$file=x
@@ -53,6 +53,49 @@ ggplot(posdf %>% filter(descendentPathsRemovalSize > 1000)) +
   aes(x=contigStartPosition, y=descendentPathsRemovalSize) +
   geom_point(size=0.1) +
   scale_y_log10()
+
+bindf = posdf %>%
+  mutate(
+    msElapsedTime = sum(posdf$nsElapsedTime / 1000000),
+    bin=round(pmin(supportPosition, aggregatePosition, pathNodePosition, collapsePosition, simplifyPosition, assemblerPosition), -4)) %>%
+  group_by(bin) %>%
+  summarise(
+    msElapsedTime=sum(msElapsedTime),
+    supportConsumed=sum(supportConsumed),
+    aggregateConsumed=sum(aggregateConsumed),
+    pathNodeConsumed=sum(pathNodeConsumed),
+    collapseConsumed=sum(collapseConsumed),
+    simplifyConsumed=sum(simplifyConsumed),
+    trackerConsumed=sum(trackerConsumed),
+    max_trackerActive=sum(trackerActive),
+    max_supportProcessedSize = max(supportProcessedSize),
+    max_aggregateProcessedSize = max(aggregateProcessedSize),
+    max_aggregateQueueSize = max(aggregateQueueSize),
+    max_aggregateActiveSize = max(aggregateActiveSize),
+    max_pathNodeProcessedSize = max(pathNodeProcessedSize),
+    max_pathNodeActiveSize = max(pathNodeActiveSize),
+    max_pathNodeEdgeLookupSize = max(pathNodeEdgeLookupSize),
+    max_pathNodePathLookupSize = max(pathNodePathLookupSize),
+    max_collapseProcessedSize = max(collapseProcessedSize),
+    max_collapseUnprocessedSize = max(collapseUnprocessedSize),
+    max_simplifyProcessedSize = max(simplifyProcessedSize),
+    max_simplifyLookupSize = max(simplifyLookupSize),
+    max_simplifyUnprocessedSize = max(simplifyUnprocessedSize),
+    max_trackerLookupSize = max(trackerLookupSize),
+    max_contigFrontierSize = max(contigFrontierSize),
+    max_contigMemoizedSize = max(contigMemoizedSize),
+    max_assemblyActiveSize = max(assemblyActiveSize),
+    max_contigNodeSize = max(contigNodeSize),
+    max_contigStartAnchorNodeSize = max(contigStartAnchorNodeSize),
+    max_contigEndAnchorNodeSize = max(contigEndAnchorNodeSize),
+    max_contigTruncatedNodeSize = max(contigTruncatedNodeSize),
+    max_memoizedSize = max(memoizedSize),
+    max_memoizedRemovalSize = max(memoizedRemovalSize),
+    max_memoizedPathsRemovalSize = max(memoizedPathsRemovalSize),
+    max_descendentPathsRemovalSize = max(descendentPathsRemovalSize),
+    max_memoizedPathsRestartSize = max(memoizedPathsRestartSize))
+ggplot(bindf) + aes(x=bin, y=msElapsedTime) + geom_point(size=0.1)
+ggplot(bindf) + aes(x=bin, y=supportConsumed) + geom_point(size=0.1)
 
 library(GenomicRanges)
 gr = with(posdf %>% filter(descendentPathsRemovalSize > 150, assemblerFirstPosition-assemblerPosition < 1000000000), {

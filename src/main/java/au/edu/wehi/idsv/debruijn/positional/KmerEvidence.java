@@ -44,6 +44,7 @@ public class KmerEvidence extends PackedKmerList {
 	private final int start;
 	private final int end;
 	private final float score;
+	private final boolean isReadPairAnchorRead;
 	public KmerSupportNode node(int offset) {
 		if (ambiguous != null && ambiguous.get(offset)) {
 			return null;
@@ -91,7 +92,8 @@ public class KmerEvidence extends PackedKmerList {
 			int start,
 			int end,
 			int k, int firstAnchoredKmer, int lastAnchoredKmer, byte[] bases, byte[] qual, boolean reverse, boolean complement,
-			float evidenceQual) {
+			float evidenceQual,
+			boolean isReadPairAnchorRead) {
 		super(k, bases, qual, reverse, complement);
 		assert(evidence != null);
 		assert(qual.length == bases.length);
@@ -106,7 +108,7 @@ public class KmerEvidence extends PackedKmerList {
 		if (start != end && evidence.getEvidenceSource().getContext().getConfig().getAssembly().positional.trimSelfIntersectingReads) {
 			this.ambiguous = flagSelfIntersectingKmersAsAmbiguous(this.ambiguous);
 		}
-		
+		this.isReadPairAnchorRead = isReadPairAnchorRead;
 	}
 	/**
 	 * Treats kmers that self-intersect with earlier nodes as ambiguous.
@@ -222,7 +224,7 @@ public class KmerEvidence extends PackedKmerList {
 			log.error(msg);
 			return null;
 		}
-		return new KmerEvidence(pair, startPosition, endPosition, k, -1, -1, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendQual());
+		return new KmerEvidence(pair, startPosition, endPosition, k, -1, -1, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendQual(), false);
 	}
 	/**
 	 * Finds the length of the reference sequence on which this kmer is placed
@@ -299,7 +301,7 @@ public class KmerEvidence extends PackedKmerList {
 				}
 			}
 		}
-		return new KmerEvidence(evidence, firstBasePosition, firstBasePosition, k, 0, bases.length, bases, read.getBaseQualities(), false, false, 0);
+		return new KmerEvidence(evidence, firstBasePosition, firstBasePosition, k, 0, bases.length, bases, read.getBaseQualities(), false, false, 0, true);
 	}
 	private static byte getBase(ReferenceLookup reference, int referenceIndex, int contigLength, int position) {
 		if (position <= 0 || position > contigLength) return 'N';
@@ -340,7 +342,7 @@ public class KmerEvidence extends PackedKmerList {
 		if (k > seq.length) {
 			return null;
 		}
-		return new KmerEvidence(sre, bs.start + positionOffset, bs.end + positionOffset, k, firstAnchoredBase, firstAnchoredBase + anchoredBases - (k - 1), seq, qual, false, false, sre.getBreakendQual());
+		return new KmerEvidence(sre, bs.start + positionOffset, bs.end + positionOffset, k, firstAnchoredBase, firstAnchoredBase + anchoredBases - (k - 1), seq, qual, false, false, sre.getBreakendQual(), false);
 		
 	}
 	@Override
@@ -349,11 +351,11 @@ public class KmerEvidence extends PackedKmerList {
 	}
 	@Override
 	public int hashCode() {
-		return evidence.getEvidenceID().hashCode() + start;
+		return evidence.getEvidenceID().hashCode() + start + (isReadPairAnchorRead ? 1 : 0);
 	}
 	public boolean equals(KmerEvidence other) {
-		// Need start in the equality check since discordant read pairs have both reads added
-		return start == other.start &&
+		return isReadPairAnchorRead == other.isReadPairAnchorRead &&
+				start == other.start &&
 				evidence.getEvidenceID().equals(other.evidence.getEvidenceID());
 	}
 	@Override
