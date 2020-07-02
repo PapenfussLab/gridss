@@ -193,8 +193,7 @@ calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100,
 # segments
 # segments supported by SV
 # distance to SV
-evaluate_cn_transitions = function (cngr, svgr, margin=100000, distance=c("cn_transition", "sv")) {
-	distance <- match.arg(distance)
+evaluate_cn_transitions = function (cngr, svgr, margin=100000) {
 	cn_transitions = with(cngr %>% as.data.frame(), IRanges::reduce(c(
 		GRanges(seqnames=seqnames, ranges=IRanges(start=start, width=1)),
 		GRanges(seqnames=seqnames, ranges=IRanges(start=end + 1, width=1)))))
@@ -213,7 +212,7 @@ evaluate_cn_transitions = function (cngr, svgr, margin=100000, distance=c("cn_tr
 	best_cn_hit = hits %>% group_by(subjectHits) %>% filter(distance==min(distance)) %>% ungroup()
 	cn_transitions$distance = NA
 	cn_transitions[best_cn_hit$subjectHits]$distance = best_cn_hit$distance
-	svgr$distance = NA
+	svgr$distance = rep(NA, length(svgr))
 	svgr[best_sv_hit$queryHits]$distance = best_sv_hit$distance
 	exact_bp_hit = best_sv_hit %>%
 		mutate(queryHits.p=match(svgr[queryHits]$partner, names(svgr))) %>%
@@ -244,11 +243,7 @@ evaluate_cn_transitions = function (cngr, svgr, margin=100000, distance=c("cn_tr
 	cn_transitions$cn_error[exact_bp_hit$subjectHits] = exact_bp_hit$cn_error
 	cn_transitions$cn_error[!cn_transitions$can_evaluate_cn_error] = NA
 	
-	if (distance == "cn_transition") {
-		return(cn_transitions)
-	} else {
-		return(svgr)
-	}
+	return(list(cn_transitions=cn_transitions, sv=svgr))
 }
 lnx_to_gr <- function(lnx_svs) {
 	lnx_svs = lnx_svs %>% replace_na(list(InsertSeq=""))
@@ -292,4 +287,48 @@ hg19_cytobands =  with(read_tsv(
 seqlevelsStyle(hg19_cytobands) = "NCBI"
 hg19_centromeres = hg19_cytobands[hg19_cytobands$type == "acen"]
 
-
+#### PCAWG ####
+pcawg_dir=paste0(datadir, "pcawgcnsv/")
+pcawg_evaluate_cn_transitions = function(sampleId) {
+	write(paste("Processing ", sampleId), stderr())
+	cnfile=paste0(pcawg_dir, "/", sampleId, ".consensus.20170119.somatic.cna.txt")
+	svfile=paste0(pcawg_dir, "/", sampleId, ".pcawg_consensus_1.6.161116.somatic.sv.bedpe")
+	if (!file.exists(cnfile)) {
+		write(paste("Missing ", cnfile), stderr())
+		return(NULL)
+	}
+	if (!file.exists(svfile)) {
+		write(paste("Missing ", svfile), stderr())
+		return(NULL)
+	}
+	sv_bedpe = read_delim(svfile, delim="\t", col_names=TRUE, col_types="cnncnncncccc")
+	cndf = read_delim(cnfile, delim="\t", col_names=TRUE, col_types="cnnnnnn", na="NA")
+	svgr = with(sv_bedpe, GRanges(
+		seqnames=c(chrom1, chrom2),
+		ranges=IRanges(start=c(start1 + 1, start2 + 1), end=c(end1, end2)),
+		strand=c(strand1, strand2)
+	))
+	if (length(svgr) == 0) {
+		svgr$sampleId=character(0)
+		svgr$sourceId=character(0)
+		svgr$partner=character(0)
+	} else {
+		svgr$sampleId=sampleId
+		svgr$sourceId=c(paste0(sampleId, sv_bedpe$sv_id, "_o"), paste0(sampleId, sv_bedpe$sv_id, "_h"))
+		svgr$partner=c(paste0(sampleId, sv_bedpe$sv_id, "_h"), paste0(sampleId, sv_bedpe$sv_id, "_o"))
+	}
+	names(svgr) = svgr$sourceId
+	cngr = with(cndf, GRanges(
+		seqnames=chromosome,
+		ranges=IRanges(start=start, end=end),
+		sampleId=sampleId,
+		cn=total_cn,
+		cn_major=major_cn,
+		cn_minor=minor_cn,
+		star=star))
+	# TODO: find sample pairing
+	result = evaluate_cn_transitions(cngr, svgr)
+	result$sv$sampleId=rep(sampleId, length(result$sv))
+	result$cn_transition$sampleId=rep(sampleId, length(result$cn_transition))
+	return(result)
+}

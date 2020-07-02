@@ -1,46 +1,5 @@
 source("libbenchmark.R")
 
-#### PCAWG ####
-pcawg_dir=paste0(datadir, "pcawgcnsv/")
-pcawg_evaluate_cn_transitions = function(sampleId, ...) {
-  write(paste("Processing ", sampleId), stderr())
-  cnfile=paste0(pcawg_dir, "/", sampleId, ".consensus.20170119.somatic.cna.txt")
-  svfile=paste0(pcawg_dir, "/", sampleId, ".pcawg_consensus_1.6.161116.somatic.sv.bedpe")
-  if (!file.exists(cnfile)) {
-    write(paste("Missing ", cnfile), stderr())
-    return(data.frame())
-  }
-  if (!file.exists(svfile)) {
-    write(paste("Missing ", svfile), stderr())
-    return(data.frame())
-  }
-  sv_bedpe = read_delim(svfile, delim="\t", col_names=TRUE, col_types="cnncnncncccc")
-  cndf = read_delim(cnfile, delim="\t", col_names=TRUE, col_types="cnnnnnn", na="NA")
-  if (nrow(sv_bedpe) == 0 || nrow(cndf) ==0) {
-    return(data.frame())
-  }
-  svgr = with(sv_bedpe, GRanges(
-    seqnames=c(chrom1, chrom2),
-    ranges=IRanges(start=c(start1 + 1, start2 + 1), end=c(end1, end2)),
-    strand=c(strand1, strand2),
-    sampleId=sampleId,
-    sourceId=c(paste0(sampleId, sv_id, "_o"), paste0(sampleId, sv_id, "_h")),
-    partner=c(paste0(sampleId, sv_id, "_h"), paste0(sampleId, sv_id, "_o"))
-  ))
-  names(svgr) = svgr$sourceId
-  cngr = with(cndf, GRanges(
-    seqnames=chromosome,
-    ranges=IRanges(start=start, end=end),
-    sampleId=sampleId,
-    cn=total_cn,
-    cn_major=major_cn,
-    cn_minor=minor_cn,
-    star=star))
-  cn_consistency = evaluate_cn_transitions(cngr, svgr, ...)
-  cn_consistency$sampleId = sampleId
-  as.data.frame(cn_consistency)
-}
-
 sampleIds = unique(str_extract(list.files(path=pcawg_dir), "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"))
 pcawg_cn_transitions_list = lapply(sampleIds, pcawg_evaluate_cn_transitions, distance="cn_transition")
 pcawg_sv_transitions_list = lapply(sampleIds, pcawg_evaluate_cn_transitions, distance="sv")

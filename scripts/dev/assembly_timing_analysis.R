@@ -96,6 +96,9 @@ bindf = posdf %>%
     max_memoizedPathsRestartSize = max(memoizedPathsRestartSize))
 ggplot(bindf) + aes(x=bin, y=msElapsedTime) + geom_point(size=0.1)
 ggplot(bindf) + aes(x=bin, y=supportConsumed) + geom_point(size=0.1)
+ggplot(bindf) + aes(x=bin, y=max_assemblyActiveSize) + geom_point(size=0.1)
+
+ggplot(bindf) + aes(x=max_assemblyActiveSize, y=max_trackerLookupSize, colour=msElapsedTime > 10000000000) + geom_point(size=0.1) + scale_x_log10() + scale_y_log10()  
 
 library(GenomicRanges)
 gr = with(posdf %>% filter(descendentPathsRemovalSize > 150, assemblerFirstPosition-assemblerPosition < 1000000000), {
