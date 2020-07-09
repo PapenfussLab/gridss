@@ -71,7 +71,7 @@ public abstract class SplitReadRealigner {
                     // we repurpose the CIGAR string to encode the breakend interval
                     // and realigning will break that
                     !AssemblyAttributes.isUnanchored(primary)) {
-                SAMRecord newPrimaryAlignmentPosition = SplitReadHelper.replaceAlignment(primary, realignments, isWriteOATag());
+                SAMRecord newPrimaryAlignmentPosition = SplitReadHelper.replaceAlignment(primary, realignments, isWriteOATag(), true);
                 if (newPrimaryAlignmentPosition != null && !realignments.remove(newPrimaryAlignmentPosition)) {
                     throw new RuntimeException("Sanity check failure: no supplementary alignment was removed when replacing alignment");
                 }
@@ -86,7 +86,7 @@ public abstract class SplitReadRealigner {
             }
             // TODO: remove alignments which are contained by another alignment
             if (primary.getReadUnmappedFlag() || SAMRecordUtil.getStartClipLength(primary) == SAMRecordUtil.getReadLengthIncludingHardClipping(primary)) {
-                SplitReadHelper.replaceAlignment(primary, realignments, writeOA);
+                SplitReadHelper.replaceAlignment(primary, realignments, writeOA, false);
             }
         }
         return primary.getReadUnmappedFlag() || primary.getReferenceIndex() != primaryReferenceIndex || primary.getAlignmentStart() != primaryAlignmentStart;

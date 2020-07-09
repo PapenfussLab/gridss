@@ -288,9 +288,11 @@ public class SplitReadHelper {
 	 * @param originatingRecord
 	 * @param realignments
 	 * @param writeOA indicates whether the OA SAM tag should be updated
+	 * @param realignmentsUnprocessed indicates whether the realignment records are unprocessed realignment record
+	 *                             or fully processed valid supplementary alignments
 	 * @return alignment record that the originatingRecord alignment was replaced with.
 	 */
-	public static SAMRecord replaceAlignment(SAMRecord originatingRecord, List<SAMRecord> realignments, boolean writeOA) {
+	public static SAMRecord replaceAlignment(SAMRecord originatingRecord, List<SAMRecord> realignments, boolean writeOA, boolean realignmentsUnprocessed) {
 		// Find alignment that best matches the originatingRecord
 		SAMRecord newPrimary = null;
 		int maxOverlap = 0; 
@@ -305,10 +307,10 @@ public class SplitReadHelper {
 		if (newPrimary == null && realignments.size() > 0) {
 			newPrimary = realignments.get(0);
 		}
-		replaceAlignment(originatingRecord, newPrimary, writeOA);
+		replaceAlignment(originatingRecord, newPrimary, writeOA, realignmentsUnprocessed);
 		return newPrimary;
 	}
-	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary, boolean writeOA) {
+	private static void replaceAlignment(SAMRecord originatingRecord, SAMRecord newPrimary, boolean writeOA, boolean newPrimaryIsUnprocessedRealignmentRecord) {
 		if (originatingRecord == null) {
 			return;
 		}
@@ -320,7 +322,9 @@ public class SplitReadHelper {
 			originatingRecord.setReadUnmappedFlag(true);
 			originatingRecord.setMappingQuality(0);
 		} else {
-			unclip(originatingRecord, ImmutableList.of(newPrimary));
+			if (newPrimaryIsUnprocessedRealignmentRecord) {
+				unclip(originatingRecord, ImmutableList.of(newPrimary));
+			}
 			originatingRecord.setReadUnmappedFlag(newPrimary.getReadUnmappedFlag());
 			originatingRecord.setMappingQuality(newPrimary.getMappingQuality());
 			originatingRecord.setAlignmentStart(newPrimary.getAlignmentStart());

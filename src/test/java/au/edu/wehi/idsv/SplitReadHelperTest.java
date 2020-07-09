@@ -304,14 +304,23 @@ public class SplitReadHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "100M");
 		SAMRecord r1 = withReadName(r.getReadName() + "#50", Read(1, 1, "50M"))[0];
 		SAMRecord r2 = withReadName(r.getReadName() + "#0", Read(0, 1, "10M"))[0];
-		SAMRecord result = SplitReadHelper.replaceAlignment(r, ImmutableList.of(r1, r2), true);
+		SAMRecord result = SplitReadHelper.replaceAlignment(r, ImmutableList.of(r1, r2), true, true);
+		Assert.assertEquals(result, r2);
+		Assert.assertEquals("10M90S", r.getCigarString());
+	}
+	@Test
+	public void replaceAlignment_should_process_supplmentary_alignments() {
+		SAMRecord r = Read(0, 1, "100M");
+		SAMRecord r1 = Read(1, 1, "50S50M");
+		SAMRecord r2 = Read(0, 1, "10M90S");
+		SAMRecord result = SplitReadHelper.replaceAlignment(r, ImmutableList.of(r1, r2), true, false);
 		Assert.assertEquals(result, r2);
 		Assert.assertEquals("10M90S", r.getCigarString());
 	}
 	@Test
 	public void replaceAlignment_should_unmap_if_no_realignment_available() {
 		SAMRecord r = Read(0, 1, "100M");
-		SplitReadHelper.replaceAlignment(r, ImmutableList.of(), true);
+		SplitReadHelper.replaceAlignment(r, ImmutableList.of(), true, true);
 		Assert.assertTrue(r.getReadUnmappedFlag());
 	}
 	@Test
