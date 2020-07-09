@@ -36,7 +36,7 @@ public class AlignerFactory {
 		}
 		isw = initialisingIsw;
 		if (isw == null) {
-			log.error("Unable to use Intel GKL library for accelerated Smith-Waterman alignment");
+			log.warn("Unable to use Intel GKL library for accelerated Smith-Waterman alignment");
 			if (!Defaults.NO_LIBSSW) {
 				try {
 					System.loadLibrary("sswjni");
