@@ -24,6 +24,11 @@ Genome Research, 2017
 doi: 10.1101/gr.222109.117
 
 
+For single breakend, structural variant phasing, and somatic variant calling, refere to our preprint:
+
+GRIDSS2: harnessing the power of phasing and single breakends in somatic structural variant detection
+https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
+
 # Pre-requisites
 
 To run GRIDSS the following must be installed:
