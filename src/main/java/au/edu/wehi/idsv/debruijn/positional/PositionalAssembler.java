@@ -78,7 +78,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	private void closeCurrentAssembler() {
-		if (currentAssembler.getExportTracker() != null) {
+		if (currentAssembler != null && currentAssembler.getExportTracker() != null) {
 			try {
 				currentAssembler.getExportTracker().close();
 			} catch (IOException e) {
@@ -123,6 +123,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				if (packagedFile != null && packagedFile.exists()) {
 					msg = msg + ". If your data can be shared publicly, please also include a minimal data set for reproducing the problem by attaching " + packagedFile.toString() + ".";
 				}
+				boolean unableToRecover = false;
 				if (!attemptRecovery) {
 					log.error(e, msg);
 					throw e;
@@ -136,13 +137,18 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 						}
 					} catch (AssertionError | Exception nested) {
 						log.error(nested, "Assembly recovery attempt failed due to exception thrown by underlying iterator");
+						unableToRecover = true;
 					}
 					log.error(e, msg);
 				}
-				closeCurrentAssembler();
-				// discard the reads that we already in the graph have and continue
-				// check config as to whether we want to recover from back-to-back failures
-				ensureAssembler(context.getConfig().getAssembly().recoverAfterError, null);
+				if (unableToRecover) {
+					throw e;
+				} else {
+					closeCurrentAssembler();
+					// discard the reads that we already in the graph have and continue
+					// check config as to whether we want to recover from back-to-back failures
+					ensureAssembler(context.getConfig().getAssembly().recoverAfterError, null);
+				}
 			}
 		}
 	}

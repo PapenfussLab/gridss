@@ -228,41 +228,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				(int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1);
 		return expanded;
 	}
-	private static int hackN = 0;
-	private boolean debugHackKeep(DirectedEvidence de) {
-		//return (de.getEvidenceID().equals("Y7YsUq3YMX5vuoPKy1ViICalI4rNA8kr"));
-
-		if (de instanceof UnmappedMateReadPair) {
-			UnmappedMateReadPair umrp = (UnmappedMateReadPair) de;
-			KmerEvidence ke = KmerEvidence.create(25, umrp);
-			for (int i = 0; i < ke.length(); i++) {
-				if (ke.node(i) == null) {
-					//return true;
-				}
-			}
-		}
-		if (de instanceof DiscordantReadPair) {
-			hackN++;
-			if (hackN < 30 && hackN > 10 && (hackN % 2) == 0) {
-				KmerEvidence ke = KmerEvidence.create(25, (DiscordantReadPair)de);
-				for (int i = 0; i < ke.length(); i++) {
-					if (ke.node(i) == null) {
-						return true;
-					}
-				}
-				//return true;
-			}
-		}
-		return true;
-
-	}
 	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, int chunkNumber, QueryInterval[] intervals, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator,
 							   IntervalBed excludedRegions, IntervalBed safetyRegions, IntervalBed downsampledRegions) {
 		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded, EvidenceSortOrder.SAMRecordStartPosition)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input, downsampledRegions);
-			Iterator<DirectedEvidence> debugHack = Iterators.filter(throttledIt, e -> debugHackKeep(e));
-			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, debugHack, direction, excludedRegions, safetyRegions);
+			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction, excludedRegions, safetyRegions);
 			if (telemetry != null) {
 				assembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
 			}
