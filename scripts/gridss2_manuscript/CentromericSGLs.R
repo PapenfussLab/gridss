@@ -6,6 +6,7 @@ sglDestChrs = read.csv(paste(dataDir,'sgl_destination_chromosomes.csv',sep='/'))
 sglLocalVsTrans = read.csv(paste(dataDir,'sgl_local_vs_trans.csv',sep='/'))
 sglOrigPositions = read.csv(paste(dataDir,'sgl_originating_positions.csv',sep='/'))
 sglFbCentroSummary = read.csv(paste(dataDir,'sgl_arm_cn_gain_summary.csv',sep='/'))
+sglRateOfGain = read.csv(paste(dataDir,'sgl_rate_of_gain.csv',sep='/'))
 sgl_centro_sv_data = read.csv(paste(dataDir,'sgl_centro_sv_data.csv',sep='/'))
 
 
@@ -88,7 +89,7 @@ print(ggplot(sglFbCentroSummary %>% filter(CentroGain>0|SglCentro>0|FBArms>0), a
       + labs(x='Arms with Centromeric Copy Number Change', y='Arms with Centromeric SGLs',title = "Chromosomal Arms per Sample with Centromeric Copy Number Change vs Centromeric SGLs"))
 
 # Plot 5: Rate of CN Gain vs Centromeric SGLs
-sglRateOfGain = read.csv(paste(dataDir,'sgl_rate_of_gain.csv',sep='/'))
+
 
 print(ggplot(sglRateOfGain, aes(x=reorder(Chromosome,ChrIndex),y=Rate,fill=RateOfCentromericGain))
       + geom_bar(position="dodge",stat='identity')
@@ -120,7 +121,7 @@ dev.off()
 inner_join(sglFbCentroSummary, sgl_centro_sv_data %>% filter(PCentroGain | QCentroGain) %>% group_by(SampleId) %>% summarise(singleWithCNChange=length(unique(CentroChr)))) %>%
    summarise(cnChange=sum(CentroGain), singleWithCNChange=sum(singleWithCNChange))
 sgl_centro_sv_data %>%
-   mutate(label=ifelse(hasCNChange, "with CN change", ifelse(hasMultipleBreaksToCentromere, "multipleBreakends", "missing"))) %>%
+   mutate(label=paste(ifelse(hasCNChange, "with CN change", "without CN change"), ifelse(hasMultipleBreaksToCentromere, "multipleBreakends", "singleBreakend"))) %>%
    group_by(label) %>%
    summarise(n=n()) %>%
    ungroup() %>%
@@ -169,7 +170,7 @@ ggplot(sgl_centro_sv_data) +
    #scale_fill_brewer(palette="Paired") +
    theme(plot.margin = margin(0,0,0,0)) +
    scale_y_continuous(expand=c(0,0, 0.05, 0))
-figsave("fig4b_single_breakend_chr_summary", width=8, height=4)
+figsave("fig3b_single_breakend_chr_summary", width=8, height=4)
 
 ggplot(sgl_centro_sv_data %>%
     mutate(
@@ -212,7 +213,7 @@ ggplot(chrheatmapdf) +
    geom_tile() +
    scale_fill_gradient(low="#FFFFFF", high="#000000") +
    labs(y="Most likely centromere", x="Single breakend chromosome", fill="events")
-figsave("fig4c_centromeric_single_breakend_heatmap", width=5, height=4)
+figsave("fig3c_centromeric_single_breakend_heatmap", width=5, height=4)
 
 ggplot(chrheatmapdf) +
    aes(y=factor(CentroChr, levels=c(1:22, "X", "Y")), x=factor(ChrStart, levels=c(1:22, "X", "Y")), fill=cnChangeRate, label=round(cnChangeRate, digits=2)) +
