@@ -111,6 +111,13 @@ At present, command line valiation is performed independently of which steps are
 
 Just specify multiple BAMs on the command line. GRIDSS will perform joint calling and provide a per-BAM breakdown of support.
 
+### How do I perform tumour/normal somatic variant calling?
+
+Jointly call on all samples from the patient.
+It is strongly recommended that the normal be the first argument as that is what downstream steps expect.
+For example,  `gridss.sh ... patientX_normal.bam patientX_primary.bam patientX_met.bam`.
+To filter to somatic calls, use the `gridss_somatic_filter.R` script included in the GRIDSS release.
+
 ### What aligner should I use?
 
 Although GRIDSS aims to be aligner agnostic, not all aligners output BAM files suitable for processing by GRIDSS. GRIDSS requires:
