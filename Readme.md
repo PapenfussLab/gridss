@@ -210,13 +210,24 @@ WARNING: multiple instances of GRIDSS generating reference files at the same tim
 
 ### How many threads should I use?
 
-1-16 threads is recommended. Note that pre-processing is limited by htsjdk BAM parsing thus is not multi-threaded. Asynchronous I/O means preprocessing will use up to 200-300% CPU for a nominally single-threaded operation. Make sure you specify enough memory for the number of threads you specified.
+GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
+
+If scaling above 8 cores, it is recommended to run multiple GRIDSS assembly processes and use the `--jobindex` and `--jobnodes` parameters.
 
 ### How much memory should I give GRIDSS?
 
+GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
+
 At least 4GB + 2GB per thread. It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-threaded operation
-(WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for heavily multi-threaded
-server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS so is strongly discouraged.
+(WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS so is strongly discouraged.
+
+### Why does GRIDSS use more CPU than the limit specified with `--threads`?
+
+GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
+
+`--threads` specifies the size of the worker thread pool. IO, BAM decompression, and parsing are in their own thread pool which is not part of the worker thread pool. The pre-processing, variant calling, and annotation steps also perform some work that is executed in dedicated threads independent of the worker thread pool. Combined, this approach means that max CPU utilisation can exceed the thread count specified.
+
+Asynchronous IO defaults can be changed by editing the `jvm_args` argument in `gridss.sh`.
 
 ### Should I include alt contigs in the reference?
 
