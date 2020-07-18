@@ -57,7 +57,7 @@ gridss_somatic_filter.R|Somatic filtering script. Identifies somatic events for 
 ## gridss.sh command-line arguments
 
 ```
-Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 25g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
+Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 30g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 ```
 
 argument|description
@@ -68,7 +68,7 @@ argument|description
 -t, --threads|number of threads to use. Defaults to the number of cores available.
 -j, --jar|location of GRIDSS jar
 -b/--blacklist|BED file containing regions to ignore. The ENCODE DAC blacklist is recommended for hg19. (Optional)
---jvmheap|size of JVM heap for assembly and variant calling. Defaults to 25g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8
+--jvmheap|size of JVM heap for assembly and variant calling. Defaults to 30g to ensure GRIDSS runs on cloud instances with 32gb memory.
 --maxcoverage|maximum coverage. Regions with coverage in excess of this are ignored. (Default: 50000)
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
