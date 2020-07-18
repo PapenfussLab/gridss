@@ -58,7 +58,7 @@ load_somatic = function(caller, sample_name) {
   }
   if (caller %in% regression_callers) {
     filename = switch(sample_name,
-      "colo829_1"= paste0(datadir, caller, "/colo829/somatic.vcf.bgz"),
+      "colo829_1"= paste0(datadir, "regressiontest/", caller, "/colo829/somatic.vcf.bgz"),
       "missing")
   }
   if (caller %in% pipeline_regression_callers) {
@@ -226,5 +226,10 @@ gridss_gr2 = gr[gr$caller=="gridss" & gr$sample_name=="colo829_2"]
 missed_gr = v48gr2[v48gr2$tp & !overlapsAny(v48gr2, gridss_gr2[gridss_gr2$FILTER == "PASS"])]
 
 
-
+# COLO829 direct regression
+grref = somatics$v2.7.3$colo829_1$gr
+grtest = somatics$v2.9.4$colo829_1$gr
+colo829_missing = grref[!overlapsAny(grref, grtest)]
+colo829_additional = grtest[!overlapsAny(grtest, grref)]
+colo928_filtered_truth = grtest[grtest$subset=="All calls" & !overlapsAny(grtest, grtest[grtest$subset=="PASS only"]) & overlapsAny(grtest, grref[grref$subset=="PASS only"])]
 

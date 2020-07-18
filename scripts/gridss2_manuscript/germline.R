@@ -18,15 +18,15 @@ truth$na12878$region_gr = NULL
 truth$na12878$filter_function = NULL
 seqlevelsStyle(truth$na12878$gr) = "UCSC"
 
-apply_gridss293_filters = function(caller_name, vcf) {
-  if (caller_name == "gridss2") {
-    i = info(vcf)
-    VariantAnnotation::fixed(vcf)$FILTER = paste0(VariantAnnotation::fixed(vcf)$FILTER, ifelse(with(i, VF == 0 & BUM == 0), ";NO_RP", ""))
-    VariantAnnotation::fixed(vcf)$FILTER = paste0(VariantAnnotation::fixed(vcf)$FILTER, ifelse(with(i, VF == 0 & BSC == 0), ";NO_SR", ""))
-    VariantAnnotation::fixed(vcf)$FILTER = paste0(VariantAnnotation::fixed(vcf)$FILTER, ifelse(with(i, VF == 0 & (BASSR + BASRP - BSC - BUM) / (BASSR + BASRP + BSC + BUM) > 0.5), ";BE_BIAS", ""))
-  }
-  return(vcf)
-}
+regression_caller_files = list(hg002 = list(
+  gridss2.9.4_2x250=paste0(datadir, "gridss/v2.9.4/HG002_2x250/HG002_2x250.gridss.vcf"),
+  gridss2.9.4_60x=paste0(datadir, "gridss/v2.9.4/HG002_60x/HG002_60x.gridss.vcf"),
+  gridss2.9.4_300x=paste0(datadir, "gridss/v2.9.4//HG002_300x/HG002_300x.gridss.vcf"),
+  gridss2.9.3_60x=paste0(datadir, "hg002/gridss_2.9.3.vcf"),
+  gridss2.9.1_60x=paste0(datadir, "hg002/gridss_2.9.1.vcf.gz"),
+  gridss1.6.1_60x=paste0(datadir, "hg002/gridss_1.6.1.vcf")
+  ))
+
 caller_files = list(
   hg002 = list(
   	gridss=paste0(datadir, "hg002/gridss_2.9.3.vcf"),
@@ -50,6 +50,8 @@ caller_files = list(
     manta=paste0(datadir, "na12878/manta_1.1.1.vcf"))
     #pindel=paste0(datadir, "na12878/pindel_0.2.5b6.vcf")) # terminated early. VCF is incomplete
 )
+
+
 if (!exists("cgrs")) {
   cgrs = list(hg002=list(), na12878=list())
 }
@@ -59,7 +61,6 @@ for (sample_name in names(caller_files)) {
       caller_file = caller_files[[sample_name]][[caller_name]]
       write(paste("Processing", sample_name, caller_name), stderr())
       caller_vcf = readVcf(caller_file)
-      #caller_vcf = apply_gridss293_filters(caller_name, caller_vcf)
       VariantAnnotation::fixed(caller_vcf)$QUAL = score_for_caller(caller_name, caller_vcf)
       caller_bpgr = breakpointRanges(caller_vcf)
       caller_begr = breakendRanges(caller_vcf)
