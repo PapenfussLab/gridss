@@ -469,7 +469,8 @@ jvm_args="$jvm_args \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
-	-Dsamjdk.buffer_size=4194304"
+	-Dsamjdk.buffer_size=4194304 \
+	-Dsamjdk.async_io_read_threads=$threads"
 
 if [[ "$nojni" == "true" ]] ; then
 	write_status "Disabling snappy, GKL, SSW, and in-process alignment"
