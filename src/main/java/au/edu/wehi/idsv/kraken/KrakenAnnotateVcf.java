@@ -37,7 +37,7 @@ public class KrakenAnnotateVcf extends KrakenAnnotate<VariantContext, VariantCon
 
     @Override
     protected VariantContext transform(VariantContext record, KrakenClassification kc) {
-        if (kc.isClassified) {
+        if (kc != null && kc.isClassified) {
             record = new VariantContextBuilder(record)
                     .attribute(VcfInfoAttributes.INSERTED_SEQUENCE_NCBI_TAXONOMY_ID.attribute(), kc.taxonomyId)
                     .make();
