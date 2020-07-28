@@ -18,11 +18,11 @@ public class IdsvVariantContext extends VariantContext {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	protected final GenomicProcessingContext processContext;
+	protected final SAMSequenceDictionary dict;
 	protected final EvidenceSource source;
-	public IdsvVariantContext(GenomicProcessingContext processContext, EvidenceSource source, VariantContext context) {
+	public IdsvVariantContext(SAMSequenceDictionary dict, EvidenceSource source, VariantContext context) {
 		super(context);
-		this.processContext = processContext;
+		this.dict = dict;
 		this.source = source;
 	}
 	protected int getAttributeIntSum(VcfInfoAttributes attr) { return AttributeConverter.asIntList(getAttribute(attr.attribute())).stream().mapToInt(x -> x).sum(); }
@@ -45,13 +45,13 @@ public class IdsvVariantContext extends VariantContext {
      * @return reference index for the given sequence name, or -1 if the variant is not on a reference contig
      */
 	public int getReferenceIndex() {
-		return getReferenceIndex(processContext, this);
+		return getReferenceIndex(dict, this);
 	}
 	/**
      * @return reference index for the given sequence name, or -1 if the variant is not on a reference contig
      */
-	public static int getReferenceIndex(GenomicProcessingContext processContext, VariantContext variant) {
-		return processContext.getDictionary().getSequenceIndex(variant.getContig());
+	public static int getReferenceIndex(SAMSequenceDictionary dict, VariantContext variant) {
+		return dict.getSequenceIndex(variant.getContig());
 	}
 	/**
 	 * Gets the source of this evidence
@@ -62,15 +62,15 @@ public class IdsvVariantContext extends VariantContext {
 	}
 	/**
 	 * Creates a wrapper object of the appropriate type from the given {@link VariantContext} 
-	 * @param context variant context
+	 * @param dict sequence dictionary
 	 * @return variant context sub-type
 	 */
-	public static IdsvVariantContext create(GenomicProcessingContext processContext, EvidenceSource source, VariantContext variant) {
-		VcfBreakendSummary vbs = new VcfBreakendSummary(processContext, variant);
-		if (vbs.location instanceof BreakpointSummary) return new VariantContextDirectedBreakpoint(processContext, source, variant);
-		if (vbs.location instanceof BreakendSummary) return new VariantContextDirectedEvidence(processContext, source, variant);
+	public static IdsvVariantContext create(SAMSequenceDictionary dict, EvidenceSource source, VariantContext variant) {
+		VcfBreakendSummary vbs = new VcfBreakendSummary(dict, variant);
+		if (vbs.location instanceof BreakpointSummary) return new VariantContextDirectedBreakpoint(dict, source, variant);
+		if (vbs.location instanceof BreakendSummary) return new VariantContextDirectedEvidence(dict, source, variant);
 		// Not a SV variant we're interested in
-		return new IdsvVariantContext(processContext, source, variant);
+		return new IdsvVariantContext(dict, source, variant);
 	}
 	public boolean isValid() {
 		return true;

@@ -37,7 +37,7 @@ public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvide
 			vcfReader = new VCFFileReader(truthVcf, false);
 			it = vcfReader.iterator();
 			while (it.hasNext()) {
-				truth.add(IdsvVariantContext.create(processContext, null, it.next()));
+				truth.add(IdsvVariantContext.create(processContext.getDictionary(), null, it.next()));
 			}
 		} finally {
 			CloserUtil.close(it);

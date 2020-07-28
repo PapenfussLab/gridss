@@ -269,7 +269,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
         	throw new IllegalStateException(String.format("Sanity check failure: stop not set for %s", underlying)); 
         }
         EvidenceSource firstSource = sourceSet.isEmpty() ? null : sourceSet.iterator().next();
-        return IdsvVariantContext.create(processContext, firstSource, underlying);
+        return IdsvVariantContext.create(processContext.getDictionary(), firstSource, underlying);
 	}
 	/**
 	 * ID of the source variant

@@ -73,8 +73,7 @@ public class ComputeCoverage extends GcSinglePassSamProgram {
 		} else {
 			try (VCFFileReader vcfReader = new VCFFileReader(VCF, false)) {
 				try (CloseableIterator<VariantContext> it = vcfReader.iterator()) {
-					GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), REFERENCE_SEQUENCE, getReference());
-					Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(pc, null, variant));
+					Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(dictionary, null, variant));
 					Iterator<VariantContextDirectedEvidence> bpit = Iterators.filter(idsvIt, VariantContextDirectedEvidence.class);
 					return new IntervalCoverageAccumulator(COVERAGE_METHOD, dictionary, BIN_SIZE, bpit);
 				}

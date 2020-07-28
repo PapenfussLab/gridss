@@ -14,29 +14,29 @@ public class IdsvVariantContextTest extends TestHelper {
 		VariantContext vc = minimalVariant()
 			.chr("polyA")
 			.make();
-		assertEquals(0, IdsvVariantContext.create(getContext(), AES(), vc).getReferenceIndex());
+		assertEquals(0, IdsvVariantContext.create(getContext().getDictionary(), AES(), vc).getReferenceIndex());
 	}
 	@Test
 	public void create_should_default_to_IdsvVariantContext() {
-		assertTrue(IdsvVariantContext.create(getContext(), AES(), minimalVariant().make()) instanceof IdsvVariantContext);
+		assertTrue(IdsvVariantContext.create(getContext().getDictionary(), AES(), minimalVariant().make()) instanceof IdsvVariantContext);
 	}
 	@Test
 	public void create_should_make_VariantContextDirectedEvidence_from_breakend() {
 		VariantContext vc = minimalVariant().alleles("A", "A.").make();
-		assertTrue(IdsvVariantContext.create(getContext(), AES(), vc) instanceof VariantContextDirectedEvidence);
+		assertTrue(IdsvVariantContext.create(getContext().getDictionary(), AES(), vc) instanceof VariantContextDirectedEvidence);
 	}
 	@Test
 	public void create_should_make_VariantContextDirectedBreakpoint_from_breakpoint() {
 		VariantContext vc = minimalVariant().alleles("A", "A[polyA:1[").make();
-		assertTrue(IdsvVariantContext.create(getContext(), AES(), vc) instanceof VariantContextDirectedBreakpoint);
+		assertTrue(IdsvVariantContext.create(getContext().getDictionary(), AES(), vc) instanceof VariantContextDirectedBreakpoint);
 	}
 	public class TestIdsvVariantContext extends IdsvVariantContext {
 		private static final long serialVersionUID = 1L;
 		public TestIdsvVariantContext(VariantContext context) {
-			super(getContext(), AES(), context);
+			super(getContext().getDictionary(), AES(), context);
 		}
 		public TestIdsvVariantContext(GenomicProcessingContext processContext, VariantContext context) {
-			super(processContext, AES(), context);
+			super(processContext.getDictionary(), AES(), context);
 		}
 		public List<Integer> getAttributeAsIntList(String attrName) {
 			return AttributeConverter.asIntList(getAttribute(attrName));

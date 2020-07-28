@@ -219,13 +219,13 @@ public class GeneratePonBedpe extends CommandLineProgram {
 	private CloseableIterator<Pair<BreakendSummary, Integer>> getFilteredIterator(GenomicProcessingContext pc, File file, List<Integer> ordinals) {
 		VCFFileReader vcfReader = new VCFFileReader(file, false);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
-		Iterator<Pair<BreakendSummary, Integer>> idsvIt = Iterators.transform(it, variant -> getBreakendSummary(pc, variant, ordinals));
+		Iterator<Pair<BreakendSummary, Integer>> idsvIt = Iterators.transform(it, variant -> getBreakendSummary(pc.getDictionary(), variant, ordinals));
 		Iterator<Pair<BreakendSummary, Integer>> idsvFilteredIt = Iterators.filter(idsvIt, pair -> pair != null && pair.getSecond() > 0);
 		Iterator<Pair<BreakendSummary, Integer>> bpit = new PairBreakendSummaryWindowedSortingIterator(pc.getLinear(), idsvFilteredIt, MAX_BREAKPOINT_HOMOLOGY_LENGTH);
 		return new AutoClosingIterator<>(bpit, it, vcfReader);
 	}
-	private Pair<BreakendSummary, Integer> getBreakendSummary(GenomicProcessingContext pc, VariantContext variant, List<Integer> ordinals) {
-		IdsvVariantContext vc = IdsvVariantContext.create(pc, null, variant);
+	private Pair<BreakendSummary, Integer> getBreakendSummary(SAMSequenceDictionary dict, VariantContext variant, List<Integer> ordinals) {
+		IdsvVariantContext vc = IdsvVariantContext.create(dict, null, variant);
 		if (!INCLUDE_IMPRECISE_CALLS && vc.hasAttribute(VcfSvConstants.IMPRECISE_KEY)) {
 			return null;
 		}

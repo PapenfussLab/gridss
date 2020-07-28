@@ -12,7 +12,7 @@
 # 5+) additional sample BAMs (for somatic calling the primary is typically the first somatic sample)
 #
 ##### CHANGE PATH TO YOUR REFERENCE GENOME
-REFERENCE=../hg19.fa
+REFERENCE=../../ref/hg19.fa
 #####
 BLACKLIST=ENCFF001TDO.bed
 CONTAINER=gridss/gridss

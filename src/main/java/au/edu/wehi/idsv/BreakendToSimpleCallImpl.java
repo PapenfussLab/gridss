@@ -237,7 +237,7 @@ public class BreakendToSimpleCallImpl {
 		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, new Function<VariantContext, IdsvVariantContext>() {
 			@Override
 			public IdsvVariantContext apply(VariantContext arg) {
-				return IdsvVariantContext.create(processContext, null, arg);
+				return IdsvVariantContext.create(processContext.getDictionary(), null, arg);
 			}
 		});
 		while (idsvIt.hasNext()) {

@@ -56,7 +56,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 	public CloseableIterator<VariantContextDirectedEvidence> getBreakends(File file) {
 		VCFFileReader vcfReader = new VCFFileReader(file, false);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
-		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext(), null, variant));
+		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext().getDictionary(), null, variant));
 		Iterator<VariantContextDirectedEvidence> beit = Iterators.filter(idsvIt, VariantContextDirectedEvidence.class);
 		// resort by evidence start
 		beit = new DirectEvidenceWindowedSortingIterator<>(getContext(), SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), beit);
@@ -68,7 +68,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 			inputHeader = vcfReader.getFileHeader();
 		}
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
-		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext(), null, variant));
+		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext().getDictionary(), null, variant));
 		Iterator<IdsvVariantContext> nonbeIt = Iterators.filter(idsvIt, variant -> !(variant instanceof VariantContextDirectedEvidence));
 		// sort back to nominal VCF position
 		Iterator<VariantContextDirectedEvidence> bpit = new VariantContextWindowedSortingIterator<>(getContext(), SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), breakendCalls);

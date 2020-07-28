@@ -9,7 +9,7 @@ import static org.junit.Assert.*;
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_should_handle_f_single_breakend() {
-		BreakendSummary loc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", "A.").log10PError(-1).make()).getBreakendSummary();
+		BreakendSummary loc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", "A.").log10PError(-1).make()).getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
 		assertEquals(1, loc.end);
@@ -17,7 +17,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_b_single_breakend() {
-		BreakendSummary loc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", ".A").log10PError(-1).make()).getBreakendSummary();
+		BreakendSummary loc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", ".A").log10PError(-1).make()).getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
 		assertEquals(1, loc.end);
@@ -25,40 +25,40 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getEvidenceID_should_match_vcf_name() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", "AC[polyA:1[").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", "AC[polyA:1[").id("test").make());
 		assertEquals("test", vc.getEvidenceID());
 	}
 	@Test()
 	public void should_allow_only_single_allele() {
-		assertFalse(new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", "A.", "AA.").id("test").make()).isValid());
+		assertFalse(new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", "A.", "AA.").id("test").make()).isValid());
 	}
 	@Test
 	public void getBreakpointSequence_should_match_f_single_alt_allele() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", "ACGT.").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", "ACGT.").id("test").make());
 		assertEquals("CGT", vc.getBreakpointSequenceString());
 		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getBreakpointSequence_should_match_b_single_alt_allele() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", ".CGTA").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", ".CGTA").id("test").make());
 		assertEquals("CGT", vc.getBreakpointSequenceString());
 		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getBreakpointSequence_should_return_untemplated_sequence_for_partnered_b_breakend() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", "[polyA[CGTA").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", "[polyA[CGTA").id("test").make());
 		assertEquals("CGT", vc.getBreakpointSequenceString());
 		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getBreakpointSequence_should_return_untemplated_sequence_for_partnered_f_breakend() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", "CGTA[polyA[").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().alleles("A", "CGTA[polyA[").id("test").make());
 		assertEquals("GTA", vc.getBreakpointSequenceString());
 		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getBreakendSummary_should_handle_partner_contig() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:5[").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:5[").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
@@ -74,14 +74,14 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	public void should_extend_process_context_sequence_dictionary_when_encountering_named_contig() {
 		GenomicProcessingContext pc = getContext();
 		int seqCount = pc.getDictionary().size();
-		new VariantContextDirectedEvidence(pc, AES(), minimalVariant().chr("<contigNotInReference>").make());
+		new VariantContextDirectedEvidence(pc.getDictionary(), AES(), minimalVariant().chr("<contigNotInReference>").make());
 		assertEquals(seqCount + 1, pc.getDictionary().size());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_not_extend_process_context_sequence_dictionary_when_encountering_named_contig_partner() {
 		GenomicProcessingContext pc = getContext();
 		int seqCount = pc.getDictionary().size();
-		new VariantContextDirectedEvidence(pc, AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<contigNotInReference>:1[").id("test").make());
+		new VariantContextDirectedEvidence(pc.getDictionary(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<contigNotInReference>:1[").id("test").make());
 		assertEquals(seqCount + 1, pc.getDictionary().size());
 	}
 	//@Test
@@ -93,7 +93,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	//}
 	@Test
 	public void getBreakendSummary_should_handle_ff_partner() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT]polyACGT:1234]").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT]polyACGT:1234]").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
@@ -106,7 +106,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_fb_partner() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:1234[").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:1234[").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
@@ -119,7 +119,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_bb_partner() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "[polyACGT:1234[AAAAT").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "[polyACGT:1234[AAAAT").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
@@ -132,7 +132,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_bf_partner() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "]polyACGT:1234]AAAAT").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), minimalVariant().start(1).stop(2).alleles("AA", "]polyACGT:1234]AAAAT").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
@@ -259,7 +259,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 		
 		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence) minimalBreakend()
 			.breakend(new BreakendSummary(0, FWD, 1), b, q).make();
-		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
+		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext().getDictionary(), null, e));
 		assertArrayEquals(q, e.getBreakendQuality());
 	}
 }

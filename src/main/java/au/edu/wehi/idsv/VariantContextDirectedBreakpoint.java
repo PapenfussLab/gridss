@@ -5,14 +5,15 @@ import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.NotImplementedException;
 
 public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvidence implements DirectedBreakpoint {
 	/** */
 	private static final long serialVersionUID = 1L;
-	public VariantContextDirectedBreakpoint(GenomicProcessingContext processContext, EvidenceSource source, VariantContext context) {
-		super(processContext, source, context);
+	public VariantContextDirectedBreakpoint(SAMSequenceDictionary dict, EvidenceSource source, VariantContext context) {
+		super(dict, source, context);
 		assert(super.getBreakendSummary() instanceof BreakpointSummary);
 	}
 	/**
@@ -92,8 +93,8 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 		return new Ordering<VariantContext>() {
 			public int compare(VariantContext o1, VariantContext o2) {
 				// TODO: is this performance acceptable? This is quite an expensive compare operation
-				VcfBreakendSummary b1 = new VcfBreakendSummary(processContext, o1);
-				VcfBreakendSummary b2 = new VcfBreakendSummary(processContext, o2);
+				VcfBreakendSummary b1 = new VcfBreakendSummary(processContext.getDictionary(), o1);
+				VcfBreakendSummary b2 = new VcfBreakendSummary(processContext.getDictionary(), o2);
 				int ref1 = -1;
 				int ref2 = -1;
 				int start1 = 0;

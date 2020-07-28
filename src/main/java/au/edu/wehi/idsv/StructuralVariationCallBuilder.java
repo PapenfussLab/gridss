@@ -222,7 +222,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		updateNominalCallPosition();
 		
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
-		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
+		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext.getDictionary(), null, super.make());
 		variant = applyFilters(variant);
 		//variant = Models.calculateSomatic(variant);
 		return variant;
@@ -631,7 +631,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			for (VcfFilter f : filters) {
 				builder.filter(f.filter());
 			}
-			variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, variant.source, builder.make());
+			variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext.getDictionary(), variant.source, builder.make());
 		}
 		return variant;
 		

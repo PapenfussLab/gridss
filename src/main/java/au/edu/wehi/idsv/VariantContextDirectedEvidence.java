@@ -7,10 +7,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.variant.variantcontext.VariantContext;
 
@@ -32,9 +29,9 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	private static final long serialVersionUID = 1L;
 	private final VcfBreakendSummary breakend;
 	//private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
-	public VariantContextDirectedEvidence(GenomicProcessingContext processContext, EvidenceSource source, VariantContext context) {
-		super(processContext, source, context);
-		this.breakend = new VcfBreakendSummary(processContext, context);
+	public VariantContextDirectedEvidence(SAMSequenceDictionary dict, EvidenceSource source, VariantContext context) {
+		super(dict, source, context);
+		this.breakend = new VcfBreakendSummary(dict, context);
 	}
 	@Override
 	public BreakendSummary getBreakendSummary() {

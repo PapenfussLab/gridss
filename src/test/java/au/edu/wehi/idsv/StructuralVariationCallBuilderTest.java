@@ -967,7 +967,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		Assert.assertEquals("A[polyA:250[", vc.getAlternateAllele(0).toString());
 		Assert.assertEquals(50, vc.getStart());
-		Assert.assertEquals(expected, ((VariantContextDirectedBreakpoint)IdsvVariantContext.create(pc, SES(), vc)).getBreakendSummary());
+		Assert.assertEquals(expected, ((VariantContextDirectedBreakpoint)IdsvVariantContext.create(pc.getDictionary(), SES(), vc)).getBreakendSummary());
 		testFolder.delete();
 	}
 	@Test
@@ -1061,8 +1061,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				.id("eventh")
 				.attribute("EVENT", "event")
 				.make();
-		VariantContextDirectedBreakpoint vcdplow = (VariantContextDirectedBreakpoint)VariantContextDirectedEvidence.create(pc, null, vclow);
-		VariantContextDirectedBreakpoint vcdphigh = (VariantContextDirectedBreakpoint)VariantContextDirectedEvidence.create(pc, null, vchigh);
+		VariantContextDirectedBreakpoint vcdplow = (VariantContextDirectedBreakpoint)VariantContextDirectedEvidence.create(pc.getDictionary(), null, vclow);
+		VariantContextDirectedBreakpoint vcdphigh = (VariantContextDirectedBreakpoint)VariantContextDirectedEvidence.create(pc.getDictionary(), null, vchigh);
 		CalledBreakpointPositionLookup lookup = new CalledBreakpointPositionLookup();
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, lookup, vcdplow);
 		cb.addEvidence(SR(Read(0, 100, "2M6S"), Read(0, 200, "4S2M")));

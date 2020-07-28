@@ -171,7 +171,7 @@ public class IntermediateFilesTest extends TestHelper {
 		VCFFileReader reader = new VCFFileReader(file, false);
 		List<IdsvVariantContext> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
-			list.add(IdsvVariantContext.create(getCommandlineContext(), source == null ? AES() : source, r));
+			list.add(IdsvVariantContext.create(getCommandlineContext().getDictionary(), source == null ? AES() : source, r));
 		}
 		reader.close();
 		return list;
@@ -181,7 +181,7 @@ public class IntermediateFilesTest extends TestHelper {
 		VCFFileReader reader = new VCFFileReader(file, false);
 		List<IdsvVariantContext> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
-			list.add(IdsvVariantContext.create(pc, source, r));
+			list.add(IdsvVariantContext.create(pc.getDictionary(), source, r));
 		}
 		reader.close();
 		return list;

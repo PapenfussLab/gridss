@@ -40,21 +40,21 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, FWD, 1), B("AAA"), quals)
 				.make();
-		v = (VariantContextDirectedEvidence)IdsvVariantContext.create(getContext(), null, v);
+		v = (VariantContextDirectedEvidence)IdsvVariantContext.create(getContext().getDictionary(), null, v);
 		assertArrayEquals(quals, v.getBreakendQuality());
 	}
 	@Test
 	public void getBreakpointSequence_should_get_untemplated_sequence() {
 		VariantContextDirectedEvidence dba = CallSV(AE());
 		assertEquals("TT", S(dba.getBreakendSequence()));
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("TT", S(dba.getBreakendSequence()));
 	}
 	@Test
 	public void should_match_variant_location_f() {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD,
 				null, null, 0, 10, 1, B("AA"), B("AA")));
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getContig());
 		assertEquals(10, dba.getStart());
 		assertEquals(10, dba.getEnd());
@@ -63,7 +63,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	public void should_match_variant_location_b() {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD,
 				null, null, 0, 10, 1, B("AA"), B("AA")));
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getContig());
 		assertEquals(10, dba.getStart());
 		assertEquals(10, dba.getEnd());
@@ -78,7 +78,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 				null, null, 0, 10, 2, B("NNGT"), B("    ")));
 		// ref base + breakpoint
 		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
@@ -87,7 +87,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), BWD,
 				null, null, 0, 10, 2, B("GTNN"), B("    ")));
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedEvidence(getContext().getDictionary(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test

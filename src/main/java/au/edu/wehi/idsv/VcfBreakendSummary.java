@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -19,7 +20,7 @@ public class VcfBreakendSummary {
 	public final BreakendSummary location;
 	public final String breakpointSequence;
 	public final String anchorSequence;
-	public VcfBreakendSummary(GenomicProcessingContext processContext, VariantContext variant) {
+	public VcfBreakendSummary(SAMSequenceDictionary dict, VariantContext variant) {
 		List<Allele> altList = variant.getAlternateAlleles();
 		if (altList.size() != 1) {
 			location = null;
@@ -123,7 +124,7 @@ public class VcfBreakendSummary {
 			}
 		}
 		if (remoteDirection != null) {
-			int remoteReferenceIndex = processContext.getDictionary().getSequenceIndex(remoteContig);
+			int remoteReferenceIndex = dict.getSequenceIndex(remoteContig);
 			if (remoteReferenceIndex < 0) {
 				String msg = String.format("Breakpoint %s at %s:%d to non-reference contig: %s ('%s')",
 				variant.getID(),
@@ -134,10 +135,10 @@ public class VcfBreakendSummary {
 				log.error(msg);
 				throw new IllegalArgumentException(msg);
 			}
-			location = new BreakpointSummary(IdsvVariantContext.getReferenceIndex(processContext, variant), direction, localPosition, localPosition + ciStart, localPosition + ciEnd,
+			location = new BreakpointSummary(dict.getSequenceIndex(variant.getContig()), direction, localPosition, localPosition + ciStart, localPosition + ciEnd,
 					remoteReferenceIndex, remoteDirection, remotePosition, remotePosition + rciStart, remotePosition + rciEnd);
 		} else {
-			location = new BreakendSummary(IdsvVariantContext.getReferenceIndex(processContext, variant), direction, localPosition, localPosition + ciStart, localPosition + ciEnd);
+			location = new BreakendSummary(dict.getSequenceIndex(variant.getContig()), direction, localPosition, localPosition + ciStart, localPosition + ciEnd);
 		}
 	}
 }
