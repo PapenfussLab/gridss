@@ -268,6 +268,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 					"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
 					"INPUT=" + getFile().getPath(),
 					"OUTPUT=" + svFile.getPath(),
+					"READJUST_PRIMARY_ALIGNMENT_POSITION=true",
 					"REALIGN_ENTIRE_READ=" + Boolean.toString(getContext().getConfig().getAssembly().realignContigs));
 			execute(program, args);
 		}
