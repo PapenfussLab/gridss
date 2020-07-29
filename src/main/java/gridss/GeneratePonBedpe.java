@@ -57,10 +57,10 @@ public class GeneratePonBedpe extends CommandLineProgram {
 	public File INPUT_BEDPE = null;
 	@Argument(doc="Existing GRIDSS single breakend PON", optional=true)
 	public File INPUT_BED = null;
-    @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output BEDPE", optional=false)
-    public File OUTPUT_BEDPE;
+    @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output BEDPE", optional=true)
+    public File OUTPUT_BEDPE = new File("gridss_pon_breakpoint.bedpe");
 	@Argument(shortName="SBO", doc="Output BED", optional=false)
-	public File OUTPUT_BED;
+	public File OUTPUT_BED = new File("gridss_pon_single_breakend.bed");;
 	@Argument(shortName="NO", doc="0-based ordinals of the normal samples in the VCF.", optional=false)
     public List<Integer> NORMAL_ORDINAL = new ArrayList<>();
 	@Argument(shortName="Q", doc="Minimum variant quality score for a breakpoint variant to be considered part of the normal.", optional=true)
