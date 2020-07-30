@@ -28,6 +28,7 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class KrakenExtractReadInTaxonomy extends KrakenAnnotate<SAMRecord, String> {
     private final boolean includeSoftClips;
+    private final boolean includeAllReads;
     private final boolean[] taxonomyLookup;
 
     /**
@@ -38,9 +39,10 @@ public class KrakenExtractReadInTaxonomy extends KrakenAnnotate<SAMRecord, Strin
      * @param input             VCF records to annotate
      * @param minSequenceLength
      */
-    public KrakenExtractReadInTaxonomy(KrakenParser krakenOutput, FastqWriter krakenInput, Iterator<SAMRecord> input, int minSequenceLength, boolean includeSoftClips, boolean[] taxonomyLookup) {
+    public KrakenExtractReadInTaxonomy(KrakenParser krakenOutput, FastqWriter krakenInput, Iterator<SAMRecord> input, int minSequenceLength, boolean includeSoftClips, boolean includeAllReads, boolean[] taxonomyLookup) {
         super(krakenOutput, krakenInput, input, minSequenceLength);
         this.includeSoftClips = includeSoftClips;
+        this.includeAllReads = includeAllReads;
         this.taxonomyLookup = taxonomyLookup;
     }
 
@@ -54,9 +56,12 @@ public class KrakenExtractReadInTaxonomy extends KrakenAnnotate<SAMRecord, Strin
 
     @Override
     protected FastqRecord getKrakenFastqRecord(SAMRecord record) {
+        if (record.isSecondaryOrSupplementary()) {
+            return null;
+        }
         byte[] bases = null;
         byte[] quals = null;
-        if (record.getReadUnmappedFlag()) {
+        if (includeAllReads || record.getReadUnmappedFlag()) {
             bases = record.getReadBases();
             quals = record.getBaseQualities();
         } else if (includeSoftClips) {

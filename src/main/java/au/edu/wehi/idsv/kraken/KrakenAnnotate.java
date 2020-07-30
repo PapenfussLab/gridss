@@ -1,20 +1,16 @@
 package au.edu.wehi.idsv.kraken;
 
-import au.edu.wehi.idsv.VcfBreakendSummary;
-import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
-import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeEOFException;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Annotates breakend/breakpoint sequences with NCBI taxonomic identifiers.
@@ -29,6 +25,7 @@ public abstract class KrakenAnnotate<T, U> implements Iterator<U> {
     private KrakenParser krakenOutput;
     private FastqWriter krakenInput;
     private OutstandingRecord<T> nextRecord = null;
+    private AtomicInteger recordsInKrakenPipeline = new AtomicInteger(0);
 
     private static class OutstandingRecord<T> {
         public OutstandingRecord(FastqRecord querySentToKraken, T record) {
@@ -113,6 +110,7 @@ public abstract class KrakenAnnotate<T, U> implements Iterator<U> {
         FastqRecord fqr = getKrakenFastqRecord(record);
         if (fqr != null && fqr.getReadLength() >= minSequenceLength) {
             outstanding.add(new OutstandingRecord(fqr, record));
+            recordsInKrakenPipeline.incrementAndGet();
             krakenInput.write(fqr);
         } else {
             if (shouldReturnUnprocessedRecords()) {
@@ -120,21 +118,14 @@ public abstract class KrakenAnnotate<T, U> implements Iterator<U> {
             }
         }
     }
-
     private void feedKrakenInput(Iterator<T> input) {
         log.debug("Kraken worker thread started");
         while (input.hasNext()) {
             T record = input.next();
             process(record);
         }
-        if (krakenInput instanceof Flushable) {
-            try {
-                ((Flushable) krakenInput).flush();
-            } catch (IOException e) {
-                log.error(e);
-            }
-        }
         outstanding.add(END_OF_STREAM);
+        krakenInput.close();
         log.debug("Kraken worker thread complete");
     }
 }
