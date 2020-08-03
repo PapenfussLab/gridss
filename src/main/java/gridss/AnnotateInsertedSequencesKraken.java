@@ -2,14 +2,9 @@ package gridss;
 
 import au.edu.wehi.idsv.kraken.KrakenAnnotateVcf;
 import au.edu.wehi.idsv.kraken.KrakenParser;
-import au.edu.wehi.idsv.ncbi.TaxonomyHelper;
 import au.edu.wehi.idsv.vcf.GridssVcfConstants;
-import com.google.common.collect.Lists;
 import htsjdk.samtools.*;
 import htsjdk.samtools.fastq.BasicFastqWriter;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.fastq.FastqWriter;
-import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.*;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
@@ -21,9 +16,6 @@ import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.CommandLineProgram;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.*;
 
 @CommandLineProgramProperties(
         summary = "Annotate single breakends and breakend inserted sequences with a NCBI taxonomy ID. " +
@@ -31,14 +23,14 @@ import java.util.*;
         oneLineSummary = "Annotate VCFs and extract reads based on kraken2 classification",
         programGroup=gridss.cmdline.programgroups.DataConversion.class
 )
-public class AnnotateVariantsKraken extends CommandLineProgram {
-    private static final Log log = Log.getInstance(AnnotateVariantsKraken.class);
+public class AnnotateInsertedSequencesKraken extends CommandLineProgram {
+    private static final Log log = Log.getInstance(AnnotateInsertedSequencesKraken.class);
     @Argument(doc="Output to be fed as the input to Kraken2. Should be a pipe.")
     public File FASTQ_PIPE_TO_KRAKEN;
     @Argument(doc="Kraken2 output to be read by this program.")
     public File OUTPUT_PIPE_FROM_KRAKEN;
     @Argument(doc="Minimum length of sequence to perform classification on.", optional=true)
-    public int MIN_SEQUENCE_LENGTH = 25;
+    public int MIN_SEQUENCE_LENGTH = 20;
     @Argument(doc="GRIDSS VCF of calls generated from the input file.")
     public File INPUT_VCF;
     @Argument(doc="GRIDSS VCF annotated with kraken taxonomic identifiers")
@@ -81,6 +73,6 @@ public class AnnotateVariantsKraken extends CommandLineProgram {
     }
 
     public static void main(String[] argv) {
-        System.exit(new AnnotateVariantsKraken().instanceMain(argv));
+        System.exit(new AnnotateInsertedSequencesKraken().instanceMain(argv));
     }
 }

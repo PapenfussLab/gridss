@@ -57,7 +57,7 @@ public class ExtractFromTaxonomy extends CommandLineProgram {
     @Argument(doc="File to extract second read in pair to. Requires second pass over input file.", optional=true)
     public File EXTRACTION_OUTPUT_FQ2;
     @Argument(doc="Minimum length of sequence to perform classification on.", optional=true)
-    public int MIN_SEQUENCE_LENGTH = 25;
+    public int MIN_SEQUENCE_LENGTH = 20;
     @Argument(doc="Extract fragments mapping to the reference genome", optional=true)
     public boolean INCLUDE_MAPPED_FRAGMENTS_READS = false;
     @Argument(doc="Check taxonomy of soft clipped sequence when considering candidates for extraction.", optional=true)
