@@ -5,7 +5,6 @@ import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.bed.FullBEDFeature;
 
 import java.awt.*;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 

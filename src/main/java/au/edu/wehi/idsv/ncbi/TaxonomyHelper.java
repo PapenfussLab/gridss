@@ -3,12 +3,10 @@ package au.edu.wehi.idsv.ncbi;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * In-memory representation of the NCBI Taxonomy

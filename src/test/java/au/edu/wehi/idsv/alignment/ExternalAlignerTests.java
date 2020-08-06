@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.alignment;
 
-import au.edu.wehi.idsv.Hg19Tests;
 import au.edu.wehi.idsv.ReferenceTests;
 import gridss.SoftClipsToSplitReads;
 import org.apache.commons.lang3.SystemUtils;

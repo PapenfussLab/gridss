@@ -8,9 +8,7 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.Log;
-import joptsimple.internal.Strings;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.ArrayList;

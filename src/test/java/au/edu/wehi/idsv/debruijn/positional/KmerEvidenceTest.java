@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.*;
-import htsjdk.samtools.SAMRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.Assert;
 import org.junit.Ignore;

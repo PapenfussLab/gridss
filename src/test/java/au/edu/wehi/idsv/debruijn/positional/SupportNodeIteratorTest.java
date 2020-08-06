@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.ImmutableList;

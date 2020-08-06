@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import assfolder.Read;
 import au.edu.wehi.idsv.model.EmpiricalReferenceLikelihoodModel;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
@@ -11,7 +10,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.*;
-import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import org.junit.Assert;
 import org.junit.Test;

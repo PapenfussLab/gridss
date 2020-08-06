@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.alignment.BreakpointHomology;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import org.junit.Assert;

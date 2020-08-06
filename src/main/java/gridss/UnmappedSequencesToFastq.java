@@ -1,7 +1,6 @@
 package gridss;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
-import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;

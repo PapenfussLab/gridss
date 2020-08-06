@@ -1,18 +1,19 @@
 package au.edu.wehi.idsv.alignment;
 
-import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.Hg19Tests;
+import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
-import au.edu.wehi.idsv.util.SequenceUtil;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 
 import static org.junit.Assert.assertEquals;

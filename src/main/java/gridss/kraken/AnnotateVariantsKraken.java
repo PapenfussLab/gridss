@@ -2,9 +2,7 @@ package gridss.kraken;
 
 import au.edu.wehi.idsv.kraken.AnnotateKraken;
 import au.edu.wehi.idsv.kraken.KrakenParser;
-import au.edu.wehi.idsv.vcf.GridssVcfConstants;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
-import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;

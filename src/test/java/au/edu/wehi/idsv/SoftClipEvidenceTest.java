@@ -10,7 +10,6 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 import static au.edu.wehi.idsv.sam.SamTags.IS_ASSEMBLY;

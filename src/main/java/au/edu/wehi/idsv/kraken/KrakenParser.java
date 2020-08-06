@@ -3,7 +3,9 @@ package au.edu.wehi.idsv.kraken;
 import htsjdk.samtools.util.RuntimeIOException;
 import joptsimple.internal.Strings;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 

@@ -1,7 +1,6 @@
 package gridss.kraken;
 
 import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.vcf.GridssVcfConstants;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -14,7 +13,8 @@ import htsjdk.variant.vcf.VCFHeader;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;

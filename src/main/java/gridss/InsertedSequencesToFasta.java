@@ -2,7 +2,7 @@ package gridss;
 
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.VcfBreakendSummary;
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -14,7 +14,9 @@ import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 @CommandLineProgramProperties(

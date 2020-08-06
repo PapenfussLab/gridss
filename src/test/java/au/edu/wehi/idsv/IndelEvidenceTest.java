@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
-import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Assert;
 import org.junit.Ignore;

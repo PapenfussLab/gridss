@@ -1,8 +1,9 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.alignment.*;
-
-import java.io.File;
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.alignment.ExternalAlignerTests;
+import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
+import au.edu.wehi.idsv.alignment.SmithWatermanFastqAligner;
 
 public class IterativeSplitReadRealignerTest extends SplitReadRealignerTest {
     private static final SmithWatermanFastqAligner aligner = new SmithWatermanFastqAligner(AlignerFactory.create(), 2);
