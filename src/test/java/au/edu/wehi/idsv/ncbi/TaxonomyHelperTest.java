@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 public class TaxonomyHelperTest {
     @Test
@@ -25,6 +26,7 @@ public class TaxonomyHelperTest {
         Assert.assertEquals("CG", result[11].emblCode);
         Assert.assertEquals("effective current name;", result[11].comments);
     }
+
     @Test
     public void lookupShouldIncludeEntireTree() throws IOException {
         boolean[] lookup = TaxonomyHelper.createInclusionLookup(ImmutableList.of(9606), TaxonomyHelper.parseMinimal(new File("src/test/resources/ncbi/homo_sapiens.nodes.dmp")));

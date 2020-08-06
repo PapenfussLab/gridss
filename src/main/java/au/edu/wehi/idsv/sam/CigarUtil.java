@@ -28,6 +28,20 @@ public class CigarUtil {
 		return length;
 	}
 	/**
+	 * Returns the number of read bases 'consumed' by the given cigar, including hard clipped bases.
+	 * @param list
+	 * @return base count
+	 */
+	public static int readLengthIncludingHardClipping(List<CigarElement> list) {
+		int length = 0;
+		for (CigarElement e : list) {
+			if (e.getOperator().consumesReadBases() || e.getOperator() == CigarOperator.HARD_CLIP) {
+				length += e.getLength();
+			}
+		}
+		return length;
+	}
+	/**
 	 * Returns the number of reference bases 'consumed' by the given cigar 
 	 * @param list
 	 * @return base count

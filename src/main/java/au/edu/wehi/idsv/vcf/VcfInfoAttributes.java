@@ -78,7 +78,7 @@ public enum VcfInfoAttributes {
 	INSERTED_SEQUENCE_REPEATMASKER_REPEAT_CLASS("INSRMRC", 1, VCFHeaderLineType.String, "Inserted sequence repeatmasker repeat class."),
 	INSERTED_SEQUENCE_REPEATMASKER_ORIENTATION("INSRMRO", 1, VCFHeaderLineType.String, "Inserted sequence repeatmasker repeat orientation."),
 	INSERTED_SEQUENCE_REPEATMASKER_OVERLAP("INSRMP", 1, VCFHeaderLineType.Float, "Portion of inserted sequence whose alignment overlaps the repeatmasker repeat. 1.0 indicates the inserted sequence entirely mapping to the repeat."),
-	INSERTED_SEQUENCE_NCBI_TAXONOMY_ID("INSTAXID", 1, VCFHeaderLineType.Float, "NCBI Taxonomy identifier for inserted sequence.");
+	INSERTED_SEQUENCE_NCBI_TAXONOMY_ID("INSTAXID", 1, VCFHeaderLineType.Integer, "NCBI Taxonomy identifier for inserted sequence.");
 
 	private final VCFInfoHeaderLine header;
 	private final String tag;

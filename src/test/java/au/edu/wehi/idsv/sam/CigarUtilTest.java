@@ -27,6 +27,10 @@ public class CigarUtilTest {
 		assertEquals(7, CigarUtil.readLength(C("1M2I5D2M2S1H")));
 	}
 	@Test
+	public void readLengthIncludingHardClipping_should_include_hard_clips() {
+		assertEquals(14, CigarUtil.readLengthIncludingHardClipping(C("1M2I5D2M2S7H")));
+	}
+	@Test
 	public void referenceLength_should_match_reference_length() {
 		assertEquals(5, CigarUtil.referenceLength(C("1M5I2D2X")));
 	}

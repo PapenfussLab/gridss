@@ -1,7 +1,15 @@
 package au.edu.wehi.idsv.kraken;
 
 public class KrakenClassification {
+    private final String line;
+    public final boolean isClassified;
+    public final String sequenceId;
+    public final int taxonomyId;
+
+    public String toKrakenOutput() { return line; }
+
     public KrakenClassification(String line) {
+        this.line = line;
         String[] fields = line.split("\t");
         // "C"/"U": a one letter code indicating that the sequence was either classified or unclassified.
         this.isClassified = "C".equals(fields[0]);
@@ -15,9 +23,6 @@ public class KrakenClassification {
         // A space-delimited list indicating the LCA mapping of each k-mer in the sequence(s). For example, "562:13 561:4 A:31 0:1 562:3" would indicate that:
         // When Kraken 2 is run against a protein database (see [Translated Search]), the LCA hitlist will contain the results of querying all six frames of each sequence. Reading frame data is separated by a "-:-" token.
     }
-    public boolean isClassified;
-    public final String sequenceId;
-    public final int taxonomyId;
     //public final IntList kmerRleLCA = new IntArrayList();
     //public final IntList kmerRleLength = new IntArrayList();
 }

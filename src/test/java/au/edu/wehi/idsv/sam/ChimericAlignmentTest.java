@@ -1,6 +1,11 @@
 package au.edu.wehi.idsv.sam;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import htsjdk.samtools.TextCigarCodec;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
@@ -32,9 +37,26 @@ public class ChimericAlignmentTest {
 		assertEquals(null, new ChimericAlignment(sa).nm);
 	}
 	@Test
-	public void getFirstAlignedBaseReadOffset_should_consider_strand() {
+	public void getAlignedBaseReadOffset_should_consider_strand() {
+		// 0123456789
+		// sMMssshhhh
 		assertEquals(1, new ChimericAlignment(null, 0, false, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getFirstAlignedBaseReadOffset());
+		assertEquals(2, new ChimericAlignment(null, 0, false, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getLastAlignedBaseReadOffset());
+		// 0123456789
+		// hhhhsssMMs
 		assertEquals(7, new ChimericAlignment(null, 0, true, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getFirstAlignedBaseReadOffset());
+		assertEquals(8, new ChimericAlignment(null, 0, true, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getLastAlignedBaseReadOffset());
+	}
+	@Test
+	public void getAlignedBaseReadOffset_should_include_hard_clipping() {
+		// 01234567
+		//  MM
+		assertEquals(1, new ChimericAlignment(null, 0, false, TextCigarCodec.decode("1H2M3H"), 0, 0).getFirstAlignedBaseReadOffset());
+		assertEquals(2, new ChimericAlignment(null, 0, false, TextCigarCodec.decode("1H2M3H"), 0, 0).getLastAlignedBaseReadOffset());
+		// 012345
+		// hhhMMh
+		assertEquals(3, new ChimericAlignment(null, 0, true, TextCigarCodec.decode("1H2M3H"), 0, 0).getFirstAlignedBaseReadOffset());
+		assertEquals(4, new ChimericAlignment(null, 0, true, TextCigarCodec.decode("1H2M3H"), 0, 0).getLastAlignedBaseReadOffset());
 	}
 	@Test
 	public void should_support_BELAN_format_with_HLA_types() {
@@ -57,5 +79,76 @@ public class ChimericAlignmentTest {
 		String bealn = "SN:HLA-DRB1*15:03:01:01:1-1:107870|-|8817S631M318S|";
 		ChimericAlignment ca = ChimericAlignment.parseBEALNAlignment(bealn);
 		assertEquals(255, ca.mapq);
+	}
+
+	@Test
+	public void intervals_should_merge_overlapping() {
+		String saz = "polyA,1,+,5S10M,0,0;polyA,1,+,10M5S,0,0";
+		List<ChimericAlignment> list = ChimericAlignment.getChimericAlignments(saz);
+		RangeSet<Integer> rs = ChimericAlignment.getAlignedIntervals(list);
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(0, 15))),
+				ChimericAlignment.getAlignedIntervals(list));
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				)),
+				ChimericAlignment.getUnalignedIntervals(list));
+	}
+	@Test
+	public void intervals_should_merge_adjacent() {
+		String saz = "polyA,1,+,7S8M,0,0;polyA,1,+,7M8S,0,0";
+		List<ChimericAlignment> list = ChimericAlignment.getChimericAlignments(saz);
+		RangeSet<Integer> rs = ChimericAlignment.getAlignedIntervals(list);
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(0, 15))),
+				ChimericAlignment.getAlignedIntervals(list));
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				)),
+				ChimericAlignment.getUnalignedIntervals(list));
+	}
+
+	@Test
+	public void intervals_should_union_aligned() {
+		// 01234567
+		// M MM MMM
+		String saz = "polyA,1,+,1M7S,0,0;polyA,1,+,2S2M4S,0,0;polyA,1,+,5S3M,0,0;";
+		List<ChimericAlignment> list = ChimericAlignment.getChimericAlignments(saz);
+		RangeSet<Integer> rs = ChimericAlignment.getAlignedIntervals(list);
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(0, 1),
+				Range.closedOpen(2, 4),
+				Range.closedOpen(5, 8))),
+				ChimericAlignment.getAlignedIntervals(list));
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(1, 2),
+				Range.closedOpen(4, 5))),
+				ChimericAlignment.getUnalignedIntervals(list));
+	}
+	@Test
+	public void intervals_should_consider_strand() {
+		// 01234567
+		// >>
+		//   <<<<<
+		String saz = "polyA,1,+,2M6S,0,0;polyA,1,-,1S5M2S,0,0";
+		List<ChimericAlignment> list = ChimericAlignment.getChimericAlignments(saz);
+		RangeSet<Integer> rs = ChimericAlignment.getAlignedIntervals(list);
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(0, 7))),
+				ChimericAlignment.getAlignedIntervals(list));
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(7, 8))),
+				ChimericAlignment.getUnalignedIntervals(list));
+	}
+
+	@Test
+	public void intervals_should_convert_hard_clipping() {
+		String saz = "polyA,1,+,5H10M,0,0";
+		List<ChimericAlignment> list = ChimericAlignment.getChimericAlignments(saz);
+		RangeSet<Integer> rs = ChimericAlignment.getAlignedIntervals(list);
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(5, 15))),
+				ChimericAlignment.getAlignedIntervals(list));
+		Assert.assertEquals(TreeRangeSet.create(ImmutableList.of(
+				Range.closedOpen(0, 5))),
+				ChimericAlignment.getUnalignedIntervals(list));
 	}
 }

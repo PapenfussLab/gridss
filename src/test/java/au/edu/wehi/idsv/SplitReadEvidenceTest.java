@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import assfolder.Read;
 import au.edu.wehi.idsv.model.EmpiricalReferenceLikelihoodModel;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
@@ -717,5 +718,13 @@ public class SplitReadEvidenceTest extends TestHelper {
 		Assert.assertEquals(1, e2.size());
 		Assert.assertTrue(e1.get(0).isEntirelyContainedInAssemblyAnchor());
 		Assert.assertTrue(e2.get(0).isEntirelyContainedInAssemblyAnchor());
+	}
+	@Test
+	public void test_isReference_getLastAlignedBaseReadOffset() {
+		SAMRecord r = Read(1, 1, "50S50M");
+		r.setReadNegativeStrandFlag(true);
+		r.setAttribute("SA", "polyACGT,1,-,50M50S,0,0");
+		SplitReadEvidence sre = SplitReadEvidence.create(SES(), r).get(0);
+		Assert.assertFalse(sre.isReference());
 	}
 }

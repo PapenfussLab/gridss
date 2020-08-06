@@ -3,6 +3,9 @@ package au.edu.wehi.idsv.sam;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import com.google.common.primitives.Ints;
 import htsjdk.samtools.*;
 import joptsimple.internal.Strings;
@@ -84,6 +87,36 @@ public class ChimericAlignment {
 		return getChimericAlignments(r.getStringAttribute(SAMTag.SA.name()));
 	}
 
+	/**
+	 * Returns the half-open intervals over which the read is aligned.
+	 * @param ca read alignments
+	 * @return Intervals over which the read is aligned in read offset coordinate space.
+	 */
+	public static RangeSet<Integer> getAlignedIntervals(List<ChimericAlignment> ca) {
+		RangeSet<Integer> rs = TreeRangeSet.create();
+		for (ChimericAlignment x : ca) {
+			int first = x.getFirstAlignedBaseReadOffset();
+			int last = x.getLastAlignedBaseReadOffset();
+			rs.add(Range.closedOpen(Math.min(first, last), Math.max(first, last) + 1));
+		}
+		return rs;
+	}
+	/**
+	 * Returns the half-open intervals over which the read is not aligned.
+	 * @param ca read alignments
+	 * @return Intervals over which the read is aligned in read offset coordinate space.
+	 */
+	public static RangeSet<Integer> getUnalignedIntervals(List<ChimericAlignment> ca) {
+		int readLength = 0;
+		for (ChimericAlignment x : ca) {
+			readLength = Math.max(readLength, CigarUtil.readLengthIncludingHardClipping(x.cigar.getCigarElements()));
+		}
+		RangeSet<Integer> rs = getAlignedIntervals(ca);
+		rs = rs.complement();
+		rs = rs.subRangeSet(Range.closedOpen(0, readLength));
+		return rs;
+	}
+
 	public static ChimericAlignment parseBEALNAlignment(String bealn) {
 		String[] parts = bealn.split("[|]");
 		String chrpos = parts[0];
@@ -125,12 +158,12 @@ public class ChimericAlignment {
 		return isNegativeStrand ? CigarUtil.getEndClipLength(cigar.getCigarElements()) : CigarUtil.getStartClipLength(cigar.getCigarElements());
 	}
 	public int getLastAlignedBaseReadOffset() {
-		return cigar.getReadLength() - 1 - (isNegativeStrand ? CigarUtil.getStartClipLength(cigar.getCigarElements()) : CigarUtil.getEndClipLength(cigar.getCigarElements()));
+		return CigarUtil.readLengthIncludingHardClipping(cigar.getCigarElements()) - 1 - (isNegativeStrand ? CigarUtil.getStartClipLength(cigar.getCigarElements()) : CigarUtil.getEndClipLength(cigar.getCigarElements()));
 	}
 	public int overlappingBases(SAMSequenceDictionary dict, ChimericAlignment ca) {
 		return SAMRecordUtil.overlappingBases(
-				dict.getSequenceIndex(rname), pos, isNegativeStrand, cigar,
-				dict.getSequenceIndex(ca.rname), ca.pos, ca.isNegativeStrand, ca.cigar);
+				rnameToReferenceIndex(dict, rname), pos, isNegativeStrand, cigar,
+				rnameToReferenceIndex(dict, ca.rname), ca.pos, ca.isNegativeStrand, ca.cigar);
 	}
 	@Override
 	public String toString() {

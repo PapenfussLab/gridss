@@ -3,15 +3,18 @@ package au.edu.wehi.idsv.ncbi;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * In-memory representation of the NCBI Taxonomy
  */
 public abstract class TaxonomyHelper {
+    public static final int MAX_NCBI_TAXID = 2758539;
     /**
      * Parses nodes.dmp from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip
      *
