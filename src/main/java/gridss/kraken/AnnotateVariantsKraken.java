@@ -20,8 +20,8 @@ import picard.cmdline.StandardOptionDefinitions;
 import java.io.*;
 
 @CommandLineProgramProperties(
-        summary = "Annotates breakpoint variant calls with Kraken2 classifications",
-        oneLineSummary = "Annotates breakpoint variant calls Kraken2 classifications",
+        summary = "Annotates single breakend and breakpoint inserted sequences with Kraken2 classifications",
+        oneLineSummary = "Annotates single breakend and breakpoint inserted sequences Kraken2 classifications",
         programGroup = gridss.cmdline.programgroups.VariantCalling.class
 )
 public class AnnotateVariantsKraken extends CommandLineProgram {
