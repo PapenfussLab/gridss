@@ -19,7 +19,7 @@ EX_CONFIG=78
 
 USAGE_MESSAGE="
 Usage: gridss_annotate_vcf_kraken2.sh [--db standard] -o output.vcf input.vcf
-	-o,--output: output file. Defaults to stdout.
+	-o,--output: output vcf file. Defaults to stdout.
 	-j/--jar: location of GRIDSS jar
 	--db: kraken2 database
 	--threads: number of threads to use. Defaults to the number of cores available.

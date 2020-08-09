@@ -1,6 +1,7 @@
 package gridss.kraken;
 
 import au.edu.wehi.idsv.kraken.KrakenClassification;
+import au.edu.wehi.idsv.kraken.KrakenKmerClassification;
 import au.edu.wehi.idsv.kraken.KrakenParser;
 import au.edu.wehi.idsv.ncbi.TaxonomyHelper;
 import com.google.common.collect.Lists;
@@ -34,6 +35,8 @@ public class SubsetToTaxonomy extends CommandLineProgram {
     public List<Integer> TAXONOMY_IDS = Lists.newArrayList(NCBI_VIRUS_TAXID);
     @Argument(doc="NCBI taxonomy nodes.dmp. Download and extract from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip")
     public File NCBI_NODES_DMP;
+    @Argument(doc="Include in output if any kmer unambiguously matches the taxonomic classification.", optional = true)
+    public Boolean ANY_KMER = true;
 
     public enum OutputFormat {
         /**
@@ -58,7 +61,7 @@ public class SubsetToTaxonomy extends CommandLineProgram {
             try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(OUTPUT))) {
                 while (parser.hasNext()) {
                     KrakenClassification kc = parser.next();
-                    if (taxIdLookup[kc.taxonomyId]) {
+                    if (matches(taxIdLookup, kc)) {
                         switch (FORMAT) {
                             case READ_NAME:
                                 os.write(kc.sequenceId.getBytes(StandardCharsets.UTF_8));
@@ -76,6 +79,19 @@ public class SubsetToTaxonomy extends CommandLineProgram {
             throw new RuntimeIOException(e);
         }
         return 0;
+    }
+    private boolean matches(boolean[] taxIdLookup, KrakenClassification kc) {
+        if (taxIdLookup[kc.taxonomyId]) {
+            return true;
+        }
+        if (ANY_KMER) {
+            for (KrakenKmerClassification kkc : kc.kmerTaxonomyIds) {
+                if (taxIdLookup[kkc.taxonomyId]) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static void main(String[] argv) {
