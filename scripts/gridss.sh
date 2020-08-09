@@ -28,7 +28,7 @@ Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly 
 	-r/--reference: reference genome to use. Must have a .fai index file and a bwa index.
 	-o/--output: output VCF.
 	-a/--assembly: location of the GRIDSS assembly BAM. This file will be created by GRIDSS.
-	-t/--threads: number of threads to use. Defaults to the number of cores available.
+	-t/--threads: number of threads to use. Defaults to 8.
 	-j/--jar: location of GRIDSS jar
 	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. Defaults to the current directory.
 	-b/--blacklist: BED file containing regions to ignore

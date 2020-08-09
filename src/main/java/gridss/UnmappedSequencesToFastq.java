@@ -30,8 +30,8 @@ import java.util.List;
 )
 public class UnmappedSequencesToFastq extends CommandLineProgram {
 	private static final Log log = Log.getInstance(UnmappedSequencesToFastq.class);
-	@Argument(shortName= StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input SAM/BAM file")
-	public File INPUT;
+	@Argument(shortName= StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input SAM/BAM files")
+	public List<File> INPUT;
 	@Argument(shortName= StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output fastq file")
 	public File OUTPUT;
 	@Argument(doc="Minimum length of sequence export. " +
@@ -49,16 +49,20 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 
 	@Override
 	protected int doWork() {
-		IOUtil.assertFileIsReadable(INPUT);
+		for (File input : INPUT) {
+			IOUtil.assertFileIsReadable(input);
+		}
 		IOUtil.assertFileIsWritable(OUTPUT);
-		try (SamReader reader = SamReaderFactory.makeDefault().open(INPUT)) {
-			try (SAMRecordIterator it = reader.iterator()) {
-				try (FastqWriter fqw = new FastqWriterFactory().newWriter(OUTPUT)) {
-					while (it.hasNext()) {
-						SAMRecord r = it.next();
-						FastqRecord fq = getUnmappedFastqRecord(r);
-						if (fq != null && fq.getReadLength() >= MIN_SEQUENCE_LENGTH) {
-							fqw.write(fq);
+		try (FastqWriter fqw = new FastqWriterFactory().newWriter(OUTPUT)) {
+			for (File input : INPUT) {
+				try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {
+					try (SAMRecordIterator it = reader.iterator()) {
+						while (it.hasNext()) {
+							SAMRecord r = it.next();
+							FastqRecord fq = getUnmappedFastqRecord(r);
+							if (fq != null && fq.getReadLength() >= MIN_SEQUENCE_LENGTH) {
+								fqw.write(fq);
+							}
 						}
 					}
 				}
