@@ -24,8 +24,6 @@ output_vcf=""
 threads=8
 kraken2args=""
 gridssargs=""
-force="false"
-keepTempFiles="false"
 nodesdmp="nodes.dmp"
 minreads="50"
 viralgenomes="1"
@@ -49,8 +47,8 @@ Usage: virusbreakend.sh [options] input.bam
 	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
 	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
-OPTIONS=o:t:j:w:fr:
-LONGOPTS=output:,jar:,threads:,workingdir:,db:,kraken2args:,gridssargs:,force,keepTempFiles,nodesdmp:,minreads:
+OPTIONS=o:t:j:w:r:
+LONGOPTS=output:,jar:,threads:,workingdir:,db:,kraken2args:,gridssargs:,nodesdmp:,minreads:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -94,14 +92,6 @@ while true; do
 			gridssargs=$2
 			shift 2
 			;;
-		-f|--force)
-			force="true"
-			shift 1
-			;;
-		--keepTempFiles)
-			keepTempFiles="true"
-			shift 1
-			;;
 		--nodesdmp)
 			nodesdmp="$2"
 			shift 2
@@ -120,36 +110,42 @@ while true; do
 			;;
 	esac
 done
-##### --workingdir
-echo "Using working directory \"$workingdir\"" 1>&2
-if [[ "$workingdir" == "" ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
+write_status() { # Before logging initialised
+	echo "$(date): $1" 1>&2
+}
+if [[ "$output_vcf" == "" ]] ; then
+	write_status "$USAGE_MESSAGE"
+	write_status "Output VCF not specified. Use --output to specify output file."
 	exit $EX_USAGE
 fi
+##### --workingdir
+write_status "Using working directory \"$workingdir\""
+if [[ "$workingdir" == "" ]] ; then
+	$working_dir="$(dirname $output_vcf)"
+fi
 if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
-		echo "workingdir cannot contain whitespace" 1>&2
+		write_status "workingdir cannot contain whitespace"
 		exit $EX_USAGE
 	fi
+workingdir=$(dirname $workingdir/placeholder)
+workingdir=$workingdir/$(basename $output_vcf).virusbreakend.working
 if [[ ! -d $workingdir ]] ; then
 	mkdir -p $workingdir
 	if [[ ! -d $workingdir ]] ; then
-		echo Unable to create working directory $workingdir 1>&2
+		write_status "Unable to create $workingdir"
 		exit $EX_CANTCREAT
 	fi
 fi
-
-workingdir=$(dirname $workingdir/placeholder)
 timestamp=$(date +%Y%m%d_%H%M%S)
 # Logging
-logfile=$workingdir/virusbreakend.full.$timestamp.$HOSTNAME.$$.log
+logfile=$workingdir/full.$timestamp.$HOSTNAME.$$.log
 # $1 is message to write
-write_status() {
+write_status() { # After logging initialised
 	echo "$(date): $1" | tee -a $logfile 1>&2
 }
 write_status "Full log file is: $logfile"
 # Timing instrumentation
-timinglogfile=$workingdir/virusbreakend.timing.$timestamp.$HOSTNAME.$$.log
+timinglogfile=$workingdir/timing.$timestamp.$HOSTNAME.$$.log
 if which /usr/bin/time >/dev/null ; then
 	timecmd="/usr/bin/time"
 	write_status "Found /usr/bin/time"
@@ -192,17 +188,12 @@ if [ ! -f $reference ] ; then
 	write_status "Missing reference genome $reference. Specify reference location using the --reference command line argument"
 	exit $EX_USAGE
 fi
-if [[ "$output_vcf" == "" ]] ; then
-		write_status "$USAGE_MESSAGE"
-		write_status "Output VCF not specified. Use --output to specify output file."
-		exit $EX_USAGE
-	fi
-	mkdir -p $(dirname $output_vcf)
-	if [[ ! -d $(dirname $output_vcf) ]] ; then
-		write_status "Unable to create directory for $output_vcf for output VCF."
-		exit $EX_CANTCREAT
-	fi
-	write_status "Using output VCF $output_vcf"
+mkdir -p $(dirname $output_vcf)
+if [[ ! -d $(dirname $output_vcf) ]] ; then
+	write_status "Unable to create directory for $output_vcf for output VCF."
+	exit $EX_CANTCREAT
+fi
+write_status "Using output VCF $output_vcf"
 ##### --threads
 if [[ "$threads" -lt 1 ]] ; then
 	write_status "$USAGE_MESSAGE"
@@ -304,17 +295,7 @@ jvm_args=" \
 	-Dsamjdk.buffer_size=4194304 \
 	-Dsamjdk.async_io_read_threads=$threads"
 
-virusbreakend_working_dir=$(basename $output_vcf).sbivi.working
-if [[ $force == "false" ]] ; then
-	if [[ -d $virusbreakend_working_dir ]] ; then
-		write_status "Found existing working directory $virusbreakend_working_dir."
-		write_status "Continuing without deletion intermediate files could result in data corruption."
-		write_status "Delete the working directory or continue using -f or --force."
-		exit $EX_CANTCREAT
-	fi
-fi
-mkdir -p $virusbreakend_working_dir
-file_prefix=$virusbreakend_working_dir/$(basename $output_vcf)
+file_prefix=$workingdir/$(basename $output_vcf)
 file_assembly=$file_prefix.assembly.bam
 file_gridss_vcf=$file_prefix.gridss.vcf
 file_host_annotated_vcf=$file_prefix.gridss.host_annotated.vcf
@@ -385,7 +366,7 @@ fi
 
 gridss_input_args=""
 for f in $@ ; do
-	infile_prefix=$virusbreakend_working_dir/$(basename $f)
+	infile_prefix=$workingdir/$(basename $f)
 	infile_fq=$infile_prefix.viral.unpaired.fq
 	infile_fq1=$infile_prefix.viral.R1.fq
 	infile_fq2=$infile_prefix.viral.R2.fq
@@ -415,8 +396,8 @@ for f in $@ ; do
 		&& samtools index $infile_bam \
 		; } 1>&2 2>> $logfile
 	fi
-	gridss_dir=$virusbreakend_working_dir/$(basename $f).viral.bam.gridss.working
-	gridss_prefix=$virusbreakend_working_dir/$(basename $f).viral.bam.gridss.working/$(basename $f).viral.bam
+	gridss_dir=$workingdir/$(basename $f).viral.bam.gridss.working
+	gridss_prefix=$workingdir/$(basename $f).viral.bam.gridss.working/$(basename $f).viral.bam
 	if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
 		write_status "Gathering metrics from host alignment	$f"
 		# Ideally the metrics on the viral sequence would match the metrics from the host.
@@ -432,7 +413,7 @@ for f in $@ ; do
 			--OUTPUT $gridss_prefix \
 			--REFERENCE_SEQUENCE $reference \
 			--THRESHOLD_COVERAGE $metricsmaxcoverage \
-			--TMP_DIR $virusbreakend_working_dir \
+			--TMP_DIR $workingdir \
 			--FILE_EXTENSION null \
 			--STOP_AFTER $metricsrecords \
 		; } 1>&2 2>> $logfile
@@ -442,7 +423,7 @@ done
 if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
 	{ $timecmd gridss.sh \
-		-w $virusbreakend_working_dir \
+		-w $workingdir \
 		-t $threads \
 		-r $file_viral_fa \
 		-j $gridss_jar \
@@ -458,8 +439,8 @@ if [[ ! -f $file_host_annotated_vcf ]] ; then
 	{ $timecmd java -Xmx4g $jvm_args \
 			-Dgridss.output_to_temp_file=true \
 			-cp $gridss_jar gridss.AnnotateInsertedSequence \
-			--TMP_DIR $virusbreakend_working_dir \
-			--WORKING_DIR $virusbreakend_working_dir \
+			--TMP_DIR $workingdir \
+			--WORKING_DIR $workingdir \
 			--REFERENCE_SEQUENCE $reference \
 			--WORKER_THREADS $threads \
 			--INPUT $file_gridss_vcf \
