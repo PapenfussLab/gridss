@@ -98,19 +98,28 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             for (KrakenReportLine interestingNode : interestingNodes) {
                 taxaToExport[interestingNode.taxonomyId] = true;
             }
-            try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
-                    .setMakeDictOutput(true)
-                    .setMakeFaiOutput(true)
-                    .setFastaFile(OUTPUT.toPath())
-                    .build()) {
-                for (IndexedFastaSequenceFile fa : ref) {
-                    for (SAMSequenceRecord ssr : fa.getSequenceDictionary().getSequences()) {
-                        int seqTaxId = extractTaxIdFromKrakenSequence(ssr);
-                        if (taxaToExport[seqTaxId]) {
-                            writer.addSequence(cleanSequence(fa.getSequence(ssr.getSequenceName())));
+            FastaReferenceWriter writer = null;
+            for (IndexedFastaSequenceFile fa : ref) {
+                for (SAMSequenceRecord ssr : fa.getSequenceDictionary().getSequences()) {
+                    int seqTaxId = extractTaxIdFromKrakenSequence(ssr);
+                    if (taxaToExport[seqTaxId]) {
+                        if (writer == null) {
+                            // workaround for https://github.com/samtools/htsjdk/issues/1498
+                            writer = new FastaReferenceWriterBuilder()
+                                    .setMakeDictOutput(true)
+                                    .setMakeFaiOutput(true)
+                                    .setFastaFile(OUTPUT.toPath())
+                                    .build();
                         }
+                        writer.addSequence(cleanSequence(fa.getSequence(ssr.getSequenceName())));
                     }
                 }
+            }
+            if (writer == null) {
+                Files.write(OUTPUT.toPath(), new byte[0]);
+                log.warn("No sequences written to ", OUTPUT);
+            } else {
+                writer.close();
             }
         } catch (IOException e) {
             log.error(e);
