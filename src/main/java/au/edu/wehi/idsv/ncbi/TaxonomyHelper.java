@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.ncbi;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
@@ -61,6 +62,15 @@ public abstract class TaxonomyHelper {
                 }
                 node = lookup.get(node.parentTaxId);
             }
+        }
+        return result;
+    }
+
+    public static boolean[] leafNodes(Map<Integer, MinimalTaxonomyNode> lookup) {
+        boolean[] result = new boolean[maxTaxId(lookup) + 1];
+        Arrays.fill(result, true);
+        for (MinimalTaxonomyNode n : lookup.values()) {
+            result[n.parentTaxId] = false;
         }
         return result;
     }

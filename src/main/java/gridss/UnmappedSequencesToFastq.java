@@ -1,7 +1,11 @@
 package gridss;
 
+import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.ParallelTransformIterator;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import htsjdk.samtools.*;
@@ -10,6 +14,7 @@ import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SequenceUtil;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
@@ -56,12 +61,20 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 		try (FastqWriter fqw = new FastqWriterFactory().newWriter(OUTPUT)) {
 			for (File input : INPUT) {
 				try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {
-					try (SAMRecordIterator it = reader.iterator()) {
-						while (it.hasNext()) {
-							SAMRecord r = it.next();
-							FastqRecord fq = getUnmappedFastqRecord(r);
-							if (fq != null && fq.getReadLength() >= MIN_SEQUENCE_LENGTH) {
-								fqw.write(fq);
+					try (SAMRecordIterator rawIt = reader.iterator()) {
+						ProgressLoggingSAMRecordIterator loggedIt = new ProgressLoggingSAMRecordIterator(rawIt, new ProgressLogger(log, 10000000));
+						try (AsyncBufferedIterator<FastqRecord> it = new AsyncBufferedIterator(
+								Iterators.filter(
+										Iterators.transform(
+												loggedIt,
+												r -> getUnmappedFastqRecord(r)),
+										r -> r != null),
+								"toFastq")) {
+							while (it.hasNext()) {
+								FastqRecord fq = it.next();
+								if (fq != null && fq.getReadLength() >= MIN_SEQUENCE_LENGTH) {
+									fqw.write(fq);
+								}
 							}
 						}
 					}
@@ -73,7 +86,6 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 		}
 		return 0;
 	}
-
 	private FastqRecord getUnmappedFastqRecord(SAMRecord record) {
 		FastqRecord fq = null;
 		if (!record.isSecondaryOrSupplementary()) {
@@ -82,7 +94,7 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 			if (record.getReadUnmappedFlag()) {
 				bases = record.getReadBases();
 				quals = record.getBaseQualities();
-			} else if (INCLUDE_SOFT_CLIPPED_BASES && (SAMRecordUtil.getStartClipLength(record) > 0 || SAMRecordUtil.getEndClipLength(record) > 0)) {
+			} else if (INCLUDE_SOFT_CLIPPED_BASES && (SAMRecordUtil.getStartClipLength(record) >= MIN_SEQUENCE_LENGTH || SAMRecordUtil.getEndClipLength(record) >= MIN_SEQUENCE_LENGTH)) {
 				// grab the largest contiguous subread not aligned
 				List<ChimericAlignment> ca = Lists.newArrayList(new ChimericAlignment(record));
 				ca.addAll(ChimericAlignment.getChimericAlignments(record));

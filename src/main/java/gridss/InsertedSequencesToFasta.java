@@ -14,9 +14,7 @@ import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 @CommandLineProgramProperties(
@@ -43,7 +41,7 @@ public class InsertedSequencesToFasta extends CommandLineProgram {
 				throw new RuntimeException("VCF missing sequence headers.");
 			}
 			try (CloseableIterator<VariantContext> it = vcfReader.iterator()) {
-				try (FileOutputStream writer = new FileOutputStream(OUTPUT)) {
+				try (OutputStream writer = new BufferedOutputStream(new FileOutputStream(OUTPUT))) {
 					while (it.hasNext()) {
 						IdsvVariantContext vc = IdsvVariantContext.create(dict, null, it.next());
 						VcfBreakendSummary vbs = new VcfBreakendSummary(dict, vc);

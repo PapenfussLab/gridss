@@ -44,4 +44,14 @@ public class TaxonomyHelperTest {
         Assert.assertTrue(lookup[314293]);
         Assert.assertFalse(lookup[9443]);
     }
+    @Test
+    public void leadNodesShouldReturnOnlyLeaves() throws IOException {
+        boolean[] lookup = TaxonomyHelper.leafNodes(TaxonomyHelper.parseMinimal(new File("src/test/resources/ncbi/homo_sapiens.nodes.dmp")));
+        for (int i : new int[] {9606,376912,10239,}) {
+            Assert.assertTrue(lookup[i]);
+        }
+        for (int i : new int[] {1, 2759, 6072, 7711, 7742, 7776, 8287, 9347, 9443, 9526, 9604, 9605, 32523, 32524, 32525, 33154, 33208, 33213, 33511, 40674, 89593, 117570, 117571, 131567, 207598, 314146, 314293, 314295, 376913, 1338369,}) {
+            Assert.assertFalse(lookup[i]);
+        }
+    }
 }

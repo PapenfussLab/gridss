@@ -17,15 +17,21 @@ EX_NOINPUT=66
 EX_CANTCREAT=73
 EX_CONFIG=78
 
+db=""
+output="/dev/stdout"
+threads=$(nproc)
+kraken2="kraken2"
+kraken2args=""
+minlength="20"
 USAGE_MESSAGE="
-Usage: gridss_annotate_vcf_kraken2.sh [--db standard] -o output.vcf input.vcf
+Usage: gridss_annotate_vcf_kraken2.sh [options] --jar gridss.jar --db standard input.vcf
 	-o,--output: output vcf file. Defaults to stdout.
 	-j/--jar: location of GRIDSS jar
 	--db: kraken2 database
-	--threads: number of threads to use. Defaults to the number of cores available.
-	--kraken2: kraken2 executable. (Default: kraken2)
+	--threads: number of threads to use. Defaults to the number of cores available ($threads)
+	--kraken2: kraken2 executable. (Default: $kraken2)
 	--kraken2args: additional kraken2 arguments
-	--minlength: minimum length of inserted sequence to annotate. (Default: 20)
+	--minlength: minimum length of inserted sequence to annotate. (Default: $minlength)
 	"
 OPTIONS=o:t:j:
 LONGOPTS=db:,threads:,kraken2:,kraken2args:,jar:,minlength:
@@ -37,12 +43,6 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     exit $EX_USAGE
 fi
 eval set -- "$PARSED"
-db=""
-output="/dev/stdout"
-threads=$(nproc)
-kraken2="kraken2"
-kraken2args=""
-minlength="20"
 while true; do
     case "$1" in
         -o|--output)

@@ -86,7 +86,7 @@ public class SubsetToTaxonomy extends CommandLineProgram {
         }
         if (ANY_KMER) {
             for (KrakenKmerClassification kkc : kc.kmerTaxonomyIds) {
-                if (taxIdLookup[kkc.taxonomyId]) {
+                if (kkc.taxonomyId != KrakenKmerClassification.AMBIGUOUS && taxIdLookup[kkc.taxonomyId]) {
                     return true;
                 }
             }

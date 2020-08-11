@@ -22,42 +22,6 @@ EX_NOINPUT=66
 EX_CANTCREAT=73
 EX_CONFIG=78
 
-USAGE_MESSAGE="
-Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 25g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
-
-	-r/--reference: reference genome to use. Must have a .fai index file and a bwa index.
-	-o/--output: output VCF.
-	-a/--assembly: location of the GRIDSS assembly BAM. This file will be created by GRIDSS.
-	-t/--threads: number of threads to use. Defaults to 8.
-	-j/--jar: location of GRIDSS jar
-	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. Defaults to the current directory.
-	-b/--blacklist: BED file containing regions to ignore
-	--repeatmaskerbed: bedops rmsk2bed BED file for genome.
-	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Possible steps are: setupreference, preprocess, assemble, call, all. WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure these files are generated before runninng parallel GRIDSS jobs.
-	-c/--configuration: configuration file use to override default GRIDSS settings.
-	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
-	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS
-	--jvmheap: size of JVM heap for assembly and variant calling. Defaults to 27.5g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8.
-	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored.
-	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
-	--useproperpair: use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
-	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. Default: 0.995
-	--keepTempFiles: keep intermediate files. Not recommended except for debugging due to the high disk usage.
-	--nojni: do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
-	--jobindex: zero-based assembly job index (only required when performing parallel assembly across multiple computers)
-	--jobnodes: total number of assembly jobs (only required when performing parallel assembly across multiple computers). Note than an assembly jobs is required after all indexed jobs have been completed to gather the output files together.
-	"
-
-OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,repeatmaskerbed:
-! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
-if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-    # e.g. return value is 1
-    #  then getopt has complained about wrong arguments to stdout
-	echo "$USAGE_MESSAGE" 1>&2
-    exit $EX_USAGE
-fi
-eval set -- "$PARSED"
 workingdir="."
 reference=""
 output_vcf=""
@@ -80,6 +44,42 @@ sanityCheck="false"
 externalaligner="false"
 nojni="false"
 repeatmaskerbed=""
+USAGE_MESSAGE="
+Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> input1.bam [input2.bam [...]]
+
+	-r/--reference: reference genome to use.
+	-o/--output: output VCF.
+	-a/--assembly: location of the GRIDSS assembly BAM. This file will be created by GRIDSS.
+	-t/--threads: number of threads to use. (Default: $threads)
+	-j/--jar: location of GRIDSS jar
+	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. (Default: $workingdir)
+	-b/--blacklist: BED file containing regions to ignore
+	--repeatmaskerbed: bedops rmsk2bed BED file for genome.
+	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Possible steps are: setupreference, preprocess, assemble, call, all. WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure these files are generated before runninng parallel GRIDSS jobs.
+	-c/--configuration: configuration file use to override default GRIDSS settings.
+	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
+	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS
+	--jvmheap: size of JVM heap for assembly and variant calling. (Default: $jvmheap)
+	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored. (Default: $maxcoverage)
+	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
+	--useproperpair: use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
+	--concordantreadpairdistribution: portion of 6 sigma read pairs distribution considered concordantly mapped. (Default: $readpairpdistribution)
+	--keepTempFiles: keep intermediate files. Not recommended except for debugging due to the high disk usage.
+	--nojni: do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
+	--jobindex: zero-based assembly job index (only required when performing parallel assembly across multiple computers)
+	--jobnodes: total number of assembly jobs (only required when performing parallel assembly across multiple computers). Note than an assembly job with any --job argument is required to be run after all indexed jobs have been completed to gather the output files together.
+	"
+
+OPTIONS=r:o:a:t:j:w:b:s:c:l:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,repeatmaskerbed:
+! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+    # e.g. return value is 1
+    #  then getopt has complained about wrong arguments to stdout
+	echo "$USAGE_MESSAGE" 1>&2
+    exit $EX_USAGE
+fi
+eval set -- "$PARSED"
 while true; do
     case "$1" in
         -r|--reference)
@@ -424,7 +424,7 @@ write_status "bash version: $(/bin/bash --version 2>&1 | head -1)"
 
 # check java version is ok using the gridss.Echo entry point
 if java -cp $gridss_jar gridss.Echo ; then
-	write_status "java version: $(java -version 2>&1)"
+	write_status "java version: $(java -version 2>&1 | tr '\n' '\t')"
 else
 	write_status "Unable to run GRIDSS jar. GRIDSS requires java 1.8 or later."
 	write_status "java version: $(java -version  2>&1)"

@@ -1,6 +1,7 @@
 package gridss;
 
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 import org.junit.Assert;
@@ -12,7 +13,7 @@ public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
     private List<FastqRecord> go(boolean includeSoftClips, int minLen, boolean uniqueNames, SAMRecord... records) {
         createInput(records);
         UnmappedSequencesToFastq cmd = new UnmappedSequencesToFastq();
-        cmd.INPUT = input;
+        cmd.INPUT = ImmutableList.of(input);
         cmd.OUTPUT = output;
         cmd.INCLUDE_SOFT_CLIPPED_BASES = includeSoftClips;
         cmd.MIN_SEQUENCE_LENGTH = minLen;
