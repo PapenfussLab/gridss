@@ -325,9 +325,20 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 
 	private void updateAssemblySupportTracking() {
 		if (isUpdateAssemblyInformation()) {
-			List<SingleReadEvidence> suportingAssemblies = Stream.concat(Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream()), supportingBAS.stream())
-					.sorted(Comparator.comparing(o -> o.getSAMRecord().getReadName()))
-					.collect(Collectors.toList());
+			List<SingleReadEvidence> suportingAssemblies = new ArrayList<>();
+			suportingAssemblies.addAll(supportingAS);
+			suportingAssemblies.addAll(supportingRAS);
+			suportingAssemblies.addAll(supportingCAS);
+			suportingAssemblies.addAll(supportingBAS);
+			suportingAssemblies.sort(Comparator.comparing(o -> o.getSAMRecord().getReadName()));
+			// Track long read support as well
+			for (List<SplitReadEvidence> list : supportingSR) {
+				for (SingleReadEvidence read : list) {
+					if (read.getEvidenceSource().isLongReadLibrary()) {
+						suportingAssemblies.add(read);
+					}
+				}
+			}
 			if (suportingAssemblies.size() > 0) {
 				attribute(VcfInfoAttributes.BREAKEND_ASSEMBLY_ID, suportingAssemblies.stream()
 						.map(o -> o.getSAMRecord().getReadName())
