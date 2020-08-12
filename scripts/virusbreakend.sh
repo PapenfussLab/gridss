@@ -359,6 +359,11 @@ if [[ ! -f $file_viral_fa ]] ; then
 		-SEQUENCES_TO_RETURN $viralgenomes \
 	; } 1>&2 2>> $logfile
 fi
+if [[ -s  $file_viral_fa ]] ; then
+	write_status "No viral sequences passed the minimum support threshold."
+	trap - EXIT
+	exit 0 # success!
+fi
 if [[ ! -f $file_viral_fa.bwt ]] ; then
 	write_status "Creating bwa index of viral sequences"
 	{ $timecmd bwa index $file_viral_fa ; } 1>&2 2>> $logfile
