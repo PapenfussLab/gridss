@@ -10,6 +10,7 @@ argp = add_argument(argp, "--plotdir", default="", help="Output directory for pl
 argp = add_argument(argp, "--normalordinal", type="integer", default=1, help="Ordinal of matching normal sample in the VCF")
 argp = add_argument(argp, "--tumourordinal", type="integer", nargs=Inf, help="Ordinal of tumour sample(s) in the VCF. Defaults to all samples not listed as matched normals")
 argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
+argp = add_argument(argp, "--configdir", default=".", help="Path to gridss.config.R script relative to scriptdir. Defaults to '.' (same directory as libgridss.R)")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 # argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
 # argv = parse_args(argp, argv=c("--input", "C:/dev/colo829hg38/out.vcf", "--output", "C:/temp/tmp.vcf", "-f", "C:/temp/tmp-full.vcf", "-p", "S:/hartwig/pon", "--scriptdir", "C:/dev/gridss/scripts", "--gc", "--tumourordinal", "2"))
@@ -36,6 +37,9 @@ if (is.na(argv$pondir)) {
   write(msg, stderr())
   print(argp)
   stop(msg)
+}
+if (!is.na(argv$configdir) && !is.null(argv$configdir)) {
+	options(gridss.config.dir=argv$configdir)
 }
 options(tidyverse.quiet = TRUE)
 library(tidyverse, warn.conflicts=FALSE, quietly=TRUE)

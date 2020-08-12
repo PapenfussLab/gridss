@@ -18,7 +18,7 @@ library(testthat, quietly=TRUE, warn.conflicts=FALSE)
 library(stringdist, quietly=TRUE, warn.conflicts=FALSE)
 
 options(stringsAsFactors=FALSE)
-source("gridss.config.R")
+source(paste0(ifelse(!is.null(options("gridss.config.dir")), paste0(options("gridss.config.dir"), "/"), ""), "gridss.config.R"))
 
 #' Replaces the NA values in a with corresponding values in b
 #' @param a,b objects to be tested or coerced.
