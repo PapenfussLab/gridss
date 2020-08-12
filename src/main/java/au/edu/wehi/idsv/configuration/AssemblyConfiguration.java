@@ -20,6 +20,7 @@ public class AssemblyConfiguration {
 		realignContigs = config.getBoolean("realignContigs");
 		contigNamePrefix = config.getString("contigNamePrefix");
 		recoverAfterError = config.getBoolean("recoverAfterError");
+		longReadReadLengthThreshold = config.getInt("longReadReadLengthThreshold");
 	}
 	public ErrorCorrectionConfiguration errorCorrection;
 	public DownsamplingConfiguration downsampling;
@@ -82,4 +83,9 @@ public class AssemblyConfiguration {
 	 * flushing all evidence in the graph and continuing assembly from the next read.
 	 */
 	public boolean recoverAfterError;
+	/**
+	 * Maximum read length for performing assembly.
+	 * Input files with any reads longer than this are not assembled.
+	 */
+	public int longReadReadLengthThreshold;
 }

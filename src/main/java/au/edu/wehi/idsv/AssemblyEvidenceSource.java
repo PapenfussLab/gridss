@@ -54,7 +54,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 */
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
 		super(processContext, assemblyFile, null, -1);
-		this.source = evidence;
+		this.source = filterOutLongReadLibraries(evidence);
 		this.header = processContext.getBasicSamHeader();
 		if (!this.header.getComments().stream().anyMatch(s -> s.contains(INPUT_CATEGORY_SAM_HEADER_PREFIX))) {
 			for (int i = 0; i < processContext.getCategoryCount(); i++) {
@@ -62,6 +62,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
 			}
 		}
+	}
+
+	private static List<SAMEvidenceSource> filterOutLongReadLibraries(List<SAMEvidenceSource> evidence) {
+		List<SAMEvidenceSource> filtered = evidence.stream().
+				filter(e -> !e.isLongReadLibrary())
+				.collect(Collectors.toList());
+		return filtered;
 	}
 
 	public void assembleBreakends(ExecutorService threadpool) throws IOException {

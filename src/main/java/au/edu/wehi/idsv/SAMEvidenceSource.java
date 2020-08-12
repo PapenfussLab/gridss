@@ -602,5 +602,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * Provides hint as to whether the input file is known to contain only single-ended reads.
 	 * @return
 	 */
-	public boolean knownSingleEnded() { return false; }
+	public boolean knownSingleEnded() {
+		return false;
+	}
+	public boolean isLongReadLibrary() {
+		return getMetrics().getIdsvMetrics().MAX_READ_LENGTH >= getContext().getAssemblyParameters().longReadReadLengthThreshold;
+	}
 }
