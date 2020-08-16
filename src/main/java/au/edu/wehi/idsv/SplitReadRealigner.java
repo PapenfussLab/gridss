@@ -17,6 +17,7 @@ import java.util.List;
 public abstract class SplitReadRealigner {
     private static final Log log = Log.getInstance(SplitReadRealigner.class);
     private final ReferenceLookup reference;
+    private byte fallBackBaseQuality = 0;
     private EvidenceIdentifierGenerator eidgen = new HashedEvidenceIdentifierGenerator();
     private int workerThreads = Runtime.getRuntime().availableProcessors();
     private int minSoftClipLength = 1;
@@ -114,7 +115,7 @@ public abstract class SplitReadRealigner {
         if (!isRealignExistingSplitReads() && !isRecursiveRealignment && r.getAttribute(SAMTag.SA.name()) != null) return list;
         if (r.getSupplementaryAlignmentFlag()) return list;
         if (r.isSecondaryAlignment() && !isProcessSecondaryAlignments()) return list;
-        for (FastqRecord fqr : SplitReadHelper.getSplitReadRealignments(r, isRecursiveRealignment, getEvidenceIdentifierGenerator())) {
+        for (FastqRecord fqr : SplitReadHelper.getSplitReadRealignments(r, isRecursiveRealignment, getEvidenceIdentifierGenerator(), fallBackBaseQuality)) {
             if (fqr.getReadLength() < getMinSoftClipLength()) continue;
             if (averageBaseQuality(fqr) < getMinSoftClipQuality()) continue;
             list.add(fqr);
@@ -128,6 +129,12 @@ public abstract class SplitReadRealigner {
         }
         return (double)sum / fqr.getBaseQualityString().length();
     }
+
+    public int getFallbackBaseQuality() {
+        return fallBackBaseQuality;
+    }
+
+    public void setFallbackBaseQuality(byte fallBackBaseQuality) { this.fallBackBaseQuality = fallBackBaseQuality; }
 
     public int getMinSoftClipLength() {
         return minSoftClipLength;

@@ -37,9 +37,9 @@ import java.util.Set;
 public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(PreprocessForBreakendAssembly.class);
 	@Argument(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
-	public int MIN_CLIP_LENGTH = 15;
+	public int MIN_CLIP_LENGTH = new SoftClipsToSplitReads().MIN_CLIP_LENGTH;
 	@Argument(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
-	public float MIN_CLIP_QUAL = 5;
+	public float MIN_CLIP_QUAL = new SoftClipsToSplitReads().MIN_CLIP_QUAL;
 	@Argument(doc="Which in-process aligner to use.", optional=true)
 	public SoftClipsToSplitReads.Aligner ALIGNER = SoftClipsToSplitReads.Aligner.BWAMEM;
 	@Argument(doc="Number of records to buffer when performing in-process or streaming alignment. Not applicable when performing external alignment.", optional=true)
@@ -70,7 +70,8 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
 			shortName="THREADS")
 	public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-
+	@Argument(doc="Base quality score to sent to aligner if quality scores are missing.", optional=true)
+	public byte FALLBACK_BASE_QUALITY = new SoftClipsToSplitReads().FALLBACK_BASE_QUALITY;
 	public static void main(String[] argv) {
         System.exit(new PreprocessForBreakendAssembly().instanceMain(argv));
     }
@@ -117,6 +118,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 				throw new IllegalArgumentException("Aligner not supported by PreprocessForBreakendAssembly");
 		}
 		realigner = new StreamingSplitReadRealigner(pc, sa, ALIGNER_BATCH_SIZE);
+		realigner.setFallbackBaseQuality(FALLBACK_BASE_QUALITY);
 		realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
 		realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
 		realigner.setWorkerThreads(WORKER_THREADS);

@@ -17,6 +17,7 @@ import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.List;
 
@@ -31,6 +32,7 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 			boolean realignEntireRecord,
 			EvidenceIdentifierGenerator eidgen) {
 		SplitReadRealigner srr = new StreamingSplitReadRealigner(getContext(), null, 1);
+		srr.setFallbackBaseQuality((byte)21);
 		srr.setMinSoftClipLength(minSoftClipLength);
 		srr.setMinSoftClipQuality(minClipQuality);
 		srr.setProcessSecondaryAlignments(processSecondaryAlignments);
@@ -296,6 +298,35 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		assertEquals(0, list.size());
 	}
 
+	@Test
+	public void should_use_fallback_base_qualities_when_missing() throws IOException {
+		srr = createAligner();
+		SAMRecord r = new SAMRecord(getHeader());
+		r.setReferenceIndex(0);
+		r.setAlignmentStart(500);
+		r.setCigarString("64S50M50S");
+		//r.setReadBases(B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+		r.setReadBases(B("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCGAACGGGCGAATCTACCT"));
+
+		r.setReadName("no_base_quals");
+		r.setBaseQualities(SAMRecord.NULL_QUALS);
+		createBAM(input, r.getHeader(), r);
+		srr.setFallbackBaseQuality((byte)21);
+
+		srr.createSupplementaryAlignments(input, output, output);
+		List<SAMRecord> list = getRecords(output);
+		assertEquals(3, list.size());
+		// TODO: set up test that hooks into the actual S/W call
+		/*
+		for (SAMRecord x : list) {
+			assertEquals(x.getReadBases().length, x.getBaseQualities().length);
+			for (int i = 0; i < x.getReadBases().length; i++) {
+				assertEquals((byte)21, x.getReadBases()[i]);
+			}
+		}
+		*/
+	}
+
 	/**
 	 * bwa mem primary alignment record over-aligns across apparent SNVs and an indels which should just be placed on the other side  
 	 * @throws IOException
@@ -402,5 +433,13 @@ public abstract class SplitReadRealignerTest extends IntermediateFilesTest {
 		List<SAMRecord> list = getRecords(output);
 		assertEquals(1, list.size());
 		Assert.assertEquals("60M27I27D77M", list.get(0).getCigarString());
+	}
+	@Test
+	@Category(Hg38Tests.class)
+	public void should_process_bwa_ont_reads() throws IOException {
+		ProcessingContext pc = ReferenceTests.createProcessingContext(testFolder.getRoot(), Hg19Tests.findHg19Reference(), getConfig());
+		srr = createAligner(pc);
+		Files.copy(new File("src/test/resources/ont/778.namesorted.head.sam").toPath(), input.toPath());
+		srr.createSupplementaryAlignments(input, output, output);
 	}
 }

@@ -17,7 +17,7 @@ public class SplitReadHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "2S4M");
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
-		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator(), (byte)0);
 		
 		assertEquals(1, result.size());
 		assertEquals("AC", result.get(0).getReadString());
@@ -28,7 +28,7 @@ public class SplitReadHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "3M3S");
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
-		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator(), (byte)0);
 		
 		assertEquals(1, result.size());
 		assertEquals("TTC", result.get(0).getReadString());
@@ -39,7 +39,7 @@ public class SplitReadHelperTest extends TestHelper {
 		SAMRecord r = Read(0, 1, "2S1M3S");
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
-		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator(), (byte)0);
 		
 		assertEquals(2, result.size());
 		assertEquals("AC", result.get(0).getReadString());
@@ -54,7 +54,7 @@ public class SplitReadHelperTest extends TestHelper {
 		r.setReadBases(B("ACGTTC"));
 		r.setBaseQualities(B("123456"));
 		r.setReadName("r");
-		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator(), (byte)0);
 		assertEquals(2, result.size());
 		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#0", result.get(0).getReadName());
 		assertEquals(getContext().getEvidenceIDGenerator().getAlignmentUniqueName(r) + "#3", result.get(1).getReadName());
@@ -66,7 +66,7 @@ public class SplitReadHelperTest extends TestHelper {
 		r.setBaseQualities(B("123456"));
 		r.setReadName("r");
 		r.setReadNegativeStrandFlag(true);
-		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, false, getContext().getEvidenceIDGenerator(), (byte)0);
 		assertEquals(2, result.size());
 		// SSSMSS cigar
 		// GAACGT read
@@ -90,7 +90,7 @@ public class SplitReadHelperTest extends TestHelper {
 		r.setReadName("unique#3");
 		r.setReadBases(B("CGT"));
 		r.setBaseQualities(B("321"));
-		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, true, getContext().getEvidenceIDGenerator());
+		List<FastqRecord> result = SplitReadHelper.getSplitReadRealignments(r, true, getContext().getEvidenceIDGenerator(), (byte)0);
 		assertEquals(1, result.size());
 		assertEquals("unique#4", result.get(0).getReadName());
 		assertEquals("GT", result.get(0).getReadString());

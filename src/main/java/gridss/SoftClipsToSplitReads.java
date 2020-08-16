@@ -74,7 +74,9 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     @Argument(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of threads to use.", optional=true)
-		public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
+	public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
+	@Argument(doc="Base quality score to sent to aligner if quality scores are missing.", optional=true)
+	public byte FALLBACK_BASE_QUALITY = 20;
 	/**
 	 * Which aligner to perform the alignment with
 	 */
@@ -114,6 +116,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 					}
 					break;
 			}
+			realigner.setFallbackBaseQuality(FALLBACK_BASE_QUALITY);
 			realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
 			realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
 			realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);

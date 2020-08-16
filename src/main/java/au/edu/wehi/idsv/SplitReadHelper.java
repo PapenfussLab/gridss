@@ -65,6 +65,14 @@ public class SplitReadHelper {
 				SAMUtils.phredToFastq(seq));
 		return fastq;
 	}
+	private static byte[] getValidBaseQualities(SAMRecord r, byte fallbackBaseQuality) {
+		byte[] qual = r.getBaseQualities();
+		if (qual == null || qual == SAMRecord.NULL_QUALS || qual.length != r.getReadLength()) {
+			qual = new byte[r.getReadLength()];
+			Arrays.fill(qual, fallbackBaseQuality);
+		}
+		return qual;
+	}
 	/**
 	 * Extract the unaligned portions of the read requiring realignment to identify split reads
 	 * 
@@ -73,7 +81,7 @@ public class SplitReadHelper {
 	 * from a previous call to getSplitReadRealignments() 
 	 * @return bases requiring alignment to identify split reads
 	 */
-	public static List<FastqRecord> getSplitReadRealignments(SAMRecord r, boolean recordIsPartialAlignment, EvidenceIdentifierGenerator eidgen) {
+	public static List<FastqRecord> getSplitReadRealignments(SAMRecord r, boolean recordIsPartialAlignment, EvidenceIdentifierGenerator eidgen, byte fallbackBaseQuality) {
 		int startClipLength = SAMRecordUtil.getStartSoftClipLength(r);
 		int endClipLength = SAMRecordUtil.getEndSoftClipLength(r);
 		if (startClipLength + endClipLength == 0 || r.getReadUnmappedFlag()) {
@@ -91,7 +99,7 @@ public class SplitReadHelper {
 		List<FastqRecord> list = new ArrayList<>(2);
 		if (startClipLength > 0) {
 			byte[] startbases = Arrays.copyOfRange(r.getReadBases(), 0, startClipLength);
-			byte[] startqual  = Arrays.copyOfRange(r.getBaseQualities(), 0, startClipLength);
+			byte[] startqual  = Arrays.copyOfRange(getValidBaseQualities(r, fallbackBaseQuality), 0, startClipLength);
 			int startOffset = offset;
 			if (r.getReadNegativeStrandFlag()) {
 				SequenceUtil.reverseComplement(startbases);
@@ -109,7 +117,7 @@ public class SplitReadHelper {
 		}
 		if (endClipLength > 0) {
 			byte[] endbases = Arrays.copyOfRange(r.getReadBases(), r.getReadLength() - endClipLength, r.getReadLength());
-			byte[] endqual  = Arrays.copyOfRange(r.getBaseQualities(), r.getReadLength() - endClipLength, r.getReadLength());
+			byte[] endqual  = Arrays.copyOfRange(getValidBaseQualities(r, fallbackBaseQuality), r.getReadLength() - endClipLength, r.getReadLength());
 			int endOffset = offset + r.getReadLength() - endClipLength;  
 			if (r.getReadNegativeStrandFlag()) {
 				SequenceUtil.reverseComplement(endbases);
