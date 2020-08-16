@@ -2,7 +2,7 @@ package au.edu.wehi.idsv.kraken;
 
 import joptsimple.internal.Strings;
 
-public abstract class KrakenKmerClassification {
+public class KrakenKmerClassification {
     public static final int AMBIGUOUS = -1;
     public final int taxonomyId;
     public final int kmerCount;

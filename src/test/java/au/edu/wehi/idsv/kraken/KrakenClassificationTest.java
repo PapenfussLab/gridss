@@ -32,29 +32,23 @@ public class KrakenClassificationTest {
         Assert.assertEquals(1, kc.kmerTaxonomyIds.size());
         Assert.assertEquals(10, kc.kmerTaxonomyIds.get(0).kmerCount);
         Assert.assertEquals(1, kc.kmerTaxonomyIds.get(0).taxonomyId);
-        Assert.assertTrue(kc.kmerTaxonomyIds.get(0) instanceof ReadOneKrakenKmerClassification);
     }
     @Test
     public void should_parse_kmer_alignments_pe() {
         KrakenClassification kc = new KrakenClassification(new String("C\tid2\t9606\t15\t562:13 561:4 A:31 0:1 562:3|:|9606:15"));
-        Assert.assertEquals(6, kc.kmerTaxonomyIds.size());
+        Assert.assertEquals(5, kc.kmerTaxonomyIds.size());
+        Assert.assertEquals(1, kc.kmerTaxonomyIds2.size());
         Assert.assertEquals(13, kc.kmerTaxonomyIds.get(0).kmerCount);
         Assert.assertEquals(4, kc.kmerTaxonomyIds.get(1).kmerCount);
         Assert.assertEquals(31, kc.kmerTaxonomyIds.get(2).kmerCount);
         Assert.assertEquals(1, kc.kmerTaxonomyIds.get(3).kmerCount);
         Assert.assertEquals(3, kc.kmerTaxonomyIds.get(4).kmerCount);
-        Assert.assertEquals(15, kc.kmerTaxonomyIds.get(5).kmerCount);
+        Assert.assertEquals(15, kc.kmerTaxonomyIds2.get(0).kmerCount);
         Assert.assertEquals(562, kc.kmerTaxonomyIds.get(0).taxonomyId);
         Assert.assertEquals(561, kc.kmerTaxonomyIds.get(1).taxonomyId);
         Assert.assertEquals(KrakenKmerClassification.AMBIGUOUS, kc.kmerTaxonomyIds.get(2).taxonomyId);
         Assert.assertEquals(0, kc.kmerTaxonomyIds.get(3).taxonomyId);
         Assert.assertEquals(562, kc.kmerTaxonomyIds.get(4).taxonomyId);
-        Assert.assertEquals(9606, kc.kmerTaxonomyIds.get(5).taxonomyId);
-        Assert.assertTrue(kc.kmerTaxonomyIds.get(0) instanceof ReadOneKrakenKmerClassification);
-        Assert.assertTrue(kc.kmerTaxonomyIds.get(1) instanceof ReadOneKrakenKmerClassification);
-        Assert.assertTrue(kc.kmerTaxonomyIds.get(2) instanceof ReadOneKrakenKmerClassification);
-        Assert.assertTrue(kc.kmerTaxonomyIds.get(3) instanceof ReadOneKrakenKmerClassification);
-        Assert.assertTrue(kc.kmerTaxonomyIds.get(4) instanceof ReadOneKrakenKmerClassification);
-        Assert.assertTrue(kc.kmerTaxonomyIds.get(5) instanceof ReadTwoKrakenKmerClassification);
+        Assert.assertEquals(9606, kc.kmerTaxonomyIds2.get(0).taxonomyId);
     }
 }

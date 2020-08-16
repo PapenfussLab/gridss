@@ -1,6 +1,7 @@
 package gridss.kraken;
 
 import au.edu.wehi.idsv.kraken.KrakenClassification;
+import au.edu.wehi.idsv.kraken.KrakenClassificationChecker;
 import au.edu.wehi.idsv.kraken.KrakenKmerClassification;
 import au.edu.wehi.idsv.kraken.KrakenParser;
 import au.edu.wehi.idsv.ncbi.TaxonomyHelper;
@@ -55,13 +56,12 @@ public class SubsetToTaxonomy extends CommandLineProgram {
         IOUtil.assertFileIsReadable(NCBI_NODES_DMP);
         IOUtil.assertFileIsWritable(OUTPUT);
         try (KrakenParser parser = new KrakenParser(new BufferedReader(new InputStreamReader(new FileInputStream(INPUT))))) {
-            log.info("Loading NCBI taxonomy from ", NCBI_NODES_DMP);
-            boolean[] taxIdLookup = TaxonomyHelper.createInclusionLookup(TAXONOMY_IDS, TaxonomyHelper.parseMinimal(NCBI_NODES_DMP));
+            KrakenClassificationChecker kcc = new KrakenClassificationChecker(TAXONOMY_IDS, NCBI_NODES_DMP);
             log.info("Performing taxonomy lookup on ", INPUT);
             try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(OUTPUT))) {
                 while (parser.hasNext()) {
                     KrakenClassification kc = parser.next();
-                    if (matches(taxIdLookup, kc)) {
+                    if (kcc.isOfInterest(kc)) {
                         switch (FORMAT) {
                             case READ_NAME:
                                 os.write(kc.sequenceId.getBytes(StandardCharsets.UTF_8));
@@ -79,19 +79,6 @@ public class SubsetToTaxonomy extends CommandLineProgram {
             throw new RuntimeIOException(e);
         }
         return 0;
-    }
-    private boolean matches(boolean[] taxIdLookup, KrakenClassification kc) {
-        if (taxIdLookup[kc.taxonomyId]) {
-            return true;
-        }
-        if (ANY_KMER) {
-            for (KrakenKmerClassification kkc : kc.kmerTaxonomyIds) {
-                if (kkc.taxonomyId != KrakenKmerClassification.AMBIGUOUS && taxIdLookup[kkc.taxonomyId]) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     public static void main(String[] argv) {

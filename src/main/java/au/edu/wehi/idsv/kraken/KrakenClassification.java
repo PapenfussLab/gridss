@@ -1,8 +1,11 @@
 package au.edu.wehi.idsv.kraken;
 
+import com.google.common.collect.ImmutableList;
 import joptsimple.internal.Strings;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class KrakenClassification {
@@ -13,6 +16,7 @@ public class KrakenClassification {
     public final int sequenceLength;
     public final int sequenceLength2;
     public final List<KrakenKmerClassification> kmerTaxonomyIds;
+    public final List<KrakenKmerClassification> kmerTaxonomyIds2;
 
     public String toKrakenOutput() { return line; }
 
@@ -29,7 +33,9 @@ public class KrakenClassification {
         String[] lengths = fields[3].split("[|]");
         this.sequenceLength = Integer.parseInt(lengths[0]);
         this.sequenceLength2 = (lengths.length < 2 || Strings.isNullOrEmpty(lengths[1])) ? 0 : Integer.parseInt(lengths[1]);
-        this.kmerTaxonomyIds = fields.length >= 5 ? parseKmerClassifications(fields[4]) : new ArrayList<>();
+        Pair<List<KrakenKmerClassification>, List<KrakenKmerClassification>> kmers = fields.length >= 5 ? parseKmerClassifications(fields[4]) : Pair.of(Collections.emptyList(), Collections.emptyList());
+        this.kmerTaxonomyIds = kmers.getLeft();
+        this.kmerTaxonomyIds2 = kmers.getRight();
     }
     /**
      * A space-delimited list indicating the LCA mapping of each k-mer in the sequence(s). For example, "562:13 561:4 A:31 0:1 562:3" would indicate that:
@@ -38,19 +44,24 @@ public class KrakenClassification {
      * @param str
      * @return
      */
-    private static List<KrakenKmerClassification> parseKmerClassifications(String str) {
-        List<KrakenKmerClassification> result = new ArrayList<>();
+    private static Pair<List<KrakenKmerClassification>, List<KrakenKmerClassification>> parseKmerClassifications(String str) {
+        List<KrakenKmerClassification> read1 = Collections.emptyList();
+        List<KrakenKmerClassification> read2 = Collections.emptyList();
         String[] readSplit = str.split("[|][:][|]");
-        for (String s : readSplit[0].split(" ")) {
-            if (!Strings.isNullOrEmpty(s)) {
-                result.add(new ReadOneKrakenKmerClassification(s));
+        if (!Strings.isNullOrEmpty(readSplit[0])) {
+            read1 = new ArrayList<>();
+            for (String s : readSplit[0].split(" ")) {
+                if (!Strings.isNullOrEmpty(s)) {
+                    read1.add(new KrakenKmerClassification(s));
+                }
             }
         }
         if (readSplit.length >= 2 && !Strings.isNullOrEmpty(readSplit[1])) {
+            read2 = new ArrayList<>();
             for (String s : readSplit[1].split(" ")) {
-                result.add(new ReadTwoKrakenKmerClassification(s));
+                read2.add(new KrakenKmerClassification(s));
             }
         }
-        return result;
+        return Pair.of(read1, read2);
     }
 }
