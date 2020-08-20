@@ -102,47 +102,46 @@ public class SAMEvidenceSource extends EvidenceSource {
 			File mapqFile = getContext().getFileSystemContext().getMapqMetrics(getFile());
 			if (!idsvFile.exists() || !cigarFile.exists() || !mapqFile.exists()) {
 				log.info("Calculating metrics for " + getFile().getAbsolutePath());
-				List<String> args = Lists.newArrayList(
-						"INPUT=" + getFile().getPath(),
-						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getPath(),
-						"THRESHOLD_COVERAGE=" + getContext().getConfig().maxCoverage,
-						"FILE_EXTENSION=null",
-						"GRIDSS_PROGRAM=null",
-						"GRIDSS_PROGRAM=CollectCigarMetrics",
-						"GRIDSS_PROGRAM=CollectMapqMetrics",
-						"GRIDSS_PROGRAM=CollectTagMetrics",
-						"GRIDSS_PROGRAM=CollectIdsvMetrics",
-						"GRIDSS_PROGRAM=ReportThresholdCoverage",
-						"PROGRAM=null");
+				CommandLineProgramHelper cmd = new CommandLineProgramHelper(new CollectGridssMetrics());
+				cmd.addArg("INPUT", getFile().getPath());
+				cmd.addArg("OUTPUT", getContext().getFileSystemContext().getMetricsPrefix(getFile()).getPath());
+				cmd.addArg("THRESHOLD_COVERAGE", getContext().getConfig().maxCoverage);
+				cmd.addArg("FILE_EXTENSION", "null");
+				cmd.addArg("GRIDSS_PROGRAM", "CollectCigarMetrics");
+				cmd.addArg("GRIDSS_PROGRAM", "CollectMapqMetrics");
+				cmd.addArg("GRIDSS_PROGRAM", "CollectTagMetrics");
+				cmd.addArg("GRIDSS_PROGRAM", "CollectIdsvMetrics");
+				cmd.addArg("GRIDSS_PROGRAM", "ReportThresholdCoverage");
+				cmd.addArg("PROGRAM", "null");
 				if (!knownSingleEnded()) {
 					// Don't run CollectInsertSizeMetrics
-					args.add("PROGRAM=CollectInsertSizeMetrics");
+					cmd.addArg("PROGRAM","CollectInsertSizeMetrics");
 				} else {
 					// The CollectMultipleMetrics super class complains if no PROGRAM set so
 					// we'll just collect some stuff that is useful, but we don't actually
 					// use yet
-					args.add("PROGRAM=CollectAlignmentSummaryMetrics");
+					cmd.addArg("PROGRAM","CollectAlignmentSummaryMetrics");
 				}
 				if (getContext().getCalculateMetricsRecordCount() < Integer.MAX_VALUE) {
-					args.add("STOP_AFTER=" + getContext().getCalculateMetricsRecordCount());
+					cmd.addArg("STOP_AFTER", getContext().getCalculateMetricsRecordCount());
 				}
-				execute(new CollectGridssMetrics(), args);
+				execute(cmd);
 			}
 			metrics = new IdsvSamFileMetrics(getContext(), getFile(), knownSingleEnded());
 		}
 	}
-	protected void execute(CommandLineProgram cmd, List<String> args) {
-		if (cmd instanceof ReferenceCommandLineProgram) {
-			((ReferenceCommandLineProgram) cmd).setReference(getContext().getReference());
+	protected void execute(CommandLineProgramHelper cmd) {
+		if (cmd.getProgram() instanceof ReferenceCommandLineProgram) {
+			((ReferenceCommandLineProgram) cmd.getProgram()).setReference(getContext().getReference());
 		}
 		if (getContext().getCommandLineProgram() == null) {
-			args.add("REFERENCE_SEQUENCE=" + getContext().getReferenceFile());
-			args.add("TMP_DIR=" + getContext().getFileSystemContext().getTemporaryDirectory());
-			args.add("MAX_RECORDS_IN_RAM=" + getContext().getFileSystemContext().getMaxBufferedRecordsPerFile());
+			cmd.addArg("REFERENCE_SEQUENCE", getContext().getReferenceFile());
+			cmd.addArg("TMP_DIR", getContext().getFileSystemContext().getTemporaryDirectory());
+			cmd.addArg("MAX_RECORDS_IN_RAM", getContext().getFileSystemContext().getMaxBufferedRecordsPerFile());
 		} else {
-			args.addAll(CommandLineProgramHelper.getCommonArgs(getContext().getCommandLineProgram()));
+			cmd.setCommonArgs(getContext().getCommandLineProgram());
 		}
-		int result = cmd.instanceMain(args.toArray(new String[] {}));
+		int result = cmd.run();
 		if (result != 0) {
 			String msg = "Unable to execute " + cmd.getClass().getName() + " for " + getFile();
 			log.error(msg);
@@ -173,20 +172,20 @@ public class SAMEvidenceSource extends EvidenceSource {
 							if (in == null || !in.exists()) {
 								in = getFile();
 							}
-							List<String> args = Lists.newArrayList(
-									"INPUT=" + in.getPath(),
-									"OUTPUT=" + extractedFile.getPath(),
-									"UNMAPPED_READS=false", // saves intermediate file space
-									"METRICS_OUTPUT=" + getContext().getFileSystemContext().getSVMetrics(getFile()),
-									"MIN_CLIP_LENGTH=" + getContext().getConfig().getSoftClip().minLength,
-									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()),
-									// Picard tools does not mark duplicates correctly. We need to keep them so we can
-									// fix the duplicate marking in ComputeSamTags
-									"INCLUDE_DUPLICATES=true");
-							if (rpcMinFragmentSize != null) args.add("READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize);
-							if (rpcMaxFragmentSize != null) args.add("READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE=" + rpcMaxFragmentSize);
-							if (rpcConcordantPercentage != null) args.add("READ_PAIR_CONCORDANT_PERCENT=" + rpcConcordantPercentage);
-							execute(new ExtractSVReads(), args);
+							CommandLineProgramHelper cmd = new CommandLineProgramHelper(new ExtractSVReads());
+							cmd.addArg("INPUT", in.getPath());
+							cmd.addArg("OUTPUT", extractedFile.getPath());
+							cmd.addArg("UNMAPPED_READS", "false"); // saves intermediate file space
+							cmd.addArg("METRICS_OUTPUT", getContext().getFileSystemContext().getSVMetrics(getFile()));
+							cmd.addArg("MIN_CLIP_LENGTH", getContext().getConfig().getSoftClip().minLength);
+							cmd.addArg("INSERT_SIZE_METRICS", getContext().getFileSystemContext().getInsertSizeMetrics(getFile()));
+							// Picard tools does not mark duplicates correctly. We need to keep them so we can
+							// fix the duplicate marking in ComputeSamTags
+							cmd.addArg("INCLUDE_DUPLICATES", "true");
+							if (rpcMinFragmentSize != null) cmd.addArg("READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE", rpcMinFragmentSize);
+							if (rpcMaxFragmentSize != null) cmd.addArg("READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE", rpcMaxFragmentSize);
+							if (rpcConcordantPercentage != null) cmd.addArg("READ_PAIR_CONCORDANT_PERCENT", rpcConcordantPercentage);
+							execute(cmd);
 						}
 						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
 						if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
@@ -194,27 +193,27 @@ public class SAMEvidenceSource extends EvidenceSource {
 						}
 					}
 					log.info("Computing SAM tags for " + svFile);
-					List<String> args = Lists.newArrayList(
-							"INPUT=" + querysortedFile.getPath(),
-							"OUTPUT=" + taggedFile.getPath());
-					execute(new ComputeSamTags(), args);
+					CommandLineProgramHelper cmd = new CommandLineProgramHelper(new ComputeSamTags());
+					cmd.addArg("INPUT", querysortedFile.getPath());
+					cmd.addArg("OUTPUT", taggedFile.getPath());
+					execute(cmd);
 					if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 						FileHelper.delete(querysortedFile, true);
 					}
 				}
 				log.info("Identifying split reads for " + getFile().getAbsolutePath());
-				List<String> args = Lists.newArrayList(
-						"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
-						"INPUT=" + taggedFile.getPath(),
-						"OUTPUT=" + withsplitreadsFile.getPath(),
-						"REALIGN_EXISTING_SPLIT_READS=" + Boolean.toString(getContext().getConfig().getSoftClip().realignSplitReads));
+				SoftClipsToSplitReads program = new SoftClipsToSplitReads();
+				CommandLineProgramHelper cmd = new CommandLineProgramHelper(program);
+				cmd.addArg("WORKER_THREADS", getProcessContext().getWorkerThreadCount());
+				cmd.addArg("INPUT", taggedFile.getPath());
+				cmd.addArg("OUTPUT", withsplitreadsFile.getPath());
+				cmd.addArg("REALIGN_EXISTING_SPLIT_READS", Boolean.toString(getContext().getConfig().getSoftClip().realignSplitReads));
 						// realignment.* not soft-clip
 						//"MIN_CLIP_LENGTH=" + getContext().getConfig().
 						//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
-				SoftClipsToSplitReads program =  new SoftClipsToSplitReads();
 				program.setReference(getProcessContext().getReference());
 				program.setFileSystemContext(getProcessContext().getFileSystemContext());
-				execute(program, args);
+				execute(cmd);
 				if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 					FileHelper.delete(taggedFile, true);
 				}

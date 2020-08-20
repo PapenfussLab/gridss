@@ -18,7 +18,6 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
-import picard.sam.GatherBamFiles;
 
 import java.io.File;
 import java.io.IOException;
@@ -130,16 +129,15 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		// Merge chunk files
 		File out = getFile();
 		File tmpout = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(getFile()) : out;
-		GatherBamFiles gather = new picard.sam.GatherBamFiles();
-		List<String> args = new ArrayList<>();
+		CommandLineProgramHelper gather = new CommandLineProgramHelper(new picard.sam.GatherBamFiles());
 		for (File f : deduplicatedChunks) {
-			args.add("INPUT=" + f.getPath());
+			gather.addArg("INPUT", f.getPath());
 		}
-		args.add("OUTPUT=" + tmpout.getPath());
+		gather.addArg("OUTPUT", tmpout.getPath());
 		if (getContext().getCommandLineProgram() != null) {
-			args.addAll(CommandLineProgramHelper.getCommonArgs(getContext().getCommandLineProgram()));
+			gather.setCommonArgs(getContext().getCommandLineProgram());
 		}
-		int returnCode = gather.instanceMain(args.toArray(new String[] {}));
+		int returnCode = gather.run();
 		if (returnCode != 0) {
 			String msg = String.format("Error executing GatherBamFiles. GatherBamFiles returned status code %d", returnCode);
 			log.error(msg);
@@ -269,13 +267,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			SoftClipsToSplitReads program = new SoftClipsToSplitReads();
 			program.setReference(getProcessContext().getReference());
 			program.setFileSystemContext(getProcessContext().getFileSystemContext());
-			List<String> args = Lists.newArrayList(
-					"WORKER_THREADS=" + getProcessContext().getWorkerThreadCount(),
-					"INPUT=" + getFile().getPath(),
-					"OUTPUT=" + svFile.getPath(),
-					"READJUST_PRIMARY_ALIGNMENT_POSITION=true",
-					"REALIGN_ENTIRE_READ=" + Boolean.toString(getContext().getConfig().getAssembly().realignContigs));
-			execute(program, args);
+			CommandLineProgramHelper cmd = new CommandLineProgramHelper(program);
+			cmd.addArg("WORKER_THREADS", getProcessContext().getWorkerThreadCount());
+			cmd.addArg("INPUT", getFile().getPath());
+			cmd.addArg("OUTPUT", svFile.getPath());
+			cmd.addArg("READJUST_PRIMARY_ALIGNMENT_POSITION", "true");
+			cmd.addArg("REALIGN_ENTIRE_READ=", getContext().getConfig().getAssembly().realignContigs);
+			execute(cmd);
 		}
 		SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
 	}

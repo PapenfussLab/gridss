@@ -24,7 +24,7 @@ public class ReportThresholdCoverageTest extends IntermediateFilesTest {
 		rtc.THRESHOLD_COVERAGE = 1;
 		rtc.INPUT = input;
 		rtc.output = new RequiredOutputArgumentCollection(output);
-		SinglePassSamProgram.makeItSo(rtc.INPUT, null, true, 0, ImmutableList.of(rtc));
+		SinglePassSamProgram.makeItSo(rtc.INPUT, null, true, 0, 0, ImmutableList.of(rtc));
 		assertTrue(rtc.output.getOutputFile().isFile());
 	}
 	@Test
@@ -35,7 +35,7 @@ public class ReportThresholdCoverageTest extends IntermediateFilesTest {
 		rtc.THRESHOLD_COVERAGE = 1;
 		rtc.INPUT = input;
 		rtc.output = new RequiredOutputArgumentCollection(output);
-		SinglePassSamProgram.makeItSo(rtc.INPUT, null, true, 0, ImmutableList.of(rtc));
+		SinglePassSamProgram.makeItSo(rtc.INPUT, null, true, 0, 0, ImmutableList.of(rtc));
 		List<String> lines = Files.readAllLines(output.toPath());
 		String[] split = lines.get(1).split("\t");
 		

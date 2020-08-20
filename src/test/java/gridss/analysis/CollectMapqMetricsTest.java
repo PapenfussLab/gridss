@@ -36,7 +36,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		CollectMapqMetrics cmm = new CollectMapqMetrics();
 		cmm.INPUT = new File("src/test/resources/203541.bam");
 		cmm.output = new RequiredOutputArgumentCollection(new File(testFolder.getRoot(), "mapqmetrics.txt"));
-		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, ImmutableList.of(cmm));
+		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, 0, ImmutableList.of(cmm));
 		assertTrue(cmm.output.getOutputFile().isFile());
 	}
 	@Test
@@ -45,7 +45,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		cmm.INPUT = new File("src/test/resources/203541.bam");
 		cmm.output = new RequiredOutputArgumentCollection(new File(testFolder.getRoot(), "mapqmetrics.txt"));
 		cmm.Histogram_FILE = new File(testFolder.getRoot(), "mapqhistogram.pdf");
-		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, ImmutableList.of(cmm));
+		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, 0, ImmutableList.of(cmm));
 		assertTrue(cmm.output.getOutputFile().isFile());
 	}
 	@Test
@@ -56,7 +56,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		cmm.INPUT = new File("src/test/resources/203541.bam");
 		cmm.output = new RequiredOutputArgumentCollection(new File(testFolder.getRoot(), "mapqmetrics.txt"));
 		cmm.Histogram_FILE = histogram;
-		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, ImmutableList.of(cmm));
+		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, 0, ImmutableList.of(cmm));
 		assertTrue(histogram.isFile());
 	}
 	@Test
@@ -72,7 +72,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		cmm.INPUT = input;
 		cmm.output = new RequiredOutputArgumentCollection(new File(testFolder.getRoot(), "mapqmetrics.txt"));
 		cmm.Histogram_FILE = new File(testFolder.getRoot(), "mapqhistogram.pdf");
-		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, ImmutableList.of(cmm));
+		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, 0, ImmutableList.of(cmm));
 		MapqMetrics metrics = IdsvSamFileMetrics.getMapqMetrics(cmm.output.getOutputFile());
 		assertEquals(0, metrics.MIN_MAPQ);
 		assertEquals(49, metrics.MAX_MAPQ);

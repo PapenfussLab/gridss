@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import gridss.cmdline.CommandLineProgramHelper;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
@@ -50,18 +51,17 @@ public class CallVariantsTest extends IntermediateFilesTest {
 			writer.write("realignment.aligner=\n");
 		}
 		File assembly = new File(testFolder.getRoot(), "assembly.bam");
-		String[] args = new String[] {
-				"INPUT=" + input.toString(),
-				"ASSEMBLY=" + assembly.toString(),
-				"REFERENCE_SEQUENCE=" + reference.toString(),
-				"OUTPUT=" + output.toString(),
-				"TMP_DIR=" + super.testFolder.getRoot().toString(),
-				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
-				"CONFIGURATION_FILE=" + propfile.toString(),
-				"INPUT_MIN_FRAGMENT_SIZE=10",
-				"INPUT_MAX_FRAGMENT_SIZE=100",
-		};
-		assertEquals(0, new CallVariants().instanceMain(args));
+		CommandLineProgramHelper cmd = new CommandLineProgramHelper(new CallVariants());
+		cmd.addArg("INPUT", input.toString());
+		cmd.addArg("ASSEMBLY" , assembly.toString());
+		cmd.addArg("REFERENCE_SEQUENCE" , reference.toString());
+		cmd.addArg("OUTPUT" , output.toString());
+		cmd.addArg("TMP_DIR" ,super.testFolder.getRoot().toString());
+		cmd.addArg("WORKING_DIR" , super.testFolder.getRoot().toString());
+		cmd.addArg("CONFIGURATION_FILE" , propfile.toString());
+		cmd.addArg("INPUT_MIN_FRAGMENT_SIZE", "10");
+		cmd.addArg("INPUT_MAX_FRAGMENT_SIZE", "100");
+		assertEquals(0, cmd.run());
 		List<SAMRecord> breakendAssemblies = getRecords(assembly);
 		assertEquals(1, breakendAssemblies.size());
 		assembly.delete();

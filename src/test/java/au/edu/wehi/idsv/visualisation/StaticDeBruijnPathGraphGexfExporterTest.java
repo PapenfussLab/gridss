@@ -5,6 +5,7 @@ import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.FileHelper;
 import com.google.common.collect.ImmutableList;
 import gridss.ComputeSamTags;
+import gridss.cmdline.CommandLineProgramHelper;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
@@ -25,10 +26,9 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(ReferenceTests.findReference("chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.tagged.bam"));
-		BuildBamIndex bbi = new BuildBamIndex();
-		bbi.instanceMain(new String[] {
-				"I=" + input.getAbsolutePath()
-		});
+		CommandLineProgramHelper cmd = new CommandLineProgramHelper(new BuildBamIndex());
+		cmd.addArg("I", input.getAbsolutePath());
+		cmd.run();
 		ProcessingContext pc = getCommandlineContext();
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
 		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
@@ -57,12 +57,11 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		File out = new File("src/test/resources/chr12-244000.tagged.bam");
 		SAMFileUtil.sort(getFSContext(), in, insq, SortOrder.queryname);
 		File ref = ReferenceTests.findReference("chr12.fa");
-		ComputeSamTags cmd = new ComputeSamTags();
-		cmd.instanceMain(new String[] {
-				"INPUT=" + insq.getAbsolutePath(),
-				"OUTPUT=" + outsq.getAbsolutePath(),
-				"REFERENCE_SEQUENCE=" + ref.getAbsolutePath()
-		});
+		CommandLineProgramHelper cmd = new CommandLineProgramHelper(new ComputeSamTags());
+		cmd.addArg("I", insq.getAbsolutePath());
+		cmd.addArg("O", outsq.getAbsolutePath());
+		cmd.addArg("REFERENCE_SEQUENCE", ref.getAbsolutePath());
+		cmd.run();
 		SAMFileUtil.sort(getFSContext(), outsq, out, SortOrder.coordinate);
 	}
 }

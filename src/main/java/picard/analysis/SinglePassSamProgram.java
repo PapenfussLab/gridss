@@ -75,6 +75,9 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
     @Argument(doc = "Stop after processing N reads, mainly for debugging.")
     public long STOP_AFTER = 0;
 
+    @Argument(doc = "Stop after processing N bases, mainly for debugging.")
+    public long STOP_AFTER_BASES = 0;
+
     private static final Log log = Log.getInstance(SinglePassSamProgram.class);
 
     @Argument(doc = "Allocate each metrics program it's own thread. I/O and record parsing is still shared.")
@@ -112,7 +115,7 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
      */
     @Override
     protected final int doWork() {
-        makeItSo(INPUT, REFERENCE_SEQUENCE, ASSUME_SORTED, STOP_AFTER, Arrays.asList(this), PROCESS_IN_PARALLEL, PROCESS_IN_PARALLEL);
+        makeItSo(INPUT, REFERENCE_SEQUENCE, ASSUME_SORTED, STOP_AFTER, STOP_AFTER_BASES, Arrays.asList(this), PROCESS_IN_PARALLEL, PROCESS_IN_PARALLEL);
         return 0;
     }
     public static void makeItSo(final File input,
@@ -120,12 +123,21 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
                                 final boolean assumeSorted,
                                 final long stopAfter,
                                 final Collection<SinglePassSamProgram> programs) {
-        makeItSo(input, referenceSequence, assumeSorted, stopAfter, programs, true, true);
+        makeItSo(input, referenceSequence, assumeSorted, stopAfter, 0, programs);
     }
     public static void makeItSo(final File input,
                                 final File referenceSequence,
                                 final boolean assumeSorted,
                                 final long stopAfter,
+                                final long stopAfterBases,
+                                final Collection<SinglePassSamProgram> programs) {
+        makeItSo(input, referenceSequence, assumeSorted, stopAfter, stopAfterBases, programs, true, true);
+    }
+    public static void makeItSo(final File input,
+                                final File referenceSequence,
+                                final boolean assumeSorted,
+                                final long stopAfter,
+                                final long stopAfterBases,
                                 final Collection<SinglePassSamProgram> programs,
                                 boolean parallel,
                                 boolean useAsyncIterator) {
@@ -187,6 +199,7 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
 
         final ProgressLogger progress = new ProgressLogger(log, 10000000);
         try (CloseableIterator<SAMRecord> it = useAsyncIterator ? new AsyncBufferedIterator<>(in.iterator(), BATCH_SIZE, IN_FLIGHT_BATCHES, "SinglePassSamProgram") : in.iterator()){
+            int basesProcessed = 0;
             List<Tuple<ReferenceSequence, SAMRecord>> batch = new ArrayList<>();
             while (it.hasNext()) {
                 final SAMRecord rec =  it.next();
@@ -210,9 +223,13 @@ public abstract class SinglePassSamProgram extends CommandLineProgram {
                 }
 
                 progress.record(rec);
+                basesProcessed += rec.getReadLength();
 
                 // See if we need to terminate early?
                 if (stopAfter > 0 && progress.getCount() >= stopAfter) {
+                    break;
+                }
+                if (stopAfterBases > 0 && basesProcessed >= stopAfterBases) {
                     break;
                 }
 

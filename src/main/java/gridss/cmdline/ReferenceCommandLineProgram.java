@@ -51,11 +51,10 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 			if (rsf.getSequenceDictionary() == null) {
 				log.info("Attempting to create sequence dictionary for " + referenceFile);
 				Path dictPath = path.resolveSibling(path.getFileName().toString() + FileExtensions.DICT);
-				picard.sam.CreateSequenceDictionary csd = new picard.sam.CreateSequenceDictionary();
-				csd.instanceMain(new String[]{
-						"OUTPUT=" + dictPath.toFile(),
-						"R=" + referenceFile.getPath()
-				});
+				CommandLineProgramHelper cmd = new CommandLineProgramHelper(new picard.sam.CreateSequenceDictionary());
+				cmd.addArg("OUTPUT", dictPath.toFile());
+				cmd.addArg("R", referenceFile.getPath());
+				cmd.run();
 				return true;
 			}
 		} catch (Exception e) {
