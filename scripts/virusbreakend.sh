@@ -17,19 +17,22 @@ EX_NOINPUT=66
 EX_CANTCREAT=73
 EX_CONFIG=78
 
-db=""
+kraken2db=""
 workingdir="."
 reference=""
 output_vcf=""
 threads=8
 kraken2args=""
 gridssargs=""
-nodesdmp="nodes.dmp"
+nodesdmp=""
+virushostdb=""
 minreads="50"
 viralgenomes="1"
 metricsrecords=10000000
-metricsmaxcoverage=50000
+metricsmaxcoverage=100000
 maxcoverage=1000000
+hosttaxid=0
+force="false"
 USAGE_MESSAGE="
 Viral Integration Recognition Using Single Breakends
 
@@ -40,15 +43,17 @@ Usage: virusbreakend.sh [options] input.bam
 	-j/--jar: location of GRIDSS jar
 	-t/--threads: number of threads to use. (Default: $threads).
 	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
-	--db: kraken2 database
+	--kraken2db: kraken2 database
+	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: 0 (no host filtering)
+	--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
-	--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: $nodesdmp)
+	--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
 	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
-OPTIONS=o:t:j:w:r:
-LONGOPTS=output:,jar:,threads:,workingdir:,db:,kraken2args:,gridssargs:,nodesdmp:,minreads:
+OPTIONS=o:t:j:w:r:f
+LONGOPTS=output:,jar:,threads:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -80,8 +85,8 @@ while true; do
 			printf -v threads '%d' "$2" 2>/dev/null
 			shift 2
 			;;
-		--db)
-			db="$2"
+		--kraken2db)
+			kraken2db="$2"
 			shift 2
 			;;
 		--kraken2args)
@@ -99,6 +104,19 @@ while true; do
 		--minreads)
 			minreads="$2"
 			shift 2
+			;;
+		--hosttaxid)
+			printf -v hosttaxid '%d\n' "$2" 2>/dev/null
+			printf -v hosttaxid '%d' "$2" 2>/dev/null
+			shift 2
+			;;
+		--virushostdb)
+			virushostdb="$2"
+			shift 2
+			;;
+		-f|--force)
+			force="true"
+			shift 1
 			;;
 		--)
 			shift
@@ -205,37 +223,63 @@ if [[ "$@" == "" ]] ; then
 	write_status  "$USAGE_MESSAGE"
 	write_status  "At least one input bam must be specified."
 fi
-for f in $@ ; do
-	if [[ ! -f $f ]] ; then
-		write_status "Input file $f does not exist"
-		exit $EX_NOINPUT
-	fi
-done
-if [[ "$db" == "" ]] ; then
+if [[ $force != "true" ]] ; then
+	for f in "$@" ; do
+		if [[ ! -f $f ]] ; then
+			write_status "Input file $f does not exist"
+			exit $EX_NOINPUT
+		fi
+	done
+fi
+if [[ "$kraken2db" == "" ]] ; then
 	echo "$USAGE_MESSAGE"
-	write_status "Missing Kraken2 database location. Specify with --db"
+	write_status "Missing Kraken2 database location. Specify with --kraken2db"
 	exit $EX_USAGE
 fi
-if [[ ! -d "$db" ]] ; then
+if [[ ! -d "$kraken2db" ]] ; then
 	echo "$USAGE_MESSAGE"
-	write_status "Unable to find kraken2 database directory '$db'" 
+	write_status "Unable to find kraken2 database directory '$kraken2db'" 
 	exit $EX_NOINPUT
+fi
+if [[ "$nodesdmp" == "" ]] ; then
+	nodesdmp="$kraken2db/taxonomy/nodes.dmp"
 fi
 if [[ ! -f "$nodesdmp" ]] ; then
 	echo "$USAGE_MESSAGE"
 	write_status "Unable to find NCBI nodes.dmp file. Specify with --nodesdmp."
+	write_status "kraken2-build will include this file in taxonomy/nodes.dmp if --clean was not run."
 	write_status "nodes.dmp can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip"
 	exit $EX_NOINPUT
 fi
-
-for f in $@ ; do
-	if [[ "$(tr -d ' 	\n' <<< "$f")" != "$f" ]] ; then
-		write_status "input filenames and paths cannot contain whitespace"
-		exit $EX_USAGE
+taxid_args="-TAXONOMY_IDS null"
+if [[ "$hosttaxid" -gt 0 ]] ; then
+	if [[ ! -f "$virushostdb" ]] ; then
+		write_status "Missing virushostdb file. Specify with --virushostdb"
+		write_status "virushostdb can be downloaded from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv"
 	fi
-	write_status "Using input file $f"
-done
-
+	write_status "Found virushostdb file $virushostdb"
+	i=0
+	for taxid in $(cut -f 1,8 $virushostdb | grep "	$hosttaxid\$" | cut -f 1) ; do
+		i=$(($i + 1))
+		taxid_args="$taxid_args -TAXONOMY_IDS $taxid"
+	done
+	write_status "Found $i viral sequences associated with host NCBI:txid${hosttaxid}"
+	if [[ $i -eq 0 ]]; then
+		write_status "Terminating early due to 0 sequences of interest for host NCBI:txid${hosttaxid}"
+		exit $EX_CONFIG
+	fi
+else
+	taxid_args="$taxid_args -TAXONOMY_IDS 10239" 	# All viruses
+fi
+if [[ $force != "true" ]] ; then
+	for f in "$@" ; do
+		if [[ "$(tr -d ' 	\n' <<< "$f")" != "$f" ]] ; then
+			write_status "input filenames and paths cannot contain whitespace"
+			exit $EX_USAGE
+		fi
+		write_status "Using input file $f"
+	done
+fi
 # Validate tools exist on path
 for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh samtools java bwa Rscript ; do
 	if ! which $tool >/dev/null; then
@@ -269,7 +313,7 @@ fi
 
 # Check kraken2 library files
 library_arg=""
-for fna in $(find $db -name library.fna) ; do
+for fna in $(find $kraken2db -name library.fna) ; do
 	if [[ ! -f $fna.fai ]] ; then
 		write_status "Indexing $fna (once-off operation)"
 		samtools faidx $fna
@@ -277,9 +321,9 @@ for fna in $(find $db -name library.fna) ; do
 	library_arg="$library_arg -KRAKEN_REFERENCES $fna"
 done
 if [[ "$library_arg" == "" ]] ; then
-	write_status "Unable to find any library.fna files in '$db'."
-	write_status "SVIBI requires the viral kraken2 reference genomes to be retained."
-	write_status "Download using \'kraken2-build --download-library viral --db \"$db\"'"
+	write_status "Unable to find any library.fna files in '$kraken2db'."
+	write_status "VIRUSbreakend requires the viral kraken2 reference genomes to be retained."
+	write_status "Download using \'kraken2-build --download-library viral --db \"$kraken2db\"'"
 	write_status "and do not run kraken2-build --clean as it will remove these files."
 	exit $EX_NOINPUT
 fi
@@ -310,20 +354,12 @@ exec_concat_fastq=$file_prefix.cat_input_as_fastq.sh
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
 	rm -f $file_prefix.readnames.txt.tmp
-	# TODO: support fastq (and compressed fastq) inputs via cat pass-through and decompression to stdout
-	# TODO: deal with fastq pairing
 	cat > $exec_concat_fastq << EOF
 #!/bin/bash
 java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.UnmappedSequencesToFastq \\
 EOF
-	for f in $@ ; do
-		#if [[ "$f" != "${f/.cram/}" ]] && [[ $threads -gt 2 ]] ; then
-			# htsjdk does not do multi-thread CRAM decompression
-			# We get better wall time performance by offloading this to samtools
-			#echo "	-INPUT <(samtools view -u -@ $threads $f) \\" >> $exec_concat_fastq
-		#else
-			echo "	-INPUT $f \\" >> $exec_concat_fastq
-		#fi
+	for f in "$@" ; do
+		echo "	-INPUT $f \\" >> $exec_concat_fastq
 	done
 	cat >> $exec_concat_fastq << EOF
 	-OUTPUT /dev/stdout \\
@@ -335,7 +371,7 @@ EOF
 	{ $timecmd $exec_concat_fastq \
 	| kraken2 \
 		--threads $threads \
-		--db $db \
+		--db $kraken2db \
 		--report $file_report \
 		$kraken2args \
 		/dev/stdin \
@@ -354,24 +390,26 @@ if [[ ! -f $file_viral_fa ]] ; then
 		-OUTPUT $file_viral_fa \
 		-REPORT_OUTPUT $file_viral_report \
 		-NCBI_NODES_DMP $nodesdmp \
-		-KRAKEN_REFERENCES $db/library/viral/library.fna \
+		-KRAKEN_REFERENCES $kraken2db/library/viral/library.fna \
 		-MIN_SUPPORTING_READS $minreads \
 		-SEQUENCES_TO_RETURN $viralgenomes \
+		$taxid_args \
 	; } 1>&2 2>> $logfile
 fi
-if [[ -s  $file_viral_fa ]] ; then
-	write_status "No viral sequences passed the minimum support threshold."
+if [[ ! -s $file_viral_fa ]] ; then
+	write_status "No viral sequences supported by at least $minreads reads."
 	trap - EXIT
 	exit 0 # success!
 fi
 if [[ ! -f $file_viral_fa.bwt ]] ; then
-	write_status "Creating bwa index of viral sequences"
-	{ $timecmd bwa index $file_viral_fa ; } 1>&2 2>> $logfile
+	write_status "Creating index of viral sequences"
+	{ $timecmd samtools faidx $file_viral_fa && bwa index $file_viral_fa ; } 1>&2 2>> $logfile
 fi
 
 gridss_input_args=""
-for f in $@ ; do
-	infile_prefix=$workingdir/$(basename $f)
+for f in "$@" ; do
+	basef=$(basename "$f" | tr -d ' 	<(:/|$@&%^\\)>')
+	infile_prefix=$workingdir/$basef
 	infile_fq=$infile_prefix.viral.unpaired.fq
 	infile_fq1=$infile_prefix.viral.R1.fq
 	infile_fq2=$infile_prefix.viral.R2.fq
@@ -379,15 +417,18 @@ for f in $@ ; do
 	infile_bam=$infile_prefix.viral.bam
 	
 	if [[ ! -f $infile_fq ]] ; then
+		exec_concat_fastq=$infile_prefix.extract_reads.sh
 		write_status "Extracting viral reads	$f"
-		# TODO: HACK: add samtools decompression	
-		{ $timecmd java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \
-			-INPUT $f \
-			-READ_NAMES $file_readname \
-			-OUTPUT_FQ $infile_fq \
-			-OUTPUT_FQ1 $infile_fq1 \
-			-OUTPUT_FQ2 $infile_fq2 \
-		; } 1>&2 2>> $logfile
+		cat > $exec_concat_fastq << EOF
+java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \\
+	-INPUT $f \\
+	-READ_NAMES $file_readname \\
+	-OUTPUT_FQ $infile_fq \\
+	-OUTPUT_FQ1 $infile_fq1 \\
+	-OUTPUT_FQ2 $infile_fq2
+EOF
+		chmod +x $exec_concat_fastq
+		{ $timecmd $exec_concat_fastq ; } 1>&2 2>> $logfile
 	fi
 	if [[ ! -f $infile_bam ]] ; then
 		write_status "Aligning viral reads	$f"
@@ -401,8 +442,8 @@ for f in $@ ; do
 		&& samtools index $infile_bam \
 		; } 1>&2 2>> $logfile
 	fi
-	gridss_dir=$workingdir/$(basename $f).viral.bam.gridss.working
-	gridss_prefix=$workingdir/$(basename $f).viral.bam.gridss.working/$(basename $f).viral.bam
+	gridss_dir=$workingdir/$infile_bam.gridss.working
+	gridss_prefix=$workingdir/$infile_bam.gridss.working/$infile_bam
 	if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
 		write_status "Gathering metrics from host alignment	$f"
 		# Ideally the metrics on the viral sequence would match the metrics from the host.
@@ -414,7 +455,7 @@ for f in $@ ; do
 		mkdir -p $gridss_dir
 		{ $timecmd java -Xmx4g $jvm_args \
 			-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
-			--INPUT $f \
+			--INPUT $infile_bam \
 			--OUTPUT $gridss_prefix \
 			--REFERENCE_SEQUENCE $reference \
 			--THRESHOLD_COVERAGE $metricsmaxcoverage \
@@ -457,7 +498,7 @@ if [[ ! -f $file_kraken_annotated_vcf ]] ; then
 	{ $timecmd gridss_annotate_vcf_kraken2.sh \
 		-o $file_kraken_annotated_vcf \
 		-j $gridss_jar \
-		--db $db \
+		--kraken2db $kraken2db \
 		--threads $threads \
 		$kraken2args \
 		$file_host_annotated_vcf  \

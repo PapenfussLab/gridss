@@ -17,24 +17,24 @@ EX_NOINPUT=66
 EX_CANTCREAT=73
 EX_CONFIG=78
 
-db=""
+kraken2db=""
 output="/dev/stdout"
 threads=$(nproc)
 kraken2="kraken2"
 kraken2args=""
 minlength="20"
 USAGE_MESSAGE="
-Usage: gridss_annotate_vcf_kraken2.sh [options] --jar gridss.jar --db standard input.vcf
+Usage: gridss_annotate_vcf_kraken2.sh [options] --jar gridss.jar --kraken2db standard input.vcf
 	-o,--output: output vcf file. Defaults to stdout.
 	-j/--jar: location of GRIDSS jar
-	--db: kraken2 database
+	--kraken2db: kraken2 database
 	--threads: number of threads to use. Defaults to the number of cores available ($threads)
 	--kraken2: kraken2 executable. (Default: $kraken2)
 	--kraken2args: additional kraken2 arguments
 	--minlength: minimum length of inserted sequence to annotate. (Default: $minlength)
 	"
 OPTIONS=o:t:j:
-LONGOPTS=db:,threads:,kraken2:,kraken2args:,jar:,minlength:
+LONGOPTS=kraken2db:,threads:,kraken2:,kraken2args:,jar:,minlength:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -53,8 +53,8 @@ while true; do
             GRIDSS_JAR="$2"
             shift 2
             ;;
-		--db)
-            db="$2"
+		--kraken2db)
+            kraken2db="$2"
             shift 2
             ;;
 		-t|--threads)
@@ -121,14 +121,14 @@ if [[ "$threads" -lt 1 ]] ; then
 	exit $EX_USAGE
 fi
 write_status  "Using $threads worker threads."
-if [[ "$db" == "" ]] ; then
+if [[ "$kraken2db" == "" ]] ; then
 	echo "$USAGE_MESSAGE"
-	write_status "Missing Kraken2 database location. Specify with --db"
+	write_status "Missing Kraken2 database location. Specify with --kraken2db"
 	exit $EX_USAGE
 fi
-if [[ ! -d "$db" ]] ; then
+if [[ ! -d "$kraken2db" ]] ; then
 	echo "$USAGE_MESSAGE"
-	write_status "Unable to find kraken2 database directory '$db'" 
+	write_status "Unable to find kraken2 database directory '$kraken2db'" 
 	exit $EX_NOINPUT
 fi
 if [[ "$output" == "" ]] ; then
@@ -172,7 +172,7 @@ java -Xmx64m $jvm_args -cp $gridss_jar gridss.InsertedSequencesToFasta \
 	-MIN_SEQUENCE_LENGTH $minlength \
 | $kraken2 \
 	--threads $threads \
-	--db $db \
+	--db $kraken2db \
 	--output /dev/stdout \
 	$kraken2args \
 	/dev/stdin \
