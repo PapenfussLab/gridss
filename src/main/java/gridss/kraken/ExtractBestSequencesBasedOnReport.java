@@ -74,10 +74,11 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             log.info("Loading NCBI taxonomy from ", NCBI_NODES_DMP);
             Map<Integer, MinimalTaxonomyNode> taxa = TaxonomyHelper.parseMinimal(NCBI_NODES_DMP);
             boolean[] taxIdLookup = TaxonomyHelper.createInclusionLookup(TAXONOMY_IDS, taxa);
+            boolean[] relevantTaxIdAndAncestors = TaxonomyHelper.addAncestors(taxIdLookup, taxa);
             log.info("Parsing Kraken2 report from ", INPUT);
             List<KrakenReportLine> filteredReport = Files.lines(INPUT.toPath())
                     .map(s -> new KrakenReportLine(s))
-                    .filter(s -> taxIdLookup[s.taxonomyId])
+                    .filter(s -> relevantTaxIdAndAncestors[s.taxonomyId])
                     .collect(Collectors.toList());
             if (REPORT_OUTPUT != null) {
                 log.info("Writing abridged report to ", REPORT_OUTPUT);

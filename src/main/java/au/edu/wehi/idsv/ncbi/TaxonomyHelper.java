@@ -74,4 +74,18 @@ public abstract class TaxonomyHelper {
         }
         return result;
     }
+    public static boolean[] addAncestors(boolean[] taxa, Map<Integer, MinimalTaxonomyNode> lookup) {
+        boolean[] result = Arrays.copyOf(taxa, taxa.length);
+        for (int i = 0; i < result.length; i++) {
+            if (taxa[i]) {
+                // iterate up the tree
+                MinimalTaxonomyNode node = lookup.get(i);
+                while (node != null && node.taxId != node.parentTaxId) {
+                    node = lookup.get(node.parentTaxId);
+                    result[node.taxId] = true;
+                }
+            }
+        }
+        return result;
+    }
 }
