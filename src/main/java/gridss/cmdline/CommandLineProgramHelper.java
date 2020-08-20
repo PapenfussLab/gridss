@@ -59,18 +59,18 @@ public class CommandLineProgramHelper {
 		copyInputs(from, program);
 	}
 	public void setCommonArgs(CommandLineProgram from) {
-		addArg("COMPRESSION_LEVEL", program.COMPRESSION_LEVEL);
-		addArg("CREATE_INDEX", (program.CREATE_INDEX == null ? "null" : program.CREATE_INDEX.toString()));
-		addArg("CREATE_MD5_FILE", program.CREATE_MD5_FILE);
-		addArg("GA4GH_CLIENT_SECRETS", (program.GA4GH_CLIENT_SECRETS == null ? "null" : program.GA4GH_CLIENT_SECRETS));
-		addArg("MAX_RECORDS_IN_RAM", (program.MAX_RECORDS_IN_RAM == null ? "null" : program.MAX_RECORDS_IN_RAM.toString()));
-		addArg("QUIET", (program.QUIET == null ? "null" : Boolean.toString(program.QUIET)));
-		if (program.referenceSequence.getReferenceFile() != null) {
-			addArg("REFERENCE_SEQUENCE", program.referenceSequence.getReferenceFile().getPath());
+		addArg("COMPRESSION_LEVEL", from.COMPRESSION_LEVEL);
+		addArg("CREATE_INDEX", (from.CREATE_INDEX == null ? "null" : from.CREATE_INDEX.toString()));
+		addArg("CREATE_MD5_FILE", from.CREATE_MD5_FILE);
+		addArg("GA4GH_CLIENT_SECRETS", (from.GA4GH_CLIENT_SECRETS == null ? "null" : from.GA4GH_CLIENT_SECRETS));
+		addArg("MAX_RECORDS_IN_RAM", (from.MAX_RECORDS_IN_RAM == null ? "null" : from.MAX_RECORDS_IN_RAM.toString()));
+		addArg("QUIET", (from.QUIET == null ? "null" : Boolean.toString(from.QUIET)));
+		if (from.referenceSequence.getReferenceFile() != null) {
+			addArg("REFERENCE_SEQUENCE", from.referenceSequence.getReferenceFile().getPath());
 		}
-		addArg("VALIDATION_STRINGENCY", (program.VALIDATION_STRINGENCY == null ? "null" : program.VALIDATION_STRINGENCY.toString()));
-		addArg("VERBOSITY", (program.VERBOSITY == null ? "null" : program.VERBOSITY.toString()));
-		if (program.TMP_DIR == null || program.TMP_DIR.size() == 0) {
+		addArg("VALIDATION_STRINGENCY", (from.VALIDATION_STRINGENCY == null ? "null" : from.VALIDATION_STRINGENCY.toString()));
+		addArg("VERBOSITY", (from.VERBOSITY == null ? "null" : from.VERBOSITY.toString()));
+		if (from.TMP_DIR == null || from.TMP_DIR.size() == 0) {
 			addArg("TMP_DIR", "null");
 		} else {
 			for (File tmp : program.TMP_DIR) {
