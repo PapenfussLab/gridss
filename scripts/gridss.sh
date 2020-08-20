@@ -574,139 +574,175 @@ if [[ $do_preprocess == true ]] ; then
 					THRESHOLD_COVERAGE=$maxcoverage \
 					FILE_EXTENSION=null \
 					GRIDSS_PROGRAM=null \
+					GRIDSS_PROGRAM=CollectIdsvMetrics \
 					PROGRAM=null \
 					PROGRAM=CollectInsertSizeMetrics \
 					STOP_AFTER=$metricsrecords \
+					STOP_AFTER_BASES=$(($metricsrecords * 100)) \
 					$picardoptions \
 			; } 1>&2 2>> $logfile
-			write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
-			{ $timecmd java -Xmx4g $jvm_args \
-					-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
-					TMP_DIR=$dir \
-					ASSUME_SORTED=true \
-					I=$f \
-					O=$prefix \
-					THRESHOLD_COVERAGE=$maxcoverage \
-					FILE_EXTENSION=null \
-					GRIDSS_PROGRAM=null \
-					GRIDSS_PROGRAM=CollectCigarMetrics \
-					GRIDSS_PROGRAM=CollectMapqMetrics \
-					GRIDSS_PROGRAM=CollectTagMetrics \
-					GRIDSS_PROGRAM=CollectIdsvMetrics \
-					GRIDSS_PROGRAM=ReportThresholdCoverage \
-					PROGRAM=null \
-					PROGRAM=CollectInsertSizeMetrics \
-					SV_OUTPUT=/dev/stdout \
-					COMPRESSION_LEVEL=0 \
-					METRICS_OUTPUT=$prefix.sv_metrics \
-					INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
-					$readpairing_args \
-					UNMAPPED_READS=false \
-					MIN_CLIP_LENGTH=5 \
-					INCLUDE_DUPLICATES=true \
-					$picardoptions \
-			| $timecmd samtools sort \
-					-n \
-					-T $tmp_prefix.namedsorted-tmp \
-					-Obam \
-					-o $tmp_prefix.namedsorted.bam \
-					-@ $threads \
-					/dev/stdin \
-			; } 1>&2 2>> $logfile
-			if [[ -f $tmp_prefix.insert_size_metrics ]] ; then
-				$rmcmd $tmp_prefix.insert_size_metrics $tmp_prefix.insert_size_histogram.pdf
-			fi
-			if [[ "$externalaligner" == "true" ]] ; then
-				write_status "Running	ComputeSamTags|samtools	$f"
-				rm -f $tmp_prefix.coordinate-tmp*
+			max_read_length=$(grep -A 1 "^MAX_READ_LENGTH" $tmp_prefix.idsv_metrics | cut -f 1 | tail -1)
+			if [[ "0${max_read_length}" -ge 1000 ]] ; then
+				write_status "Treating	$f	as long read data. Warning: GRIDSS required error corrected/HiFi long read sequences."
+				write_status "*****"
+				write_status "Raw uncorrected ONT/PacBoio are not yet supported."
+				write_status "*****"
+				write_status "Running	CollectGridssMetricsAndExtractSVReads	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
-						-cp $gridss_jar gridss.ComputeSamTags \
+						-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 						TMP_DIR=$dir \
-						WORKING_DIR=$workingdir \
-						REFERENCE_SEQUENCE=$reference \
-						COMPRESSION_LEVEL=0 \
-						I=$tmp_prefix.namedsorted.bam \
-						O=/dev/stdout \
-						RECALCULATE_SA_SUPPLEMENTARY=true \
-						SOFTEN_HARD_CLIPS=true \
-						FIX_MATE_INFORMATION=true \
-						FIX_DUPLICATE_FLAG=true \
-						FIX_SA=true \
-						FIX_MISSING_HARD_CLIP=true \
-						TAGS=null \
-						TAGS=NM \
-						TAGS=SA \
-						TAGS=R2 \
-						TAGS=Q2 \
-						TAGS=MC \
-						TAGS=MQ \
 						ASSUME_SORTED=true \
+						I=$f \
+						O=$prefix \
+						THRESHOLD_COVERAGE=$maxcoverage \
+						FILE_EXTENSION=null \
+						GRIDSS_PROGRAM=null \
+						GRIDSS_PROGRAM=CollectCigarMetrics \
+						GRIDSS_PROGRAM=CollectMapqMetrics \
+						GRIDSS_PROGRAM=CollectTagMetrics \
+						GRIDSS_PROGRAM=CollectIdsvMetrics \
+						GRIDSS_PROGRAM=ReportThresholdCoverage \
+						PROGRAM=null \
+						PROGRAM=CollectInsertSizeMetrics \
+						SV_OUTPUT=$prefix.sv.bam \
+						METRICS_OUTPUT=$prefix.sv_metrics \
+						INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
+						$readpairing_args \
+						UNMAPPED_READS=false \
+						MIN_CLIP_LENGTH=50 \
+						INCLUDE_DUPLICATES=true \
 						$picardoptions \
-				| $timecmd samtools sort \
-						-T $tmp_prefix.coordinate-tmp \
-						-Obam \
-						-o $tmp_prefix.coordinate.bam \
-						-@ $threads \
-						/dev/stdin \
-				; } 1>&2 2>> $logfile
-				$rmcmd $tmp_prefix.namedsorted.bam
-				write_status "Running	SoftClipsToSplitReads	$f"
-				{ $timecmd java -Xmx4g $jvm_args \
-						-Dsamjdk.create_index=false \
-						-cp $gridss_jar gridss.SoftClipsToSplitReads \
-						TMP_DIR=$workingdir \
-						WORKING_DIR=$workingdir \
-						REFERENCE_SEQUENCE=$reference \
-						I=$tmp_prefix.coordinate.bam \
-						O=$tmp_prefix.sc2sr.primary.sv.bam \
-						OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
-						WORKER_THREADS=$threads \
-						$picardoptions \
-				&& $rmcmd $tmp_prefix.coordinate.bam \
-				&& $timecmd samtools sort \
-						-@ $threads \
-						-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
-						-Obam \
-						-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
-						$tmp_prefix.sc2sr.supp.sv.bam \
-				&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
-				&& $timecmd samtools merge \
-						-@ $threads \
-						$prefix.sv.tmp.bam \
-						$tmp_prefix.sc2sr.primary.sv.bam \
-						$tmp_prefix.sc2sr.suppsorted.sv.bam \
-				&& $timecmd samtools index $prefix.sv.tmp.bam \
-				&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
-				&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
-				&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
-				&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 				; } 1>&2 2>> $logfile
 			else
-				write_status "Running	PreprocessForBreakendAssembly|samtools	$f"
-				rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
+				write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
-						-cp $gridss_jar gridss.PreprocessForBreakendAssembly \
+						-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 						TMP_DIR=$dir \
-						WORKING_DIR=$workingdir \
-						REFERENCE_SEQUENCE=$reference \
+						ASSUME_SORTED=true \
+						I=$f \
+						O=$prefix \
+						THRESHOLD_COVERAGE=$maxcoverage \
+						FILE_EXTENSION=null \
+						GRIDSS_PROGRAM=null \
+						GRIDSS_PROGRAM=CollectCigarMetrics \
+						GRIDSS_PROGRAM=CollectMapqMetrics \
+						GRIDSS_PROGRAM=CollectTagMetrics \
+						GRIDSS_PROGRAM=CollectIdsvMetrics \
+						GRIDSS_PROGRAM=ReportThresholdCoverage \
+						PROGRAM=null \
+						PROGRAM=CollectInsertSizeMetrics \
+						SV_OUTPUT=/dev/stdout \
 						COMPRESSION_LEVEL=0 \
-						I=$tmp_prefix.namedsorted.bam \
-						O=/dev/stdout \
-						WORKER_THREADS=$threads \
-						ALIGNER=BWAMEM \
-						ALIGNER_BATCH_SIZE=10000 \
+						METRICS_OUTPUT=$prefix.sv_metrics \
+						INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
+						$readpairing_args \
+						UNMAPPED_READS=false \
+						MIN_CLIP_LENGTH=5 \
+						INCLUDE_DUPLICATES=true \
 						$picardoptions \
 				| $timecmd samtools sort \
-						-@ $threads \
-						-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+						-n \
+						-T $tmp_prefix.namedsorted-tmp \
 						-Obam \
-						-o $prefix.sv.tmp.bam \
+						-o $tmp_prefix.namedsorted.bam \
+						-@ $threads \
 						/dev/stdin \
-				&& $rmcmd $tmp_prefix.namedsorted.bam \
-				&& $timecmd samtools index $prefix.sv.tmp.bam \
-				&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
-				&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 				; } 1>&2 2>> $logfile
+				if [[ "$externalaligner" == "true" ]] ; then
+					write_status "Running	ComputeSamTags|samtools	$f"
+					rm -f $tmp_prefix.coordinate-tmp*
+					{ $timecmd java -Xmx4g $jvm_args \
+							-cp $gridss_jar gridss.ComputeSamTags \
+							TMP_DIR=$dir \
+							WORKING_DIR=$workingdir \
+							REFERENCE_SEQUENCE=$reference \
+							COMPRESSION_LEVEL=0 \
+							I=$tmp_prefix.namedsorted.bam \
+							O=/dev/stdout \
+							RECALCULATE_SA_SUPPLEMENTARY=true \
+							SOFTEN_HARD_CLIPS=true \
+							FIX_MATE_INFORMATION=true \
+							FIX_DUPLICATE_FLAG=true \
+							FIX_SA=true \
+							FIX_MISSING_HARD_CLIP=true \
+							TAGS=null \
+							TAGS=NM \
+							TAGS=SA \
+							TAGS=R2 \
+							TAGS=Q2 \
+							TAGS=MC \
+							TAGS=MQ \
+							ASSUME_SORTED=true \
+							$picardoptions \
+					| $timecmd samtools sort \
+							-T $tmp_prefix.coordinate-tmp \
+							-Obam \
+							-o $tmp_prefix.coordinate.bam \
+							-@ $threads \
+							/dev/stdin \
+					; } 1>&2 2>> $logfile
+					$rmcmd $tmp_prefix.namedsorted.bam
+					write_status "Running	SoftClipsToSplitReads	$f"
+					{ $timecmd java -Xmx4g $jvm_args \
+							-Dsamjdk.create_index=false \
+							-cp $gridss_jar gridss.SoftClipsToSplitReads \
+							TMP_DIR=$workingdir \
+							WORKING_DIR=$workingdir \
+							REFERENCE_SEQUENCE=$reference \
+							I=$tmp_prefix.coordinate.bam \
+							O=$tmp_prefix.sc2sr.primary.sv.bam \
+							OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
+							WORKER_THREADS=$threads \
+							$picardoptions \
+					&& $rmcmd $tmp_prefix.coordinate.bam \
+					&& $timecmd samtools sort \
+							-@ $threads \
+							-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+							-Obam \
+							-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
+							$tmp_prefix.sc2sr.supp.sv.bam \
+					&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
+					&& $timecmd samtools merge \
+							-@ $threads \
+							$prefix.sv.tmp.bam \
+							$tmp_prefix.sc2sr.primary.sv.bam \
+							$tmp_prefix.sc2sr.suppsorted.sv.bam \
+					&& $timecmd samtools index $prefix.sv.tmp.bam \
+					&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
+					&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
+					&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+					&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+					; } 1>&2 2>> $logfile
+				else
+					write_status "Running	PreprocessForBreakendAssembly|samtools	$f"
+					rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
+					{ $timecmd java -Xmx4g $jvm_args \
+							-cp $gridss_jar gridss.PreprocessForBreakendAssembly \
+							TMP_DIR=$dir \
+							WORKING_DIR=$workingdir \
+							REFERENCE_SEQUENCE=$reference \
+							COMPRESSION_LEVEL=0 \
+							I=$tmp_prefix.namedsorted.bam \
+							O=/dev/stdout \
+							WORKER_THREADS=$threads \
+							ALIGNER=BWAMEM \
+							ALIGNER_BATCH_SIZE=10000 \
+							$picardoptions \
+					| $timecmd samtools sort \
+							-@ $threads \
+							-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+							-Obam \
+							-o $prefix.sv.tmp.bam \
+							/dev/stdin \
+					&& $rmcmd $tmp_prefix.namedsorted.bam \
+					&& $timecmd samtools index $prefix.sv.tmp.bam \
+					&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+					&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+					; } 1>&2 2>> $logfile
+				fi
+			fi
+			if [[ -f $tmp_prefix.insert_size_metrics ]] ; then
+				$rmcmd $tmp_prefix.insert_size_metrics $tmp_prefix.idsv_metrics $tmp_prefix.insert_size_histogram.pdf
 			fi
 			if [[ ! -f $prefix.sv.bam ]] ; then
 				write_status "pre-processing failed for $f"
