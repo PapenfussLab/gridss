@@ -3,10 +3,15 @@ package gridss;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.NmTagIterator;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.TemplateTagsIterator;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.util.ParallelTransformIterator;
+import au.edu.wehi.idsv.util.UngroupingIterator;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -24,6 +29,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @CommandLineProgramProperties(
 		summary = "Populates computed SAM tags. "
@@ -66,6 +74,10 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			//SAMTag.Q2.name(), // dropping Q2 to improve runtime performance and file size
 			SAMTag.MC.name(),
 			SAMTag.MQ.name());
+	@Argument(doc = "Number of worker threads to spawn. Defaults to number of cores available."
+			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
+			shortName = "THREADS")
+	public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
 	@Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -89,29 +101,15 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     				header.setSortOrder(SortOrder.unsorted);
     			}
 				ProgressLogger progress = new ProgressLogger(log);
-				String threadPrefix = INPUT.getName() + "-";
+				ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("ComputeSamTags-%d").build());
     			try (SAMRecordIterator it = reader.iterator()) {
+					Iterator<SAMRecord> asyncIt = transform(threadpool, Defaults.ASYNC_BUFFER_SIZE, it);
     				File tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.") : OUTPUT;
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-						CloseableIterator<SAMRecord> asyncIn = new AsyncBufferedIterator<>(it, threadPrefix + "raw");
-						Iterator<SAMRecord> perRecord = computePerRecordFields(asyncIn, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
-						// TODO: batched parallel transform iterators are a faster option than a single thread for NM, and a single thread for all the other tags
-						CloseableIterator<SAMRecord> asyncPerRecord = new AsyncBufferedIterator<>(perRecord, threadPrefix + "nm");
-						Iterator<List<SAMRecord>> groupByFragment = TemplateTagsIterator.withGrouping(asyncPerRecord);
-						Iterator<List<SAMRecord>> perFragment = computePerFragmentFields(groupByFragment, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
-						CloseableIterator<List<SAMRecord>> asyncPerFragment = new AsyncBufferedIterator<>(perFragment, threadPrefix + "tags");
-						try {
-							while (asyncPerFragment.hasNext()) {
-								List<SAMRecord> rl = asyncPerFragment.next();
-								for (SAMRecord r : rl) {
-									writer.addAlignment(r);
-									progress.record(r);
-								}
-							}
-						} finally {
-							asyncIn.close();
-							asyncPerFragment.close();
-							asyncPerFragment.close();
+						while (asyncIt.hasNext()) {
+							SAMRecord r = asyncIt.next();
+							writer.addAlignment(r);
+							progress.record(r);
 						}
     				}
     				if (tmpoutput != OUTPUT) {
@@ -125,30 +123,50 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		}
     	return 0;
 	}
-
-	public static Iterator<SAMRecord> computePerRecordFields(Iterator<SAMRecord> rawIt, ReferenceLookup reference, Set<String> tags,
-																	boolean softenHardClips,
-																	boolean fixMates,
-																	boolean fixDuplicates,
-																	boolean fixSA,
-																	boolean fixTruncated,
-																	boolean recalculateSupplementary) {
-		Iterator<SAMRecord> it = rawIt;
-		if (tags.contains(SAMTag.NM.name()) || tags.contains(SAMTag.SA.name())) {
-			it = new NmTagIterator(it, reference);
+	public Iterator<SAMRecord> transform(Executor threadpool, int batchSize, Iterator<SAMRecord> it) {
+		final Set<String> tags = TAGS;
+		final boolean softenHardClips = SOFTEN_HARD_CLIPS;
+		final boolean fixMates = FIX_MATE_INFORMATION;
+		final boolean fixDuplicates = FIX_DUPLICATE_FLAG;
+		final boolean fixSA = FIX_SA;
+		final boolean fixTruncated = FIX_MISSING_HARD_CLIP;
+		final boolean recalculateSupplementary = RECALCULATE_SA_SUPPLEMENTARY;
+		final ReferenceLookup reference = isReferenceRequired() ? getReference() : null;
+		Iterator<List<SAMRecord>> groupByFragment = TemplateTagsIterator.withGrouping(it);
+		ParallelTransformIterator<List<SAMRecord>, List<SAMRecord>> parallelIt = new ParallelTransformIterator<>(
+				groupByFragment,
+				r -> transform(
+					r,
+					tags,
+					softenHardClips,
+					fixMates,
+					fixDuplicates,
+					fixSA,
+					fixTruncated,
+					recalculateSupplementary,
+					reference),
+				batchSize,
+				threadpool);
+		return new UngroupingIterator(parallelIt);
+	}
+	private static List<SAMRecord> transform(
+			List<SAMRecord> records,
+			Set<String> tags,
+			boolean softenHardClips,
+			boolean fixMates,
+			boolean fixDuplicates,
+			boolean fixSA,
+			boolean fixTruncated,
+			boolean recalculateSupplementary,
+			ReferenceLookup reference) {
+		if ((tags.contains(SAMTag.NM.name()) || tags.contains(SAMTag.SA.name()))) {
+			for (SAMRecord r : records) {
+				SAMRecordUtil.ensureNmTag(reference, r);
+			}
 		}
-		return it;
+		SAMRecordUtil.calculateTemplateTags(records, tags, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary);
+		return records;
 	}
-	public static Iterator<List<SAMRecord>> computePerFragmentFields(Iterator<List<SAMRecord>> groupedIt, ReferenceLookup reference, Set<String> tags,
-																		   boolean softenHardClips,
-																		   boolean fixMates,
-																		   boolean fixDuplicates,
-																		   boolean fixSA,
-																		   boolean fixTruncated,
-																		   boolean recalculateSupplementary) {
-		return new TemplateTagsIterator(groupedIt, softenHardClips, fixMates, fixDuplicates, fixSA, fixTruncated, recalculateSupplementary, tags);
-	}
-
 	protected boolean isReferenceRequired() {
 		return TAGS.contains(SAMTag.NM.name()) ||
 				TAGS.contains(SAMTag.SA.name()); // SA requires NM

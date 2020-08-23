@@ -13,11 +13,13 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
+import htsjdk.samtools.util.AsyncReadTaskRunner;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import org.checkerframework.checker.units.qual.C;
 import picard.cmdline.StandardOptionDefinitions;
 
 import java.io.File;
@@ -30,7 +32,9 @@ import java.util.Set;
 @CommandLineProgramProperties(
 		summary = "Preprocesses a readname sorted file for use in the GRIDSS assembler. " +
 				" This command combines ComputeSamTags and SoftClipsToSplitReads, only exposing parameters consistent" +
-				" with GRIDSS assembler input requirements. Realignment is done in-process.",
+				" with GRIDSS assembler input requirements. Realignment is done in-process." +
+				" To better control CPU usage, ComputeSamTags uses the htsjdk non-blocking thread pool to perform it's work." +
+				" Use -Dsamjdk.async_io_read_threads to control thread count.",
         oneLineSummary = "Preprocesses a readname sorted file for use in the GRIDSS assembler.",
         programGroup = picard.cmdline.programgroups.ReadDataManipulationProgramGroup.class
 )
@@ -127,6 +131,16 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		realigner.setAdjustPrimaryAlignment(false);
 		realigner.setRealignEntireRecord(false);
 		realigner.setRealignExistingSplitReads(false);
+		ComputeSamTags tags = new ComputeSamTags();
+		tags.setReference(this.getReference());
+		tags.WORKER_THREADS = -1; // don't use ComputeSamTags workers - we're handling this ourselves
+		tags.TAGS = TAGS;
+		tags.FIX_DUPLICATE_FLAG = FIX_DUPLICATE_FLAG;
+		tags.FIX_MATE_INFORMATION = FIX_MATE_INFORMATION;
+		tags.FIX_SA = FIX_SA;
+		tags.FIX_MISSING_HARD_CLIP = FIX_MISSING_HARD_CLIP;
+		tags.RECALCULATE_SA_SUPPLEMENTARY = RECALCULATE_SA_SUPPLEMENTARY;
+		tags.SOFTEN_HARD_CLIPS = SOFTEN_HARD_CLIPS;
 		String threadPrefix = INPUT.getName() + "-";
 		try {
 			SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
@@ -149,13 +163,9 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 					File tmpOutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.PreprocessForBReakendAssembly.") : OUTPUT;
 					try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpOutput)) {
 						CloseableIterator<SAMRecord> asyncIn = new AsyncBufferedIterator<>(it, threadPrefix + "raw");
-						Iterator<SAMRecord> perRecord = ComputeSamTags.computePerRecordFields(asyncIn, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
-						CloseableIterator<SAMRecord> asyncPerRecord = new AsyncBufferedIterator<>(perRecord, threadPrefix + "nm");
-						Iterator<List<SAMRecord>> groupByFragment = new GroupingIterator(asyncPerRecord, Ordering.natural().onResultOf((SAMRecord r) -> r.getReadName()));
-						Iterator<List<SAMRecord>> perFragment = ComputeSamTags.computePerFragmentFields(groupByFragment, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, FIX_DUPLICATE_FLAG, FIX_SA, FIX_MISSING_HARD_CLIP, RECALCULATE_SA_SUPPLEMENTARY);
-						CloseableIterator<List<SAMRecord>> asyncPerFragment = new AsyncBufferedIterator<>(perFragment, threadPrefix + "tags");
-						Iterator<SAMRecord> computedPerRead = new UngroupingIterator<>(asyncPerFragment);
-						realigner.process(computedPerRead, writer, writer);
+						// We can reuse the non-block task thread pool since the transforms aren't blocking operations
+						Iterator<SAMRecord> tagFixedIt = tags.transform(AsyncReadTaskRunner.getNonBlockingThreadpool(), Defaults.ASYNC_BUFFER_SIZE, it);
+						realigner.process(tagFixedIt, writer, writer);
 					}
 					if (tmpOutput != OUTPUT) {
 						FileHelper.move(tmpOutput, OUTPUT, true);
