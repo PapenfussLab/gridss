@@ -154,7 +154,7 @@ public class FileSystemContext {
 		return getFile(String.format(FORMAT_ASSEMBLY_CHUNK_SAM, getIntermediateDirectory(input), getSource(input).getName(), chunk));
 	}
 	public File getAssemblyTelemetry(File assembly, int nodeIndex) {
-		return getFile(String.format(FORMAT_ASSEMBLY_TELEMETRY, getIntermediateDirectory(assembly), getSource(assembly).getName()));
+		return getFile(String.format(FORMAT_ASSEMBLY_TELEMETRY, getIntermediateDirectory(assembly), getSource(assembly).getName(), nodeIndex));
 	}
 	public File getAssemblyExcludedRegions(File assembly, int nodeIndex) {
 		return getFile(String.format(FORMAT_ASSEMBLY_EXCLUDED_REGIONS, getIntermediateDirectory(assembly), getSource(assembly).getName(), nodeIndex));

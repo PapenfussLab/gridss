@@ -57,7 +57,7 @@ gridss_somatic_filter.R|Somatic filtering script. Identifies somatic events for 
 ## gridss.sh command-line arguments
 
 ```
-Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 25g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
+Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 30g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 ```
 
 argument|description
@@ -68,7 +68,7 @@ argument|description
 -t, --threads|number of threads to use. Defaults to the number of cores available.
 -j, --jar|location of GRIDSS jar
 -b/--blacklist|BED file containing regions to ignore. The ENCODE DAC blacklist is recommended for hg19. (Optional)
---jvmheap|size of JVM heap for assembly and variant calling. Defaults to 25g to ensure GRIDSS runs on all cloud instances with approximate 32gb memory including DNANexus azure:mem2_ssd1_x8
+--jvmheap|size of JVM heap for assembly and variant calling. Defaults to 30g to ensure GRIDSS runs on cloud instances with 32gb memory.
 --maxcoverage|maximum coverage. Regions with coverage in excess of this are ignored. (Default: 50000)
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
@@ -210,13 +210,24 @@ WARNING: multiple instances of GRIDSS generating reference files at the same tim
 
 ### How many threads should I use?
 
-1-16 threads is recommended. Note that pre-processing is limited by htsjdk BAM parsing thus is not multi-threaded. Asynchronous I/O means preprocessing will use up to 200-300% CPU for a nominally single-threaded operation. Make sure you specify enough memory for the number of threads you specified.
+GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
+
+If scaling above 8 cores, it is recommended to run multiple GRIDSS assembly processes and use the `--jobindex` and `--jobnodes` parameters.
 
 ### How much memory should I give GRIDSS?
 
+GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
+
 At least 4GB + 2GB per thread. It is recommended to run GRIDSS with max heap memory (-Xmx) of 8GB for single-threaded operation
-(WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for heavily multi-threaded
-server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS so is strongly discouraged.
+(WORKER_THREADS=1), 16GB for multi-core desktop operation, and 31GB for server operation. Note that due to Java's use of [Compressed Oops](http://docs.oracle.com/javase/7/docs/technotes/guides/vm/performance-enhancements-7.html#compressedOop), specifying a max heap size of between 32-48GB effectively reduces the memory available to GRIDSS so is strongly discouraged.
+
+### Why does GRIDSS use more CPU than the limit specified with `--threads`?
+
+GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
+
+`--threads` specifies the size of the worker thread pool. IO, BAM decompression, and parsing are in their own thread pool which is not part of the worker thread pool. The pre-processing, variant calling, and annotation steps also perform some work that is executed in dedicated threads independent of the worker thread pool. Combined, this approach means that max CPU utilisation can exceed the thread count specified.
+
+Asynchronous IO defaults can be changed by editing the `jvm_args` argument in `gridss.sh`.
 
 ### Should I include alt contigs in the reference?
 
