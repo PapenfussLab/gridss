@@ -669,7 +669,6 @@ if [[ $do_preprocess == true ]] ; then
 							TAGS=NM \
 							TAGS=SA \
 							TAGS=R2 \
-							TAGS=Q2 \
 							TAGS=MC \
 							TAGS=MQ \
 							ASSUME_SORTED=true \
