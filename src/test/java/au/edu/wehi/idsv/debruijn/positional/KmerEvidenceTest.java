@@ -388,4 +388,31 @@ public class KmerEvidenceTest extends TestHelper {
 		Assert.assertNotSame(ke, keAnchor);
 		Assert.assertNotEquals(ke, keAnchor);
 	}
+
+	@Test
+	public void issue314_rp_bounds_calculation_should_handle_unequal_read_lengths() {
+		NonReferenceReadPair dp = NRRP(SES(0, 12), DP(0, 100, "2S2M3S", true, 0, 51, "3M", true));
+		KmerEvidence ke = KmerEvidence.create(2, dp);
+		//          1
+		//          0
+		// 12345678901234567890
+		//        ssMMsss
+		//        |----------| max 12bp fragment
+		//          ***        left-most possible alignment (at least one base must not overlap the unclipped alignment)
+		//                 *** right-most possible alignment
+		Assert.assertEquals(100, ke.node(0).firstStart());
+		Assert.assertEquals(107, ke.node(0).firstEnd());
+
+		dp = NRRP(SES(0, 12), DP(0, 100, "2S2M3S", false, 0, 51, "3M", true));
+		ke = KmerEvidence.create(2, dp);
+		//                    1
+		//          9         0
+		// 123456789012345678901234567890
+		//                  ssMMsss
+		//             |----------| max 12bp fragment
+		//             ***          left-most possible alignment
+		//                   ***    right-most possible alignment
+		Assert.assertEquals(93, ke.node(0).firstStart());
+		Assert.assertEquals(99, ke.node(0).firstEnd());
+	}
 }

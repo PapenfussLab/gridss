@@ -187,7 +187,7 @@ public class KmerEvidence extends PackedKmerList {
 			//           <-----
 			//  |-----|         minsize
 			//   <-----
-			int inferredFragStartBasedOnAnchor = local.getAlignmentEnd() - remote.getReadLength() + 1 + SAMRecordUtil.getEndSoftClipLength(local);
+			int inferredFragStartBasedOnAnchor = local.getAlignmentEnd() - local.getReadLength() + 1 + SAMRecordUtil.getEndSoftClipLength(local);
 			int closetPosForFragmentToNotFullyOverlap = local.getAlignmentEnd() - remote.getReadLength() + 2;
 			startPosition = Math.max(inferredFragStartBasedOnAnchor + minFragSize - remote.getReadLength(), closetPosForFragmentToNotFullyOverlap);
 			endPosition = inferredFragStartBasedOnAnchor + maxFragSize - remote.getReadLength();
@@ -197,7 +197,7 @@ public class KmerEvidence extends PackedKmerList {
 			//  ----->
 			//          |-----| minsize
 			//          ----->
-			int inferredFragEndBasedOnAnchor = local.getAlignmentStart() + remote.getReadLength() - 1 - SAMRecordUtil.getStartSoftClipLength(local);
+			int inferredFragEndBasedOnAnchor = local.getAlignmentStart() + local.getReadLength() - 1 - SAMRecordUtil.getStartSoftClipLength(local);
 			int closetPosForFragmentToNotFullyOverlap = local.getAlignmentStart() - 1;
 			startPosition = inferredFragEndBasedOnAnchor - maxFragSize + 1;
 			endPosition = Math.min(inferredFragEndBasedOnAnchor - minFragSize + 1, closetPosForFragmentToNotFullyOverlap);
