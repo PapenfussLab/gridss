@@ -442,8 +442,8 @@ EOF
 		&& samtools index $infile_bam \
 		; } 1>&2 2>> $logfile
 	fi
-	gridss_dir=$workingdir/$infile_bam.gridss.working
-	gridss_prefix=$workingdir/$infile_bam.gridss.working/$infile_bam
+	gridss_dir=$workingdir/$(basename $infile_bam).gridss.working
+	gridss_prefix=gridss_dir/$(basename $infile_bam)
 	if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
 		write_status "Gathering metrics from host alignment	$f"
 		# Ideally the metrics on the viral sequence would match the metrics from the host.
@@ -457,7 +457,7 @@ EOF
 			-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 			--INPUT $infile_bam \
 			--OUTPUT $gridss_prefix \
-			--REFERENCE_SEQUENCE $reference \
+			--REFERENCE_SEQUENCE $file_viral_fa \
 			--THRESHOLD_COVERAGE $metricsmaxcoverage \
 			--TMP_DIR $workingdir \
 			--FILE_EXTENSION null \

@@ -578,7 +578,6 @@ if [[ $do_preprocess == true ]] ; then
 					PROGRAM=null \
 					PROGRAM=CollectInsertSizeMetrics \
 					STOP_AFTER=$metricsrecords \
-					STOP_AFTER_BASES=$(($metricsrecords * 100)) \
 					$picardoptions \
 			; } 1>&2 2>> $logfile
 			max_read_length=$(grep -A 1 "^MAX_READ_LENGTH" $tmp_prefix.idsv_metrics | cut -f 1 | tail -1)
