@@ -443,7 +443,7 @@ EOF
 		; } 1>&2 2>> $logfile
 	fi
 	gridss_dir=$workingdir/$(basename $infile_bam).gridss.working
-	gridss_prefix=gridss_dir/$(basename $infile_bam)
+	gridss_prefix=$gridss_dir/$(basename $infile_bam)
 	if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
 		write_status "Gathering metrics from host alignment	$f"
 		# Ideally the metrics on the viral sequence would match the metrics from the host.
@@ -452,17 +452,21 @@ EOF
 		# If GRIDSS has been run, we could use that but we don't want GRIDSS to be an explicit
 		# requirement of this pipeline
 		# This approach doesn't work for fastq input files.
+		exec_extract_host_metrics=$infile_prefix.extract_host_metrics.sh
+		cat > $exec_extract_host_metrics << EOF
+java -Xmx512g $jvm_args \
+	-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
+	--INPUT $f \
+	--OUTPUT $gridss_prefix \
+	--REFERENCE_SEQUENCE $reference \
+	--THRESHOLD_COVERAGE $metricsmaxcoverage \
+	--TMP_DIR $workingdir \
+	--FILE_EXTENSION null \
+	--STOP_AFTER $metricsrecords
+EOF
+		chmod +x $exec_extract_host_metrics
 		mkdir -p $gridss_dir
-		{ $timecmd java -Xmx4g $jvm_args \
-			-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
-			--INPUT $infile_bam \
-			--OUTPUT $gridss_prefix \
-			--REFERENCE_SEQUENCE $file_viral_fa \
-			--THRESHOLD_COVERAGE $metricsmaxcoverage \
-			--TMP_DIR $workingdir \
-			--FILE_EXTENSION null \
-			--STOP_AFTER $metricsrecords \
-		; } 1>&2 2>> $logfile
+		{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
 	fi
 	gridss_input_args="$gridss_input_args $infile_bam"
 done
