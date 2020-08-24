@@ -27,8 +27,8 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
     private FileSystemContext fsc;
 	private ReferenceLookup reference;
 	public ReferenceLookup getReference() {
-		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		if (reference == null) {
+			IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 			ensureSequenceDictionary(REFERENCE_SEQUENCE);
 			try {
 				reference = new TwoBitBufferedReferenceSequenceFile(new IndexedFastaSequenceFile(REFERENCE_SEQUENCE));

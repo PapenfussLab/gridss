@@ -164,7 +164,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 					try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpOutput)) {
 						CloseableIterator<SAMRecord> asyncIn = new AsyncBufferedIterator<>(it, threadPrefix + "raw");
 						// We can reuse the non-block task thread pool since the transforms aren't blocking operations
-						Iterator<SAMRecord> tagFixedIt = tags.transform(AsyncReadTaskRunner.getNonBlockingThreadpool(), Defaults.ASYNC_BUFFER_SIZE, it);
+						Iterator<SAMRecord> tagFixedIt = tags.transform(AsyncReadTaskRunner.getNonBlockingThreadpool(), Defaults.ASYNC_BUFFER_SIZE, asyncIn);
 						realigner.process(tagFixedIt, writer, writer);
 					}
 					if (tmpOutput != OUTPUT) {
