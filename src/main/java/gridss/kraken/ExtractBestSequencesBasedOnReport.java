@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -44,10 +45,14 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
     public List<Integer> TAXONOMY_IDS = Lists.newArrayList(NCBI_VIRUS_TAXID);
     @Argument(doc="NCBI taxonomy nodes.dmp. Download and extract from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip")
     public File NCBI_NODES_DMP;
-    @Argument(doc="Kraken2 library.fna files. Downloaded by kraken2-build. Must be indexed. Do not run kraken2-build --clean as these files will be removed.", optional = true)
+    @Argument(doc="Kraken2 library.fna files." +
+            " Downloaded by kraken2-build." +
+            " Must be indexed." +
+            " Do not run kraken2-build --clean as these files will be removed." +
+            " Files are checked in order and all the contigs for the given taxid from the first matching file are extracted.", optional = true)
     public List<File> KRAKEN_REFERENCES;
-    @Argument(doc="Number of sequences to return", optional = true)
-    public int SEQUENCES_TO_RETURN = 1;
+    @Argument(doc="Maximum number of taxid to extract sequences for.", optional = true)
+    public int TAXID_TO_RETURN = 1;
     @Argument(doc="Minimum number of supporting reads", optional = true)
     public int MIN_SUPPORTING_READS = 1;
 
@@ -93,34 +98,46 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
                     .filter(s -> taxaWithSequence[s.taxonomyId])
                     .filter(s -> s.countAssignedToTree >= MIN_SUPPORTING_READS)
                     .sorted(KrakenReportLine.ByCountAssignedToTree.reversed())
-                    .limit(SEQUENCES_TO_RETURN)
+                    .limit(TAXID_TO_RETURN)
                     .collect(Collectors.toList());
-            boolean[] taxaToExport = new boolean[taxIdLookup.length];
-            for (KrakenReportLine interestingNode : interestingNodes) {
-                taxaToExport[interestingNode.taxonomyId] = true;
-            }
-            FastaReferenceWriter writer = null;
+            List<List<Integer>> sequenceIndexesToExport = new ArrayList<>();
             for (IndexedFastaSequenceFile fa : ref) {
-                for (SAMSequenceRecord ssr : fa.getSequenceDictionary().getSequences()) {
-                    int seqTaxId = extractTaxIdFromKrakenSequence(ssr);
-                    if (taxaToExport[seqTaxId]) {
-                        if (writer == null) {
-                            // workaround for https://github.com/samtools/htsjdk/issues/1498
-                            writer = new FastaReferenceWriterBuilder()
-                                    .setMakeDictOutput(true)
-                                    .setMakeFaiOutput(true)
-                                    .setFastaFile(OUTPUT.toPath())
-                                    .build();
+                sequenceIndexesToExport.add(new ArrayList<>());
+            }
+            for (KrakenReportLine taxaToExport : interestingNodes) {
+                int taxid = taxaToExport.taxonomyId;
+                boolean found = false;
+                for (int i = 0; i < ref.size() && !found; i++) {
+                    IndexedFastaSequenceFile fa = ref.get(i);
+                    for (SAMSequenceRecord ssr : fa.getSequenceDictionary().getSequences()) {
+                        int seqTaxId = extractTaxIdFromKrakenSequence(ssr);
+                        if (seqTaxId == taxid) {
+                            sequenceIndexesToExport.get(i).add(ssr.getSequenceIndex());
+                            found = true;
                         }
-                        writer.addSequence(cleanSequence(fa.getSequence(ssr.getSequenceName())));
                     }
                 }
             }
-            if (writer == null) {
+            if (sequenceIndexesToExport.stream().anyMatch(list -> !list.isEmpty())) {
+                try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
+                        .setMakeDictOutput(true)
+                        .setMakeFaiOutput(true)
+                        .setFastaFile(OUTPUT.toPath())
+                        .build()) {
+                    for (int i = 0; i < ref.size(); i++) {
+                        IndexedFastaSequenceFile fa = ref.get(i);
+                        List<Integer> indexes = sequenceIndexesToExport.get(i);
+                        Collections.sort(indexes);
+                        for (int j : indexes) {
+                            SAMSequenceRecord seq = fa.getSequenceDictionary().getSequence(j);
+                            writer.addSequence(cleanSequence(fa.getSequence(seq.getSequenceName())));
+                        }
+                    }
+                }
+            } else {
+                // workaround for https://github.com/samtools/htsjdk/issues/1498
                 Files.write(OUTPUT.toPath(), new byte[0]);
                 log.warn("No sequences written to ", OUTPUT);
-            } else {
-                writer.close();
             }
         } catch (IOException e) {
             log.error(e);

@@ -45,7 +45,7 @@ Usage: virusbreakend.sh [options] input.bam
 	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
 	--kraken2db: kraken2 database
 	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: 0 (no host filtering)
-	--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv
+	--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
 	--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
@@ -240,6 +240,9 @@ if [[ ! -d "$kraken2db" ]] ; then
 	echo "$USAGE_MESSAGE"
 	write_status "Unable to find kraken2 database directory '$kraken2db'" 
 	exit $EX_NOINPUT
+fi
+if [[ "$virushostdb" == "" ]] ; then
+	nodesdmp="$kraken2db/virushostdb.tsv"
 fi
 if [[ "$nodesdmp" == "" ]] ; then
 	nodesdmp="$kraken2db/taxonomy/nodes.dmp"
