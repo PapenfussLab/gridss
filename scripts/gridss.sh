@@ -658,6 +658,7 @@ if [[ $do_preprocess == true ]] ; then
 							COMPRESSION_LEVEL=0 \
 							I=$tmp_prefix.namedsorted.bam \
 							O=/dev/stdout \
+							WORKER_THREADS=$threads \
 							RECALCULATE_SA_SUPPLEMENTARY=true \
 							SOFTEN_HARD_CLIPS=true \
 							FIX_MATE_INFORMATION=true \
