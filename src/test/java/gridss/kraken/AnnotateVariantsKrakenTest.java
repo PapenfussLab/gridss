@@ -73,4 +73,14 @@ public class AnnotateVariantsKrakenTest extends IntermediateFilesTest {
         Assert.assertFalse(result.get(4).hasAttribute("INSTAXID")); // Not sent
         Assert.assertEquals(9606, result.get(5).getAttributeAsInt("INSTAXID", -1));
     }
+    @Test
+    public void regression_should_not_throw_npe() throws IOException {
+        AnnotateVariantsKraken cmd = new AnnotateVariantsKraken();
+        File output = new File(testFolder.getRoot(), "out.vcf");
+        cmd.INPUT = new File("src/test/resources/kraken/regression_should_not_throw_npe.vcf");
+        cmd.KRAKEN_INPUT = new File("src/test/resources/kraken/regression_should_not_throw_npe.krakenout.txt");
+        cmd.OUTPUT = output;
+        cmd.doWork();
+        Assert.assertEquals(11, getRawVcf(output).size());
+    }
 }

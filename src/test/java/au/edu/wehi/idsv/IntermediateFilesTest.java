@@ -176,6 +176,12 @@ public class IntermediateFilesTest extends TestHelper {
 		reader.close();
 		return list;
 	}
+	public List<VariantContext> getRawVcf(final File file) {
+		assertTrue(file.exists());
+		try (VCFFileReader reader = new VCFFileReader(file, false)) {
+			return Lists.newArrayList(reader.iterator());
+		}
+	}
 	public List<IdsvVariantContext> getVcf(final File file, final ProcessingContext pc, final EvidenceSource source) {
 		assertTrue(file.exists());
 		VCFFileReader reader = new VCFFileReader(file, false);

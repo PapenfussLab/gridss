@@ -42,7 +42,7 @@ public class AnnotateKraken implements CloseableIterator<VariantContext> {
         while (nextClassification == null && kraken.hasNext()) {
             nextClassification = kraken.next();
         }
-        if (nextClassification.sequenceId.equals(vc.getID())) {
+        if (nextClassification != null && nextClassification.sequenceId.equals(vc.getID())) {
             if (Strings.isNullOrEmpty(nextClassification.sequenceId) || nextClassification.sequenceId.equals(".")) {
                 log.error("Kraken classification record has identifier of '" + nextClassification.sequenceId + "'.");
             }
