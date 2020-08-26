@@ -222,6 +222,7 @@ write_status  "Using $threads worker threads."
 if [[ "$@" == "" ]] ; then
 	write_status  "$USAGE_MESSAGE"
 	write_status  "At least one input bam must be specified."
+	exit $EX_USAGE
 fi
 if [[ $force != "true" ]] ; then
 	for f in "$@" ; do
@@ -242,7 +243,7 @@ if [[ ! -d "$kraken2db" ]] ; then
 	exit $EX_NOINPUT
 fi
 if [[ "$virushostdb" == "" ]] ; then
-	nodesdmp="$kraken2db/virushostdb.tsv"
+	virushostdb="$kraken2db/virushostdb.tsv"
 fi
 if [[ "$nodesdmp" == "" ]] ; then
 	nodesdmp="$kraken2db/taxonomy/nodes.dmp"
@@ -379,23 +380,27 @@ EOF
 		$kraken2args \
 		/dev/stdin \
 	| java -Xmx512m $jvm_args -cp $gridss_jar gridss.kraken.SubsetToTaxonomy \
-		-INPUT /dev/stdin \
-		-OUTPUT $file_readname.tmp \
-		-FORMAT READ_NAME \
-		-NCBI_NODES_DMP $nodesdmp \
+		--INPUT /dev/stdin \
+		--OUTPUT $file_readname.tmp \
+		--FORMAT READ_NAME \
+		--NCBI_NODES_DMP $nodesdmp \
 	&& mv $file_readname.tmp $file_readname \
 	; } 1>&2 2>> $logfile
 fi
 if [[ ! -f $file_viral_fa ]] ; then
-	write_status "Identifying viruses in sample"
+	write_status "Identifying viruses in sample based on kraken2 summary report"
+	# The sort is so we will include the virushostdb sequences in
+	# library/added before the kraken sequences in library/viral
+	kraken_references_arg=$(for fa in $(find $kraken2db -path '**/library/**/*.fna' | sort) ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
 	{ $timecmd java -Xmx4g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestSequencesBasedOnReport \
-		-INPUT $file_report \
-		-OUTPUT $file_viral_fa \
-		-REPORT_OUTPUT $file_viral_report \
-		-NCBI_NODES_DMP $nodesdmp \
-		-KRAKEN_REFERENCES $kraken2db/library/viral/library.fna \
-		-MIN_SUPPORTING_READS $minreads \
-		-SEQUENCES_TO_RETURN $viralgenomes \
+		--INPUT $file_report \
+		--OUTPUT $file_viral_fa \
+		--REPORT_OUTPUT $file_viral_report \
+		--NCBI_NODES_DMP $nodesdmp \
+		$kraken_references_arg \
+		--KRAKEN_REFERENCES $kraken2db/library/viral/library.fna \
+		--MIN_SUPPORTING_READS $minreads \
+		--TAXID_TO_RETURN $viralgenomes \
 		$taxid_args \
 	; } 1>&2 2>> $logfile
 fi
