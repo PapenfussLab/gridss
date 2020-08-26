@@ -34,7 +34,7 @@ maxcoverage=1000000
 hosttaxid=0
 force="false"
 USAGE_MESSAGE="
-Viral Integration Recognition Using Single Breakends
+VIRUSBreakend: Viral Integration Recognition Using Single Breakends
 
 Usage: virusbreakend.sh [options] input.bam
 
@@ -52,8 +52,8 @@ Usage: virusbreakend.sh [options] input.bam
 	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
 	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
-OPTIONS=o:t:j:w:r:f
-LONGOPTS=output:,jar:,threads:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force
+OPTIONS=ho:t:j:w:r:f
+LONGOPTS=help,output:,jar:,threads:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -64,6 +64,10 @@ fi
 eval set -- "$PARSED"
 while true; do
 	case "$1" in
+		-h|--help)
+			echo "$USAGE_MESSAGE" 1>&2
+			exit 0
+			;;
 		-r|--reference)
 			reference="$2"
 			shift 2
@@ -441,7 +445,7 @@ EOF
 	if [[ ! -f $infile_bam ]] ; then
 		write_status "Aligning viral reads	$f"
 		{ $timecmd cat \
-			<(bwa mem -Y -t $threads $file_viral_fa $infile_fq1 $infile_fq1) \
+			<(bwa mem -Y -t $threads $file_viral_fa $infile_fq1 $infile_fq2) \
 			<(bwa mem -Y -t $threads $file_viral_fa $infile_fq | grep -v "^@") \
 		| samtools fixmate -m -O BAM - - \
 		| samtools sort -l 0 -@ $threads -T $infile_unsorted_sam.tmp.sorted - \
