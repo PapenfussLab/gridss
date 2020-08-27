@@ -1,0 +1,2 @@
+# Omit from language statistics.
+/install-sh      linguist-vendored
