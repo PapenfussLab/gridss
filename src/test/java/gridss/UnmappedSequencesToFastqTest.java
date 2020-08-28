@@ -7,6 +7,9 @@ import htsjdk.samtools.fastq.FastqRecord;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
 public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
@@ -79,5 +82,26 @@ public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
         }
         List<FastqRecord> result = go(true, 5, true, dp);
         Assert.assertNotEquals(result.get(0).getReadName(), result.get(1).getReadName());
+    }
+    @Test
+    public void shouldExtractQuals() {
+        SAMRecord r = Read(0, 1, "1M4S");
+        r.setBaseQualities(new byte[] { 1, 2, 3, 4, 5});
+        List<FastqRecord> result = go(true, 1, false, r);
+        Assert.assertArrayEquals(new byte[] { 2,3,4,5}, result.get(0).getBaseQualities());
+    }
+    @Test
+    public void should_match_c_implementation() throws IOException {
+        UnmappedSequencesToFastq cmd = new UnmappedSequencesToFastq();
+        cmd.INPUT = ImmutableList.of(new File("src/test/resources/unmappedSequencesToFastq/in.sam"));
+        cmd.OUTPUT = output;
+        cmd.doWork();
+        Assert.assertTrue(output.exists());
+        byte[] expected = Files.readAllBytes(new File("src/test/resources/unmappedSequencesToFastq/out.fq").toPath());
+        String expectedStr = new String(expected);
+        byte[] actual = Files.readAllBytes(output.toPath());
+        String actualStr = new String(actual);
+        Assert.assertEquals(expectedStr, actualStr);
+        Assert.assertArrayEquals(expected, actual);
     }
 }

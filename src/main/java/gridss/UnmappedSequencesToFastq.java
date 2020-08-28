@@ -107,7 +107,7 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 				if (mostUnaligned.upperEndpoint() != mostUnaligned.lowerEndpoint()) {
 					SAMRecordUtil.hardClipToN(record);
 					bases = record.getReadBases().clone();
-					quals = record.getReadBases().clone();
+					quals = record.getBaseQualities().clone();
 					if (record.getReadNegativeStrandFlag()) {
 						SequenceUtil.reverseComplement(bases);
 						SequenceUtil.reverseQualities(quals);

@@ -19,25 +19,25 @@ int write_fastq(bam1_t *record, BGZF *out, kstring_t *linebuf, int start, int en
 	}
 	kputc('\n', linebuf);
 	if (bam_is_rev(record)) {
-		for (int i = end; i >= start; i--) {
+		for (int i = end - 1; i >= start; i--) {
 			kputc(seq_nt16_str[seq_comp_table[bam_seqi(bam_get_seq(record), i)]], linebuf);
 		}
 	} else {
-		for (int i = start; i <= end; i++) {
+		for (int i = start; i < end; i++) {
 			kputc(seq_nt16_str[bam_seqi(bam_get_seq(record), i)], linebuf);
 		}
 	}
 	kputs("\n+\n", linebuf);
 	char *qual = bam_get_qual(record);
 	if (qual && *qual != '\xff') {
-		size_t qual_len = strlen (qual);
-		if (end < qual_len) {
+		size_t qual_len = strnlen(qual, record->core.l_qseq);
+		if (end <= qual_len) {
 			if (bam_is_rev(record)) {
-				for (int i = end; i >= start; i--) {
+				for (int i = end - 1; i >= start; i--) {
 					kputc(FASTQ_PHRED_QUAL_OFFSET + qual[i], linebuf);
 				}
 			} else {
-				for (int i = start; i <= end; i++) {
+				for (int i = start; i < end; i++) {
 					kputc(FASTQ_PHRED_QUAL_OFFSET + qual[i], linebuf);
 				}
 			}

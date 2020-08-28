@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <unistd.h>
-#include <htslib/kstring.h>
-#include <htslib/sam.h>
+#include <ctype.h>
 #include "fastq.h"
 
 static int usage() {
@@ -16,6 +15,70 @@ static int usage() {
 	fprintf(stderr, "		 -@	   Number of threads to use\n");
 	fprintf(stderr, "\n");
 	return EXIT_FAILURE;
+}
+
+static int parse_cigar_op(
+		char** str,
+		int* op,
+		int* len) {
+	*len = 0;
+	while (isdigit(**str)) {
+		*len *= 10;
+		*len += **str - '0';
+		(*str)++;
+	}
+	if (len == 0) {
+		return 0;
+	}
+	*op = bam_cigar_table[(unsigned char)**str];
+	(*str)++;
+	return *op != -1;
+}
+
+// Extracts the start and end clipping lengths from the chimeric alignment in the given SA tag
+// str: [in/out] parameter of current position in the SA string.
+// 		output value is the position after the SA chimeric alignment,
+// 		or the position the parsing failure
+// start_clip_length: [out] length of start clipping (hard and soft)
+// end_clip_length: [out] length of end clipping (hard and soft)
+// returns true if the parsing was successful
+static int parse_SA_tag_clipping(
+		char** str,
+		int* start_clip_length,
+		int* end_clip_length,
+		int* is_negative_strand) {
+	// SA:Z:(rname ,pos ,strand ,CIGAR ,mapQ ,NM ;)+
+	*start_clip_length = 0;
+	*end_clip_length = 0;
+	*is_negative_strand = 0;
+	*str = strchr(*str, ','); if (!*str) return 0;
+	*str += 1;
+	*str = strchr(*str, ','); if (!*str) return 0;
+	*str += 1;
+	*is_negative_strand = **str == '-';
+	*str = strchr(*str, ','); if (!*str) return 0;
+	*str += 1;
+	// process CIGAR
+	int oplen;
+	int op;
+	int inStart = 1;
+	while (parse_cigar_op(str, &op, &oplen)) {
+		if (op == BAM_CHARD_CLIP || op == BAM_CSOFT_CLIP) {
+			if (inStart) {
+				*start_clip_length += oplen;
+			} else {
+				*end_clip_length += oplen;
+			}
+		} else {
+			inStart = 0;
+		}
+	}
+	// advance to end of chimeric alignment record
+	while (*str && **str != ';' && **str != '\0') {
+		(*str)++;
+	}
+	if (*str && **str == ';') (*str)++;
+	return 1;
 }
 
 static int process(
@@ -33,7 +96,7 @@ static int process(
 	if (record->core.flag & BAM_FUNMAP) {
 		// unmapped = full length
 		start = 0;
-		end = record->core.l_qseq - 1;
+		end = record->core.l_qseq;
 	} else if (include_soft_clips) {
 		// check for start/end soft clip
 		int start_clip_length = 0;
@@ -56,14 +119,33 @@ static int process(
 				break;
 			}
 		}
-		// #######################
-		// TODO: parse SA tag to determine the longest unmapped sequence
+		// SA:Z:(rname ,pos ,strand ,CIGAR ,mapQ ,NM ;)+
+		uint8_t *satag = bam_aux_get(record, "SA");
+		if (satag) {
+			char *sa = bam_aux2Z(satag);
+			if (sa) {
+				int sa_start_clip_length = 0;
+				int sa_end_clip_length = 0;
+				int saNegativeStrand;
+				while(parse_SA_tag_clipping(&sa, &sa_start_clip_length, &sa_end_clip_length, &saNegativeStrand)) {
+					if ((saNegativeStrand && !bam_is_rev(record)) ||
+							(!saNegativeStrand && bam_is_rev(record))) {
+						// strand differs from our record - need to flip start and end
+						int tmp = sa_start_clip_length;
+						sa_start_clip_length = sa_end_clip_length;
+						sa_end_clip_length = tmp;
+					}
+					start_clip_length = sa_start_clip_length < start_clip_length ? sa_start_clip_length : start_clip_length;
+					end_clip_length = sa_end_clip_length < end_clip_length ? sa_end_clip_length : end_clip_length;
+				}
+			}
+		}
 		if (start_clip_length >= min_sequence_length && start_clip_length > end_clip_length) {
 			start = 0;
 			end = start_clip_length;
-		} else if (end_clip_length > min_sequence_length) {
-			end = record->core.l_qseq - 1;
-			start = end - end_clip_length + 1;
+		} else if (end_clip_length >= min_sequence_length) {
+			end = record->core.l_qseq;
+			start = record->core.l_qseq - end_clip_length;
 		}
 	}
 	if (end - start >= min_sequence_length) {
@@ -95,10 +177,13 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 	if (argc != optind + 1) {
 		return usage();
 	}
-	// intialisation
-	fp_in = hts_open(argv[optind], "r");
-	if (!fp_in) {
+	// open files
+	if (!(fp_in = hts_open(argv[optind], "r"))) {
 		fprintf(stderr, "Unable to open input file %s.\n", argv[optind]);
+		goto error;
+	}
+	if (hts_set_threads(fp_in, threads)) {
+		fprintf(stderr, "Unable to create thread pool with %d threads\n", threads);
 		goto error;
 	}
 	hdr = sam_hdr_read(fp_in);
@@ -106,13 +191,9 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 		fprintf(stderr, "Unable to read SAM header.\n");
 		goto error;
 	}
-	if (!hts_set_threads(fp_in, threads)) {
-		fprintf(stderr, "Unable to initialise %d threads for reading input", threads);
-		goto error;
-	}
 	fp_out = bgzf_open(out_filename, "wu");
 	if (!fp_out) {
-		fprintf(stderr, "Unable to open output file");
+		fprintf(stderr, "Unable to open output file\n");
 		goto error;
 	}
 	// process records
@@ -125,11 +206,11 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 		goto error;
 	}
 cleanup:
+	if (fp_out) bgzf_close(fp_out);
 	ks_free(&linebuf);
 	if (record) bam_destroy1(record);
 	if (hdr) bam_hdr_destroy(hdr);
 	if (fp_in) hts_close(fp_in);
-	if (fp_out) bgzf_close(fp_out);
 	return status;
 error:
 	status = EXIT_FAILURE;
