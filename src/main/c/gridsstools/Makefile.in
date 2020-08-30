@@ -29,6 +29,7 @@ testUnmappedSequencesToFastq: gridsstools
 		$(TEST_DIR)/unmappedSequencesToFastq/in.sam \
 		> testUnmappedSequencesToFastq.out
 	diff $(TEST_DIR)/unmappedSequencesToFastq/in.sam.out.fq testUnmappedSequencesToFastq.out > testUnmappedSequencesToFastq.diff
+	rm testUnmappedSequencesToFastq.*
 
 testExtractFragmentsToFastq: gridsstools
 	./gridsstools extractFragmentsToFastq \
@@ -37,9 +38,10 @@ testExtractFragmentsToFastq: gridsstools
 		-1 testExtractFragmentsToFastq.1.fq \
 		-2 testExtractFragmentsToFastq.2.fq \
 		$(TEST_DIR)/extractFragmentsToFastq/in.sam
-	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.u.fq testExtractFragmentsToFastq.u.fq > testUnmappedSequencesToFastq.u.diff
-	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.1.fq testExtractFragmentsToFastq.1.fq > testUnmappedSequencesToFastq.1.diff
-	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.2.fq testExtractFragmentsToFastq.2.fq > testUnmappedSequencesToFastq.2.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.u.fq testExtractFragmentsToFastq.u.fq > testExtractFragmentsToFastq.u.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.1.fq testExtractFragmentsToFastq.1.fq > testExtractFragmentsToFastq.1.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.2.fq testExtractFragmentsToFastq.2.fq > testExtractFragmentsToFastq.2.diff
+	rm testExtractFragmentsToFastq.*
 
 
 extractFragmentsToFastq.o: fastq.h
