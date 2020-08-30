@@ -3,6 +3,7 @@
 cd ../../
 version=$(grep "gridss</version>" pom.xml | cut -f 2 -d '>' | cut -f 1 -d '-')
 echo Packaging GRIDSS $version
+rm -r target/github_package
 mvn clean package
 mkdir target/github_package
 cp scripts/*.sh target/github_package/
