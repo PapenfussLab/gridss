@@ -56,7 +56,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
             return new String[]{"No programs specified with PROGRAM or GRIDSS_PROGRAM"};
         }
         if (GRIDSS_PROGRAM.contains(GridssProgram.ReportThresholdCoverage) && THRESHOLD_COVERAGE == null) {
-        	return new String[]{"THRESHOLD_COVERAGE is required whenn running ReportThresholdCoverage."};
+        	return new String[]{"THRESHOLD_COVERAGE is required when running ReportThresholdCoverage."};
         }
         return super.customCommandLineValidation();
     }
