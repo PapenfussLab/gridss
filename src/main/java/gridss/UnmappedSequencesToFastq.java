@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @CommandLineProgramProperties(
 		summary = "Exports unmapped sequences to fastq. " +
@@ -45,6 +46,8 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 	@Argument(doc="Include soft clipped bases. " +
 			"For split read alignments, the largest contiguous sequence not aligned to the reference is used.", optional=true)
 	public boolean INCLUDE_SOFT_CLIPPED_BASES = true;
+	@Argument(doc="Include unmapped bases that are flanked by chimeric alignments.", optional=true)
+	public boolean INCLUDE_UNMAPPED_INTERNAL_BASES = false;
 	@Argument(doc="Ensure exported names are unique by suffixing with '/1' or '/2'", optional=true)
 	public boolean UNIQUE_NAME = false;
 
@@ -99,7 +102,12 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 				List<ChimericAlignment> ca = Lists.newArrayList(new ChimericAlignment(record));
 				ca.addAll(ChimericAlignment.getChimericAlignments(record));
 				Range<Integer> mostUnaligned = Range.closed(0, 0);
-				for (Range<Integer> r : ChimericAlignment.getUnalignedIntervals(ca).asRanges()) {
+				for (Range<Integer> r : ChimericAlignment.getUnalignedIntervals(ca)
+						.asRanges()
+						.stream()
+						// Only get start/end ranges if INCLUDE_UNMAPPED_INTERNAL_BASES is false
+						.filter(ur -> INCLUDE_UNMAPPED_INTERNAL_BASES || ur.lowerEndpoint() == 0 || ur.upperEndpoint() == record.getReadLength())
+						.collect(Collectors.toList())) {
 					if (r.upperEndpoint() - r.lowerEndpoint() > mostUnaligned.upperEndpoint() - mostUnaligned.lowerEndpoint()) {
 						mostUnaligned = r;
 					}

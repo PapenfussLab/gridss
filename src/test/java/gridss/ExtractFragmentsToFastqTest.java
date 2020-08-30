@@ -53,4 +53,23 @@ public class ExtractFragmentsToFastqTest extends IntermediateFilesTest {
         Assert.assertEquals("r2", result.get(1).get(0).getReadName());
         Assert.assertEquals("r1", result.get(1).get(1).getReadName());
     }
+    @Test
+    public void should_match_c_implementation() throws IOException {
+        ExtractFragmentsToFastq cmd = new ExtractFragmentsToFastq();
+        file_test(cmd, new File("src/test/resources/extractFragmentsToFastq/in.sam"));
+    }
+    private void file_test(ExtractFragmentsToFastq cmd, File sam) throws IOException {
+        cmd.INPUT = sam;
+        cmd.READ_NAMES = new File(sam.toString() + ".readnames.txt");
+        cmd.OUTPUT_FQ = new File(output.toString() + ".u.fq");
+        cmd.OUTPUT_FQ1 = new File(output.toString() + ".1.fq");
+        cmd.OUTPUT_FQ2 = new File(output.toString() + ".2.fq");
+        Assert.assertTrue(cmd.INPUT.exists());
+        Assert.assertTrue(cmd.READ_NAMES.exists());
+        cmd.doWork();
+
+        assertLinesMatch(new File(sam.toString() + ".out.u.fq"), cmd.OUTPUT_FQ);
+        assertLinesMatch(new File(sam.toString() + ".out.1.fq"), cmd.OUTPUT_FQ1);
+        assertLinesMatch(new File(sam.toString() + ".out.2.fq"), cmd.OUTPUT_FQ2);
+    }
 }

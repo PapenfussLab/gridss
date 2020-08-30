@@ -1,0 +1,10 @@
+distalpair1
+unpairedpair
+unmapped
+unpaired
+reverse
+secondary
+supp
+pair1
+pair1
+distalpair1

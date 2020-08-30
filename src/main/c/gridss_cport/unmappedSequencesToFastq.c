@@ -7,12 +7,12 @@
 
 static int usage() {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage:   gridss_cport  main_extractFragmentsToFastq [options] [input.bam]\n\n");
-	fprintf(stderr, "Options: -o FILE output to file\n");
-	fprintf(stderr, "		 -m INT   Minimum length of sequence export.Minimum length of sequence export. [20]\n");
-	fprintf(stderr, "		 -x	   exclude soft clipped bases.\n");
-	fprintf(stderr, "		 -u	   Ensure exported names are unique by suffixing with '/1' or '/2'\n");
-	fprintf(stderr, "		 -@	   Number of threads to use\n");
+	fprintf(stderr, "Usage:   gridss_cport  extractFragmentsToFastq [options] [input.bam] ...\n\n");
+	fprintf(stderr, "Options: -o FILE  output to file\n");
+	fprintf(stderr, "         -m INT   Minimum length of sequence export.Minimum length of sequence export. [20]\n");
+	fprintf(stderr, "         -x       exclude soft clipped bases.\n");
+	fprintf(stderr, "         -u       Ensure exported names are unique by suffixing with '/1' or '/2'\n");
+	fprintf(stderr, "         -@       Number of threads to use\n");
 	fprintf(stderr, "\n");
 	return EXIT_FAILURE;
 }
@@ -174,41 +174,52 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 			default: return usage();
 		}
 	}
-	if (argc != optind + 1) {
+	if (argc < optind + 1) {
 		return usage();
 	}
-	// open files
-	if (!(fp_in = hts_open(argv[optind], "r"))) {
-		fprintf(stderr, "Unable to open input file %s.\n", argv[optind]);
-		goto error;
-	}
-	if (hts_set_threads(fp_in, threads)) {
-		fprintf(stderr, "Unable to create thread pool with %d threads\n", threads);
-		goto error;
-	}
-	hdr = sam_hdr_read(fp_in);
-	if (hdr == NULL) {
-		fprintf(stderr, "Unable to read SAM header.\n");
-		goto error;
-	}
-	fp_out = bgzf_open(out_filename, "wu");
-	if (!fp_out) {
-		fprintf(stderr, "Unable to open output file\n");
-		goto error;
-	}
-	// process records
-	int r;
-	while ((r = sam_read1(fp_in, hdr, record)) >= 0) {
-		process(fp_out, &linebuf, min_sequence_length, include_soft_clips, unique_names, record);
-	}
-	if (r < -1) {
-		fprintf(stderr, "Truncated file.\n");
-		goto error;
+	for (int i = optind; i < argc; i++) {
+		char* in_filename = argv[i];
+		// open files
+		if (!(fp_in = hts_open(in_filename, "r"))) {
+			fprintf(stderr, "Unable to open input file %s.\n", in_filename);
+			goto error;
+		}
+		if (hts_set_threads(fp_in, threads)) {
+			fprintf(stderr, "Unable to create thread pool with %d threads\n", threads);
+			goto error;
+		}
+		hdr = sam_hdr_read(fp_in);
+		if (hdr == NULL) {
+			fprintf(stderr, "Unable to read SAM header.\n");
+			goto error;
+		}
+		fp_out = bgzf_open(out_filename, "wu");
+		if (!fp_out) {
+			fprintf(stderr, "Unable to open output file\n");
+			goto error;
+		}
+		// process records
+		int r;
+		while ((r = sam_read1(fp_in, hdr, record)) >= 0) {
+			process(fp_out, &linebuf, min_sequence_length, include_soft_clips, unique_names, record);
+		}
+		if (r < -1) {
+			fprintf(stderr, "Truncated file.\n");
+			goto error;
+		}
+		if (hdr) {
+			bam_hdr_destroy(hdr);
+			hdr = NULL;
+		}
+		if (fp_in) {
+			hts_close(fp_in);
+			fp_in = NULL;
+		}
 	}
 cleanup:
-	if (fp_out) bgzf_close(fp_out);
 	ks_free(&linebuf);
 	if (record) bam_destroy1(record);
+	if (fp_out) bgzf_close(fp_out);
 	if (hdr) bam_hdr_destroy(hdr);
 	if (fp_in) hts_close(fp_in);
 	return status;

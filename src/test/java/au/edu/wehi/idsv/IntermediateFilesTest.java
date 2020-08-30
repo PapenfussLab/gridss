@@ -13,6 +13,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
@@ -204,5 +206,16 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public List<FastqRecord> getFastqRecords(final EvidenceSource source) {
 		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFile(), 0));
+	}
+	public void assertLinesMatch(File expected, File actual) throws IOException {
+		// Ignore newline differences since htsjdk library writes inconsistent fastq newlines on windows
+		Assert.assertTrue(expected.exists());
+		Assert.assertTrue(actual.exists());
+		List<String> expectedLines = java.nio.file.Files.readAllLines(expected.toPath());
+		List<String> actualLines = java.nio.file.Files.readAllLines(actual.toPath());
+		Assert.assertEquals(
+				expectedLines.stream().collect(Collectors.joining("\n")),
+				actualLines.stream().collect(Collectors.joining("\n"))
+		);
 	}
 }

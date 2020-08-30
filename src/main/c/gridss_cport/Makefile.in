@@ -20,11 +20,27 @@ TEST_DIR = ../../../test/resources/
 gridss_cport: $(COBJ)
 	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) -lhts $(LIBS) -lz
 
-test: testUnmappedSequencesToFastq
+test: \
+	testUnmappedSequencesToFastq \
+	testExtractFragmentsToFastq
 
 testUnmappedSequencesToFastq: gridss_cport
-	./gridss_cport unmappedSequencesToFastq $(TEST_DIR)/unmappedSequencesToFastq/in.sam > testUnmappedSequencesToFastq.out
-	diff $(TEST_DIR)/unmappedSequencesToFastq/out.fq testUnmappedSequencesToFastq.out > testUnmappedSequencesToFastq.diff
+	./gridss_cport unmappedSequencesToFastq \
+		$(TEST_DIR)/unmappedSequencesToFastq/in.sam \
+		> testUnmappedSequencesToFastq.out
+	diff $(TEST_DIR)/unmappedSequencesToFastq/in.sam.out.fq testUnmappedSequencesToFastq.out > testUnmappedSequencesToFastq.diff
+
+testExtractFragmentsToFastq: gridss_cport
+	./gridss_cport extractFragmentsToFastq \
+		-r $(TEST_DIR)/extractFragmentsToFastq/in.sam.readnames.txt \
+		-o testExtractFragmentsToFastq.u.fq \
+		-1 testExtractFragmentsToFastq.1.fq \
+		-2 testExtractFragmentsToFastq.2.fq \
+		$(TEST_DIR)/extractFragmentsToFastq/in.sam
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.u.fq testExtractFragmentsToFastq.u.fq > testUnmappedSequencesToFastq.u.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.1.fq testExtractFragmentsToFastq.1.fq > testUnmappedSequencesToFastq.1.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.2.fq testExtractFragmentsToFastq.2.fq > testUnmappedSequencesToFastq.2.diff
+
 
 extractFragmentsToFastq.o: fastq.h
 unmappedSequencesToFastq.o: fastq.h
@@ -36,7 +52,9 @@ fastq.o: fastq.h
 	$(CC) $(CFLAGS) $(HTSLIB_CPPFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 clean:
-	-rm -f *.o gridss_cport
+	-rm -f *.o gridss_cport \
+		testUnmappedSequencesToFastq.* \
+		testExtractFragmentsToFastq.* 
 
 distclean: clean
 	-rm -f config.log config.status configure Makefile
