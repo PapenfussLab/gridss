@@ -65,6 +65,9 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	public void setReference(ReferenceLookup ref) {
 		this.reference = ref;
 	}
+	public void setReference(File ref) {
+		this.REFERENCE_SEQUENCE = ref;
+	}
 	public FileSystemContext getFileSystemContext() {
 		if (fsc == null) {
 			fsc = new FileSystemContext(TMP_DIR.get(0), WORKING_DIR, MAX_RECORDS_IN_RAM);

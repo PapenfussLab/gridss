@@ -60,6 +60,7 @@ public class CollectGridssMetricsAndExtractSVReads extends CollectGridssMetrics 
     protected ExtractSVReads getExtractSVReads() {
     	ExtractSVReads extract = new ExtractSVReads();
     	CommandLineProgramHelper.copyInputs(this, extract);
+        extract.setReference(REFERENCE_SEQUENCE);
     	extract.MIN_INDEL_SIZE = MIN_INDEL_SIZE;
     	extract.MIN_CLIP_LENGTH = MIN_CLIP_LENGTH;
     	extract.CLIPPED = CLIPPED;

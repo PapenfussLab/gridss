@@ -141,6 +141,7 @@ public abstract class ByReadNameSinglePassSamProgram extends ReferenceCommandLin
     protected abstract void finish();
     public void copyInput(ProcessStructuralVariantReadsCommandLineProgram to) {
     	CommandLineProgramHelper.copyInputs(this, to);
+		to.REFERENCE_SEQUENCE = REFERENCE_SEQUENCE;
     	to.INPUT = INPUT;
     	to.OUTPUT = OUTPUT;
     	to.ASSUME_SORTED = ASSUME_SORTED;

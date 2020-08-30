@@ -125,6 +125,7 @@ public class CollectGridssMetricsAndExtractFullReads extends CollectGridssMetric
     protected CollectStructuralVariantReadMetrics getSVMetrics() {
         CollectStructuralVariantReadMetrics extract = new CollectStructuralVariantReadMetrics();
         CommandLineProgramHelper.copyInputs(this, extract);
+        extract.setReference(REFERENCE_SEQUENCE);
         extract.MIN_INDEL_SIZE = MIN_INDEL_SIZE;
         extract.MIN_CLIP_LENGTH = MIN_CLIP_LENGTH;
         extract.CLIPPED = CLIPPED;

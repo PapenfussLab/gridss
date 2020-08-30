@@ -78,6 +78,7 @@ public abstract class ProcessStructuralVariantReadsCommandLineProgram extends By
     }
     public void copyInput(ProcessStructuralVariantReadsCommandLineProgram to) {
     	super.copyInput(to);
+    	to.REFERENCE_SEQUENCE = REFERENCE_SEQUENCE;
     	to.MIN_INDEL_SIZE = MIN_INDEL_SIZE;
     	to.MIN_CLIP_LENGTH = MIN_CLIP_LENGTH;
     	to.CLIPPED = CLIPPED;
