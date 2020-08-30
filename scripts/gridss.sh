@@ -568,6 +568,7 @@ if [[ $do_preprocess == true ]] ; then
 			write_status "Running	CollectInsertSizeMetrics	$f	first $metricsrecords records"
 			{ $timecmd java -Xmx4g $jvm_args \
 					-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
+					REFERENCE_SEQUENCE=$reference \
 					TMP_DIR=$dir \
 					ASSUME_SORTED=true \
 					I=$f \
@@ -590,6 +591,7 @@ if [[ $do_preprocess == true ]] ; then
 				write_status "Running	CollectGridssMetricsAndExtractSVReads	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
 						-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
+						REFERENCE_SEQUENCE=$reference \
 						TMP_DIR=$dir \
 						ASSUME_SORTED=true \
 						I=$f \
@@ -617,6 +619,7 @@ if [[ $do_preprocess == true ]] ; then
 				write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
 				{ $timecmd java -Xmx4g $jvm_args \
 						-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
+						REFERENCE_SEQUENCE=$reference \
 						TMP_DIR=$dir \
 						ASSUME_SORTED=true \
 						I=$f \
