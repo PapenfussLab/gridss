@@ -1,8 +1,0 @@
-*.o
-gridss_cport
-
-autom4te.cache
-config.log
-config.status
-configure
-Makefile

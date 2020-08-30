@@ -1,0 +1,16 @@
+*.o
+gridss_cport
+
+autom4te.cache
+config.log
+config.status
+configure
+Makefile
+/testExtractFragmentsToFastq.1.fq
+/testExtractFragmentsToFastq.2.fq
+/testExtractFragmentsToFastq.u.fq
+/testUnmappedSequencesToFastq.1.diff
+/testUnmappedSequencesToFastq.2.diff
+/testUnmappedSequencesToFastq.diff
+/testUnmappedSequencesToFastq.out
+/testUnmappedSequencesToFastq.u.diff

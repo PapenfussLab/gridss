@@ -1,4 +1,4 @@
-all: gridss_cport test
+all: gridsstools test
 
 CC = @CC@
 CPPFLAGS = @CPPFLAGS@
@@ -10,28 +10,28 @@ HTSLIB_CPPFLAGS = @HTSLIB_CPPFLAGS@
 HTSLIB_LDFLAGS = @HTSLIB_LDFLAGS@
 
 COBJ = \
-	gridss_cport.o \
+	gridsstools.o \
 	extractFragmentsToFastq.o \
 	unmappedSequencesToFastq.o \
 	fastq.o 
 
 TEST_DIR = ../../../test/resources/
 
-gridss_cport: $(COBJ)
+gridsstools: $(COBJ)
 	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) -lhts $(LIBS) -lz
 
 test: \
 	testUnmappedSequencesToFastq \
 	testExtractFragmentsToFastq
 
-testUnmappedSequencesToFastq: gridss_cport
-	./gridss_cport unmappedSequencesToFastq \
+testUnmappedSequencesToFastq: gridsstools
+	./gridsstools unmappedSequencesToFastq \
 		$(TEST_DIR)/unmappedSequencesToFastq/in.sam \
 		> testUnmappedSequencesToFastq.out
 	diff $(TEST_DIR)/unmappedSequencesToFastq/in.sam.out.fq testUnmappedSequencesToFastq.out > testUnmappedSequencesToFastq.diff
 
-testExtractFragmentsToFastq: gridss_cport
-	./gridss_cport extractFragmentsToFastq \
+testExtractFragmentsToFastq: gridsstools
+	./gridsstools extractFragmentsToFastq \
 		-r $(TEST_DIR)/extractFragmentsToFastq/in.sam.readnames.txt \
 		-o testExtractFragmentsToFastq.u.fq \
 		-1 testExtractFragmentsToFastq.1.fq \
@@ -52,7 +52,7 @@ fastq.o: fastq.h
 	$(CC) $(CFLAGS) $(HTSLIB_CPPFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 clean:
-	-rm -f *.o gridss_cport \
+	-rm -f *.o gridsstools \
 		testUnmappedSequencesToFastq.* \
 		testExtractFragmentsToFastq.* 
 

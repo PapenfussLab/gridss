@@ -1,5 +1,5 @@
-AC_INIT([gridss_cport], [1.0])
-AC_CONFIG_SRCDIR([gridss_cport.c])
+AC_INIT([gridsstools], [1.0])
+AC_CONFIG_SRCDIR([gridsstools.c])
 AC_CONFIG_HEADERS([config.h])
 
 m4_include([m4/ax_with_htslib.m4])

@@ -12,9 +12,9 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]);
 static int usage()
 {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Program: gridss_cport (C port of some GRIDSS tools)\n");
+	fprintf(stderr, "Program: gridsstools (C port of some GRIDSS tools)\n");
 	fprintf(stderr, "Version: %s\n\n", PACKAGE_VERSION);
-	fprintf(stderr, "Usage:   gridss_cport <command> [options]\n\n");
+	fprintf(stderr, "Usage:   gridsstools <command> [options]\n\n");
 	fprintf(stderr, "Command: extractFragmentsToFastq        Extracts a subset of reads to fastq\n");
 	fprintf(stderr, "         unmappedSequencesToFastq       exports unmapped reads and bases to fastq\n");
 	fprintf(stderr, "\n");
