@@ -371,7 +371,7 @@ if [[ ! -f $file_readname ]] ; then
 	if which gridsstools > /dev/null ; then
 		cat > $exec_concat_fastq << EOF
 #!/bin/bash
-gridsstools unmappedSequencesToFastq -@ $threads "$@"
+gridsstools unmappedSequencesToFastq -@ $threads $@
 EOF
 	else
 		cat > $exec_concat_fastq << EOF
@@ -447,6 +447,7 @@ for f in "$@" ; do
 		if which gridsstools > /dev/null ; then
 			cat > $exec_concat_fastq << EOF
 gridsstools extractFragmentsToFastq \
+	-@ $threads \
 	-r $file_readname \
 	-o $infile_fq \
 	-1 $infile_fq1 \

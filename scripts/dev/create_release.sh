@@ -9,7 +9,6 @@ mkdir target/github_package
 cp scripts/*.sh target/github_package/
 cp scripts/*.R target/github_package/
 cp target/gridss-$version-gridss-jar-with-dependencies.jar target/github_package/
-cd -
 cd src/main/c/gridsstools
 ./configure && make clean && make
 cd -
