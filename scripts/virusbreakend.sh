@@ -28,10 +28,10 @@ nodesdmp=""
 virushostdb=""
 minreads="50"
 viralgenomes="1"
-metricsrecords=10000000
+metricsrecords=1000000
 metricsmaxcoverage=100000
 maxcoverage=1000000
-hosttaxid=0
+hosttaxid=9606
 force="false"
 USAGE_MESSAGE="
 VIRUSBreakend: Viral Integration Recognition Using Single Breakends
@@ -44,7 +44,7 @@ Usage: virusbreakend.sh [options] input.bam
 	-t/--threads: number of threads to use. (Default: $threads).
 	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
 	--kraken2db: kraken2 database
-	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: 0 (no host filtering)
+	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: $hosttaxid)
 	--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
@@ -296,6 +296,12 @@ for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh samtools java bwa R
 	fi
 	write_status "Found $(which $tool)"
 done
+if which gridsstools > /dev/null ; then
+	write_status "Found $(which gridsstools)"
+	write_status "gridsstools version: $(gridsstools --version)"
+else 
+	write_status "MISSING gridsstools. Execution will take 2-3x time longer than when using gridsstools."
+fi
 if $(samtools --version-only 2>&1 >/dev/null) ; then
 	write_status "samtools version: $(samtools --version-only 2>&1)"
 else 
@@ -362,19 +368,26 @@ exec_concat_fastq=$file_prefix.cat_input_as_fastq.sh
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
 	rm -f $file_prefix.readnames.txt.tmp
-	cat > $exec_concat_fastq << EOF
+	if which gridsstools > /dev/null ; then
+		cat > $exec_concat_fastq << EOF
+#!/bin/bash
+gridsstools unmappedSequencesToFastq -@ $threads "$@"
+EOF
+	else
+		cat > $exec_concat_fastq << EOF
 #!/bin/bash
 java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.UnmappedSequencesToFastq \\
 EOF
-	for f in "$@" ; do
-		echo "	-INPUT $f \\" >> $exec_concat_fastq
-	done
-	cat >> $exec_concat_fastq << EOF
+		for f in "$@" ; do
+			echo "	-INPUT $f \\" >> $exec_concat_fastq
+		done
+		cat >> $exec_concat_fastq << EOF
 	-OUTPUT /dev/stdout \\
 	-INCLUDE_SOFT_CLIPPED_BASES true \\
 	-MIN_SEQUENCE_LENGTH 20 \\
 	-UNIQUE_NAME false
 EOF
+	fi
 	chmod +x $exec_concat_fastq
 	{ $timecmd $exec_concat_fastq \
 	| kraken2 \
@@ -431,7 +444,17 @@ for f in "$@" ; do
 	if [[ ! -f $infile_fq ]] ; then
 		exec_concat_fastq=$infile_prefix.extract_reads.sh
 		write_status "Extracting viral reads	$f"
-		cat > $exec_concat_fastq << EOF
+		if which gridsstools > /dev/null ; then
+			cat > $exec_concat_fastq << EOF
+gridsstools extractFragmentsToFastq \
+	-r $file_readname \
+	-o $infile_fq \
+	-1 $infile_fq1 \
+	-2 $infile_fq2 \
+	$f
+EOF
+		else
+			cat > $exec_concat_fastq << EOF
 java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \\
 	-INPUT $f \\
 	-READ_NAMES $file_readname \\
@@ -439,6 +462,7 @@ java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \\
 	-OUTPUT_FQ1 $infile_fq1 \\
 	-OUTPUT_FQ2 $infile_fq2
 EOF
+		fi
 		chmod +x $exec_concat_fastq
 		{ $timecmd $exec_concat_fastq ; } 1>&2 2>> $logfile
 	fi

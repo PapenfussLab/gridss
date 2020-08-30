@@ -1,0 +1,8 @@
+C	gridss0f_1b	9606	117	9606:83
+U	gridss0f_6b	0	29	0:0
+U	gridss0b_4b	0	27	0:0
+C	gridss0f_7b	9606	121	9606:87
+C	gridss0b_5b	9606	112	9606:69 0:3 9606:4 0:2
+U	gridss0f_9b	0	30	0:0
+U	gridss0f_12b	0	117	0:83
+U	gridss0b_10b	0	121	0:58 9606:3 0:26

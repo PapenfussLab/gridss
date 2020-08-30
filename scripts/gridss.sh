@@ -33,6 +33,7 @@ metricsrecords=10000000
 steps="all"
 config_file=""
 maxcoverage=50000
+long_read_length_threshold=1000
 labels=""
 picardoptions=""
 jobindex="0"
@@ -581,7 +582,7 @@ if [[ $do_preprocess == true ]] ; then
 					$picardoptions \
 			; } 1>&2 2>> $logfile
 			max_read_length=$(grep -A 1 "^MAX_READ_LENGTH" $tmp_prefix.idsv_metrics | cut -f 1 | tail -1)
-			if [[ "0${max_read_length}" -ge 1000 ]] ; then
+			if [[ "0${max_read_length}" -ge $long_read_length_threshold ]] ; then
 				write_status "Treating	$f	as long read data. Warning: GRIDSS required error corrected/HiFi long read sequences."
 				write_status "*****"
 				write_status "Raw uncorrected ONT/PacBoio are not yet supported."
