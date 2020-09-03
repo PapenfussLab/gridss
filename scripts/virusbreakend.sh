@@ -364,10 +364,9 @@ file_viral_report=$file_prefix.kraken2.report.viral.txt
 file_viral_fa=$file_prefix.viral.fa
 exec_concat_fastq=$file_prefix.cat_input_as_fastq.sh
 
-# TODO: Add fastq/fasta version of the pipeline
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
-	rm -f $file_prefix.readnames.txt.tmp
+	rm -f $exec_concat_fastq $file_prefix.readnames.txt.tmp
 	if which gridsstools > /dev/null ; then
 		cat > $exec_concat_fastq << EOF
 #!/bin/bash
@@ -403,6 +402,9 @@ EOF
 		--NCBI_NODES_DMP $nodesdmp \
 	&& mv $file_readname.tmp $file_readname \
 	; } 1>&2 2>> $logfile
+else
+	write_status "Identifying viral sequences	Skipped: found	$file_readname"
+
 fi
 if [[ ! -f $file_viral_fa ]] ; then
 	write_status "Identifying viruses in sample based on kraken2 summary report"
@@ -420,6 +422,8 @@ if [[ ! -f $file_viral_fa ]] ; then
 		--TAXID_TO_RETURN $viralgenomes \
 		$taxid_args \
 	; } 1>&2 2>> $logfile
+else
+	write_status "Identifying viruses	Skipped: found	$file_viral_fa"
 fi
 if [[ ! -s $file_viral_fa ]] ; then
 	write_status "No viral sequences supported by at least $minreads reads."
@@ -429,6 +433,8 @@ fi
 if [[ ! -f $file_viral_fa.bwt ]] ; then
 	write_status "Creating index of viral sequences"
 	{ $timecmd samtools faidx $file_viral_fa && bwa index $file_viral_fa ; } 1>&2 2>> $logfile
+else
+	write_status "reating index of viral sequences	Skipped: found	$file_viral_fa.bwt"
 fi
 
 gridss_input_args=""
@@ -442,10 +448,10 @@ for f in "$@" ; do
 	infile_bam=$infile_prefix.viral.bam
 	
 	if [[ ! -f $infile_fq ]] ; then
-		exec_concat_fastq=$infile_prefix.extract_reads.sh
+		exec_extract_reads=$infile_prefix.extract_reads.sh
 		write_status "Extracting viral reads	$f"
 		if which gridsstools > /dev/null ; then
-			cat > $exec_concat_fastq << EOF
+			cat > $exec_extract_reads << EOF
 gridsstools extractFragmentsToFastq \
 	-@ $threads \
 	-r $file_readname \
@@ -455,7 +461,7 @@ gridsstools extractFragmentsToFastq \
 	$f
 EOF
 		else
-			cat > $exec_concat_fastq << EOF
+			cat > $exec_extract_reads << EOF
 java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \\
 	-INPUT $f \\
 	-READ_NAMES $file_readname \\
@@ -464,8 +470,10 @@ java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \\
 	-OUTPUT_FQ2 $infile_fq2
 EOF
 		fi
-		chmod +x $exec_concat_fastq
-		{ $timecmd $exec_concat_fastq ; } 1>&2 2>> $logfile
+		chmod +x $exec_extract_reads
+		{ $timecmd $exec_extract_reads ; } 1>&2 2>> $logfile
+	else
+		write_status "Extracting viral reads	Skipped: found	$infile_fq"
 	fi
 	if [[ ! -f $infile_bam ]] ; then
 		write_status "Aligning viral reads	$f"
@@ -478,6 +486,8 @@ EOF
 		&& mv $infile_bam.tmp.bam $infile_bam \
 		&& samtools index $infile_bam \
 		; } 1>&2 2>> $logfile
+	else
+		write_status "Aligning viral reads	Skipped: found	$infile_bam"
 	fi
 	gridss_dir=$workingdir/$(basename $infile_bam).gridss.working
 	gridss_prefix=$gridss_dir/$(basename $infile_bam)
@@ -490,8 +500,9 @@ EOF
 		# requirement of this pipeline
 		# This approach doesn't work for fastq input files.
 		exec_extract_host_metrics=$infile_prefix.extract_host_metrics.sh
+		rm -f $exec_extract_host_metrics
 		cat > $exec_extract_host_metrics << EOF
-java -Xmx512g $jvm_args \
+java -Xmx512m $jvm_args \
 	-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 	--INPUT $f \
 	--OUTPUT $gridss_prefix \
@@ -504,6 +515,8 @@ EOF
 		chmod +x $exec_extract_host_metrics
 		mkdir -p $gridss_dir
 		{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
+	else
+		write_status "Gathering metrics from host alignment	Skipped: found	$gridss_prefix.insert_size_metrics"
 	fi
 	gridss_input_args="$gridss_input_args $infile_bam"
 done
@@ -520,6 +533,8 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		$gridssargs \
 		$gridss_input_args \
 	; } 1>&2 2>> $logfile
+else
+	write_status "Calling structural variants	Skipped: found	$file_gridss_vcf"
 fi
 if [[ ! -f $file_host_annotated_vcf ]] ; then
 	write_status "Annotating host genome integrations"
@@ -533,6 +548,8 @@ if [[ ! -f $file_host_annotated_vcf ]] ; then
 			--INPUT $file_gridss_vcf \
 			--OUTPUT $file_host_annotated_vcf \
 	; } 1>&2 2>> $logfile
+else
+	write_status "Annotating host genome integrations	Skipped: found	$file_host_annotated_vcf"
 fi
 if [[ ! -f $file_kraken_annotated_vcf ]] ; then
 	write_status "Annotating kraken2 host"
@@ -544,6 +561,8 @@ if [[ ! -f $file_kraken_annotated_vcf ]] ; then
 		$kraken2args \
 		$file_host_annotated_vcf  \
 	; } 1>&2 2>> $logfile
+else
+	write_status "Annotating kraken2 host	Skipped: found	$file_kraken_annotated_vcf"
 fi
 
 cp $file_kraken_annotated_vcf $output_vcf
