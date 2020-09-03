@@ -316,14 +316,15 @@ event_link_df = bind_rows(
   inv_link_df,
   dsb_link_df) %>%
   dplyr::select(sourceId, linked_by) %>%
+	filter(sourceId %in% row.names(vcf)) %>%
   mutate(
     QUAL=rowRanges(vcf)[sourceId]$QUAL,
     hasPolyA=str_detect(rowRanges(vcf[sourceId])$ALT, "A{16}")) %>%
   group_by(linked_by) %>%
   # filter events where supporting fragment counts differ by too much
   mutate(
-    max_supporting_fragment_count = max(ifelse(is.na(info(full_vcf[sourceId])$MATEID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
-    min_supporting_fragment_count = min(ifelse(is.na(info(full_vcf[sourceId])$MATEID), info(full_vcf[sourceId])$BVF, info(full_vcf[sourceId])$VF)),
+    max_supporting_fragment_count = max(ifelse(is.na(info(vcf[sourceId])$MATEID), info(vcf[sourceId])$BVF, info(vcf[sourceId])$VF)),
+    min_supporting_fragment_count = min(ifelse(is.na(info(vcf[sourceId])$MATEID), info(vcf[sourceId])$BVF, info(vcf[sourceId])$VF)),
     hasPolyA=any(hasPolyA)
     ) %>%
   filter(min_supporting_fragment_count >= gridss.min_rescue_portion * max_supporting_fragment_count | hasPolyA)
