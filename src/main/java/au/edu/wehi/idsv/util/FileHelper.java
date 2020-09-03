@@ -5,6 +5,7 @@ import com.google.common.io.Files;
 import java.io.*;
 import java.net.URI;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,6 +14,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public abstract class FileHelper {
+	public static String[] GENOMIC_INDEX_FILES = new String[] {
+		".bai",  // BAM
+		".crai", // CRAM
+		".idx",  // Tribble
+		".tbi",  // tabix
+		".csi",  // BCF
+	};
 	/**
 	 * Moves the given file and any associated indexes 
 	 * @param from
@@ -29,13 +37,17 @@ public abstract class FileHelper {
 		if (!from.renameTo(to)) {
 			throw new IOException("Could not rename " + from + " to " + to);
 		}
-		moveIndex(from, to, ".bai");
-		moveIndex(from, to, ".idx");
+		moveIndex(from, to, GENOMIC_INDEX_FILES);
 	}
 	public static void delete(File file, boolean deleteIndexes) throws IOException {
 		file.delete();
 		for (File f : getIndexFilesFor(file)) {
 			f.delete();
+		}
+	}
+	private static void moveIndex(File from, File to, String... indexSuffix) throws IOException {
+		for (String index : indexSuffix) {
+			moveIndex(from, to, index);
 		}
 	}
 	private static void moveIndex(File from, File to, String indexSuffix) throws IOException {
@@ -68,8 +80,12 @@ public abstract class FileHelper {
 			FileHelper.delete(to, copyIndexes);
 		}
 		Files.copy(from, to);
-		copyIndex(from, to, ".bai");
-		copyIndex(from, to, ".idx");
+		copyIndex(from, to, GENOMIC_INDEX_FILES);
+	}
+	private static void copyIndex(File from, File to, String... indexSuffix) throws IOException {
+		for (String index : indexSuffix) {
+			copyIndex(from, to, index);
+		}
 	}
 	private static void copyIndex(File from, File to, String indexSuffix) throws IOException {
 		trycopysingle(
@@ -88,16 +104,14 @@ public abstract class FileHelper {
 		}
 	}
 	public static List<File> getIndexFilesFor(File file) {
-		return Stream.concat(
-				getPossibleIndexFilesFor(file, ".bai"),
-				getPossibleIndexFilesFor(file, ".idx"))
-			.filter(f -> f.exists())
-			.collect(Collectors.toList());
-	}
-	private static Stream<File> getPossibleIndexFilesFor(File file, String indexSuffix) {
-		return Stream.of(
-				new File(file.getAbsolutePath() + indexSuffix),
-				new File(file.getParentFile(), Files.getNameWithoutExtension(file.getName()) + indexSuffix));
+		List<File> index = new ArrayList<>();
+		for (String indexSuffix : GENOMIC_INDEX_FILES) {
+			File f = new File(file.getAbsolutePath() + indexSuffix);
+			File f2 = new File(file.getParentFile(), Files.getNameWithoutExtension(file.getName()) + indexSuffix);
+			if (f.exists()) index.add(f);
+			if (f2.exists()) index.add(f2);
+		}
+		return index;
 	}
 	public static void zipDirectory(File zip, File directory) throws IOException {
 		byte[] buffer = new byte[4194304];

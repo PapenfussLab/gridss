@@ -82,4 +82,18 @@ public class FileHelperTest extends IntermediateFilesTest {
 			Assert.assertEquals("this is a nested file", S(buffer));
 		}
 	}
+	@Test
+	public void should_support_tbi_issue392() throws IOException {
+		File from = new File(testFolder.getRoot(), "in.vcf.gz");
+		File from_tabix = new File(testFolder.getRoot(), "in.vcf.gz.tbi");
+		File to = new File(testFolder.getRoot(), "out.vcf.gz");
+		File to_tabix = new File(testFolder.getRoot(), "out.vcf.gz.tbi");
+		from.createNewFile();
+		from_tabix.createNewFile();
+		FileHelper.move(from, to, true);
+		assertFalse(from.exists());
+		assertFalse(from_tabix.exists());
+		assertTrue(to.exists());
+		assertTrue(to_tabix.exists());
+	}
 }
