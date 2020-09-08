@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.bed.RepeatMaskerBEDCodec;
-import au.edu.wehi.idsv.bed.RepeatMaskerBEDFeature;
+import au.edu.wehi.idsv.repeatmasker.RepeatMaskerBEDCodec;
+import au.edu.wehi.idsv.repeatmasker.RepeatMaskerFeature;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
@@ -23,13 +23,13 @@ import java.util.stream.StreamSupport;
 
 public class VariantContextRepeatMaskerAnnotator implements Function<VariantContext, VariantContext> {
     private static final Log log = Log.getInstance(VariantContextRepeatMaskerAnnotator.class);
-    private Map<String, IntervalTree<RepeatMaskerBEDFeature>> lookup;
+    private Map<String, IntervalTree<RepeatMaskerFeature>> lookup;
 
     private class RepeatMaskerHit {
-        public final RepeatMaskerBEDFeature rme;
+        public final RepeatMaskerFeature rme;
         public final double overlap;
         public final boolean isNegative;
-        public RepeatMaskerHit(RepeatMaskerBEDFeature rme, int alignmentStart, int alignmentEnd, boolean alignmentOnNegative) {
+        public RepeatMaskerHit(RepeatMaskerFeature rme, int alignmentStart, int alignmentEnd, boolean alignmentOnNegative) {
             this.rme = rme;
             this.overlap = IntervalUtil.overlapsWidthClosed(alignmentStart, alignmentEnd, rme.getStart(), rme.getEnd()) / (alignmentEnd - alignmentStart + 1.0);
             this.isNegative = alignmentOnNegative != (rme.getStrand() == Strand.NEGATIVE);
@@ -40,14 +40,15 @@ public class VariantContextRepeatMaskerAnnotator implements Function<VariantCont
         return lookup.keySet();
     }
 
-    private static Map<String, IntervalTree<RepeatMaskerBEDFeature>> createLookup(File repeatMaskerBed) throws IOException {
-        Map<String, IntervalTree<RepeatMaskerBEDFeature>> lookup = new HashMap<>();
+    private static Map<String, IntervalTree<RepeatMaskerFeature>> createLookup(File repeatMaskerBed) throws IOException {
+        Map<String, IntervalTree<RepeatMaskerFeature>> lookup = new HashMap<>();
         try (AbstractFeatureReader<BEDFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(repeatMaskerBed.getPath(), new RepeatMaskerBEDCodec(), false)) {
             int lineno = 0;
             for (BEDFeature rawfeat : reader.iterator()) {
-                RepeatMaskerBEDFeature feat = (RepeatMaskerBEDFeature)rawfeat;
+                RepeatMaskerFeature feat = (RepeatMaskerFeature)rawfeat;
+                feat.setRepeatAlignmentSummaryInformation(null); // reduce memory footprint
                 lineno++;
-                IntervalTree<RepeatMaskerBEDFeature> tree = lookup.get(feat.getContig());
+                IntervalTree<RepeatMaskerFeature> tree = lookup.get(feat.getContig());
                 if (tree == null) {
                     tree = new IntervalTree<>();
                     lookup.put(feat.getContig(), tree);
@@ -67,7 +68,7 @@ public class VariantContextRepeatMaskerAnnotator implements Function<VariantCont
         String chr = aln.rname;
         int start = aln.pos;
         int end = aln.pos + aln.cigar.getReferenceLength() - 1;
-        IntervalTree<RepeatMaskerBEDFeature> tree = lookup.get(chr);
+        IntervalTree<RepeatMaskerFeature> tree = lookup.get(chr);
         if (tree == null) return Stream.empty();
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(tree.overlappers(start, end), 0), false)
                 .map(n -> new RepeatMaskerHit(n.getValue(), start, end, aln.isNegativeStrand));

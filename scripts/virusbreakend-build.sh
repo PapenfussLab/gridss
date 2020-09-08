@@ -56,7 +56,7 @@ while true; do
 			;;
 	esac
 done
-for tool in kraken2-build samtools gunzip wget awk tar ; do
+for tool in kraken2-build samtools gunzip wget awk tar dustmasker rsync ; do
 	if ! which $tool >/dev/null; then
 		echo "Error: unable to find $tool on \$PATH" 1>&2
 		exit $EX_CONFIG

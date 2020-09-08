@@ -6,6 +6,7 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.TextCigarCodec;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -150,5 +151,18 @@ public class CigarUtilTest {
 		assertEquals(2, CigarUtil.getStartSoftClipLength(C("1H2S3M4S5H")));
 		assertEquals(9, CigarUtil.getEndClipLength(C("1H2S3M4S5H")));
 		assertEquals(4, CigarUtil.getEndSoftClipLength(C("1H2S3M4S5H")));
+	}
+	@Test
+	public void editDistance_should_calculate_distance() {
+		Assert.assertEquals(2, CigarUtil.editDistance(new Cigar(C("2I")), false, false));
+		Assert.assertEquals(3, CigarUtil.editDistance(new Cigar(C("3D")), false, false));
+		Assert.assertEquals(0, CigarUtil.editDistance(new Cigar(C("1M5N1M")), false, false));
+		Assert.assertEquals(0, CigarUtil.editDistance(new Cigar(C("1S2=4S")), false, false));
+		Assert.assertEquals(5, CigarUtil.editDistance(new Cigar(C("1S2=4S")), false, true));
+		Assert.assertEquals(0, CigarUtil.editDistance(new Cigar(C("5=")), false, false));
+		Assert.assertEquals(5, CigarUtil.editDistance(new Cigar(C("5X")), false, false));
+		Assert.assertEquals(8+1+4+16, CigarUtil.editDistance(new Cigar(C("8H1S2=4S16H")), false, true));
+		Assert.assertEquals(0, CigarUtil.editDistance(new Cigar(C("1H1M")), false, false));
+		Assert.assertEquals(0, CigarUtil.editDistance(new Cigar(C("2M2P")), true, false));
 	}
 }

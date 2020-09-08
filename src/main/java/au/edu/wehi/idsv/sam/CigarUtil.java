@@ -313,7 +313,38 @@ public class CigarUtil {
 			}
 		}
 	}
-	public static class CigarOperatorIterator implements Iterator<CigarOperator> {
+
+	/**
+	 * Calculates the edit distance to the given sequence.
+	 * @param cigar
+	 * @param MisMismatch Determine whether to treat cigar M operations as a match or mismatch
+	 * @param includeClipping include clipped based in edit distance calculation
+	 * @return edit distance based on cigar
+	 */
+    public static int editDistance(Cigar cigar, boolean MisMismatch, boolean includeClipping) {
+    	int distance = 0;
+    	for (CigarElement ce : cigar) {
+    		switch (ce.getOperator()) {
+				case D:
+				case I:
+				case X:
+					distance += ce.getLength();
+					break;
+				case N:
+				case P:
+					break;
+				case H:
+				case S:
+					if (includeClipping) {
+						distance += ce.getLength();
+					}
+					break;
+			}
+		}
+    	return distance;
+    }
+
+    public static class CigarOperatorIterator implements Iterator<CigarOperator> {
 		private Iterator<CigarElement> it;
 		private CigarElement currentElement = null;
 		private int currentIndex;

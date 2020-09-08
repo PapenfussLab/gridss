@@ -1,0 +1,1389 @@
+16 9.32 0.00 0.00 gridss124bf_2h 9 31 (43) (A)n#Simple_repeat 1 23 (0) m_b1s252i80 1
+
+  gridss124bf_2          9 AAACAAAAAAAAAAAAACAAAAA 31
+                              v             v     
+  (A)n#Simple_r          1 AAAAAAAAAAAAAAAAAAAAAAA 23
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 22), avg. gap size = 0.0 (0 / 0)
+
+
+16 9.32 0.00 0.00 gridss124bf_2o 9 31 (43) (A)n#Simple_repeat 1 23 (0) m_b1s252i79 2
+
+  gridss124bf_2          9 AAACAAAAAAAAAAAAACAAAAA 31
+                              v             v     
+  (A)n#Simple_r          1 AAAAAAAAAAAAAAAAAAAAAAA 23
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 22), avg. gap size = 0.0 (0 / 0)
+
+
+39 0.00 0.00 0.00 gridss12f_24b 79 114 (0) (G)n#Simple_repeat 1 36 (0) c_b1s251i22 3
+
+  gridss12f_24b         79 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 114
+                                                               
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 36
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 35), avg. gap size = 0.0 (0 / 0)
+
+
+28 23.15 2.91 3.92 gridss132b_16b 11 113 (9) (GGGAGC)n#Simple_repeat 1 102 (0) m_b1s252i78 4
+
+  gridss132b_16         11 GGGGGCGGGAGGGGGGGTCGGG-GCGGGAGCCGG-CCGGGCGTTGG-GGG 57
+                              i       v   i -    -        v  -v    v iv  - v 
+  (GGGAGC)n#Sim          1 GGGAGCGGGAGCGGGAG-CGGGAGCGGGAGCGGGAGCGGGAGCGGGAGCG 49
+
+  gridss132b_16         58 GGAGGCTGCCAGGGGGGGGGGGAGCGAGGTGCGGGCGCGGCCGCGGGCGC 107
+                              -  - vv  v   i v       -  v     v    vv     v  
+  (GGGAGC)n#Sim         50 GGA-GC-GGGAGCGGGAGCGGGAGCG-GGAGCGGGAGCGGGAGCGGGAGC 96
+
+  gridss132b_16        108 GGGAGC 113
+                                 
+  (GGGAGC)n#Sim         97 GGGAGC 102
+
+Matrix = Unknown
+Transitions / transversions = 0.27 (4/15)
+Gap_init rate = 0.07 (7 / 102), avg. gap size = 1.00 (7 / 7)
+
+
+17 15.49 0.00 0.00 gridss132b_18b 8 36 (1) (C)n#Simple_repeat 1 29 (0) m_b1s252i77 5
+
+  gridss132b_18          8 CCCCCCGGGCCCCCCCCCCCCCCCCGCCC 36
+                                 vvv                v   
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCC 29
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 28), avg. gap size = 0.0 (0 / 0)
+
+
+55 22.13 0.00 0.00 gridss132b_21b 1 112 (3) (G)n#Simple_repeat 1 112 (0) m_b1s252i76 6
+
+  gridss132b_21          1 GGGGCGGGGGGGGCGGGGGGGGGGTCCGCGGGTGGGGGTGGGGGGCGGGG 50
+                               v        v          vvv v   v     v      v    
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss132b_21         51 GGGGCGGGGGGGGGTGGGGGGGCCTGGTGGGGGGGGGGGGCGGGCGGTGG 100
+                               v         v       vvv  v            v   v  v  
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 100
+
+  gridss132b_21        101 GGGTCGTGGGGG 112
+                              vv v     
+  (G)n#Simple_r        101 GGGGGGGGGGGG 112
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/21)
+Gap_init rate = 0.00 (0 / 111), avg. gap size = 0.0 (0 / 0)
+
+
+15 20.03 0.00 0.00 gridss132b_24b 3 31 (10) (C)n#Simple_repeat 1 29 (0) m_b1s252i75 7
+
+  gridss132b_24          3 CCCCCGGCGCCCCCCCGCCCCCCCGCCCC 31
+                                vv v       v       v    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCC 29
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/5)
+Gap_init rate = 0.00 (0 / 28), avg. gap size = 0.0 (0 / 0)
+
+
+20 13.87 0.00 0.00 gridss132bb_21h 1 32 (0) (G)n#Simple_repeat 1 32 (0) m_b1s252i74 8
+
+  gridss132bb_2          1 GGGGGGGCCGGGGGGGGGGTCGGGGGGGGGGG 32
+                                  vv          vv           
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 32
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 31), avg. gap size = 0.0 (0 / 0)
+
+
+20 13.87 0.00 0.00 gridss132bb_21o 1 32 (0) (C)n#Simple_repeat 1 32 (0) m_b1s252i73 9
+
+  gridss132bb_2          1 CCCCCCCCCCCGACCCCCCCCCCGGCCCCCCC 32
+                                      vv          vv       
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 32
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 31), avg. gap size = 0.0 (0 / 0)
+
+
+37 2.61 0.00 0.00 gridss132bb_24h 1 39 (34) (G)n#Simple_repeat 1 39 (0) c_b1s251i21 10
+
+  gridss132bb_2          1 GGGGGGGGCGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 39
+                                   v                              
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 39
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 38), avg. gap size = 0.0 (0 / 0)
+
+
+37 2.61 0.00 0.00 gridss132bb_24o 35 73 (0) (C)n#Simple_repeat 1 39 (0) c_b1s251i20 11
+
+  gridss132bb_2         35 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCGCCCCCCCC 73
+                                                         v        
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 39
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 38), avg. gap size = 0.0 (0 / 0)
+
+
+13 15.91 0.00 0.00 gridss132f_13b 8 35 (84) (CCGCC)n#Simple_repeat 1 28 (0) m_b1s252i70 12
+
+  gridss132f_13          8 CCCCCTCGCCCCGCCCCACCCGGCCCCG 35
+                             v  i           i   v      
+  (CCGCC)n#Simp          1 CCGCCCCGCCCCGCCCCGCCCCGCCCCG 28
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (2/2)
+Gap_init rate = 0.00 (0 / 27), avg. gap size = 0.0 (0 / 0)
+
+
+20 13.87 0.00 0.00 gridss132f_13b 53 84 (35) (G)n#Simple_repeat 1 32 (0) m_b1s252i71 13
+
+  gridss132f_13         53 GGCGGGGGGGGTGGGTGGGGGTGGGGGGGGGG 84
+                             v        v   v     v          
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 32
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 31), avg. gap size = 0.0 (0 / 0)
+
+
+20 4.30 0.00 0.00 gridss132f_13b 95 118 (1) (C)n#Simple_repeat 1 24 (0) m_b1s252i72 14
+
+  gridss132f_13         95 CCCCCCCCCCCCCCGCCCCCCCCC 118
+                                         v         
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCC 24
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 23), avg. gap size = 0.0 (0 / 0)
+
+
+25 6.57 0.00 0.00 gridss132f_16b 24 55 (0) (C)n#Simple_repeat 1 32 (0) m_b1s252i69 15
+
+  gridss132f_16         24 CCCCCCACCCACCCCCCCCCCCCCCCCCCCCC 55
+                                 v   v                     
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 32
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 31), avg. gap size = 0.0 (0 / 0)
+
+
+40 8.01 0.00 0.00 gridss132fb_34h 12 64 (0) (G)n#Simple_repeat 1 53 (0) m_b1s252i68 16
+
+  gridss132fb_3         12 GGCGGGGGGGGGGGGGGGCGGGGCCGGGGGGGGGGGGGGGGGGGGGGGGG 61
+                             v               v    vv                         
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss132fb_3         62 GGG 64
+                              
+  (G)n#Simple_r         51 GGG 53
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 52), avg. gap size = 0.0 (0 / 0)
+
+
+40 8.01 0.00 0.00 gridss132fb_34o 12 64 (0) (G)n#Simple_repeat 1 53 (0) m_b1s252i67 17
+
+  gridss132fb_3         12 GGCGGGGGGGGGGGGGGGCGGGGCCGGGGGGGGGGGGGGGGGGGGGGGGG 61
+                             v               v    vv                         
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss132fb_3         62 GGG 64
+                              
+  (G)n#Simple_r         51 GGG 53
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 52), avg. gap size = 0.0 (0 / 0)
+
+
+35 12.43 0.00 0.00 gridss132fb_66h 7 59 (0) (G)n#Simple_repeat 1 53 (0) m_b1s252i66 18
+
+  gridss132fb_6          7 GGGGGCGGGGGGCGGGGGCGGGGGGGGCGGGCGGGGGGGGGGGGGGCGGG 56
+                                v      v     v        v   v              v   
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss132fb_6         57 GGG 59
+                              
+  (G)n#Simple_r         51 GGG 53
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/6)
+Gap_init rate = 0.00 (0 / 52), avg. gap size = 0.0 (0 / 0)
+
+
+35 12.43 0.00 0.00 gridss132fb_66o 7 59 (0) (G)n#Simple_repeat 1 53 (0) m_b1s252i65 19
+
+  gridss132fb_6          7 GGGGGCGGGGGGCGGGGGCGGGGGGGGCGGGCGGGGGGGGGGGGGGCGGG 56
+                                v      v     v        v   v              v   
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss132fb_6         57 GGG 59
+                              
+  (G)n#Simple_r         51 GGG 53
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/6)
+Gap_init rate = 0.00 (0 / 52), avg. gap size = 0.0 (0 / 0)
+
+
+12 19.15 2.63 2.63 gridss132fb_92h 11 48 (0) (GCCCGGC)n#Simple_repeat 1 38 (0) m_b1s252i64 20
+
+  gridss132fb_9         11 GCCGGGGGCCC-CCGGGCGGCGCCCGGCGCGCGGCTGCC 48
+                              v  v    -v  vv             v    -   
+  (GCCCGGC)n#Si          1 GCCCGGCGCCCGGCGCCCGGCGCCCGGCGCCCGGC-GCC 38
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/6)
+Gap_init rate = 0.05 (2 / 37), avg. gap size = 1.00 (2 / 2)
+
+
+12 19.15 2.63 2.63 gridss132fb_92o 11 48 (0) (GCCCGGC)n#Simple_repeat 1 38 (0) m_b1s252i63 21
+
+  gridss132fb_9         11 GCCGGGGGCCC-CCGGGCGGCGCCCGGCGCGCGGCTGCC 48
+                              v  v    -v  vv             v    -   
+  (GCCCGGC)n#Si          1 GCCCGGCGCCCGGCGCCCGGCGCCCGGCGCCCGGC-GCC 38
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/6)
+Gap_init rate = 0.05 (2 / 37), avg. gap size = 1.00 (2 / 2)
+
+
+16 5.20 0.00 0.00 gridss151f_10b 76 95 (1) (C)n#Simple_repeat 1 20 (0) m_b1s252i62 22
+
+  gridss151f_10         76 CCCCCGCCCCCCCCCCCCCC 95
+                                v              
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCC 20
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 19), avg. gap size = 0.0 (0 / 0)
+
+
+21 18.05 0.00 0.00 gridss159f_2b 88 125 (0) (C)n#Simple_repeat 1 38 (0) m_b1s252i61 23
+
+  gridss159f_2b         88 CCCCCCCTTCACTCCTCGCCCCCCCCCCCCCCCCCCCC 125
+                                  ii v i  i v                    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 38
+
+Matrix = Unknown
+Transitions / transversions = 2.00 (4/2)
+Gap_init rate = 0.00 (0 / 37), avg. gap size = 0.0 (0 / 0)
+
+
+17 4.94 0.00 0.00 gridss173b_1b 19 39 (2) (A)n#Simple_repeat 1 21 (0) m_b1s252i60 24
+
+  gridss173b_1b         19 AAAAAAAAAAAAAAACAAAAA 39
+                                          v     
+  (A)n#Simple_r          1 AAAAAAAAAAAAAAAAAAAAA 21
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 20), avg. gap size = 0.0 (0 / 0)
+
+
+51 12.69 0.00 0.00 gridss228b_7b 30 107 (0) (G)n#Simple_repeat 1 78 (0) m_b1s252i59 25
+
+  gridss228b_7b         30 GGGGGGGGGCGGGGGGGTGGGGGGGGGGGGGGGGGGGGGGGGGCCTGGGG 79
+                                    v       v                         vvv    
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss228b_7b         80 GGGGGGGTGCGGGGCCGGGGGGGGGGGG 107
+                                  v v    vv            
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGGGGGGGGGGGGGGG 78
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/9)
+Gap_init rate = 0.00 (0 / 77), avg. gap size = 0.0 (0 / 0)
+
+
+18 11.76 8.70 0.00 gridss23b_4b 2 47 (7) (TTTTGTTG)n#Simple_repeat 1 50 (0) m_b1s252i58 26
+
+  gridss23b_4b           2 TTTTGTT-TTTT-TGGGTTTGTGGTCTTGTTG-TTTGTT-TTTTTTTGTT 47
+                                  -    - v v     v  i      -      -    v     
+  (TTTTGTTG)n#S          1 TTTTGTTGTTTTGTTGTTTTGTTGTTTTGTTGTTTTGTTGTTTTGTTGTT 50
+
+Matrix = Unknown
+Transitions / transversions = 0.25 (1/4)
+Gap_init rate = 0.09 (4 / 45), avg. gap size = 1.00 (4 / 4)
+
+
+14 18.38 0.00 0.00 gridss260f_3b 1 31 (3) (TGG)n#Simple_repeat 1 31 (0) m_b1s252i57 27
+
+  gridss260f_3b          1 TGGAGGTGGTAGTAGAGGTGGTGATGGTGGT 31
+                              v      i  i v       i       
+  (TGG)n#Simple          1 TGGTGGTGGTGGTGGTGGTGGTGGTGGTGGT 31
+
+Matrix = Unknown
+Transitions / transversions = 1.50 (3/2)
+Gap_init rate = 0.00 (0 / 30), avg. gap size = 0.0 (0 / 0)
+
+
+246 14.81 0.00 0.00 gridss264b_6b 35 88 (5) SAR#Satellite 2 55 (29) m_b1s502i0 28
+
+  gridss264b_6b         35 CAGAATAAAATATATATTTGATGTACTTTCATATTTTAGGTACATTTTAT 84
+                              v   v     i      i        v        v     v v   
+  SAR#Satellite          2 CAGTATATAATATGTATTTGGTGTACTTTGATATTTTATGTACAGTATAT 51
+
+  gridss264b_6b         85 AATA 88
+                               
+  SAR#Satellite         52 AATA 55
+
+Matrix = 20p43g.matrix
+Kimura (with divCpGMod) = 16.52
+Transitions / transversions = 0.33 (2/6)
+Gap_init rate = 0.00 (0 / 53), avg. gap size = 0.0 (0 / 0)
+
+
+310 13.56 1.69 0.00 gridss264f_13b 5 63 (32) SAR#Satellite 18 77 (7) m_b1s502i1 29
+
+  gridss264f_13          5 TTTGG-GTACTTTGATGTTTTTTGTACAGTATAGAATATATACCTCGGGT 53
+                                -          i    v           v     i  ii v v  
+  SAR#Satellite         18 TTTGGTGTACTTTGATATTTTATGTACAGTATATAATATGTATTTGGTGT 67
+
+  gridss264f_13         54 ACTTTGATAT 63
+                                     
+  SAR#Satellite         68 ACTTTGATAT 77
+
+Matrix = 20p43g.matrix
+Kimura (with divCpGMod) = 15.01
+Transitions / transversions = 1.00 (4/4)
+Gap_init rate = 0.02 (1 / 58), avg. gap size = 1.00 (1 / 1)
+
+
+41 0.00 0.00 0.00 gridss312b_1056b 1 38 (59) (C)n#Simple_repeat 1 38 (0) c_b1s251i19 30
+
+  gridss312b_10          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 38
+                                                                 
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 38
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 37), avg. gap size = 0.0 (0 / 0)
+
+
+16 29.38 3.03 0.00 gridss312b_1405b 3 68 (25) (GGGCGG)n#Simple_repeat 1 68 (0) m_b1s252i56 31
+
+  gridss312b_14          3 GGGCGGGGGCGGGGGCTGTGGAGGATGTGGAGATGGCGGCGGGGG-GGCT 51
+                                           v v  v  iv i  i ii  v        -  vv
+  (GGGCGG)n#Sim          1 GGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGGGCGGGG 50
+
+  gridss312b_14         52 GTGTGGG-GGGGTTGGGG 68
+                            i v   -    vi    
+  (GGGCGG)n#Sim         51 GCGGGGGCGGGGGCGGGG 68
+
+Matrix = Unknown
+Transitions / transversions = 0.78 (7/9)
+Gap_init rate = 0.03 (2 / 65), avg. gap size = 1.00 (2 / 2)
+
+
+14 12.12 5.26 2.56 gridss312b_1437b 5 42 (60) (TGGTGGG)n#Simple_repeat 1 39 (0) m_b1s252i54 32
+
+  gridss312b_14          5 TGGGGGTTGGTGGGTGGTGCGT-GTGGCT-GTGGGTTGGT 42
+                              v  v            v  -    v -     -    
+  (TGGTGGG)n#Si          1 TGGTGGGTGGTGGGTGGTGGGTGGTGGGTGGTGGG-TGGT 39
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.08 (3 / 37), avg. gap size = 1.00 (3 / 3)
+
+14 14.76 7.25 7.25 gridss312b_1437b 9 77 (25) (GGTGT)n#Simple_repeat 1 69 (0) m_b1s252i55 32
+
+  gridss312b_14          9 GGT-TGGTG-GGTGGTGCGTGTGGCTGTGG-GTTG-GTTTTTTGCAATGG 54
+                              -     -   -   -      -     -  v -  vv v  vvi   
+  (GGTGT)n#Simp          1 GGTGTGGTGTGGT-GTG-GTGTGG-TGTGGTGTGGTGTGGTGTGGTGTGG 47
+
+  gridss312b_14         55 -GTGGCGTGGTGTTGGTGTGAGTG 77
+                           -    i      -       -   
+  (GGTGT)n#Simp         48 TGTGGTGTGGTG-TGGTGTG-GTG 69
+
+Matrix = Unknown
+Transitions / transversions = 0.33 (2/6)
+Gap_init rate = 0.15 (10 / 68), avg. gap size = 1.00 (10 / 10)
+
+
+19 12.73 11.67 0.00 gridss312b_1457b 16 75 (14) (GGCGCGG)n#Simple_repeat 1 67 (0) m_b1s252i52 33
+
+  gridss312b_14         16 GGCGCGTGGCG-GGGGGGGGGGGGGC-GGG-GCGGGG-G-GGGGTGAGGG 60
+                                 v    -    v v    v  -   -      - -    i v   
+  (GGCGCGG)n#Si          1 GGCGCGGGGCGCGGGGCGCGGGGCGCGGGGCGCGGGGCGCGGGGCGCGGG 50
+
+  gridss312b_14         61 GGGC-GGGCG-GGGGCG 75
+                            v  -     -      
+  (GGCGCGG)n#Si         51 GCGCGGGGCGCGGGGCG 67
+
+Matrix = Unknown
+Transitions / transversions = 0.17 (1/6)
+Gap_init rate = 0.12 (7 / 59), avg. gap size = 1.00 (7 / 7)
+
+32 21.32 0.00 0.00 gridss312b_1457b 23 87 (2) (G)n#Simple_repeat 1 65 (0) m_b1s252i53 33
+
+  gridss312b_14         23 GGCGGGGGGGGGGGGGGCGGGGCGGGGGGGGGTGAGGGGGGCGGGCGGGG 72
+                             v              v    v         v i      v   v    
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312b_14         73 GCGGACTGGCGGGGG 87
+                            v  ivv  v     
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGG 65
+
+Matrix = Unknown
+Transitions / transversions = 0.20 (2/10)
+Gap_init rate = 0.00 (0 / 64), avg. gap size = 0.0 (0 / 0)
+
+
+79 4.71 0.00 0.00 gridss312b_1472b 1 88 (47) (G)n#Simple_repeat 1 88 (0) c_b1s251i18 34
+
+  gridss312b_14          1 GGGGGGGGGGGGGGGGGGGGGGGCGGGGGGGGGGGGGGGGGGGGGGGCGG 50
+                                                  v                       v  
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312b_14         51 GGGGGGGGGGGGGGGGGGGGCGGGGGCGGGGGGGGGGG 88
+                                               v     v           
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 88
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 87), avg. gap size = 0.0 (0 / 0)
+
+
+12 9.67 2.44 10.53 gridss312b_1472b 93 133 (2) (GGGC)n#Simple_repeat 1 38 (0) m_b1s252i51 35
+
+  gridss312b_14         93 GGGCGGGCGGGGCCGCCCGGGCGGG-GGCCGGCGCGCGGCGG 133
+                                   -   -  vv        -  v   -   -     
+  (GGGC)n#Simpl          1 GGGCGGGC-GGG-CGGGCGGGCGGGCGGGCGG-GCG-GGCGG 38
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/3)
+Gap_init rate = 0.12 (5 / 40), avg. gap size = 1.00 (5 / 5)
+
+
+29 12.48 0.00 0.00 gridss312b_1627b 1 44 (52) (C)n#Simple_repeat 1 44 (0) m_b1s252i50 36
+
+  gridss312b_16          1 CCCCGCCCCCCGCCCCCACCCCCCCCCCCCCCACGCCCCCCCCC 44
+                               v      v     v              v v         
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 44
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/5)
+Gap_init rate = 0.00 (0 / 43), avg. gap size = 0.0 (0 / 0)
+
+
+27 23.75 2.27 2.27 gridss312b_1627b 1 88 (8) (CCCCGC)n#Simple_repeat 1 88 (0) m_b1s252i49 37
+
+  gridss312b_16          1 CCCCGCCCCCCGCCCCCACCCCC-CCCCCCCCCACGCCCCCCCCCGCGGC 49
+                                -           i     -     v   v       v   - v  
+  (CCCCGC)n#Sim          1 CCCCG-CCCCCGCCCCCGCCCCCGCCCCCGCCCCCGCCCCCGCCC-CCGC 48
+
+  gridss312b_16         50 CGGCGCCAGCGCCCCC-CGCGCGGCGGCGTCCCCCCACCC 88
+                            vv    vv       - v v  v vv  i    v v   
+  (CCCCGC)n#Sim         49 CCCCGCCCCCGCCCCCGCCCCCGCCCCCGCCCCCGCCCCC 88
+
+Matrix = Unknown
+Transitions / transversions = 0.13 (2/15)
+Gap_init rate = 0.05 (4 / 87), avg. gap size = 1.00 (4 / 4)
+
+
+16 0.00 0.00 0.00 gridss312b_1700b 1 17 (88) (C)n#Simple_repeat 1 17 (0) m_b1s252i48 38
+
+  gridss312b_17          1 CCCCCCCCCCCCCCCCC 17
+                                            
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCC 17
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 16), avg. gap size = 0.0 (0 / 0)
+
+
+19 14.17 0.00 0.00 gridss312b_187b 57 87 (34) (C)n#Simple_repeat 1 31 (0) m_b1s252i47 39
+
+  gridss312b_18         57 CCCCCCCCGCCCCGGCCCCTCCCCCCCCCCC 87
+                                   v    vv    i           
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 31
+
+Matrix = Unknown
+Transitions / transversions = 0.33 (1/3)
+Gap_init rate = 0.00 (0 / 30), avg. gap size = 0.0 (0 / 0)
+
+
+19 11.70 0.00 0.00 gridss312b_208b 1 28 (53) (C)n#Simple_repeat 1 28 (0) m_b1s252i46 40
+
+  gridss312b_20          1 CCCCCCCCCCCCCCCCCCACCACCACCC 28
+                                             v  v  v   
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCC 28
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/3)
+Gap_init rate = 0.00 (0 / 27), avg. gap size = 0.0 (0 / 0)
+
+
+273 2.63 0.00 3.95 gridss312b_2342b 1 79 (1) LSU-rRNA_Hsa#rRNA 2099 2174 (2861) m_b1s551i0 41
+
+  gridss312b_23          1 GGGGCGGCGCGCGCGCGCGCGCGTGTGGTGTGCGTCGGAGGGCGGCGGCG 50
+                                  ?? -   vv?                                 
+  LSU-rRNA_Hsa#       2099 GGGGCGGNNC-CGCCGNCGCGCGTGTGGTGTGCGTCGGAGGGCGGCGGCG 2147
+
+  gridss312b_23         51 GCGGCGGCGGCGGGGGTGTGTGGGGTCCT 79
+                                    ? --                
+  LSU-rRNA_Hsa#       2148 GCGGCGGCGNC--GGGTGTGTGGGGTCCT 2174
+
+Matrix = 20p43g.matrix
+Kimura (with divCpGMod) = 2.84
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.04 (3 / 78), avg. gap size = 1.00 (3 / 3)
+
+
+46 5.69 0.00 0.00 gridss312b_2809b 1 55 (0) (C)n#Simple_repeat 1 55 (0) c_b1s251i17 42
+
+  gridss312b_28          1 CCCCGCCCCCCCCCCCCCCCCCCGCCCCCCCCGCCCCCCCCCCCCCCCCC 50
+                               v                  v        v                 
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss312b_28         51 CCCCC 55
+                                
+  (C)n#Simple_r         51 CCCCC 55
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/3)
+Gap_init rate = 0.00 (0 / 54), avg. gap size = 0.0 (0 / 0)
+
+
+16 13.82 0.00 3.03 gridss312b_3175b 3 36 (73) (CCGC)n#Simple_repeat 1 33 (0) m_b1s252i45 43
+
+  gridss312b_31          3 CCGCCCTCCCGACCGCCCCCCCTCCCGCGCCGCC 36
+                                 v    v      v   v     -     
+  (CCGC)n#Simpl          1 CCGCCCGCCCGCCCGCCCGCCCGCCCGC-CCGCC 33
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.03 (1 / 33), avg. gap size = 1.00 (1 / 1)
+
+
+56 7.19 0.00 0.00 gridss312b_3246b 1 73 (0) (G)n#Simple_repeat 1 73 (0) m_b1s252i44 44
+
+  gridss312b_32          1 GGGGGGGGGGGGGGGGGGGGGTGGGGGTTGGGGGGGGGGGTGGGGGGGGG 50
+                                                v     vv           v         
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312b_32         51 GGGGGGGAGGGGGGGGGGGGGGG 73
+                                  i               
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGGGGGGGGGG 73
+
+Matrix = Unknown
+Transitions / transversions = 0.25 (1/4)
+Gap_init rate = 0.00 (0 / 72), avg. gap size = 0.0 (0 / 0)
+
+
+24 9.39 0.00 0.00 gridss312b_3553b 1 34 (6) (T)n#Simple_repeat 1 34 (0) m_b1s252i43 45
+
+  gridss312b_35          1 TTTTTTTTTTTTTTTTTTTTTTTGTTCTTTGTTT 34
+                                                  v  i   v   
+  (T)n#Simple_r          1 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT 34
+
+Matrix = Unknown
+Transitions / transversions = 0.50 (1/2)
+Gap_init rate = 0.00 (0 / 33), avg. gap size = 0.0 (0 / 0)
+
+
+26 0.00 0.00 0.00 gridss312b_3975b 95 119 (26) (C)n#Simple_repeat 1 25 (0) c_b1s251i16 46
+
+  gridss312b_39         95 CCCCCCCCCCCCCCCCCCCCCCCCC 119
+                                                    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCC 25
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 24), avg. gap size = 0.0 (0 / 0)
+
+
+21 23.35 3.80 2.50 gridss312b_3b 84 162 (52) (GCGGCGG)n#Simple_repeat 1 80 (0) m_b1s252i41 47
+
+  gridss312b_3b         84 GCGGCGCTACGGCGGGCGGGCGGCGGGGGGTCGG-GGTCCGCGGGCTCCG 132
+                                 -vi          vv     v   -   -  v v      vv  
+  (GCGGCGG)n#Si          1 GCGGCG-GGCGGCGGGCGGCGGGCGGCGGG-CGGCGGGCGGCGGGCGGCG 48
+
+  gridss312b_3b        133 GG-GGC-TGCGGGCGGTGGATGGCGGCGGGCG 162
+                             -   -v    vv  i  vv           
+  (GCGGCGG)n#Si         49 GGCGGCGGGCGGCGGGCGGCGGGCGGCGGGCG 80
+
+Matrix = Unknown
+Transitions / transversions = 0.15 (2/13)
+Gap_init rate = 0.06 (5 / 78), avg. gap size = 1.00 (5 / 5)
+
+19 27.38 1.16 4.82 gridss312b_3b 93 178 (36) (CGGGGGT)n#Simple_repeat 1 83 (0) m_b1s252i42 47
+
+  gridss312b_3b         93 CGGCGGGCGGGCGGCGGGGGGTCGGGGTCCGCGGGCTCCGGGGGCTGCGG 142
+                              v  v    -  iv           vi  -   v  v    v v v  
+  (CGGGGGT)n#Si          1 CGGGGGTCGGG-GGTCGGGGGTCGGGGGTCG-GGGGTCGGGGGTCGGGGG 48
+
+  gridss312b_3b        143 GCGGTGGATGGCGG-CGGGCGTTCCGGGGATCGGGGG 178
+                           v   v  vi  v  -    - v -     i       
+  (CGGGGGT)n#Si         49 TCGGGGGTCGGGGGTCGGG-GGT-CGGGGGTCGGGGG 83
+
+Matrix = Unknown
+Transitions / transversions = 0.29 (4/14)
+Gap_init rate = 0.06 (5 / 85), avg. gap size = 1.00 (5 / 5)
+
+
+31 3.01 0.00 0.00 gridss312b_4074b 2 35 (0) (G)n#Simple_repeat 1 34 (0) c_b1s251i15 48
+
+  gridss312b_40          2 GGGGGGGGGGGGGGGGGGGGGGGCGGGGGGGGGG 35
+                                                  v          
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 34
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 33), avg. gap size = 0.0 (0 / 0)
+
+
+82 2.52 0.00 0.00 gridss312b_4084b 1 81 (0) (C)n#Simple_repeat 1 81 (0) c_b1s251i14 49
+
+  gridss312b_40          1 CCCCCCCCCCCGGCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+                                      vv                                     
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss312b_40         51 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 81
+                                                          
+  (C)n#Simple_r         51 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 81
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 80), avg. gap size = 0.0 (0 / 0)
+
+
+17 26.06 0.00 5.97 gridss312b_4086b 23 93 (33) (CCGCCC)n#Simple_repeat 1 67 (0) m_b1s252i40 50
+
+  gridss312b_40         23 CCGCCGCCTTCCCCGCCCCTGCCCCTCTCACCCCACCACCTCTACCTCCC 72
+                                v  vi         i     - v -    i  v  v iv  v   
+  (CCGCCC)n#Sim          1 CCGCCCCCGCCCCCGCCCCCGCCCC-CGC-CCCCGCCCCCGCCCCCGCCC 48
+
+  gridss312b_40         73 ACGCCCCGTGCTGCCCGCCCC 93
+                           v      -i  -v        
+  (CCGCCC)n#Sim         49 CCGCCCC-CGC-CCCCGCCCC 67
+
+Matrix = Unknown
+Transitions / transversions = 0.56 (5/9)
+Gap_init rate = 0.06 (4 / 70), avg. gap size = 1.00 (4 / 4)
+
+
+34 14.44 0.00 0.00 gridss312b_455b 30 83 (7) (A)n#Simple_repeat 1 54 (0) m_b1s252i39 51
+
+  gridss312b_45         30 AAAAAAACAACAAAAAACAAAAAAAACAAAACACACAAAAAAAAAAAAAA 79
+                                  v  v      v        v    v v v              
+  (A)n#Simple_r          1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 50
+
+  gridss312b_45         80 AAAA 83
+                               
+  (A)n#Simple_r         51 AAAA 54
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/7)
+Gap_init rate = 0.00 (0 / 53), avg. gap size = 0.0 (0 / 0)
+
+
+25 17.77 0.00 0.00 gridss312b_4598b 6 50 (10) (C)n#Simple_repeat 1 45 (0) m_b1s252i38 52
+
+  gridss312b_45          6 CCCCCCCCCCCCACCACCCCCCCCCCCCCCAAGCCGCACCCCCCC 50
+                                       v  v              vvv  v v       
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 45
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/7)
+Gap_init rate = 0.00 (0 / 44), avg. gap size = 0.0 (0 / 0)
+
+
+17 20.23 0.00 0.00 gridss312b_480b 41 74 (46) (C)n#Simple_repeat 1 34 (0) m_b1s252i36 53
+
+  gridss312b_48         41 CCCGCCACTCCCTCCCCCCCCCCACTCCCCCCCC 74
+                              v  v i   i          v i        
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 34
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (3/3)
+Gap_init rate = 0.00 (0 / 33), avg. gap size = 0.0 (0 / 0)
+
+14 24.84 0.00 4.08 gridss312b_480b 51 101 (19) (CCTCCA)n#Simple_repeat 1 49 (0) m_b1s252i37 53
+
+  gridss312b_48         51 CCTCCCCCCCCCCACTCCCCCCCCAACCTGCACCTCCTCCACCACATTCA 100
+                                v  i  v -    v  i  -    v       v  v    v i  
+  (CCTCCA)n#Sim          1 CCTCCACCTCCAC-CTCCACCTCC-ACCTCCACCTCCACCTCCACCTCCA 48
+
+  gridss312b_48        101 C 101
+                            
+  (CCTCCA)n#Sim         49 C 49
+
+Matrix = Unknown
+Transitions / transversions = 0.43 (3/7)
+Gap_init rate = 0.04 (2 / 50), avg. gap size = 1.00 (2 / 2)
+
+
+20 7.86 0.00 0.00 gridss312b_5127b 1 27 (71) (C)n#Simple_repeat 1 27 (0) m_b1s252i35 54
+
+  gridss312b_51          1 CCCCCCCCCCCCCCCCCGCCCCGCCCC 27
+                                            v    v    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCC 27
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 26), avg. gap size = 0.0 (0 / 0)
+
+
+28 17.55 0.00 0.00 gridss312b_5144b 25 45 (74) (G)n#Simple_repeat 1 21 (32) m_b1s252i34 55
+
+  gridss312b_51         25 GGGGGCCCGGGGGCCGGGGGG 45
+                                vvv     vv      
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGG 21
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/5)
+Gap_init rate = 0.00 (0 / 20), avg. gap size = 0.0 (0 / 0)
+
+
+47 0.00 0.00 0.00 gridss312b_5144b 46 88 (31) (C)n#Simple_repeat 1 43 (0) c_b1s251i13 56
+
+  gridss312b_51         46 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 88
+                                                                      
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 43
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 42), avg. gap size = 0.0 (0 / 0)
+
+
+28 17.55 0.00 0.00 gridss312b_5144b 89 119 (0) (G)n#Simple_repeat 22 52 (1) m_b1s252i34 57
+
+  gridss312b_51         89 GGGGGGCCCGGGGGGGGGGGGGGGGGGGGGG 119
+                                 vvv                      
+  (G)n#Simple_r         22 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 52
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/3)
+Gap_init rate = 0.00 (0 / 30), avg. gap size = 0.0 (0 / 0)
+
+
+39 4.60 0.00 0.00 gridss312b_76b 1 45 (43) (C)n#Simple_repeat 1 45 (0) c_b1s251i12 58
+
+  gridss312b_76          1 CCCCCCCCCCCCCCCCACCCCCCCCCCCCCCCCCCCCCCCACCCC 45
+                                           v                       v    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 45
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 44), avg. gap size = 0.0 (0 / 0)
+
+
+61 3.20 0.00 0.00 gridss312b_7b 1 64 (52) (G)n#Simple_repeat 1 64 (0) c_b1s251i11 59
+
+  gridss312b_7b          1 GGGGGGGGGGGGGGGGCGGGGGGGGGGGGGGGGGGGGGGGCGGGGGGGGG 50
+                                           v                       v         
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312b_7b         51 GGGGGGGGGGGGGG 64
+                                         
+  (G)n#Simple_r         51 GGGGGGGGGGGGGG 64
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 63), avg. gap size = 0.0 (0 / 0)
+
+
+19 4.50 0.00 0.00 gridss312f_1072b 105 127 (0) (G)n#Simple_repeat 1 23 (0) m_b1s252i33 60
+
+  gridss312f_10        105 GGGGGGGGGGGGGGCGGGGGGGG 127
+                                         v        
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGG 23
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 22), avg. gap size = 0.0 (0 / 0)
+
+
+20 20.52 0.00 0.00 gridss312f_1498b 14 52 (41) (G)n#Simple_repeat 1 39 (0) m_b1s252i32 61
+
+  gridss312f_14         14 GGGGGGCCGTGGGGTGGGGGGGGGGGGGGGGTGAGAGGG 52
+                                 vv v    v                v i i   
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 39
+
+Matrix = Unknown
+Transitions / transversions = 0.40 (2/5)
+Gap_init rate = 0.00 (0 / 38), avg. gap size = 0.0 (0 / 0)
+
+
+16 0.00 0.00 0.00 gridss312f_2280b 2 19 (107) (C)n#Simple_repeat 1 18 (0) m_b1s252i31 62
+
+  gridss312f_22          2 CCCCCCCCCCCCCCCCCC 19
+                                             
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCC 18
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 17), avg. gap size = 0.0 (0 / 0)
+
+
+12 29.05 0.00 2.13 gridss312f_2282b 45 92 (5) (CCCGAA)n#Simple_repeat 1 47 (0) m_b1s252i30 63
+
+  gridss312f_22         45 CCCGGGCCCAAACCCGTGCCCGCAAACCAAACCCCCCCCCGGACCCGA 92
+                               ii   i      vi    -  v  i     vvv    i      
+  (CCCGAA)n#Sim          1 CCCGAACCCGAACCCGAACCCG-AACCCGAACCCGAACCCGAACCCGA 47
+
+Matrix = Unknown
+Transitions / transversions = 1.20 (6/5)
+Gap_init rate = 0.02 (1 / 47), avg. gap size = 1.00 (1 / 1)
+
+
+27 0.00 15.79 0.00 gridss312f_2612b 1 57 (4) (CAGGAG)n#Simple_repeat 1 66 (0) c_b1s251i10 64
+
+  gridss312f_26          1 CAGGAGCAGGAG--GG-GCAGGAGCAGGAG--GG-GCAGGAGCAGGAG-- 42
+                                       --  -             --  -             --
+  (CAGGAG)n#Sim          1 CAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCA 50
+
+  gridss312f_26         43 GG-GCAGGAGCAGGAG 57
+                             -             
+  (CAGGAG)n#Sim         51 GGAGCAGGAGCAGGAG 66
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.11 (6 / 56), avg. gap size = 1.50 (9 / 6)
+
+
+18 27.64 0.00 0.00 gridss312f_2649b 2 53 (0) (GGG)n#Simple_repeat 1 52 (0) m_b1s252i29 65
+
+  gridss312f_26          2 GGGGCGGGAGGAGGAGCGGCGGCTGGGGGAGGAGGGGGGGCTGGGGGGGG 51
+                               v   i  i  i v  v  vv     i  i       vv        
+  (GGG)n#Simple          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312f_26         52 GG 53
+                             
+  (GGG)n#Simple         51 GG 52
+
+Matrix = Unknown
+Transitions / transversions = 0.71 (5/7)
+Gap_init rate = 0.00 (0 / 51), avg. gap size = 0.0 (0 / 0)
+
+
+29 23.27 0.00 0.00 gridss312f_2651b 1 70 (0) (GGGGAG)n#Simple_repeat 1 70 (0) m_b1s252i27 66
+
+  gridss312f_26          1 GGGGATCGGAAGTGGGTCGGGGAGGGGTTGGGTGTGGGGGAGGGGGGGGG 50
+                                vv  i  v   vv         vv   v v           i   
+  (GGGGAG)n#Sim          1 GGGGAGGGGGAGGGGGAGGGGGAGGGGGAGGGGGAGGGGGAGGGGGAGGG 50
+
+  gridss312f_26         51 GGTGGGGGGGGGGGGGGGGG 70
+                             v     i     i     
+  (GGGGAG)n#Sim         51 GGAGGGGGAGGGGGAGGGGG 70
+
+Matrix = Unknown
+Transitions / transversions = 0.40 (4/10)
+Gap_init rate = 0.00 (0 / 69), avg. gap size = 0.0 (0 / 0)
+
+32 14.84 0.00 0.00 gridss312f_2651b 19 70 (0) (G)n#Simple_repeat 1 52 (0) m_b1s252i28 66
+
+  gridss312f_26         19 GGGGAGGGGTTGGGTGTGGGGGAGGGGGGGGGGGTGGGGGGGGGGGGGGG 68
+                               i    vv   v v     i           v               
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312f_26         69 GG 70
+                             
+  (G)n#Simple_r         51 GG 52
+
+Matrix = Unknown
+Transitions / transversions = 0.40 (2/5)
+Gap_init rate = 0.00 (0 / 51), avg. gap size = 0.0 (0 / 0)
+
+
+16 11.56 0.00 0.00 gridss312f_2659b 2 29 (7) (GCA)n#Simple_repeat 1 28 (0) m_b1s252i26 67
+
+  gridss312f_26          2 GCAGCAGCAGCAGGGGCAGCAGCAGAAG 29
+                                        vi          v  
+  (GCA)n#Simple          1 GCAGCAGCAGCAGCAGCAGCAGCAGCAG 28
+
+Matrix = Unknown
+Transitions / transversions = 0.50 (1/2)
+Gap_init rate = 0.00 (0 / 27), avg. gap size = 0.0 (0 / 0)
+
+
+29 3.20 0.00 0.00 gridss312f_2736b 50 81 (0) (G)n#Simple_repeat 1 32 (0) c_b1s251i9 68
+
+  gridss312f_27         50 GGGGGGGGTGGGGGGGGGGGGGGGGGGGGGGG 81
+                                   v                       
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 32
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/1)
+Gap_init rate = 0.00 (0 / 31), avg. gap size = 0.0 (0 / 0)
+
+
+18 33.99 0.00 0.00 gridss312f_2781b 19 78 (30) (GG)n#Simple_repeat 1 60 (0) m_b1s252i25 69
+
+  gridss312f_27         19 GGGGTGGGGTGGGGGTTGTGGGGTCTCGGCGGGGGGGGGGGACTTGTGCG 68
+                               v    v     vv v    vvvv  v           ivvv v v 
+  (GG)n#Simple_          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312f_27         69 GGGGGGGGGG 78
+                                     
+  (GG)n#Simple_         51 GGGGGGGGGG 60
+
+Matrix = Unknown
+Transitions / transversions = 0.07 (1/15)
+Gap_init rate = 0.00 (0 / 59), avg. gap size = 0.0 (0 / 0)
+
+
+44 12.96 0.00 0.00 gridss312f_278b 35 102 (3) (G)n#Simple_repeat 1 68 (0) m_b1s252i24 70
+
+  gridss312f_27         35 GGGGGGCGGGGGGGGCGGGGGGGGGGGGGGGGGGGGGGGCGGCGGCGGGG 84
+                                 v        v                       v  v  v    
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312f_27         85 GGGGGGTGGGTGGGCGGG 102
+                                 v   v   v   
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGGGGG 68
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/8)
+Gap_init rate = 0.00 (0 / 67), avg. gap size = 0.0 (0 / 0)
+
+
+92 3.27 0.00 0.00 gridss312f_294b 1 94 (0) (G)n#Simple_repeat 1 94 (0) c_b1s251i8 71
+
+  gridss312f_29          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+                                                                             
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312f_29         51 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGCCGGGGGGGCGGGG 94
+                                                         vv       v    
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 94
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/3)
+Gap_init rate = 0.00 (0 / 93), avg. gap size = 0.0 (0 / 0)
+
+
+28 12.80 0.00 0.00 gridss312f_3042b 44 86 (0) (G)n#Simple_repeat 1 43 (0) m_b1s252i23 72
+
+  gridss312f_30         44 GGGGGGGGGGGGTCGCTGGGGGGGGGGGGGGGGGGGGGGGCGG 86
+                                       vv vv                       v  
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 43
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/5)
+Gap_init rate = 0.00 (0 / 42), avg. gap size = 0.0 (0 / 0)
+
+
+69 9.01 0.00 0.00 gridss312f_3393b 11 105 (0) (G)n#Simple_repeat 1 95 (0) m_b1s252i22 73
+
+  gridss312f_33         11 GGGCGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGCGGG 60
+                              v                                          v   
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 50
+
+  gridss312f_33         61 GGGCGGGGGGGCGGCGGGCGGGGGGGGGGCCGGGGGGGGGGGGGG 105
+                              v       v  v   v          vv              
+  (G)n#Simple_r         51 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 95
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/8)
+Gap_init rate = 0.00 (0 / 94), avg. gap size = 0.0 (0 / 0)
+
+
+13 23.51 2.50 0.00 gridss312f_3401b 37 76 (65) (CCGC)n#Simple_repeat 1 41 (0) m_b1s252i21 74
+
+  gridss312f_34         37 CCGCCCGCGAGCCCGCTCGCCC-CGGCCCCGGCCGCGCGCC 76
+                                   vv      i     - vvv    v    v    
+  (CCGC)n#Simpl          1 CCGCCCGCCCGCCCGCCCGCCCGCCCGCCCGCCCGCCCGCC 41
+
+Matrix = Unknown
+Transitions / transversions = 0.14 (1/7)
+Gap_init rate = 0.03 (1 / 39), avg. gap size = 1.00 (1 / 1)
+
+
+16 14.78 2.67 11.59 gridss312f_3401b 32 106 (35) (GCGGCC)n#Simple_repeat 1 69 (0) m_b1s252i20 75
+
+  gridss312f_34         32 GCGGTC-CGCCCGCGAGCCCGCTCGCCCCGGCCCCGGCCGCGCGCCTC-T 79
+                               i -  v     - -    -v   v     v        -   v -v
+  (GCGGCC)n#Sim          1 GCGGCCGCGGCCGCG-G-CCGC-GGCCGCGGCCGCGGCCGCG-GCCGCGG 46
+
+  gridss312f_34         80 CCGAGAGCCGGCGGCGCGCGGCCTGCG 106
+                              v -   -     -       -   
+  (GCGGCC)n#Sim         47 CCGCG-GCC-GCGGC-CGCGGCC-GCG 69
+
+Matrix = Unknown
+Transitions / transversions = 0.14 (1/7)
+Gap_init rate = 0.14 (10 / 74), avg. gap size = 1.00 (10 / 10)
+
+
+26 0.00 0.00 0.00 gridss312f_3848b 1 25 (6) (C)n#Simple_repeat 1 25 (0) c_b1s251i7 76
+
+  gridss312f_38          1 CCCCCCCCCCCCCCCCCCCCCCCCC 25
+                                                    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCC 25
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 24), avg. gap size = 0.0 (0 / 0)
+
+
+28 32.22 0.00 0.00 gridss312f_392b 6 88 (0) (CC)n#Simple_repeat 1 83 (0) m_b1s252i19 77
+
+  gridss312f_39          6 CCCCCCCCCCCCGGGGCCCCCCCCCCCCCCCCCCCCCGCCGGGCGCGCCC 55
+                                       vvvv                     v  vvv v v   
+  (CC)n#Simple_          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss312f_39         56 CCCCGCGCCCGCAGGGGCGCCGGCCCCCCCCCC 88
+                               v v   v vvvvv v  vv          
+  (CC)n#Simple_         51 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 83
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/21)
+Gap_init rate = 0.00 (0 / 82), avg. gap size = 0.0 (0 / 0)
+
+
+26 6.16 0.00 0.00 gridss312f_395b 3 36 (48) (C)n#Simple_repeat 1 34 (0) c_b1s251i6 78
+
+  gridss312f_39          3 CCCCCCCCCCCCGGCCCCCCCCCCCCCCCCCCCC 36
+                                       vv                    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 34
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 33), avg. gap size = 0.0 (0 / 0)
+
+
+16 23.93 0.00 0.00 gridss312f_395b 50 84 (0) (C)n#Simple_repeat 1 35 (0) m_b1s252i18 78
+
+  gridss312f_39         50 CCCCCCCGCCCCCCGCGGGGCCCCCCGCCCCCCCC 84
+                                  v      v vvvv      v        
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 35
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/7)
+Gap_init rate = 0.00 (0 / 34), avg. gap size = 0.0 (0 / 0)
+
+
+29 19.25 0.00 0.00 gridss312f_398b 1 54 (14) (C)n#Simple_repeat 1 54 (0) m_b1s252i17 79
+
+  gridss312f_39          1 CCCCACCCCCCCCCCCCCCCCCCCCCCGCCCCCGGAAAACCCCCCCCGCC 50
+                               v                      v     vvvvvv        v  
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss312f_39         51 CCCC 54
+                               
+  (C)n#Simple_r         51 CCCC 54
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/9)
+Gap_init rate = 0.00 (0 / 53), avg. gap size = 0.0 (0 / 0)
+
+
+33 20.85 0.00 0.00 gridss312f_403b 3 68 (24) (C)n#Simple_repeat 1 66 (0) m_b1s252i16 80
+
+  gridss312f_40          3 CCCACCTCCGCCCCCCCCCCCCCCCACCCCGGCCCCCTCCCCCCCTCCAC 52
+                              v  i  v               v    vv     i       i  v 
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss312f_40         53 CCAGCCCCGCCCCCCC 68
+                             vv    v       
+  (C)n#Simple_r         51 CCCCCCCCCCCCCCCC 66
+
+Matrix = Unknown
+Transitions / transversions = 0.33 (3/9)
+Gap_init rate = 0.00 (0 / 65), avg. gap size = 0.0 (0 / 0)
+
+
+16 16.80 0.00 0.00 gridss312f_4602b 1 27 (75) (C)n#Simple_repeat 1 27 (0) m_b1s252i15 81
+
+  gridss312f_46          1 CCCGCCACCCCCCCGCCCCCCCACCCC 27
+                              v  v       v       v    
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCC 27
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/4)
+Gap_init rate = 0.00 (0 / 26), avg. gap size = 0.0 (0 / 0)
+
+
+36 12.17 0.00 0.00 gridss312f_4613b 5 58 (86) (A)n#Simple_repeat 1 54 (0) m_b1s252i14 82
+
+  gridss312f_46          5 AAAAACCACAACAAAAAAACAAAAAAAAAAAACAAAAAAAAAAAAAAAAA 54
+                                vv v  v       v            v                 
+  (A)n#Simple_r          1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 50
+
+  gridss312f_46         55 AAAA 58
+                               
+  (A)n#Simple_r         51 AAAA 54
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/6)
+Gap_init rate = 0.00 (0 / 53), avg. gap size = 0.0 (0 / 0)
+
+
+27 8.65 0.00 0.00 gridss312f_5001b 83 119 (0) (G)n#Simple_repeat 1 37 (0) m_b1s252i13 83
+
+  gridss312f_50         83 GGGGGGGGTGGGCGGGGGGGGGCGGGGGGGGGGGGGG 119
+                                   v   v         v              
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 37
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/3)
+Gap_init rate = 0.00 (0 / 36), avg. gap size = 0.0 (0 / 0)
+
+
+21 0.00 0.00 0.00 gridss312f_518b 2 24 (0) (C)n#Simple_repeat 1 23 (0) m_b1s252i12 84
+
+  gridss312f_51          2 CCCCCCCCCCCCCCCCCCCCCCC 24
+                                                  
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCC 23
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 22), avg. gap size = 0.0 (0 / 0)
+
+
+26 6.16 0.00 0.00 gridss312f_533b 3 36 (112) (C)n#Simple_repeat 1 34 (0) c_b1s251i5 85
+
+  gridss312f_53          3 CCCCCCCCCCCCCGCCCCCACCCCCCCCCCCCCC 36
+                                        v     v              
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 34
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 33), avg. gap size = 0.0 (0 / 0)
+
+
+17 8.91 0.00 0.00 gridss312f_545b 1 24 (74) (C)n#Simple_repeat 1 24 (0) m_b1s252i11 86
+
+  gridss312f_54          1 CCCCCCCCCCACCCCCCCACCCCC 24
+                                     v       v     
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCC 24
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 23), avg. gap size = 0.0 (0 / 0)
+
+
+19 10.11 0.00 0.00 gridss312fb_317h 2 33 (0) (GGAGCA)n#Simple_repeat 1 32 (0) m_b1s252i10 87
+
+  gridss312fb_3          2 GGGGCAGGAGCAGGAGGAGGGGCAGGAGCAGG 33
+                             i             v   i           
+  (GGAGCA)n#Sim          1 GGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGG 32
+
+Matrix = Unknown
+Transitions / transversions = 2.00 (2/1)
+Gap_init rate = 0.00 (0 / 31), avg. gap size = 0.0 (0 / 0)
+
+
+19 10.11 0.00 0.00 gridss312fb_317o 2 33 (0) (GGAGCA)n#Simple_repeat 1 32 (0) m_b1s252i9 88
+
+  gridss312fb_3          2 GGGGCAGGAGCAGGAGGAGGGGCAGGAGCAGG 33
+                             i             v   i           
+  (GGAGCA)n#Sim          1 GGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGG 32
+
+Matrix = Unknown
+Transitions / transversions = 2.00 (2/1)
+Gap_init rate = 0.00 (0 / 31), avg. gap size = 0.0 (0 / 0)
+
+
+33 8.66 0.00 0.00 gridss312fb_319h 8 56 (2) (GCAGGA)n#Simple_repeat 1 49 (0) c_b1s251i4 89
+
+  gridss312fb_3          8 GCAGGAGCAGGAGGAGGGGCAGGAGCAGGAGGAGGGGCAGGAGCAGGAG 56
+                                        v   i             v   i             
+  (GCAGGA)n#Sim          1 GCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAG 49
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (2/2)
+Gap_init rate = 0.00 (0 / 48), avg. gap size = 0.0 (0 / 0)
+
+
+33 8.66 0.00 0.00 gridss312fb_319o 8 56 (2) (GCAGGA)n#Simple_repeat 1 49 (0) c_b1s251i3 90
+
+  gridss312fb_3          8 GCAGGAGCAGGAGGAGGGGCAGGAGCAGGAGGAGGGGCAGGAGCAGGAG 56
+                                        v   i             v   i             
+  (GCAGGA)n#Sim          1 GCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAGCAGGAG 49
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (2/2)
+Gap_init rate = 0.00 (0 / 48), avg. gap size = 0.0 (0 / 0)
+
+
+13 16.52 0.00 0.00 gridss312fb_335h 4 30 (2) (AGG)n#Simple_repeat 1 27 (0) m_b1s252i8 91
+
+  gridss312fb_3          4 AGGAGGAGGGGCAGGAGCAGGCGGAGG 30
+                                    i v     v   v     
+  (AGG)n#Simple          1 AGGAGGAGGAGGAGGAGGAGGAGGAGG 27
+
+Matrix = Unknown
+Transitions / transversions = 0.33 (1/3)
+Gap_init rate = 0.00 (0 / 26), avg. gap size = 0.0 (0 / 0)
+
+
+13 16.52 0.00 0.00 gridss312fb_335o 4 30 (2) (AGG)n#Simple_repeat 1 27 (0) m_b1s252i7 92
+
+  gridss312fb_3          4 AGGAGGAGGGGCAGGAGCAGGCGGAGG 30
+                                    i v     v   v     
+  (AGG)n#Simple          1 AGGAGGAGGAGGAGGAGGAGGAGGAGG 27
+
+Matrix = Unknown
+Transitions / transversions = 0.33 (1/3)
+Gap_init rate = 0.00 (0 / 26), avg. gap size = 0.0 (0 / 0)
+
+
+17 8.18 0.00 0.00 gridss312fb_36h 2 27 (0) (CCA)n#Simple_repeat 1 26 (0) m_b1s252i6 93
+
+  gridss312fb_3          2 CCACCACCTCCACCACCTCCACCACC 27
+                                   v        v        
+  (CCA)n#Simple          1 CCACCACCACCACCACCACCACCACC 26
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 25), avg. gap size = 0.0 (0 / 0)
+
+
+17 8.18 0.00 0.00 gridss312fb_36o 2 27 (0) (CCA)n#Simple_repeat 1 26 (0) m_b1s252i5 94
+
+  gridss312fb_3          2 CCACCACCTCCACCACCTCCACCACC 27
+                                   v        v        
+  (CCA)n#Simple          1 CCACCACCACCACCACCACCACCACC 26
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 25), avg. gap size = 0.0 (0 / 0)
+
+
+71 2.84 0.00 0.00 gridss312fb_37h 1 72 (0) (C)n#Simple_repeat 1 72 (0) c_b1s251i2 95
+
+  gridss312fb_3          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCACCCCCCCCCCCCCC 50
+                                                              v              
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss312fb_3         51 CCCCCCCCCACCCCCCCCCCCC 72
+                                    v            
+  (C)n#Simple_r         51 CCCCCCCCCCCCCCCCCCCCCC 72
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 71), avg. gap size = 0.0 (0 / 0)
+
+
+71 2.84 0.00 0.00 gridss312fb_37o 1 72 (0) (C)n#Simple_repeat 1 72 (0) c_b1s251i1 96
+
+  gridss312fb_3          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCACCCCCCCCCCCCCC 50
+                                                              v              
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss312fb_3         51 CCCCCCCCCACCCCCCCCCCCC 72
+                                    v            
+  (C)n#Simple_r         51 CCCCCCCCCCCCCCCCCCCCCC 72
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 71), avg. gap size = 0.0 (0 / 0)
+
+
+50 3.81 0.00 0.00 gridss48f_4b 3 56 (100) (T)n#Simple_repeat 1 54 (0) c_b1s251i0 97
+
+  gridss48f_4b           3 TTTTTTTTTTTTTTTTTTTTTTGTTTTTTTTGTTTTTTTTTTTTTTTTTT 52
+                                                 v        v                  
+  (T)n#Simple_r          1 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT 50
+
+  gridss48f_4b          53 TTTT 56
+                               
+  (T)n#Simple_r         51 TTTT 54
+
+Matrix = Unknown
+Transitions / transversions = 0.00 (0/2)
+Gap_init rate = 0.00 (0 / 53), avg. gap size = 0.0 (0 / 0)
+
+
+22 24.59 0.00 1.59 gridss48f_4b 70 133 (23) (TTTGTTT)n#Simple_repeat 1 63 (0) m_b1s252i3 97
+
+  gridss48f_4b          70 TTTTTTGTTTGTGCATTGTTGTGGGTTTTTTGTTTTTTTTTTTACCTTTT 119
+                              v  v     viv     v vv              v    -iiv   
+  (TTTGTTT)n#Si          1 TTTGTTTTTTGTTTTTTGTTTTTTGTTTTTTGTTTTTTGTTTT-TTGTTT 49
+
+  gridss48f_4b         120 TTTTTTTTTTGTTT 133
+                              v          
+  (TTTGTTT)n#Si         50 TTTGTTTTTTGTTT 63
+
+Matrix = Unknown
+Transitions / transversions = 0.30 (3/10)
+Gap_init rate = 0.02 (1 / 63), avg. gap size = 1.00 (1 / 1)
+
+27 18.42 0.00 0.00 gridss48f_4b 95 143 (13) (T)n#Simple_repeat 1 49 (0) m_b1s252i4 97
+
+  gridss48f_4b          95 TTTTTTGTTTTTTTTTTTACCTTTTTTTTTTTTTTGTTTCAATTTTTTT 143
+                                 v           vii              v   ivv       
+  (T)n#Simple_r          1 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT 49
+
+Matrix = Unknown
+Transitions / transversions = 0.60 (3/5)
+Gap_init rate = 0.00 (0 / 48), avg. gap size = 0.0 (0 / 0)
+
+
+22 0.00 0.00 0.00 gridss60b_6b 1 24 (94) (G)n#Simple_repeat 1 24 (0) m_b1s252i2 98
+
+  gridss60b_6b           1 GGGGGGGGGGGGGGGGGGGGGGGG 24
+                                                   
+  (G)n#Simple_r          1 GGGGGGGGGGGGGGGGGGGGGGGG 24
+
+Matrix = Unknown
+Transitions / transversions = 1.00 (0/0)
+Gap_init rate = 0.00 (0 / 23), avg. gap size = 0.0 (0 / 0)
+
+
+78 21.06 0.00 0.00 gridss85f_4b 2 156 (3) (T)n#Simple_repeat 1 155 (0) m_b1s252i1 99
+
+  gridss85f_4b           2 TTTTTTTTTGTTAATTTGGTTTGGTTTTTTTTTTTTTTTTTTTTTTTGTT 51
+                                    v  vv   vv   vv                       v  
+  (T)n#Simple_r          1 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT 50
+
+  gridss85f_4b          52 GTTTTTGGTTTTTTTTTTTTTGGGTTGGTTTTTTGTTTTTTTTTTTTTTT 101
+                           v     vv             vvv  vv      v               
+  (T)n#Simple_r         51 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT 100
+
+  gridss85f_4b         102 TTTGTTGGGTTTTTTTTCGTTTTGTGTTTTTTTTTTGTTTGTTGTTTTTT 151
+                              v  vvv        iv    v v          v   v  v      
+  (T)n#Simple_r        101 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT 150
+
+  gridss85f_4b         152 TTTTT 156
+                                
+  (T)n#Simple_r        151 TTTTT 155
+
+Matrix = Unknown
+Transitions / transversions = 0.04 (1/27)
+Gap_init rate = 0.00 (0 / 154), avg. gap size = 0.0 (0 / 0)
+
+
+114 18.59 0.00 0.00 gridss91f_10b 15 223 (0) (C)n#Simple_repeat 1 209 (0) m_b1s252i0 100
+
+  gridss91f_10b         15 CCACCCCCGCCCCCCCCCCCCCCCCGCCCCCCGCCGCCCCCCCCCCACCC 64
+                             v     v                v      v  v          v   
+  (C)n#Simple_r          1 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 50
+
+  gridss91f_10b         65 CGCCGGCCGCCCCCCCCCCCCCACCCCCCCCCGCCCCCGCCCGCCGCCCC 114
+                            v  vv  v             v         v     v   v  v    
+  (C)n#Simple_r         51 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 100
+
+  gridss91f_10b        115 CGCCCCGCCCCCGCCCCCCCCCCGCCCCCGCCCCGCCCCCCCCCCCCCCC 164
+                            v    v     v          v     v    v               
+  (C)n#Simple_r        101 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 150
+
+  gridss91f_10b        165 CCGCCCGCCCCCCCGCCCGCTCCACTACCAACACCCCCCCCACACCCCCC 214
+                             v   v       v   v i  v iv  vv v        v v      
+  (C)n#Simple_r        151 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 200
+
+  gridss91f_10b        215 CCCCCCCCC 223
+                                    
+  (C)n#Simple_r        201 CCCCCCCCC 209
+
+Matrix = Unknown
+Transitions / transversions = 0.06 (2/32)
+Gap_init rate = 0.00 (0 / 208), avg. gap size = 0.0 (0 / 0)
+
+

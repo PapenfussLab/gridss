@@ -1,6 +1,8 @@
 package au.edu.wehi.idsv.bed;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.repeatmasker.RepeatMaskerBEDCodec;
+import au.edu.wehi.idsv.repeatmasker.RepeatMaskerFeature;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.BEDFeature;
@@ -19,7 +21,7 @@ public class RepeatMaskerBEDCodecTest extends TestHelper {
         List<BEDFeature> records = Lists.newArrayList(AbstractFeatureReader.getFeatureReader(
                 new File("src/test/resources/hg19.rm.bedops.bed").getPath(),
                 new RepeatMaskerBEDCodec(), false).iterator());
-        Assert.assertTrue(records.stream().allMatch(x -> x instanceof RepeatMaskerBEDFeature));
+        Assert.assertTrue(records.stream().allMatch(x -> x instanceof RepeatMaskerFeature));
     }
 
     /**
@@ -27,11 +29,11 @@ public class RepeatMaskerBEDCodecTest extends TestHelper {
      */
     @Test
     public void should_parse_according_to_bedops_rmsk2bed_definition() throws IOException {
-        List<RepeatMaskerBEDFeature> records = Lists.newArrayList(AbstractFeatureReader.getFeatureReader(
+        List<RepeatMaskerFeature> records = Lists.newArrayList(AbstractFeatureReader.getFeatureReader(
                 new File("src/test/resources/hg19.rm.bedops.bed").getPath(),
                 new RepeatMaskerBEDCodec(), false).iterator())
                 .stream()
-                .map(x -> (RepeatMaskerBEDFeature) x).collect(Collectors.toList());
+                .map(x -> (RepeatMaskerFeature) x).collect(Collectors.toList());
         Assert.assertEquals(10, records.size());
         Assert.assertEquals(10001, records.get(0).getStart());
         Assert.assertEquals(10468, records.get(0).getEnd());
@@ -46,11 +48,11 @@ public class RepeatMaskerBEDCodecTest extends TestHelper {
     }
     @Test
     public void should_cache_strings() throws IOException {
-        List<RepeatMaskerBEDFeature> records = Lists.newArrayList(AbstractFeatureReader.getFeatureReader(
+        List<RepeatMaskerFeature> records = Lists.newArrayList(AbstractFeatureReader.getFeatureReader(
                 new File("src/test/resources/hg19.rm.bedops.bed").getPath(),
                 new RepeatMaskerBEDCodec(), false).iterator())
                 .stream()
-                .map(x -> (RepeatMaskerBEDFeature) x).collect(Collectors.toList());
+                .map(x -> (RepeatMaskerFeature) x).collect(Collectors.toList());
         Assert.assertTrue(records.get(0).getContig() == records.get(1).getContig());
     }
 }
