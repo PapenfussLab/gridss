@@ -44,7 +44,6 @@ keepTempFiles="false"
 sanityCheck="false"
 externalaligner="false"
 nojni="false"
-repeatmaskerbed=""
 USAGE_MESSAGE="
 Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> input1.bam [input2.bam [...]]
 
@@ -55,7 +54,6 @@ Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam
 	-j/--jar: location of GRIDSS jar
 	-w/--workingdir: directory to place GRIDSS intermediate and temporary files. .gridss.working subdirectories will be created. (Default: $workingdir)
 	-b/--blacklist: BED file containing regions to ignore
-	--repeatmaskerbed: bedops rmsk2bed BED file for genome.
 	-s/--steps: processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Possible steps are: setupreference, preprocess, assemble, call, all. WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure these files are generated before runninng parallel GRIDSS jobs.
 	-c/--configuration: configuration file use to override default GRIDSS settings.
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
@@ -72,7 +70,7 @@ Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam
 	"
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,repeatmaskerbed:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -146,10 +144,6 @@ while true; do
 			;;
 		--concordantreadpairdistribution)
 			readpairpdistribution=$2
-			shift 2
-			;;
-		--repeatmaskerbed)
-			repeatmaskerbed=$2
 			shift 2
 			;;
 		--useproperpair)
@@ -331,12 +325,6 @@ else
 	if [[ "$(tr -d ' 	\n' <<< "$blacklist_arg")" != "$blacklist_arg" ]] ; then
 		write_status  "blacklist cannot contain whitespace"
 		exit $EX_USAGE
-	fi
-fi
-if [[ "$repeatmaskerbed" != "" ]] ; then
-	if [[ ! -f $repeatmaskerbed ]] ; then
-		write_status "RepeatMasker BED file ($repeatmaskerbed) not found."
-		exit $EX_NOINPUT
 	fi
 fi
 if [[ "$jvmheap" == "" ]] ; then
@@ -960,10 +948,6 @@ if [[ $do_call == true ]] ; then
 		; } 1>&2 2>> $logfile
 		$rmcmd $prefix.unallocated.vcf
 		write_status "Running	AnnotateInsertedSequence	$output_vcf"
-		repeatmaskerbed_cmdline=""
-		if [[ "$repeatmaskerbed" != "" ]] ; then
-			repeatmaskerbed_cmdline="REPEAT_MASKER_BED=$repeatmaskerbed"
-		fi
 		{ $timecmd java -Xmx4g $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateInsertedSequence \
@@ -973,7 +957,6 @@ if [[ $do_call == true ]] ; then
 				WORKER_THREADS=$threads \
 				INPUT=$prefix.allocated.vcf \
 				OUTPUT=$output_vcf \
-				$repeatmaskerbed_cmdline \
 				$picardoptions \
 		&& $rmcmd $prefix.allocated.vcf \
 		; } 1>&2 2>> $logfile

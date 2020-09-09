@@ -26,7 +26,10 @@ public class AnnotateVariantsRepeatMaskerTest extends IntermediateFilesTest {
         Assert.assertEquals("rRNA", vc.getAttributeAsString("INSRMRC", ""));
         Assert.assertEquals("+", vc.getAttributeAsString("INSRMRO", ""));
         Assert.assertEquals("LSU-rRNA_Hsa", vc.getAttributeAsString("INSRMRT", ""));
-        Assert.assertEquals("LSU-rRNA_Hsa#rRNA|2099|+|79M||", vc.getAttributeAsStringList("INSRM", "").get(0));
+        // edit distance calculation:
+        // 79 matching bases
+        // match length * perc(div+del+ins)/100 = 5.214
+        Assert.assertEquals("LSU-rRNA_Hsa#rRNA|2099|+|79M|273|5", vc.getAttributeAsStringList("INSRM", "").get(0));
     }
     @Test
     public void should_annotate_rm_alignment() throws IOException {
@@ -44,6 +47,6 @@ public class AnnotateVariantsRepeatMaskerTest extends IntermediateFilesTest {
         Assert.assertEquals("rRNA", vc.getAttributeAsString("INSRMRC", ""));
         Assert.assertEquals("+", vc.getAttributeAsString("INSRMRO", ""));
         Assert.assertEquals("LSU-rRNA_Hsa", vc.getAttributeAsString("INSRMRT", ""));
-        Assert.assertEquals("LSU-rRNA_Hsa#rRNA|2099|+|7=2M1=1I3=2X1M42=1M1=2I16=||5", vc.getAttributeAsStringList("INSRM", "").get(0));
+        Assert.assertEquals("LSU-rRNA_Hsa#rRNA|2099|+|7=2M1=1I3=2X1M42=1M1=2I16=|273|5", vc.getAttributeAsStringList("INSRM", "").get(0));
     }
 }

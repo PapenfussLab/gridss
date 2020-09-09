@@ -90,9 +90,16 @@ public class AnnotateRepeatMasker /*implements Iterator<VariantContext>*/ { // c
             sb.append('|');
             sb.append(f.getRepeatAlignmentInformation(true).getCigar().toString());
             sb.append('|');
+            sb.append((int)f.getSwScore());
             sb.append('|');
             if (f.getRepeatAlignmentInformation(false) != null) {
                 sb.append(CigarUtil.editDistance(f.getRepeatAlignmentInformation(false).getCigar(), false, false));
+            } else {
+                RepeatAlignmentSummaryInformation rasi = f.getRepeatAlignmentSummaryInformation();
+                double delta = rasi.getPercentageSubstituted() + rasi.getPercentageInserted() + rasi.getPercentageDeleted();
+                int alignedBases = f.getEnd() - f.getStart() + 1;
+                int editDistance = (int)Math.round(alignedBases * delta) / 100;
+                sb.append(editDistance);
             }
             sa.add(sb.toString());
         }

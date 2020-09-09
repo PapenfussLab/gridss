@@ -17,24 +17,26 @@ EX_NOINPUT=66
 EX_CANTCREAT=73
 EX_CONFIG=78
 
-kraken2db=""
 output="/dev/stdout"
 threads=$(nproc)
-kraken2="kraken2"
-kraken2args=""
+workingdir="."
+rm="RepeatMasker"
+rmargs="--species human"
 minlength="20"
+#fields="INSRM INSRMRT INSRMRC INSRMRO INSRMP"
 USAGE_MESSAGE="
-Usage: gridss_annotate_vcf_kraken2.sh [options] --jar gridss.jar --kraken2db standard input.vcf
+Usage: gridss_annotate_vcf_repeatmasker.sh [options] input.vcf
 	-o,--output: output vcf file. Defaults to stdout.
 	-j/--jar: location of GRIDSS jar
 	-t/--threads: number of threads to use. Defaults to the number of cores available ($threads)
-	--kraken2db: kraken2 database
-	--kraken2: kraken2 executable. (Default: $kraken2)
-	--kraken2args: additional kraken2 arguments
+	-w/--workingdir: directory to place intermediate and temporary files (Default: $workingdir)
+	--rm: RepeatMasker executable. (Default: $rm)
+	--rmargs: additional RepeatMasker arguments
 	--minlength: minimum length of inserted sequence to annotate. (Default: $minlength)
 	"
-OPTIONS=o:t:j:
-LONGOPTS=kraken2db:,threads:,kraken2:,kraken2args:,jar:,minlength:,output:
+#--fields: INFO fields to populate. (Default: $fields)
+OPTIONS=o:t:j:w:
+LONGOPTS=output:,threads:,jar:,rm:,rmargs:,minlength:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -53,37 +55,37 @@ while true; do
             GRIDSS_JAR="$2"
             shift 2
             ;;
-		--kraken2db)
-            kraken2db="$2"
-            shift 2
-            ;;
 		-t|--threads)
 			printf -v threads '%d\n' "$2" 2>/dev/null
 			printf -v threads '%d' "$2" 2>/dev/null
 			shift 2
 			;;
+		-w|--workingdir)
+            workingdir="$2"
+            shift 2
+            ;;
 		--minlength)
 			printf -v minlength '%d\n' "$2" 2>/dev/null
 			printf -v minlength '%d' "$2" 2>/dev/null
 			shift 2
 			;;
-		--kraken2)
-			kraken2=$2
+		--rm)
+			rm=$2
 			shift 2
 			;;
-		--kraken2args)
-			kraken2args=$2
+		--rmargs)
+			rmargs=$2
 			shift 2
 			;;
 		--)
-            shift
-            break
-            ;;
-        *)
-            echo "Programming error"
-            exit 1
-            ;;
-    esac
+			shift
+			break
+			;;
+		*)
+			echo "Programming error"
+			exit 1
+			;;
+	esac
 done
 write_status() {
 	echo "$(date): $1" 1>&2
@@ -121,30 +123,20 @@ if [[ "$threads" -lt 1 ]] ; then
 	exit $EX_USAGE
 fi
 write_status  "Using $threads worker threads."
-if [[ "$kraken2db" == "" ]] ; then
-	echo "$USAGE_MESSAGE"
-	write_status "Missing Kraken2 database location. Specify with --kraken2db"
-	exit $EX_USAGE
-fi
-if [[ ! -d "$kraken2db" ]] ; then
-	echo "$USAGE_MESSAGE"
-	write_status "Unable to find kraken2 database directory '$kraken2db'" 
-	exit $EX_NOINPUT
-fi
 if [[ "$output" == "" ]] ; then
 	echo "$USAGE_MESSAGE"
 	write_status "Missing output vcf. Specify with --output"
 	exit $EX_USAGE
 fi
 # Validate tools exist on path
-for tool in $kraken2 java ; do
+for tool in $rm java ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
 	fi
 	write_status "Found $(which $tool)"
 done
-write_status "kraken version: $($kraken2 --version 2>&1 | head -1)"
+write_status "RepeatMasker version: $($rm -v)"
 write_status "bash version: $(/bin/bash --version 2>&1 | head -1)"
 
 # check java version is ok using the gridss.Echo entry point
@@ -156,28 +148,42 @@ else
 	exit $EX_CONFIG
 fi
 
+input_vcf="$1"
+if [[ ! -f "$input_vcf" ]] ; then
+	echo "$USAGE_MESSAGE"
+	write_status "Missing input vcf \"$input_vcf\""
+	exit $EX_NOINPUT
+fi
+
 jvm_args=" \
 	-Dpicard.useLegacyParser=false \
-	-Dsamjdk.use_async_io_read_samtools=true \
-	-Dsamjdk.use_async_io_write_samtools=true \
 	-Dsamjdk.use_async_io_write_tribble=true \
 	-Dsamjdk.buffer_size=4194304 \
 	-Dsamjdk.async_io_read_threads=$threads"
 
-java -Xmx64m $jvm_args -cp $gridss_jar gridss.InsertedSequencesToFasta \
-	-INPUT "$1" \
-	-OUTPUT /dev/stdout \
-	-MIN_SEQUENCE_LENGTH $minlength \
-| $kraken2 \
-	--threads $threads \
-	--db $kraken2db \
-	--output /dev/stdout \
-	$kraken2args \
-	/dev/stdin \
-| java -Xmx128m $jvm_args -cp $gridss_jar gridss.kraken.AnnotateVariantsKraken \
-	-INPUT "$1" \
-	-OUTPUT "$output" \
-	-KRAKEN_INPUT /dev/stdin
+temp_fa="$workingdir/$(basename $input_vcf).fa"
+mkdir -p "$workingdir"
+# Extract inserted sequences
+java -Xmx64m $jvm_args -cp $GRIDSS_JAR \
+	gridss.InsertedSequencesToFasta \
+	--INPUT "$input_vcf" \
+	--OUTPUT "$temp_fa" \
+	--MIN_SEQUENCE_LENGTH $minlength
+# Run RepeatMasker on sequences
+$rm $rmargs -pa $threads -dir "$workingdir" "$temp_fa"
+# We can annotate with full alignment information if it exists
+rmfile="$temp_fa.align"
+if [[ ! -f $temp_fa.align ]] ; then
+	rmfile="$temp_fa.out"
+fi
+# Parse and annotate
+# Needs the extra memory since the RM output needs to be loaded into memory
+java -Xmx2g $jvm_args -cp $GRIDSS_JAR \
+	gridss.repeatmasker.AnnotateVariantsRepeatMasker \
+	--INPUT "$input_vcf" \
+	--OUTPUT "$output" \
+	--REPEAT_MASKER "$rmfile"
+# --TAGS $fields
 
 trap - EXIT
 exit 0 # success!
