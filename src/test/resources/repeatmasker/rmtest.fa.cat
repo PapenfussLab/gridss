@@ -2653,6 +2653,41 @@ Matrix = Unknown
 Transitions / transversions = 0.14 (1/7)
 Gap_init rate = 0.08 (4 / 50), avg. gap size = 1.00 (4 / 4)
 
+693 29.86 14.58 0.00 gridss0b_160b 79 366 (1) C MLT1H#LTR/ERVL-MaLR (12) 537 208 m_b1s502i0
+
+  gridss0b_160b         79 CTGTTATGACATAACAAATCTCCCCAAAACGTA-TGGTCTAAAACGACAA 127
+                             i  iivi i       i v         v  -   ii      i    
+C MLT1H#LTR/ERV        537 CTATTGCTGCGTAACAAACCACCCCAAAACTTAGTGGCTTAAAACAACAA 488
+
+  gridss0b_160b        128 CCATTTACTT-AGCATGTAAGTTTGCAAGTTGATAACTTATGTTGGTCTC 176
+                                  i  -   viiii v i  iii  i ii  i  iv i   v   
+C MLT1H#LTR/ERV        487 CCATTTATTTTAGCTCACGATTCTGTGGGTCGGCAATTTGGGCTGGGCTC 438
+
+  gridss0b_160b        177 -------------TTCTGGGCTCCTCTA--CCTGTTTATGTG-------- 203
+                           -------------      v   vv  i-- iiii i   i --------
+C MLT1H#LTR/ERV        437 AGCTGGGCGGTTCTTCTGGTCTCGGCTGGGCTCACTCATGCGTCTGCGGT 388
+
+  gridss0b_160b        204 CAGCTATGTTATGACAAGGTAGTTGTGCAG-TCA-GGCCCGG--CTGGCT 249
+                                ii vvvi ivv   ii i v   v -  v-   iv  --      
+C MLT1H#LTR/ERV        387 CAGCTGCGGGTCGGGTAGGCGGCTCTGCTGATCTTGGCTGGGGGCTGGCT 338
+
+  gridss0b_160b        250 G-------------TCAGCTGGGACTCCTCAGCTCTCATTCACATGGTCT 286
+                            -------------           vv   i     vv i   i      
+C MLT1H#LTR/ERV        337 GGTCTAGGATGGCCTCAGCTGGGACGGCTCGGCTCTGCTCCACGTGGTCT 288
+
+  gridss0b_160b        287 CTCGTTCACCTGCAAGCTAGCCAAAGCTTGTGCTAATGGTGGGAGTAGGG 336
+                              i i v  v   i       vii      v vv    i  vi i    
+C MLT1H#LTR/ERV        287 CTCATCCTCCAGCAGGCTAGCCCGGGCTTGTTCACATGGCGGTGGCAGGG 238
+
+  gridss0b_160b        337 GTCCAAGAGAGAAAGTGGAAGCACGCAGGG 366
+                           v           i  i      ii   i  
+C MLT1H#LTR/ERV        237 TTCCAAGAGAGAGAGCGGAAGCGTGCAAGG 208
+
+Matrix = 20p43g.matrix
+Kimura (with divCpGMod) = 32.18
+Transitions / transversions = 1.77 (55/31)
+Gap_init rate = 0.03 (8 / 287), avg. gap size = 5.25 (42 / 8)
+
 ## Total Sequences: 6039
 ## Total Length: 724680
 ## Total NonMask ( excluding >20bp runs of N/X bases ): 724680

@@ -101,30 +101,36 @@ public class RepeatMaskerCodec extends AsciiFeatureCodec<RepeatMaskerFeature> {
         f.getRepeatAlignmentSummaryInformation().setBasesInQueryPastMatch(parseIntIgnoringParentheses(fields[i++]));
         String strandOrRepeat = fields[i++];
         if (strandOrRepeat.equals("C")) {
-            isSummary = true;
             f.setStrand(Strand.NEGATIVE);
+            strandOrRepeat = fields[i++];
         } else if (strandOrRepeat.equals("+")) {
-            isSummary = true;
             f.setStrand(Strand.POSITIVE);
+            strandOrRepeat = fields[i++];
         } else {
-            isSummary = false;
+            // align file doesn't inlcude "+", only "C"
+            f.setStrand(Strand.POSITIVE);
+        }
+        if (strandOrRepeat.contains("#")) {
+            // align format
             String[] repeatSplit = strandOrRepeat.split("#");
             f.setRepeatType(repeatSplit[0]);
             f.setRepeatClass(repeatSplit[1]);
-        }
-        if (isSummary) {
-            f.setRepeatType(fields[i++]);
+            isSummary = false;
+        } else {
+            isSummary = true;
+            f.setRepeatType(strandOrRepeat);
             f.setRepeatClass(fields[i++]);
         }
-        f.getRepeatAlignmentSummaryInformation().setMatchStart(parseIntIgnoringParentheses(fields[i++]));
-        f.getRepeatAlignmentSummaryInformation().setMatchEnd(parseIntIgnoringParentheses(fields[i++]));
-        f.getRepeatAlignmentSummaryInformation().setBasesInRepeatPastMatch(parseIntIgnoringParentheses(fields[i++]));
-        f.setUniqueID(fields[i++]);
-        Strand expectedStrand = f.getRepeatAlignmentSummaryInformation().getMatchEnd() > f.getRepeatAlignmentSummaryInformation().getMatchStart() ? Strand.FORWARD : Strand.NEGATIVE;
-        if (isSummary && expectedStrand != f.getStrand()) {
-            throw new RuntimeException("Strand and repeat start/end are inconsistent for record: [" + s + "]");
+        if (f.getStrand() == Strand.POSITIVE) {
+            f.getRepeatAlignmentSummaryInformation().setMatchStart(parseIntIgnoringParentheses(fields[i++]));
+            f.getRepeatAlignmentSummaryInformation().setMatchEnd(parseIntIgnoringParentheses(fields[i++]));
+            f.getRepeatAlignmentSummaryInformation().setBasesInRepeatPastMatch(parseIntIgnoringParentheses(fields[i++]));
+        } else {
+            f.getRepeatAlignmentSummaryInformation().setBasesInRepeatPastMatch(parseIntIgnoringParentheses(fields[i++]));
+            f.getRepeatAlignmentSummaryInformation().setMatchEnd(parseIntIgnoringParentheses(fields[i++]));
+            f.getRepeatAlignmentSummaryInformation().setMatchStart(parseIntIgnoringParentheses(fields[i++]));
         }
-        f.setStrand(expectedStrand);
+        f.setUniqueID(fields[i++]);
         return isSummary;
     }
 

@@ -19,7 +19,7 @@ public class RepeatMaskerCodecTest extends TestHelper {
         try (AbstractFeatureReader<RepeatMaskerFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(file.getPath(), new RepeatMaskerCodec(), false)) {
             Assert.assertNull(reader.getHeader());
             List<RepeatMaskerFeature> features = Lists.newArrayList((Iterable<? extends RepeatMaskerFeature>) reader.iterator());
-            Assert.assertEquals(1, features.size());
+            Assert.assertEquals(2, features.size());
             RepeatMaskerFeature f = features.get(0);
             Assert.assertEquals(327, f.getSmithWatermanScore());
             Assert.assertEquals(0.25, f.getRepeatAlignmentSummaryInformation().getPercentageSubstituted(), 0);
@@ -40,6 +40,12 @@ public class RepeatMaskerCodecTest extends TestHelper {
             Assert.assertEquals(2, f.getRepeatAlignmentInformation(true).getRepeatStart());
             Assert.assertEquals(0, f.getRepeatAlignmentInformation(true).getNestedBases());
             Assert.assertNull(f.getRepeatAlignmentInformation(false));
+
+            // complement sequence reverses order (start,end,offset) tuple
+            f = features.get(1);
+            Assert.assertEquals(208, f.getRepeatAlignmentSummaryInformation().getMatchStart());
+            Assert.assertEquals(537, f.getRepeatAlignmentSummaryInformation().getMatchEnd());
+            Assert.assertEquals(12, f.getRepeatAlignmentSummaryInformation().getBasesInRepeatPastMatch());
         }
     }
     @Test
