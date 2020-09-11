@@ -18,7 +18,7 @@ COBJ = \
 TEST_DIR = ../../../test/resources/
 
 gridsstools: $(COBJ)
-	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) $(LIBS) -lz htslib.a
+	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) $(LIBS) -lz -lhts
 
 test: \
 	testUnmappedSequencesToFastq \
