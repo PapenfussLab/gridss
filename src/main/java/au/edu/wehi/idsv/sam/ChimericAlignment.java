@@ -54,14 +54,14 @@ public class ChimericAlignment {
 		this.mapq = r.getMappingQuality();
 		this.nm = r.getIntegerAttribute(SAMTag.NM.name());
 	}
-	public ChimericAlignment(String str) {
+	public ChimericAlignment(String str, String separatorRegex) {
 		str = str.replace(';', ' ').trim();
-		String[] splits = str.split(",");
+		String[] splits = str.split(separatorRegex);
 		this.rname = splits[0];
 		this.pos = Integer.parseInt(splits[1]);
 		this.isNegativeStrand = "-".equals(splits[2]);
 		this.cigar = TextCigarCodec.decode(splits[3]);
-		this.mapq = Integer.parseInt(splits[4]);
+		this.mapq = splits.length < 5 ? SAMRecord.UNKNOWN_MAPPING_QUALITY : Integer.parseInt(splits[4]);
 		Integer nmParsed = null;
 		try {
 			if (splits.length >= 6) {
@@ -72,16 +72,22 @@ public class ChimericAlignment {
 		}
 		this.nm = nmParsed;
 	}
-	public static List<ChimericAlignment> getChimericAlignments(String sa) {
+	public ChimericAlignment(String str) {
+		this(str, ",");
+	}
+	public static List<ChimericAlignment> getChimericAlignments(String sa, String separatorRegex) {
 		if (StringUtils.isEmpty(sa)) return Collections.emptyList();
 		List<ChimericAlignment> list = new ArrayList<ChimericAlignment>();
-		String[] splits = sa.split(";");
+		String[] splits = sa.split(separatorRegex);
 		for (String s : splits) {
 			if (!StringUtils.isEmpty(sa)) {
 				list.add(new ChimericAlignment(s));
 			}
 		}
 		return list;
+	}
+	public static List<ChimericAlignment> getChimericAlignments(String sa) {
+		return getChimericAlignments(sa, ";");
 	}
 	public static List<ChimericAlignment> getChimericAlignments(SAMRecord r) {
 		return getChimericAlignments(r.getStringAttribute(SAMTag.SA.name()));
