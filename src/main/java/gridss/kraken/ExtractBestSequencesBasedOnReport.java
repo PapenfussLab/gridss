@@ -39,8 +39,10 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
     public File INPUT;
     @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output fasta file")
     public File OUTPUT;
-    @Argument(shortName="RO", doc="Kraken2 report filter to only taxa of interest.", optional = true)
+    @Argument(shortName="RO", doc="Kraken2 report filtered to only taxa of interest.", optional = true)
     public File REPORT_OUTPUT;
+    @Argument(shortName="SRO", doc="Kraken2 report filtered to only taxa included in the output fasta file.", optional = true)
+    public File SUMMARY_REPORT_OUTPUT;
     @Argument(doc="NCBI Taxonomy IDs to extract. All taxonomic entries under these IDs are also extracted. Defaults to all viruses.")
     public List<Integer> TAXONOMY_IDS = Lists.newArrayList(NCBI_VIRUS_TAXID);
     @Argument(doc="NCBI taxonomy nodes.dmp. Download and extract from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip")
@@ -100,6 +102,10 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
                     .sorted(KrakenReportLine.ByCountAssignedToTree.reversed())
                     .limit(TAXID_TO_RETURN)
                     .collect(Collectors.toList());
+            if (SUMMARY_REPORT_OUTPUT != null) {
+                log.info("Writing summary report to ", SUMMARY_REPORT_OUTPUT);
+                Files.write(SUMMARY_REPORT_OUTPUT.toPath(), interestingNodes.stream().map(krl -> krl.line).collect(Collectors.toList()));
+            }
             List<List<Integer>> sequenceIndexesToExport = new ArrayList<>();
             for (IndexedFastaSequenceFile fa : ref) {
                 sequenceIndexesToExport.add(new ArrayList<>());
