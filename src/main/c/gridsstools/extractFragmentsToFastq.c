@@ -24,7 +24,7 @@ static int usage() {
 	fprintf(stderr, "Options: -o FILE  fastq output for unpaired reads.\n");
 	fprintf(stderr, "         -1 FILE  fastq output for first in pair reads.\n");
 	fprintf(stderr, "         -2 FILE  fastq output for second in pair reads.\n");
-	fprintf(stderr, "         -r FILE  File contain names of reads. 1 per line.");
+	fprintf(stderr, "         -r FILE  File contain names of reads. 1 per line.\n");
 	fprintf(stderr, "         -@       Number of threads to use\n");
 	fprintf(stderr, "\n");
 	return EXIT_FAILURE;
