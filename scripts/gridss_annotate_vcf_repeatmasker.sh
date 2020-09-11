@@ -169,21 +169,26 @@ java -Xmx64m $jvm_args -cp $GRIDSS_JAR \
 	--INPUT "$input_vcf" \
 	--OUTPUT "$temp_fa" \
 	--MIN_SEQUENCE_LENGTH $minlength
-# Run RepeatMasker on sequences
-$rm $rmargs -pa $threads -dir "$workingdir" "$temp_fa"
-# We can annotate with full alignment information if it exists
-rmfile="$temp_fa.align"
-if [[ ! -f $temp_fa.align ]] ; then
-	rmfile="$temp_fa.out"
+if [[ ! -s $temp_fa ]] ; then
+	# No inserted sequences in the VCF
+	cat $input_vcf > $output
+else
+	# Run RepeatMasker on sequences
+	$rm $rmargs -pa $threads -dir "$workingdir" "$temp_fa"
+	# We can annotate with full alignment information if it exists
+	rmfile="$temp_fa.align"
+	if [[ ! -f $temp_fa.align ]] ; then
+		rmfile="$temp_fa.out"
+	fi
+	# Parse and annotate
+	# Needs the extra memory since the RM output needs to be loaded into memory
+	java -Xmx2g $jvm_args -cp $GRIDSS_JAR \
+		gridss.repeatmasker.AnnotateVariantsRepeatMasker \
+		--INPUT "$input_vcf" \
+		--OUTPUT "$output" \
+		--REPEAT_MASKER "$rmfile"
+	# --TAGS $fields
 fi
-# Parse and annotate
-# Needs the extra memory since the RM output needs to be loaded into memory
-java -Xmx2g $jvm_args -cp $GRIDSS_JAR \
-	gridss.repeatmasker.AnnotateVariantsRepeatMasker \
-	--INPUT "$input_vcf" \
-	--OUTPUT "$output" \
-	--REPEAT_MASKER "$rmfile"
-# --TAGS $fields
 
 trap - EXIT
 exit 0 # success!
