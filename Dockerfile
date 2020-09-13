@@ -34,6 +34,7 @@ RUN mkdir /opt/gridss/
 COPY target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
 COPY scripts/*.sh /opt/gridss/
 COPY scripts/*.R /opt/gridss/
+COPY src/main/c/gridsstools/gridsstools /opt/gridss/
 
 WORKDIR /data/
 ENTRYPOINT ["/opt/gridss/gridss.sh"]
