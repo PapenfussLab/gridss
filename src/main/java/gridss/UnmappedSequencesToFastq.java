@@ -4,7 +4,6 @@ import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.ParallelTransformIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;

@@ -2,13 +2,11 @@ package au.edu.wehi.idsv.kraken;
 
 import au.edu.wehi.idsv.ncbi.MinimalTaxonomyNode;
 import au.edu.wehi.idsv.ncbi.TaxonomyHelper;
-import gridss.kraken.SubsetToTaxonomy;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.collections4.iterators.ReverseListIterator;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;

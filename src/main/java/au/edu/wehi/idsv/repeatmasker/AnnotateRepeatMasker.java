@@ -6,13 +6,9 @@ import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.VCFHeaderLineType;
-import org.apache.commons.compress.utils.Lists;
 
 import java.util.*;
 import java.util.stream.Collectors;

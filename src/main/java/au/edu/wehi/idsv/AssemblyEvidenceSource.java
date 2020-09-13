@@ -10,7 +10,6 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import gridss.SoftClipsToSplitReads;
 import gridss.cmdline.CommandLineProgramHelper;

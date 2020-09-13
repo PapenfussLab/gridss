@@ -1,8 +1,6 @@
 package gridss;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
-import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;

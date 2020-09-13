@@ -2,9 +2,7 @@ package gridss.kraken;
 
 import au.edu.wehi.idsv.kraken.KrakenClassification;
 import au.edu.wehi.idsv.kraken.KrakenClassificationChecker;
-import au.edu.wehi.idsv.kraken.KrakenKmerClassification;
 import au.edu.wehi.idsv.kraken.KrakenParser;
-import au.edu.wehi.idsv.ncbi.TaxonomyHelper;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;

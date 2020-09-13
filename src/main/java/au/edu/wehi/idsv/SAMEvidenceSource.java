@@ -26,7 +26,6 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgram;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.kraken;
 
-import com.google.common.collect.ImmutableList;
 import joptsimple.internal.Strings;
 import org.apache.commons.lang3.tuple.Pair;
 

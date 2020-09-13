@@ -7,9 +7,6 @@ import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.util.GroupingIterator;
-import au.edu.wehi.idsv.util.UngroupingIterator;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
@@ -19,13 +16,11 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
-import org.checkerframework.checker.units.qual.C;
 import picard.cmdline.StandardOptionDefinitions;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
