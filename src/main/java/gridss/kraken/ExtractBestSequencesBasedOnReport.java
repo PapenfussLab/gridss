@@ -99,7 +99,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             List<KrakenReportLine> interestingNodes = filteredReport.stream()
                     .filter(s -> taxaWithSequence[s.taxonomyId])
                     .filter(s -> s.countAssignedToTree >= MIN_SUPPORTING_READS)
-                    .sorted(KrakenReportLine.ByCountAssignedToTree.reversed())
+                    .sorted(KrakenReportLine.ByCountAssignedDirectly.reversed().thenComparing(KrakenReportLine.ByCountAssignedToTree.reversed()))
                     .limit(TAXID_TO_RETURN)
                     .collect(Collectors.toList());
             if (SUMMARY_REPORT_OUTPUT != null) {
