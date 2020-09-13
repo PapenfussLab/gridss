@@ -289,7 +289,7 @@ if [[ $force != "true" ]] ; then
 	done
 fi
 # Validate tools exist on path
-for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh samtools java bwa Rscript ; do
+for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools java bwa Rscript ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
@@ -356,11 +356,14 @@ jvm_args=" \
 file_prefix=$workingdir/$(basename $output_vcf)
 file_assembly=$file_prefix.assembly.bam
 file_gridss_vcf=$file_prefix.gridss.vcf
-file_host_annotated_vcf=$file_prefix.gridss.host_annotated.vcf
-file_kraken_annotated_vcf=$file_prefix.gridss.fully_annotated.vcf
+file_host_annotated_vcf=$file_prefix.gridss.host.vcf
+file_kraken_annotated_vcf=$file_prefix.gridss.host.k2.vcf
+file_rm_annotated_vcf=$file_prefix.gridss.host.k2.rm.vcf
+file_filtered_vcf=$file_prefix.gridss.host.k2.rm.filtered.vcf
 file_readname=$file_prefix.readnames.txt
 file_report=$file_prefix.kraken2.report.all.txt
 file_viral_report=$file_prefix.kraken2.report.viral.txt
+file_extracted_report=$file_prefix.kraken2.report.viral.extracted.txt
 file_viral_fa=$file_prefix.viral.fa
 exec_concat_fastq=$file_prefix.cat_input_as_fastq.sh
 
@@ -415,6 +418,7 @@ if [[ ! -f $file_viral_fa ]] ; then
 		--INPUT $file_report \
 		--OUTPUT $file_viral_fa \
 		--REPORT_OUTPUT $file_viral_report \
+		--SUMMARY_REPORT_OUTPUT $file_extracted_report \
 		--NCBI_NODES_DMP $nodesdmp \
 		$kraken_references_arg \
 		--KRAKEN_REFERENCES $kraken2db/library/viral/library.fna \
@@ -552,7 +556,7 @@ else
 	write_status "Annotating host genome integrations	Skipped: found	$file_host_annotated_vcf"
 fi
 if [[ ! -f $file_kraken_annotated_vcf ]] ; then
-	write_status "Annotating kraken2 host"
+	write_status "Annotating kraken2"
 	{ $timecmd gridss_annotate_vcf_kraken2.sh \
 		-o $file_kraken_annotated_vcf \
 		-j $gridss_jar \
@@ -562,10 +566,30 @@ if [[ ! -f $file_kraken_annotated_vcf ]] ; then
 		$file_host_annotated_vcf  \
 	; } 1>&2 2>> $logfile
 else
-	write_status "Annotating kraken2 host	Skipped: found	$file_kraken_annotated_vcf"
+	write_status "Annotating kraken2	Skipped: found	$file_kraken_annotated_vcf"
+fi
+if [[ ! -f $file_rm_annotated_vcf ]] ; then
+	write_status "Annotating RepeatMasker"
+	{ $timecmd gridss_annotate_vcf_repeatmasker.sh \
+		-o $file_rm_annotated_vcf \
+		-j $gridss_jar \
+		--threads $threads \
+		$kraken2args \
+		$file_kraken_annotated_vcf \
+	; } 1>&2 2>> $logfile
+else
+	write_status "Annotating RepeatMasker	Skipped: found	$file_rm_annotated_vcf"
+fi
+if [[ ! -f $file_filtered_vcf ]] ; then
+	write_status "Filtering to host integrations"
+	{ $timecmd java -Xmx64m $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
+		--INPUT $file_rm_annotated_vcf \
+		--OUTPUT $file_filtered_vcf \
+	; } 1>&2 2>> $logfile
 fi
 
-cp $file_kraken_annotated_vcf $output_vcf
+cp $file_filtered_vcf $output_vcf
+cp $file_extracted_report $output_vcf.kraken2.summary.csv
 
 write_status "Generated $output_vcf"
 write_status "Done"
