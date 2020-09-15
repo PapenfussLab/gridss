@@ -87,36 +87,41 @@ public class VariantCaller {
 		}
 	}
 	private void callChunk(File output, AggregateEvidenceSource es, int chunkNumber, QueryInterval[] chunk) {
-		String chunkMsg = String.format("chunk %d (%s:%d-%s:%d)", chunkNumber,
-				processContext.getDictionary().getSequence(chunk[0].referenceIndex).getSequenceName(), chunk[0].start,
-				processContext.getDictionary().getSequence(chunk[chunk.length-1].referenceIndex).getSequenceName(), chunk[chunk.length-1].end);
-		String msg = "calling maximal cliques in " + chunkMsg;
-		File tmp = new File(output.getParent(), "gridss.tmp." + output.getName());
-		try (VariantCallIterator rawit = new VariantCallIterator(es, chunk, chunkNumber)) {
-			try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
-				log.info("Start ", msg);
-				try (AsyncBufferedIterator<VariantContextDirectedEvidence> it = new AsyncBufferedIterator<>(rawit, "VariantCaller " + chunkMsg)) {
-					while (it.hasNext()) {
-						VariantContextDirectedEvidence loc = it.next();
-						if (loc.getBreakendQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
-							// If we're under min score with all possible evidence allocated, we're definitely going to fail
-							// when we restrict evidence to single breakpoint support
-							vcfWriter.add(loc);
+		try {
+			String chunkMsg = String.format("chunk %d (%s:%d-%s:%d)", chunkNumber,
+					processContext.getDictionary().getSequence(chunk[0].referenceIndex).getSequenceName(), chunk[0].start,
+					processContext.getDictionary().getSequence(chunk[chunk.length - 1].referenceIndex).getSequenceName(), chunk[chunk.length - 1].end);
+			String msg = "calling maximal cliques in " + chunkMsg;
+			File tmp = new File(output.getParent(), "gridss.tmp." + output.getName());
+			try (VariantCallIterator rawit = new VariantCallIterator(es, chunk, chunkNumber)) {
+				try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(tmp, false)) {
+					log.info("Start ", msg);
+					try (AsyncBufferedIterator<VariantContextDirectedEvidence> it = new AsyncBufferedIterator<>(rawit, "VariantCaller " + chunkMsg)) {
+						while (it.hasNext()) {
+							VariantContextDirectedEvidence loc = it.next();
+							if (loc.getBreakendQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
+								// If we're under min score with all possible evidence allocated, we're definitely going to fail
+								// when we restrict evidence to single breakpoint support
+								vcfWriter.add(loc);
+							}
 						}
 					}
 				}
 			}
-		}
-		try {
-			FileHelper.move(tmp, output, true);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		log.info("Complete ", msg);
-		if (gridss.Defaults.DEFENSIVE_GC) {
-			log.info("Requesting defensive GC to ensure OS file handles are closed");
-			System.gc();
-			System.runFinalization();
+			try {
+				FileHelper.move(tmp, output, true);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			log.info("Complete ", msg);
+			if (gridss.Defaults.DEFENSIVE_GC) {
+				log.info("Requesting defensive GC to ensure OS file handles are closed");
+				System.gc();
+				System.runFinalization();
+			}
+		} catch (OutOfMemoryError oom) {
+			log.error(oom);
+			System.exit(1);
 		}
 	}
 }

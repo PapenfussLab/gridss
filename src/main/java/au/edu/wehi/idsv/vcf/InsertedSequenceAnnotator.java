@@ -86,34 +86,39 @@ public class InsertedSequenceAnnotator implements CloseableIterator<VariantConte
 		return skipExistingBEALN && vc.hasAttribute(VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute());
 	}
 	private void feedStreamingAligner(StreamingAlignerIterator wrapper, StreamingAligner aligner) {
-		try (CloseableIterator<VariantContext> it = getVcf()) {
-			while (it.hasNext()) {
-				VariantContext vc = stripIfNeeded(it.next());
-				if (shouldSkipRecord(vc)) {
-					// skip this record
-				} else {
-					String seqstr = getBreakendSequence(vc);
-					if (!Strings.isNullOrEmpty(seqstr) && seqstr.length() >= minRealignmentLength) {
-						byte[] seq = seqstr.getBytes(StandardCharsets.UTF_8);
-						byte[] qual = new byte[seq.length];
-						Arrays.fill(qual, DEFAULT_QUAL_SCORE);
-						FastqRecord fq = new FastqRecord(vc.getID(), seq, null, qual);
-						aligner.asyncAlign(fq);
+		try {
+			try (CloseableIterator<VariantContext> it = getVcf()) {
+				while (it.hasNext()) {
+					VariantContext vc = stripIfNeeded(it.next());
+					if (shouldSkipRecord(vc)) {
+						// skip this record
+					} else {
+						String seqstr = getBreakendSequence(vc);
+						if (!Strings.isNullOrEmpty(seqstr) && seqstr.length() >= minRealignmentLength) {
+							byte[] seq = seqstr.getBytes(StandardCharsets.UTF_8);
+							byte[] qual = new byte[seq.length];
+							Arrays.fill(qual, DEFAULT_QUAL_SCORE);
+							FastqRecord fq = new FastqRecord(vc.getID(), seq, null, qual);
+							aligner.asyncAlign(fq);
+						}
 					}
 				}
-			}
-		} catch (IOException e) {
-			log.warn(e);
-		} finally {
-			try {
-				wrapper.flush();
-				wrapper.close();
-				aligner.close();
 			} catch (IOException e) {
 				log.warn(e);
+			} finally {
+				try {
+					wrapper.flush();
+					wrapper.close();
+					aligner.close();
+				} catch (IOException e) {
+					log.warn(e);
+				}
 			}
+			log.debug("Completed async external alignment feeder thread.");
+		} catch (OutOfMemoryError oom) {
+			log.error(oom);
+			System.exit(1);
 		}
-		log.debug("Completed async external alignment feeder thread.");
 	}
 
 	@Override
