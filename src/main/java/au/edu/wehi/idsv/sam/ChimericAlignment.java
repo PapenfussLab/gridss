@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.sam;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
+import au.edu.wehi.idsv.VariantContextRepeatMaskerAnnotator;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -13,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -225,4 +227,9 @@ public class ChimericAlignment {
 			return Ints.compare(left.getFirstAlignedBaseReadOffset(), right.getFirstAlignedBaseReadOffset());
 		}
 	};
+	public static final Comparator<ChimericAlignment> ByMapqAlignedLength = Comparator.comparingDouble(
+				(ChimericAlignment ca) -> ca.mapq == SAMRecord.UNKNOWN_MAPPING_QUALITY ? -1 : ca.mapq)
+			.thenComparing(ca -> CigarUtil.countMappedBases(ca.cigar.getCigarElements()))
+			.reversed();
+
 }

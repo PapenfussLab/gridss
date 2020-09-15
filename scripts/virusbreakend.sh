@@ -454,6 +454,8 @@ for f in "$@" ; do
 	if [[ ! -f $infile_fq ]] ; then
 		exec_extract_reads=$infile_prefix.extract_reads.sh
 		write_status "Extracting viral reads	$f"
+		# TODO: tee the input stream to gridss.analysis.CollectGridssMetrics
+		# and process in parallel since memory usage of this step is really low
 		if which gridsstools > /dev/null ; then
 			cat > $exec_extract_reads << EOF
 gridsstools extractFragmentsToFastq \
