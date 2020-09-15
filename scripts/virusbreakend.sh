@@ -365,6 +365,7 @@ file_report=$file_prefix.kraken2.report.all.txt
 file_viral_report=$file_prefix.kraken2.report.viral.txt
 file_extracted_report=$file_prefix.kraken2.report.viral.extracted.txt
 file_viral_fa=$file_prefix.viral.fa
+file_wgs_metrics=$file_prefix.wgs_metrics.txt
 exec_concat_fastq=$file_prefix.cat_input_as_fastq.sh
 
 if [[ ! -f $file_readname ]] ; then
@@ -589,9 +590,20 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 		--OUTPUT $file_filtered_vcf \
 	; } 1>&2 2>> $logfile
 fi
-
+if [[ ! -f $file_wgs_metrics ]] ; then
+	write_status "Calculating virus WGS metrics"
+	{ $timecmd java -Xmx1g $jvm_args \
+			-cp $gridss_jar picard.cmdline.PicardCommandLine CollectWgsMetrics \
+			--INPUT $infile_bam \
+			--OUTPUT $file_wgs_metrics \
+			--REFERENCE_SEQUENCE $file_viral_fa \
+			--COVERAGE_CAP 10000 \
+			--COUNT_UNPAIRED true \
+	; } 1>&2 2>> $logfile
+fi
 cp $file_filtered_vcf $output_vcf
 cp $file_extracted_report $output_vcf.kraken2.summary.csv
+cp $file_wgs_metrics $output_vcf.wgs_metrics.txt
 
 write_status "Generated $output_vcf"
 write_status "Done"
