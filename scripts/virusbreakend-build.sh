@@ -25,7 +25,7 @@ Downloads and builds the kraken2 database used by VIRUSBreakend
 
 This program requires kraken2 and samtools to be on PATH
 
-Usage: virusbreakend-build.sh [--db $virusbreakenddb]"
+Usage: virusbreakend-build.sh [--db $dbname]"
 OPTIONS=h
 LONGOPTS=help,db:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
@@ -43,7 +43,7 @@ while true; do
 			exit 0
 			;;
 		--db)
-			dbname=virusbreakenddb
+			dbname=$2
 			shift 2
 			;;
 		--)
@@ -56,6 +56,9 @@ while true; do
 			;;
 	esac
 done
+write_status() {
+	echo "$(date): $1" 1>&2
+}
 for tool in kraken2-build samtools gunzip wget awk tar dustmasker rsync ; do
 	if ! which $tool >/dev/null; then
 		echo "Error: unable to find $tool on \$PATH" 1>&2
@@ -90,4 +93,7 @@ tar -czvf virusbreakend.db.$dbname.tar.gz \
 	$dbname/virushostdb.tsv \
 	$dbname/library/viral/*.fna* \
 	$dbname/library/added/*.fna* \
+
+trap - EXIT
+exit 0 # success!
 
