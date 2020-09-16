@@ -33,6 +33,7 @@ metricsmaxcoverage=100000
 maxcoverage=1000000
 hosttaxid=9606
 force="false"
+forceunpairedfastq="false"
 USAGE_MESSAGE="
 VIRUSBreakend: Viral Integration Recognition Using Single Breakends
 
@@ -53,7 +54,7 @@ Usage: virusbreakend.sh [options] input.bam
 	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force
+LONGOPTS=help,output:,jar:,threads:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -122,6 +123,10 @@ while true; do
 			force="true"
 			shift 1
 			;;
+		--forceunpairedfastq)
+			forceunpairedfastq="true"
+			shift 1
+			;;
 		--)
 			shift
 			break
@@ -160,7 +165,7 @@ if [[ ! -d $workingdir ]] ; then
 fi
 timestamp=$(date +%Y%m%d_%H%M%S)
 # Logging
-logfile=$workingdir/full.$timestamp.$HOSTNAME.$$.log
+logfile=$workingdir/virusbreakend.$timestamp.$HOSTNAME.$$.log
 # $1 is message to write
 write_status() { # After logging initialised
 	echo "$(date): $1" | tee -a $logfile 1>&2
@@ -345,6 +350,19 @@ fi
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 
+function echo_cat_uncompressed {
+	if [[ $(basename $1 .gz) != $(basename $1) ]] ; then
+		if which pigz > /dev/null ; then
+			echo -n "pigz -c -d -p $threads $1"
+		else
+			write_status "WARNING: pigz not found on PATH. Using single-threaded gunzip for $1"
+			echo -n "gunzip -c $1"
+		fi
+	else
+		echo -n "cat $1"
+	fi
+}
+
 jvm_args=" \
 	-Dpicard.useLegacyParser=false \
 	-Dsamjdk.use_async_io_read_samtools=true \
@@ -365,32 +383,35 @@ file_report=$file_prefix.kraken2.report.all.txt
 file_viral_report=$file_prefix.kraken2.report.viral.txt
 file_extracted_report=$file_prefix.kraken2.report.viral.extracted.txt
 file_viral_fa=$file_prefix.viral.fa
+file_merged_bam=$file_prefix.merged.bam
 file_wgs_metrics=$file_prefix.wgs_metrics.txt
 exec_concat_fastq=$file_prefix.cat_input_as_fastq.sh
 
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
 	rm -f $exec_concat_fastq $file_prefix.readnames.txt.tmp
-	if which gridsstools > /dev/null ; then
-		cat > $exec_concat_fastq << EOF
-#!/bin/bash
-gridsstools unmappedSequencesToFastq -@ $threads $@
-EOF
-	else
-		cat > $exec_concat_fastq << EOF
-#!/bin/bash
+	echo "#!/bin/bash" > $exec_concat_fastq
+	for f in "$@" ; do
+		if [[ $(basename $f .fastq.gz) != $(basename $f) ]] || [[ $(basename $f .fq.gz) != $(basename $f) ]] || [[ $(basename $f .fq) != $(basename $f) ]] || [[ $(basename $f .fastq) != $(basename $f) ]] ; then
+			# fastq input
+			echo_cat_uncompressed $f >> $exec_concat_fastq
+			echo >> $exec_concat_fastq
+		else
+			# BAM input
+			if which gridsstools > /dev/null ; then
+				echo "gridsstools unmappedSequencesToFastq -@ $threads $f" >> $exec_concat_fastq
+			else
+				cat > $exec_concat_fastq << EOF
 java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.UnmappedSequencesToFastq \\
-EOF
-		for f in "$@" ; do
-			echo "	-INPUT $f \\" >> $exec_concat_fastq
-		done
-		cat >> $exec_concat_fastq << EOF
+	-INPUT $f \\
 	-OUTPUT /dev/stdout \\
 	-INCLUDE_SOFT_CLIPPED_BASES true \\
 	-MIN_SEQUENCE_LENGTH 20 \\
 	-UNIQUE_NAME false
 EOF
-	fi
+			fi
+		fi
+	done
 	chmod +x $exec_concat_fastq
 	{ $timecmd $exec_concat_fastq \
 	| kraken2 \
@@ -408,7 +429,6 @@ EOF
 	; } 1>&2 2>> $logfile
 else
 	write_status "Identifying viral sequences	Skipped: found	$file_readname"
-
 fi
 if [[ ! -f $file_viral_fa ]] ; then
 	write_status "Identifying viruses in sample based on kraken2 summary report"
@@ -439,10 +459,10 @@ if [[ ! -f $file_viral_fa.bwt ]] ; then
 	write_status "Creating index of viral sequences"
 	{ $timecmd samtools faidx $file_viral_fa && bwa index $file_viral_fa ; } 1>&2 2>> $logfile
 else
-	write_status "reating index of viral sequences	Skipped: found	$file_viral_fa.bwt"
+	write_status "Creating index of viral sequences	Skipped: found	$file_viral_fa.bwt"
 fi
 
-gridss_input_args=""
+bam_list_args=""
 for f in "$@" ; do
 	basef=$(basename "$f" | tr -d ' 	<(:/|$@&%^\\)>')
 	infile_prefix=$workingdir/$basef
@@ -451,14 +471,47 @@ for f in "$@" ; do
 	infile_fq2=$infile_prefix.viral.R2.fq
 	infile_unsorted_sam=$infile_prefix.viral.sam
 	infile_bam=$infile_prefix.viral.bam
-	
+	fastq_extension=""
+	for possible_extension in .fastq.gz .fq.gz .fq .fastq ; do
+		if [[ $(basename $f $possible_extension) != $f ]] ; then
+			fastq_extension=$possible_extension
+		fi
+	done
+	fq2=""
+	fq1=""
+	# fastq handling
+	for f2 in "$@" ; do
+		if [[ "$(basename $f2 2$fastq_extension)1$fastq_extension" == $(basename $f) ]] ; then
+			fq1=$f
+			fq2=$f2
+			write_status "Treating as fastq pair	$f	$f2"
+		fi
+		if [[ "$(basename $f2 1$fastq_extension)2$fastq_extension" == $(basename $f) ]] ; then
+			fq1=$f2
+			fq2=$f
+			write_status "Treating as second of fastq pair	$f"
+		fi
+	done
+	if [[ "$f" == "$fq2" ]] ; then
+		break
+	fi
+	if [[ "$fastq_extension" != "" ]] && [[ "$fq1" == "" ]] ; then
+		write_status "Could not find a pairing for $1 based on filename suffix."
+		if [[ "$forceunpairedfastq" != true ]] ; then
+			write_status "VIRUSbreakend expects paired fastq inputs to have \"1\" and \"2\" immediately before the fastq suffix."
+			write_status "For example, input_1.fastq.gz, input_2.fastq.gz or input_R1.fq, input_R2.fq"
+			write_status "If this file is really single-end short read sequencing data, use --forceunpairedfastq to process as unpaired"
+			exit EX_CONFIG
+		fi
+	fi
 	if [[ ! -f $infile_fq ]] ; then
 		exec_extract_reads=$infile_prefix.extract_reads.sh
-		write_status "Extracting viral reads	$f"
-		# TODO: tee the input stream to gridss.analysis.CollectGridssMetrics
-		# and process in parallel since memory usage of this step is really low
-		if which gridsstools > /dev/null ; then
-			cat > $exec_extract_reads << EOF
+		write_status "Extracting viral reads	$f	$fq2"
+		rm -f $exec_extract_reads
+		echo "#!/bin/bash" > $exec_extract_reads
+		if [[ "$fastq_extension" == "" ]] ; then
+			if which gridsstools > /dev/null ; then
+				cat >> $exec_extract_reads << EOF
 gridsstools extractFragmentsToFastq \
 	-@ $threads \
 	-r $file_readname \
@@ -467,8 +520,8 @@ gridsstools extractFragmentsToFastq \
 	-2 $infile_fq2 \
 	$f
 EOF
-		else
-			cat > $exec_extract_reads << EOF
+			else
+				cat >> $exec_extract_reads << EOF
 java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \\
 	-INPUT $f \\
 	-READ_NAMES $file_readname \\
@@ -476,6 +529,22 @@ java -Xmx4g $jvm_args -cp $gridss_jar gridss.ExtractFragmentsToFastq \\
 	-OUTPUT_FQ1 $infile_fq1 \\
 	-OUTPUT_FQ2 $infile_fq2
 EOF
+			fi
+		else
+			# TODO: replace awk with C code: https://www.biostars.org/p/10353/
+			awk_script='NR==FNR { lookup["@" $1]=1; next } { if (lookup[$1] == 1) { print; getline; print; getline; print; getline; print } else { getline ; getline; getline } }'
+			if [[ "$fq1" != "" ]] ; then
+				# AWK script to pull out
+				echo "$(echo_cat_uncompressed $fq1) | awk '$awk_script' $file_readname /dev/stdin > $infile_fq1 &" >> $exec_extract_reads
+				echo "$(echo_cat_uncompressed $fq2) | awk '$awk_script' $file_readname /dev/stdin > $infile_fq2 &" >> $exec_extract_reads
+				echo "echo -n > $infile_fq &" >> $exec_extract_reads
+				echo "wait" >> $exec_extract_reads
+			else
+				echo "$(echo_cat_uncompressed $f) | awk '$awk_script' $file_readname /dev/stdin > $infile_fq &" >> $exec_extract_reads
+				echo "echo -n > $infile_fq1 &" >> $exec_extract_reads
+				echo "echo -n > $infile_fq2 &" >> $exec_extract_reads
+				echo "wait &" >> $exec_extract_reads
+			fi
 		fi
 		chmod +x $exec_extract_reads
 		{ $timecmd $exec_extract_reads ; } 1>&2 2>> $logfile
@@ -498,17 +567,18 @@ EOF
 	fi
 	gridss_dir=$workingdir/$(basename $infile_bam).gridss.working
 	gridss_prefix=$gridss_dir/$(basename $infile_bam)
-	if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
-		write_status "Gathering metrics from host alignment	$f"
-		# Ideally the metrics on the viral sequence would match the metrics from the host.
-		# Unfortunately, this is generally not the case.
-		# To ensure we assemble fragments correctly, we need to grab the host alignment metrics.
-		# If GRIDSS has been run, we could use that but we don't want GRIDSS to be an explicit
-		# requirement of this pipeline
-		# This approach doesn't work for fastq input files.
-		exec_extract_host_metrics=$infile_prefix.extract_host_metrics.sh
-		rm -f $exec_extract_host_metrics
-		cat > $exec_extract_host_metrics << EOF
+	if [[ $fastq_extension == "" ]] ; then
+		if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
+			write_status "Gathering metrics from host alignment	$f"
+			# Ideally the metrics on the viral sequence would match the metrics from the host.
+			# Unfortunately, this is generally not the case.
+			# To ensure we assemble fragments correctly, we need to grab the host alignment metrics.
+			# If GRIDSS has been run, we could use that but we don't want GRIDSS to be an explicit
+			# requirement of this pipeline
+			# This approach doesn't work for fastq input files.
+			exec_extract_host_metrics=$infile_prefix.extract_host_metrics.sh
+			rm -f $exec_extract_host_metrics
+			cat > $exec_extract_host_metrics << EOF
 java -Xmx512m $jvm_args \
 	-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 	--INPUT $f \
@@ -519,13 +589,16 @@ java -Xmx512m $jvm_args \
 	--FILE_EXTENSION null \
 	--STOP_AFTER $metricsrecords
 EOF
-		chmod +x $exec_extract_host_metrics
-		mkdir -p $gridss_dir
-		{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
+			chmod +x $exec_extract_host_metrics
+			mkdir -p $gridss_dir
+			{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
+		else
+			write_status "Gathering metrics from host alignment	Skipped: found	$gridss_prefix.insert_size_metrics"
+		fi
 	else
-		write_status "Gathering metrics from host alignment	Skipped: found	$gridss_prefix.insert_size_metrics"
+		write_status "Unable to use host metrics for fastq $f	Skipping metrics pre-calculation"
 	fi
-	gridss_input_args="$gridss_input_args $infile_bam"
+	bam_list_args="$bam_list_args $infile_bam"
 done
 if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
@@ -538,7 +611,7 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		-a $file_assembly \
 		--maxcoverage $maxcoverage \
 		$gridssargs \
-		$gridss_input_args \
+		$bam_list_args \
 	; } 1>&2 2>> $logfile
 else
 	write_status "Calling structural variants	Skipped: found	$file_gridss_vcf"
@@ -574,6 +647,7 @@ fi
 if [[ ! -f $file_rm_annotated_vcf ]] ; then
 	write_status "Annotating RepeatMasker"
 	{ $timecmd gridss_annotate_vcf_repeatmasker.sh \
+		-w $workingdir \
 		-o $file_rm_annotated_vcf \
 		-j $gridss_jar \
 		--threads $threads \
@@ -588,13 +662,15 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 	{ $timecmd java -Xmx64m $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
 		--INPUT $file_rm_annotated_vcf \
 		--OUTPUT $file_filtered_vcf \
+		--REFERENCE_SEQUENCE $reference \
 	; } 1>&2 2>> $logfile
 fi
 if [[ ! -f $file_wgs_metrics ]] ; then
 	write_status "Calculating virus WGS metrics"
-	{ $timecmd java -Xmx1g $jvm_args \
+	{ $timecmd samtools merge -@ $threads $file_merged_bam $bam_list_args && \
+		java -Xmx1g $jvm_args \
 			-cp $gridss_jar picard.cmdline.PicardCommandLine CollectWgsMetrics \
-			--INPUT $infile_bam \
+			--INPUT $file_merged_bam \
 			--OUTPUT $file_wgs_metrics \
 			--REFERENCE_SEQUENCE $file_viral_fa \
 			--COVERAGE_CAP 10000 \

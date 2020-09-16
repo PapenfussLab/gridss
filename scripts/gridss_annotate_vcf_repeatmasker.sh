@@ -46,24 +46,24 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
 fi
 eval set -- "$PARSED"
 while true; do
-    case "$1" in
-        -o|--output)
-            output="$2"
-            shift 2
-            ;;
+	case "$1" in
+		-o|--output)
+			output="$2"
+			shift 2
+			;;
 		-j|--jar)
-            GRIDSS_JAR="$2"
-            shift 2
-            ;;
+			GRIDSS_JAR="$2"
+			shift 2
+			;;
 		-t|--threads)
 			printf -v threads '%d\n' "$2" 2>/dev/null
 			printf -v threads '%d' "$2" 2>/dev/null
 			shift 2
 			;;
 		-w|--workingdir)
-            workingdir="$2"
-            shift 2
-            ;;
+			workingdir="$2"
+			shift 2
+			;;
 		--minlength)
 			printf -v minlength '%d\n' "$2" 2>/dev/null
 			printf -v minlength '%d' "$2" 2>/dev/null
