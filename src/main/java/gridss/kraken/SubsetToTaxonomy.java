@@ -64,10 +64,12 @@ public class SubsetToTaxonomy extends CommandLineProgram {
                             case READ_NAME:
                                 os.write(kc.sequenceId.getBytes(StandardCharsets.UTF_8));
                                 os.write('\n');
+                                break;
                             case KRAKEN:
                             default:
                                 os.write(kc.toKrakenOutput().getBytes(StandardCharsets.UTF_8));
                                 os.write('\n');
+                                break;
                         }
                     }
                 }
