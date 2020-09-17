@@ -56,6 +56,10 @@ while true; do
 			;;
 	esac
 done
+if [[ "$@" != "" ]] ; then
+	echo "$USAGE_MESSAGE" 1>&2
+	exit $EX_USAGE
+fi
 write_status() {
 	echo "$(date): $1" 1>&2
 }

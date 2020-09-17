@@ -62,7 +62,7 @@ autoconf
 
 ## Reference data setup
 
-Run `virusbreakend-build.sh virusbreakenddb` to download and generate the reference data.
+Run `virusbreakend-build.sh --db virusbreakenddb` to download and generate the reference data.
 
 `virusbreakend-build.sh` requires:
 
