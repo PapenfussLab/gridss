@@ -63,6 +63,9 @@ autoconf
 ## Reference data setup
 
 Run `virusbreakend-build.sh --db virusbreakenddb` to download and generate the reference data.
+This download the NCBI taxonomic information, sequences, virushostdb, and runs the `kraken2-build` build process.
+The index is around 7GB in size.
+Be aware that the kraken2 build process requires additional memory to build the index.
 
 `virusbreakend-build.sh` requires:
 
