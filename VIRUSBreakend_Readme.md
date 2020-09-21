@@ -50,15 +50,24 @@ Performance-critical steps in VIRUSBreakend are implemented in C using htslib.
 A precompiled version of `gridsstools` is included as part of GRIDSS releases.
 If this precompiled version does not run on your system you will need to build it from source.
 
-To build `gridsstools` from source, download and install htslib then run:
+To build `gridsstools` from source run the following:
 
 ```
 git clone http://github.com/PapenfussLab/gridss/
-cd gridss/src/main/c/gridsstools/
+cd gridss
+git submodule init
+git submodule update
+cd gridss/src/main/c/htslib/
+autoheader
+autoconf
+./configure && make install
+cd ../gridsstools/
 autoheader
 autoconf
 ./configure && make all
 ```
+
+If you already have htslib 1.10.2 or later installed, you can skip the htslib build and install steps.
 
 ## Reference data setup
 
