@@ -86,7 +86,9 @@ Be aware that the kraken2 build process requires additional memory to build the 
 
 These can be installed manually, or the BioConda samtools and kraken2 packages can be used.
 
-The the generated file `virusbreakend.db.virusbreakenddb.tar.gz` contains the viral reference data used by VIRUSBreakend.
+The the generated directory (`virusbreakenddb`) contains the files used in the build process.
+The file `virusbreakend.db.virusbreakenddb.tar.gz` contains the minimal subset of the `virusbreakenddb` data required by VIRUSBreakend.
+
 
 # Running VIRUSBreakend
 
