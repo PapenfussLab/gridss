@@ -54,7 +54,7 @@ Usage: virusbreakend.sh [options] input.bam
 	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
