@@ -91,12 +91,14 @@ kraken2-build --add-to-library $dbname/virusbreakend.virushostdb.genomic.fna --d
 kraken2-build --build --db $dbname
 for f in $(find $dbname/ -name '*.fna') ; do samtools faidx $f; done
 
-tar -czvf virusbreakend.db.$dbname.tar.gz \
-	$dbname/*.k2d \
-	$dbname/taxonomy/nodes.dmp \
-	$dbname/virushostdb.tsv \
-	$dbname/library/viral/*.fna* \
-	$dbname/library/added/*.fna* \
+cd $dbname
+cd ..
+tar -czvf virusbreakend.db.$(basename $dbname).tar.gz \
+	$(basename $dbname)/*.k2d \
+	$(basename $dbname)/taxonomy/nodes.dmp \
+	$(basename $dbname)/virushostdb.tsv \
+	$(basename $dbname)/library/viral/*.fna* \
+	$(basename $dbname)/library/added/*.fna* \
 
 trap - EXIT
 exit 0 # success!
