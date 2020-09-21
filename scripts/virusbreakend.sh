@@ -59,6 +59,7 @@ LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,kraken2db:,kraken2arg
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
     #  then getopt has complained about wrong arguments to stdout
+    #  then getopt has complained about wrong arguments to stdout
 	echo "$USAGE_MESSAGE" 1>&2
     exit $EX_USAGE
 fi
@@ -401,7 +402,7 @@ if [[ ! -f $file_readname ]] ; then
 			if which gridsstools > /dev/null ; then
 				echo "gridsstools unmappedSequencesToFastq -@ $threads $f" >> $exec_concat_fastq
 			else
-				cat > $exec_concat_fastq << EOF
+				cat >> $exec_concat_fastq << EOF
 java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.UnmappedSequencesToFastq \\
 	-INPUT $f \\
 	-OUTPUT /dev/stdout \\
