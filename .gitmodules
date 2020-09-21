@@ -1,0 +1,4 @@
+[submodule "src/main/c/htslib"]
+	path = src/main/c/htslib
+	url = https://github.com/samtools/htslib
+	branch = master
