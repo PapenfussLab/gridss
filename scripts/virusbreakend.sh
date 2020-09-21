@@ -56,7 +56,7 @@ Usage: virusbreakend.sh [options] input.bam
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
