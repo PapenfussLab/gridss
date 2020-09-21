@@ -61,14 +61,14 @@ cd gridss/src/main/c/htslib/
 autoheader
 autoconf
 ./configure && make
-sudo make install # only required is htslib is not installed
+sudo make install # only required if htslib is not installed
 cd ../gridsstools/
 autoheader
 autoconf
 ./configure && make all
 ```
 
-If you already have htslib 1.10.2 or later installed, you can skip the htslib build and install steps. Note that 
+If you already have htslib 1.10.2 or later installed, you can skip the htslib build and install steps.
 
 ## Reference data setup
 
