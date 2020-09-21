@@ -44,15 +44,17 @@ Usage: virusbreakend.sh [options] input.bam
 	-j/--jar: location of GRIDSS jar
 	-t/--threads: number of threads to use. (Default: $threads).
 	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
-	--kraken2db: kraken2 database
+	--db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build.sh to build.
 	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: $hosttaxid)
-	--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
-	--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
 	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
+# handled by virusbreakend-build.sh
+#--kraken2db: kraken2 database
+#--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
+#--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
 LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
@@ -91,7 +93,7 @@ while true; do
 			printf -v threads '%d' "$2" 2>/dev/null
 			shift 2
 			;;
-		--kraken2db)
+		--db|--kraken2db)
 			kraken2db="$2"
 			shift 2
 			;;

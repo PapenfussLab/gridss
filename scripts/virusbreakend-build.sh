@@ -21,7 +21,9 @@ dbname=virusbreakenddb
 USAGE_MESSAGE="
 VIRUSBreakend database build
 
-Downloads and builds the kraken2 database used by VIRUSBreakend
+Downloads and builds the databases used by VIRUSBreakend
+
+An the 
 
 This program requires kraken2 and samtools to be on PATH
 
@@ -99,6 +101,10 @@ tar -czvf virusbreakend.db.$(basename $dbname).tar.gz \
 	$(basename $dbname)/virushostdb.tsv \
 	$(basename $dbname)/library/viral/*.fna* \
 	$(basename $dbname)/library/added/*.fna* \
+
+write_status "VIRUSBreakend build successful"
+write_status "The full build (including intermediate files) can be found in $dbname"
+write_status "An archive containing only the files required by VIRUSBreakend can be found at $(realpath $dbname/../virusbreakend.db.$(basename $dbname).tar.gz)"
 
 trap - EXIT
 exit 0 # success!
