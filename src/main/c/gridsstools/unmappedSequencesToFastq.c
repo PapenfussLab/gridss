@@ -88,6 +88,7 @@ static int process(
 		int include_soft_clips,
 		int unique_names,
 		bam1_t *record) {
+	int i;
 	if (record->core.flag & (BAM_FSECONDARY | BAM_FSUPPLEMENTARY)) {
 		// Only process primary alignments
 		return 0;
@@ -103,7 +104,7 @@ static int process(
 		int end_clip_length = 0;
 		uint32_t* cigar = bam_get_cigar(record);
 		int n_cigar = record->core.n_cigar;
-		for (int i = 0; i < n_cigar; i++) {
+		for (i = 0; i < n_cigar; i++) {
 			if (bam_cigar_op(cigar[i]) == BAM_CSOFT_CLIP) {
 				start_clip_length += bam_cigar_oplen(cigar[i]);
 			} else if (bam_cigar_op(cigar[i]) == BAM_CHARD_CLIP) {
@@ -111,7 +112,7 @@ static int process(
 				break;
 			}
 		}
-		for (int i = n_cigar - 1; i >= 0; i--) {
+		for (i = n_cigar - 1; i >= 0; i--) {
 			if (bam_cigar_op(cigar[i]) == BAM_CSOFT_CLIP) {
 				end_clip_length += bam_cigar_oplen(cigar[i]);
 			} else if (bam_cigar_op(cigar[i]) == BAM_CHARD_CLIP) {
@@ -162,6 +163,7 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 	bam1_t *record = bam_init1();
 	int status = EXIT_SUCCESS;
 	kstring_t linebuf = KS_INITIALIZE;
+	int i;
 	// arg parsing
 	int c;
 	while ((c = getopt(argc, argv, "o:m:xu@:")) >= 0) {
@@ -177,7 +179,7 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 	if (argc < optind + 1) {
 		return usage();
 	}
-	for (int i = optind; i < argc; i++) {
+	for (i = optind; i < argc; i++) {
 		char* in_filename = argv[i];
 		// open files
 		if (!(fp_in = hts_open(in_filename, "r"))) {

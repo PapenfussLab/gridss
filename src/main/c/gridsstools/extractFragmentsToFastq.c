@@ -188,7 +188,7 @@ int main_extractFragmentsToFastq(int argc, char *argv[]) {
 	}
 	if (kh_size(mate_lookup) > 0) {
 		fprintf(stderr, "Found %d paired records without mates. Treating as unpaired.\n", kh_size(mate_lookup));
-		for (khint_t it = 0; it < kh_end(mate_lookup); it++) {
+		for (it = 0; it < kh_end(mate_lookup); it++) {
 			if (kh_exist(mate_lookup, it)) {
 				bam1_t *orphan = kh_key(mate_lookup, it);
 				output(fp_outu, fp_out1, fp_out2, &linebuf, orphan, NULL);
@@ -209,7 +209,7 @@ cleanup:
 	if (fp_out1) bgzf_close(fp_out1);
 	if (fp_out2) bgzf_close(fp_out2);
 	if (readname_lookup) {
-		for (khint_t it = 0; it < kh_end(readname_lookup); it++) {
+		for (it = 0; it < kh_end(readname_lookup); it++) {
 			if (kh_exist(readname_lookup, it)) {
 				free((char*)kh_key(readname_lookup, it));
 			}
