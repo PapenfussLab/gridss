@@ -1,4 +1,4 @@
-[submodule "src/main/c/htslib"]
-	path = src/main/c/htslib
+[submodule "src/main/c/gridsstools/htslib"]
+	path = src/main/c/gridsstools/htslib
 	url = https://github.com/samtools/htslib
 	branch = master

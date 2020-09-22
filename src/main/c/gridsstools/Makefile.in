@@ -17,8 +17,11 @@ COBJ = \
 
 TEST_DIR = ../../../test/resources/
 
-gridsstools: $(COBJ)
-	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) $(LIBS) -lz -lhts
+htslib:
+	$(MAKE) -C htslib libhts.a
+
+gridsstools: htslib $(COBJ)
+	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) htslib/libhts.a $(LIBS) -lz -lm -lbz2 -llzma -lcurl -lpthread
 
 test: \
 	testUnmappedSequencesToFastq \
@@ -62,4 +65,4 @@ distclean: clean
 	-rm -f config.log config.status configure Makefile
 	-rm -rf autom4te.cache
 
-.PHONY: all clean distclean test testUnmappedSequencesToFastq
+.PHONY: all clean distclean test testUnmappedSequencesToFastq testExtractFragmentsToFastq htslib

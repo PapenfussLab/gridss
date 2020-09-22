@@ -7,7 +7,7 @@
 
 static int usage() {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage:   gridss_cport  extractFragmentsToFastq [options] [input.bam] ...\n\n");
+	fprintf(stderr, "Usage:   gridsstools extractFragmentsToFastq [options] [input.bam] ...\n\n");
 	fprintf(stderr, "Options: -o FILE  output to file\n");
 	fprintf(stderr, "         -m INT   Minimum length of sequence export.Minimum length of sequence export. [20]\n");
 	fprintf(stderr, "         -x       exclude soft clipped bases.\n");

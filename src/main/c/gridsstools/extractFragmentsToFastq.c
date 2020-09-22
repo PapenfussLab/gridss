@@ -20,7 +20,7 @@ KHASH_INIT(bam_readname, bam1_t*, char, 0, bam_readname_hash_func, bam_readname_
 
 static int usage() {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage:   gridss_cport extractFragmentsToFastq [options] -r <readnames.txt> <input.bam>\n\n");
+	fprintf(stderr, "Usage:   gridsstools extractFragmentsToFastq [options] -r <readnames.txt> <input.bam>\n\n");
 	fprintf(stderr, "Options: -o FILE  fastq output for unpaired reads.\n");
 	fprintf(stderr, "         -1 FILE  fastq output for first in pair reads.\n");
 	fprintf(stderr, "         -2 FILE  fastq output for second in pair reads.\n");
