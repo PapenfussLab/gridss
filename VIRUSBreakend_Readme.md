@@ -57,18 +57,15 @@ git clone http://github.com/PapenfussLab/gridss/
 cd gridss
 git submodule init
 git submodule update
-cd gridss/src/main/c/htslib/
+cd gridss/src/main/c/gridsstools/htslib/
 autoheader
 autoconf
 ./configure && make
-sudo make install # only required if htslib is not installed
-cd ../gridsstools/
+cd ..
 autoheader
 autoconf
 ./configure && make all
 ```
-
-If you already have htslib 1.10.2 or later installed, you can skip the htslib build and install steps.
 
 ## Reference data setup
 
