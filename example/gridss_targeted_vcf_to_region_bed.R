@@ -6,8 +6,8 @@ argp = add_argument(argp, "--output", help="BED file containing breakpoint posit
 argv = parse_args(argp)
 
 vcf = readVcf(argv$input)
-bpgr = breakpointRanges(vcf, unpartneredBreakends=TRUE)
-begr = breakpointRanges(vcf, unpartneredBreakends=FALSE)
+bpgr = breakpointRanges(vcf, unpartneredBreakends=FALSE, inferMissingBreakends=TRUE)
+begr = breakpointRanges(vcf, unpartneredBreakends=TRUE)
 remove(vcf)
 gr = c(bpgr, begr)
 remove(begr)
