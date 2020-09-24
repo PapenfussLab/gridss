@@ -471,7 +471,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			SoftClipEvidence sce = (SoftClipEvidence) e;
 			SoftClipConfiguration scc = config.getSoftClip();
 			if (sce.getBreakendSequence().length < scc.minLength) return true;
-			if (average(sce.getBreakendQuality()) < scc.minAverageQual) return true;
+			if (sce.getBreakendQuality() != null && average(sce.getBreakendQuality()) < scc.minAverageQual) return true;
 			if (config.adapters.isAdapterSoftClip(sce)) return true;
 			if (!AssemblyAttributes.isAssembly(sce.getSAMRecord())) {
 				// TODO: symmetrical identity and entropy filters on both sides
