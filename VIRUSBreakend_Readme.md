@@ -57,7 +57,7 @@ git clone http://github.com/PapenfussLab/gridss/
 cd gridss
 git submodule init
 git submodule update
-cd gridss/src/main/c/gridsstools/htslib/
+cd src/main/c/gridsstools/htslib/
 autoheader
 autoconf
 ./configure && make

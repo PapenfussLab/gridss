@@ -297,7 +297,7 @@ if [[ $force != "true" ]] ; then
 	done
 fi
 # Validate tools exist on path
-for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools java bwa Rscript ; do
+for tool in kraken2 gridss.sh gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools java bwa Rscript ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
@@ -496,7 +496,7 @@ for f in "$@" ; do
 		fi
 	done
 	if [[ "$f" == "$fq2" ]] ; then
-		break
+		continue
 	fi
 	if [[ "$fastq_extension" != "" ]] && [[ "$fq1" == "" ]] ; then
 		write_status "Could not find a pairing for $1 based on filename suffix."
@@ -620,6 +620,16 @@ else
 	write_status "Calling structural variants	Skipped: found	$file_gridss_vcf"
 fi
 if [[ ! -f $file_host_annotated_vcf ]] ; then
+	# Make sure we have the appropriate indexes for the host reference genome
+	{ $timecmd gridss.sh \
+		-r $reference \
+		-t $threads \
+		-j $gridss_jar \
+		-s setupreference \
+		-a $file_assembly \
+		-o placeholder.vcf \
+		$bam_list_args \
+	; } 1>&2 2>> $logfile
 	write_status "Annotating host genome integrations"
 	{ $timecmd java -Xmx4g $jvm_args \
 			-Dgridss.output_to_temp_file=true \
@@ -631,6 +641,15 @@ if [[ ! -f $file_host_annotated_vcf ]] ; then
 			--INPUT $file_gridss_vcf \
 			--OUTPUT $file_host_annotated_vcf \
 	; } 1>&2 2>> $logfile
+	# external bwa process
+	# --ALIGNER_COMMAND_LINE null \
+	# --ALIGNER_COMMAND_LINE bwa \
+	# --ALIGNER_COMMAND_LINE mem \
+	# --ALIGNER_COMMAND_LINE -L 0,0 \
+	# --ALIGNER_COMMAND_LINE -t \
+	# --ALIGNER_COMMAND_LINE '%3$d' \
+	# --ALIGNER_COMMAND_LINE '%2$s' \
+	# --ALIGNER_COMMAND_LINE '%1$s' \
 else
 	write_status "Annotating host genome integrations	Skipped: found	$file_host_annotated_vcf"
 fi
