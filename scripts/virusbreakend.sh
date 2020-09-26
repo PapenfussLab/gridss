@@ -354,7 +354,7 @@ ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 
 function echo_cat_uncompressed {
-	if [[ $(basename $1 .gz) != $(basename $1) ]] ; then
+	if [[ $(basename "$1" .gz) != $(basename "$1") ]] ; then
 		if which pigz > /dev/null ; then
 			echo -n "pigz -c -d -p $threads $1"
 		else
@@ -395,7 +395,7 @@ if [[ ! -f $file_readname ]] ; then
 	rm -f $exec_concat_fastq $file_prefix.readnames.txt.tmp
 	echo "#!/bin/bash" > $exec_concat_fastq
 	for f in "$@" ; do
-		if [[ $(basename $f .fastq.gz) != $(basename $f) ]] || [[ $(basename $f .fq.gz) != $(basename $f) ]] || [[ $(basename $f .fq) != $(basename $f) ]] || [[ $(basename $f .fastq) != $(basename $f) ]] ; then
+		if [[ $(basename "$f" .fastq.gz) != $(basename "$f") ]] || [[ $(basename "$f" .fq.gz) != $(basename "$f") ]] || [[ $(basename "$f" .fq) != $(basename "$f") ]] || [[ $(basename "$f" .fastq) != $(basename "$f") ]] ; then
 			# fastq input
 			echo_cat_uncompressed $f >> $exec_concat_fastq
 			echo >> $exec_concat_fastq
@@ -476,7 +476,7 @@ for f in "$@" ; do
 	infile_bam=$infile_prefix.viral.bam
 	fastq_extension=""
 	for possible_extension in .fastq.gz .fq.gz .fq .fastq ; do
-		if [[ $(basename $f $possible_extension) != $f ]] ; then
+		if [[ $(basename "$f" $possible_extension) != $f ]] ; then
 			fastq_extension=$possible_extension
 		fi
 	done
@@ -484,12 +484,12 @@ for f in "$@" ; do
 	fq1=""
 	# fastq handling
 	for f2 in "$@" ; do
-		if [[ "$(basename $f2 2$fastq_extension)1$fastq_extension" == $(basename $f) ]] ; then
+		if [[ $(basename "$f2" 2$fastq_extension)1$fastq_extension == $(basename "$f") ]] ; then
 			fq1=$f
 			fq2=$f2
 			write_status "Treating as fastq pair	$f	$f2"
 		fi
-		if [[ "$(basename $f2 1$fastq_extension)2$fastq_extension" == $(basename $f) ]] ; then
+		if [[ $(basename "$f2" 1$fastq_extension)2$fastq_extension == $(basename "$f") ]] ; then
 			fq1=$f2
 			fq2=$f
 			write_status "Treating as second of fastq pair	$f"
