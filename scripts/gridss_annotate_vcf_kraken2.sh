@@ -164,7 +164,7 @@ jvm_args=" \
 	-Dsamjdk.buffer_size=4194304 \
 	-Dsamjdk.async_io_read_threads=$threads"
 
-java -Xmx64m $jvm_args -cp $gridss_jar gridss.InsertedSequencesToFasta \
+java -Xmx128m $jvm_args -cp $gridss_jar gridss.InsertedSequencesToFasta \
 	-INPUT "$1" \
 	-OUTPUT /dev/stdout \
 	-MIN_SEQUENCE_LENGTH $minlength \
@@ -174,7 +174,7 @@ java -Xmx64m $jvm_args -cp $gridss_jar gridss.InsertedSequencesToFasta \
 	--output /dev/stdout \
 	$kraken2args \
 	/dev/stdin \
-| java -Xmx128m $jvm_args -cp $gridss_jar gridss.kraken.AnnotateVariantsKraken \
+| java -Xmx1g $jvm_args -cp $gridss_jar gridss.kraken.AnnotateVariantsKraken \
 	-INPUT "$1" \
 	-OUTPUT "$output" \
 	-KRAKEN_INPUT /dev/stdin
