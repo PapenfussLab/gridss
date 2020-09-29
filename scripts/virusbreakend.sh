@@ -593,6 +593,7 @@ EOF
 	if [[ $fastq_extension == "" ]] ; then
 		if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
 			write_status "Gathering metrics from host alignment	$f"
+			mkdir -p $gridss_dir
 			# Ideally the metrics on the viral sequence would match the metrics from the host.
 			# Unfortunately, this is generally not the case.
 			# To ensure we assemble fragments correctly, we need to grab the host alignment metrics.
@@ -601,7 +602,8 @@ EOF
 			# This approach doesn't work for fastq input files.
 			exec_extract_host_metrics=$infile_prefix.extract_host_metrics.sh
 			rm -f $exec_extract_host_metrics
-			cat > $exec_extract_host_metrics << EOF
+			echo "#!/bin/bash" > $exec_extract_host_metrics
+			cat >> $exec_extract_host_metrics << EOF
 java -Xmx4g $jvm_args \
 	-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 	--INPUT $f \
@@ -613,7 +615,6 @@ java -Xmx4g $jvm_args \
 	--STOP_AFTER $metricsrecords
 EOF
 			chmod +x $exec_extract_host_metrics
-			mkdir -p $gridss_dir
 			{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
 		else
 			write_status "Gathering metrics from host alignment	Skipped: found	$gridss_prefix.insert_size_metrics"
