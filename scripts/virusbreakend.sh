@@ -1,4 +1,6 @@
 #!/bin/bash
+# ../scripts/virusbreakend.sh -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar -o vbe_out.vcf -r ../../ref/hg19.fa --db ../../virusbreakend/virusbreakenddb ERR093636_virusbreakend_minimal_example.bam
+# ../scripts/virusbreakend.sh -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar -o vbe_out.vcf -r ../../ref/hg19.fa --db ../../virusbreakend/virusbreakenddb ERR093636_virusbreakend_minimal_example_slower_fastq_input_R1.fq ERR093636_virusbreakend_minimal_example_slower_fastq_input_R2.fq
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
 	echo 'WARNING: "getopt --test"` failed in this environment.' 1>&2
@@ -353,8 +355,18 @@ fi
 ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 
+
+# Hack to support streaming using bash redirection
+# "<(cat file.fastq)" notation for fastq
+# $1: filename or bash redirection string
+function clean_filename {
+	# handle file descriptor redirection
+	basename "$1" | tr -d ' 	<(:/|$@&%^\\)>'
+}
+
 function echo_cat_uncompressed {
-	if [[ $(basename "$1" .gz) != $(basename "$1") ]] ; then
+	cleanf=$(clean_filename "$1")
+	if [[ "${cleanf%.gz}" != "$cleanf" ]] ; then
 		if which pigz > /dev/null ; then
 			echo -n "pigz -c -d -p $threads $1"
 		else
@@ -395,9 +407,13 @@ if [[ ! -f $file_readname ]] ; then
 	rm -f $exec_concat_fastq $file_prefix.readnames.txt.tmp
 	echo "#!/bin/bash" > $exec_concat_fastq
 	for f in "$@" ; do
-		if [[ $(basename "$f" .fastq.gz) != $(basename "$f") ]] || [[ $(basename "$f" .fq.gz) != $(basename "$f") ]] || [[ $(basename "$f" .fq) != $(basename "$f") ]] || [[ $(basename "$f" .fastq) != $(basename "$f") ]] ; then
+		cleanf=$(clean_filename "$f")
+		if [[ "${cleanf%.fastq.gz}" != "$cleanf" ]] ||
+				[[ "${cleanf%.fq.gz}" != "$cleanf" ]] ||
+				[[ "${cleanf%.fq}" != "$cleanf" ]] || 
+				[[ "${cleanf%.fastq}" != "$cleanf" ]] ; then
 			# fastq input
-			echo_cat_uncompressed $f >> $exec_concat_fastq
+			echo_cat_uncompressed "$f" >> $exec_concat_fastq
 			echo >> $exec_concat_fastq
 		else
 			# BAM input
@@ -467,8 +483,8 @@ fi
 
 bam_list_args=""
 for f in "$@" ; do
-	basef=$(basename "$f" | tr -d ' 	<(:/|$@&%^\\)>')
-	infile_prefix=$workingdir/$basef
+	cleanf=$(clean_filename "$f")
+	infile_prefix=$workingdir/$cleanf
 	infile_fq=$infile_prefix.viral.unpaired.fq
 	infile_fq1=$infile_prefix.viral.R1.fq
 	infile_fq2=$infile_prefix.viral.R2.fq
@@ -476,35 +492,39 @@ for f in "$@" ; do
 	infile_bam=$infile_prefix.viral.bam
 	fastq_extension=""
 	for possible_extension in .fastq.gz .fq.gz .fq .fastq ; do
-		if [[ $(basename "$f" $possible_extension) != $f ]] ; then
+		if [[ $(basename $cleanf $possible_extension) != "$cleanf" ]] ; then
 			fastq_extension=$possible_extension
 		fi
 	done
 	fq2=""
 	fq1=""
-	# fastq handling
-	for f2 in "$@" ; do
-		if [[ $(basename "$f2" 2$fastq_extension)1$fastq_extension == $(basename "$f") ]] ; then
-			fq1=$f
-			fq2=$f2
-			write_status "Treating as fastq pair	$f	$f2"
+	if [[ "$fastq_extension" != "" ]] ; then
+		# fastq handling
+		for f2 in "$@" ; do
+			cleanf2=$(clean_filename "$f2")
+			if [[ $(basename "$cleanf2" 2$fastq_extension)1$fastq_extension == $cleanf ]] ; then
+				fq1=$f
+				fq2=$f2
+				write_status "Treating as fastq pair	$f	$f2"
+			fi
+			if [[ $(basename "$cleanf2" 1$fastq_extension)2$fastq_extension == $cleanf ]] ; then
+				fq1=$f2
+				fq2=$f
+				write_status "Treating as second of fastq pair	$f"
+			fi
+		done
+		if [[ "$f" == "$fq2" ]] ; then
+			# this is f2 in a paired fastq - skip processing since we do it with the first in pair
+			continue
 		fi
-		if [[ $(basename "$f2" 1$fastq_extension)2$fastq_extension == $(basename "$f") ]] ; then
-			fq1=$f2
-			fq2=$f
-			write_status "Treating as second of fastq pair	$f"
-		fi
-	done
-	if [[ "$f" == "$fq2" ]] ; then
-		continue
-	fi
-	if [[ "$fastq_extension" != "" ]] && [[ "$fq1" == "" ]] ; then
-		write_status "Could not find a pairing for $1 based on filename suffix."
-		if [[ "$forceunpairedfastq" != true ]] ; then
-			write_status "VIRUSbreakend expects paired fastq inputs to have \"1\" and \"2\" immediately before the fastq suffix."
-			write_status "For example, input_1.fastq.gz, input_2.fastq.gz or input_R1.fq, input_R2.fq"
-			write_status "If this file is really single-end short read sequencing data, use --forceunpairedfastq to process as unpaired"
-			exit EX_CONFIG
+		if [[ "$fq1" == "" ]] ; then
+			write_status "Could not find a pairing for $1 based on filename suffix."
+			if [[ "$forceunpairedfastq" != true ]] ; then
+				write_status "VIRUSbreakend expects paired fastq inputs to have \"1\" and \"2\" immediately before the fastq suffix."
+				write_status "For example, input_1.fastq.gz, input_2.fastq.gz or input_R1.fq, input_R2.fq"
+				write_status "If this file is really single-end short read sequencing data, use --forceunpairedfastq to process as unpaired"
+				exit EX_CONFIG
+			fi
 		fi
 	fi
 	if [[ ! -f $infile_fq ]] ; then
@@ -582,7 +602,7 @@ EOF
 			exec_extract_host_metrics=$infile_prefix.extract_host_metrics.sh
 			rm -f $exec_extract_host_metrics
 			cat > $exec_extract_host_metrics << EOF
-java -Xmx512m $jvm_args \
+java -Xmx4g $jvm_args \
 	-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 	--INPUT $f \
 	--OUTPUT $gridss_prefix \
