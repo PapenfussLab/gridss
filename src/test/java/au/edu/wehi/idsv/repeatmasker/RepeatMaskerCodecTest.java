@@ -87,4 +87,12 @@ public class RepeatMaskerCodecTest extends TestHelper {
             Assert.assertEquals("27=1X3=1X7=", f.getRepeatAlignmentInformation(true).getCigar().toString());
         }
     }
+    @Test
+    public void should_not_crash_on_no_repeats_found_message() throws IOException {
+        File file = new File("src/test/resources/repeatmasker/norepeats.fa.out");
+        try (AbstractFeatureReader<RepeatMaskerFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(file.getPath(), new RepeatMaskerCodec(), false)) {
+            List<RepeatMaskerFeature> features = Lists.newArrayList((Iterable<? extends RepeatMaskerFeature>) reader.iterator());
+            Assert.assertEquals(0, features.size());
+        }
+    }
 }

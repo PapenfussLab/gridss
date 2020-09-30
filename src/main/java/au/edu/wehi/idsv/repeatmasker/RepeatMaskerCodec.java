@@ -205,6 +205,7 @@ public class RepeatMaskerCodec extends AsciiFeatureCodec<RepeatMaskerFeature> {
         return null;
     }
     public static boolean isHeader(String s) {
+        if (s.startsWith("There were no repetitive sequences detected")) return true;
         if (!couldBeHeader(s)) return false;
         s = s.replaceAll("\\s","");
         boolean firstHeaderLine = s.equals("SWpercpercpercquerypositioninquerymatchingrepeatpositioninrepeat");
