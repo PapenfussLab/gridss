@@ -1,5 +1,6 @@
 package assfolder;
 
+import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
@@ -9,10 +10,10 @@ import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
-public class OlcExporterTest extends TestHelper {
+public class OlcExporterTest extends IntermediateFilesTest {
     @Test
     public void should_export_simple_overlap_graph() {
-        File f = new File("test.OlcExporterTest.should_export_simple_overlap_graph.gexf");
+        File f = new File(testFolder.getRoot(),"test.OlcExporterTest.should_export_simple_overlap_graph.gexf");
         List<SAMRecord> reads = overlapping(1, 100, 20, 5);
         OlcExporter.exportOverlapGraph(reads, 5, 10, 0, f);
         assertTrue(f.exists());
@@ -20,7 +21,7 @@ public class OlcExporterTest extends TestHelper {
     }
     @Test
     public void should_export_gridss_example_graph() {
-        File f = new File("test.OlcExporterTest.should_export_gridss_example_graph.gexf");
+        File f = new File(testFolder.getRoot(),"test.OlcExporterTest.should_export_gridss_example_graph.gexf");
         List<SAMRecord> reads = getRecords(new File("example/chr12.1527326.DEL1024.bam"));
         OlcExporter.exportOverlapGraph(reads, 20, 30, 2, f);
         assertTrue(f.exists());
