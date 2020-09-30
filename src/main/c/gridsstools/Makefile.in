@@ -12,6 +12,7 @@ HTSLIB_LDFLAGS = @HTSLIB_LDFLAGS@
 COBJ = \
 	gridsstools.o \
 	extractFragmentsToFastq.o \
+	extractFragmentsToBam.o \
 	unmappedSequencesToFastq.o \
 	fastq.o 
 
@@ -25,7 +26,8 @@ gridsstools: htslib $(COBJ)
 
 test: \
 	testUnmappedSequencesToFastq \
-	testExtractFragmentsToFastq
+	testExtractFragmentsToFastq \
+	testExtractFragmentsToBam
 
 testUnmappedSequencesToFastq: gridsstools
 	./gridsstools unmappedSequencesToFastq \
@@ -45,6 +47,15 @@ testExtractFragmentsToFastq: gridsstools
 	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.1.fq testExtractFragmentsToFastq.1.fq > testExtractFragmentsToFastq.1.diff
 	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.2.fq testExtractFragmentsToFastq.2.fq > testExtractFragmentsToFastq.2.diff
 	rm testExtractFragmentsToFastq.*
+	
+testExtractFragmentsToBam: gridsstools
+	./gridsstools extractFragmentsToBam \
+		-@ 16 \
+		-o testExtractFragmentsToBam.out.sam \
+		$(TEST_DIR)/extractFragmentsToFastq/in.sam.readnames.txt \
+		$(TEST_DIR)/extractFragmentsToFastq/in.sam
+	diff $(TEST_DIR)/extractFragmentsToFastq/out.sam testExtractFragmentsToBam.out.sam > testExtractFragmentsToBam.diff
+	rm testExtractFragmentsToBam.*
 
 
 extractFragmentsToFastq.o: fastq.h
@@ -65,4 +76,5 @@ distclean: clean
 	-rm -f config.log config.status configure Makefile
 	-rm -rf autom4te.cache
 
-.PHONY: all clean distclean test testUnmappedSequencesToFastq testExtractFragmentsToFastq htslib
+.PHONY: all clean distclean htslib \
+	test testUnmappedSequencesToFastq testExtractFragmentsToFastq testExtractFragmentsToBam
