@@ -1,0 +1,25 @@
+@HD	VN:1.5	SO:unsorted
+@SQ	SN:chr1	LN:100000
+@SQ	SN:chr2	LN:100000
+@SQ	SN:chr3	LN:100000
+@SQ	SN:chr4	LN:100000
+@SQ	SN:chr5	LN:100000
+in_both	65	chr1	1000	60	5M	chr2	2000	0	ACGTT	aaaaa
+in_both	129	chr2	2000	60	5M	chr1	1000	0	GGGGG	bbbbb
+in_1	65	chr1	1000	60	5M	chr2	20000	0	ACGTT	aaaaa
+in_1	129	chr2	20000	60	5M	chr1	1000	0	GGGGG	bbbbb
+in_2	65	chr1	10000	60	5M	chr2	2000	0	ACGTT	aaaaa
+in_2	129	chr2	2000	60	5M	chr1	10000	0	GGGGG	bbbbb
+in_oea	73	chr1	1000	60	5M	*	0	0	ACGTT	aaaaa
+in_oea	133	*	0	0	*	chr1	1000	0	GGGGG	bbbbb
+in_sup	65	chr2	1000	60	5M	chr1	2000	0	ACGTT	aaaaa	SA:Z:chr2,2000,+,5M,60,0;
+in_sup	129	chr1	2000	60	5M	chr2	1000	0	GGGGG	bbbbb
+in_sup	2113	chr2	2000	60	5M	chr1	2000	0	ACGTT	aaaaa	SA:Z:chr2,1000,+,5M,60,0;
+in_sup2	65	chr2	1000	60	5M	chr1	2000	0	ACGTT	aaaaa	SA:Z:chr2,2000,+,5M,60,0;chr4,4000,+,5M,60,0;
+in_sup2	129	chr1	2000	60	5M	chr2	1000	0	GGGGG	bbbbb
+in_sup2	2113	chr2	2000	60	5M	chr1	2000	0	ACGTT	aaaaa	SA:Z:chr2,1000,+,5M,60,0;chr4,4000,+,5M,60,0;
+in_sup2	2113	chr4	4000	60	5M	chr1	2000	0	ACGTT	aaaaa	SA:Z:chr2,1000,+,5M,60,0;chr2,2000,+,5M,60,0;
+in_mate_cigar	65	chr1	100	60	2M	chr1	100	0	AC	aa	MC:Z:1M100N1M
+in_mate_cigar	129	chr1	100	60	1M100N1M	chr1	100	0	GG	bb
+in_overlaps_padding	0	chr1	1199	60	1M	*	0	0	A	_
+out_misses_padding	0	chr1	898	60	1M	*	0	0	A	_

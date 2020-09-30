@@ -3,6 +3,9 @@ package gridss;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import com.google.common.io.Files;
 import htsjdk.samtools.SAMRecord;
+import org.broadinstitute.barclay.argparser.Argument;
+import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.BufferedWriter;
@@ -51,5 +54,20 @@ public class ExtractFullReadsTest extends IntermediateFilesTest {
         bed.delete();
         List<SAMRecord> outputRecords = getRecords(output);
         assertEquals(3000, outputRecords.size());
+    }
+    @Test
+    @Ignore // fails when mate sup overlaps
+    public void test_extractOverlappingFragments() throws IOException {
+
+        String[] args = new String[] {
+                "REGION_BED=" + new File("src/test/resources/extractOverlappingFragments/extractOverlappingFragments.in.bed"),
+                "INPUT=" + new File("src/test/resources/extractOverlappingFragments/extractOverlappingFragments.in.sam"),
+                "OUTPUT=" + output.toString(),
+                "REGION_PADDING_SIZE=" + Integer.toString(100),
+        };
+        new ExtractFullReads().instanceMain(args);
+        List<SAMRecord> expected = getRecords(new File("src/test/resources/extractOverlappingFragments/extractOverlappingFragments.out.sam"));
+        List<SAMRecord> actual = getRecords(output);
+        Assert.assertEquals(expected, actual);
     }
 }
