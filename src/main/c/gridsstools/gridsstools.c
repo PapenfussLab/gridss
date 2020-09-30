@@ -8,7 +8,6 @@
 
 int main_extractFragmentsToFastq(int argc, char *argv[]);
 int main_unmappedSequencesToFastq(int argc, char *argv[]);
-int main_extractOverlappingFragments(int argc, char *argv[]);
 
 static int usage() {
 	fprintf(stderr, "\n");
@@ -16,8 +15,7 @@ static int usage() {
 	fprintf(stderr, "Version: %s\n\n", PACKAGE_VERSION);
 	fprintf(stderr, "Usage:   gridsstools <command> [options]\n\n");
 	fprintf(stderr, "Command: extractFragmentsToFastq        Extracts a subset of reads to fastq\n");
-	fprintf(stderr, "         unmappedSequencesToFastq       Exports unmapped reads and bases to fastq\n");
-	fprintf(stderr, "         extractOverlappingFragments    Filters to fragments overlapping regions of interest.\n");
+	fprintf(stderr, "         unmappedSequencesToFastq       exports unmapped reads and bases to fastq\n");
 	fprintf(stderr, "\n");
 	return 1;
 }
@@ -26,7 +24,6 @@ int main(int argc, char *argv[]) {
 	if (argc < 2) return usage();
 	if (strcmp(argv[1], "extractFragmentsToFastq") == 0) return main_extractFragmentsToFastq(argc-1, argv+1);
 	else if (strcmp(argv[1], "unmappedSequencesToFastq") == 0) return main_unmappedSequencesToFastq(argc-1, argv+1);
-	else if (strcmp(argv[1], "extractOverlappingFragments") == 0) return main_extractOverlappingFragments(argc-1, argv+1);
 	else if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0) {
 		fprintf(stdout, "%s\n", PACKAGE_STRING);
 		return 0;
