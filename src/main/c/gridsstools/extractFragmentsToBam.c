@@ -78,7 +78,7 @@ int main_extractFragmentsToBam(int argc, char *argv[]) {
 		fprintf(stderr, "Unable to load read name file %s\n", readname_filename);
 		goto error;
 	}
-	fprintf(stderr, "Read %d distinct read names\n", kh_size(readname_lookup), readname_filename);
+	fprintf(stderr, "Read %d distinct read names\n", kh_size(readname_lookup));
 	if (!(fp_in = hts_open(in_filename, "r"))) {
 		fprintf(stderr, "Unable to open input file %s.\n", in_filename);
 		goto error;

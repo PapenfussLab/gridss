@@ -39,13 +39,13 @@ testUnmappedSequencesToFastq: gridsstools
 testExtractFragmentsToFastq: gridsstools
 	./gridsstools extractFragmentsToFastq \
 		-r $(TEST_DIR)/extractFragmentsToFastq/in.sam.readnames.txt \
-		-o testExtractFragmentsToFastq.u.fq \
-		-1 testExtractFragmentsToFastq.1.fq \
-		-2 testExtractFragmentsToFastq.2.fq \
+		-o testExtractFragmentsToFastq.out.u.fq \
+		-1 testExtractFragmentsToFastq.out.1.fq \
+		-2 testExtractFragmentsToFastq.out.2.fq \
 		$(TEST_DIR)/extractFragmentsToFastq/in.sam
-	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.u.fq testExtractFragmentsToFastq.u.fq > testExtractFragmentsToFastq.u.diff
-	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.1.fq testExtractFragmentsToFastq.1.fq > testExtractFragmentsToFastq.1.diff
-	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.2.fq testExtractFragmentsToFastq.2.fq > testExtractFragmentsToFastq.2.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.u.fq testExtractFragmentsToFastq.out.u.fq > testExtractFragmentsToFastq.u.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.1.fq testExtractFragmentsToFastq.out.1.fq > testExtractFragmentsToFastq.1.diff
+	diff $(TEST_DIR)/extractFragmentsToFastq/in.sam.out.2.fq testExtractFragmentsToFastq.out.2.fq > testExtractFragmentsToFastq.2.diff
 	rm testExtractFragmentsToFastq.*
 	
 testExtractFragmentsToBam: gridsstools
@@ -69,8 +69,8 @@ fastq.o: fastq.h
 
 clean:
 	-rm -f *.o gridsstools \
-		testUnmappedSequencesToFastq.* \
-		testExtractFragmentsToFastq.* 
+		test*.diff \
+		test*.out*
 
 distclean: clean
 	-rm -f config.log config.status configure Makefile
