@@ -563,8 +563,9 @@ if [[ $do_preprocess == true ]] ; then
 		if [[ ! -f $prefix.sv.bam ]] ; then
 			if [[ $have_metrics == "true" ]] ; then
 				tmp_idsv_metrics_file=$prefix.idsv_metrics
+				write_status "Skipping	CollectGridssMetrics	$f	found existing metrics"
 			else
-				write_status "Running	CollectInsertSizeMetrics	$f	first $metricsrecords records"
+				write_status "Running	CollectGridssMetrics	$f	first $metricsrecords records"
 				{ $timecmd java -Xmx4g $jvm_args \
 						-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 						REFERENCE_SEQUENCE=$reference \
