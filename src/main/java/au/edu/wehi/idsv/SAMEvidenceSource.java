@@ -11,19 +11,16 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.*;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import gridss.ComputeSamTags;
 import gridss.ExtractSVReads;
 import gridss.SoftClipsToSplitReads;
 import gridss.analysis.CollectGridssMetrics;
-import gridss.analysis.StructuralVariantReadMetrics;
 import gridss.cmdline.CommandLineProgramHelper;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 
@@ -45,7 +42,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private final Integer rpcMaxFragmentSize;
 	private final Double rpcConcordantPercentage;
 	private IdsvSamFileMetrics metrics;
-	private StructuralVariantReadMetrics svMetrics;
 	private ReadPairConcordanceCalculator rpcc;
 	public enum EvidenceSortOrder {
 		SAMRecordStartPosition,
@@ -73,18 +69,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 			ensureMetrics();
 		}
 		return metrics;
-	}
-	public StructuralVariantReadMetrics getSVMetrics() {
-		File svMetricsFile = getContext().getFileSystemContext().getSVMetrics(getFile());
-		if (svMetrics == null && svMetricsFile.exists()) {
-			for (StructuralVariantReadMetrics metric : Iterables.filter(MetricsFile.readBeans(svMetricsFile), StructuralVariantReadMetrics.class)) {
-				if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
-					svMetrics = metric;
-					break;
-				}
-			}
-		}
-		return svMetrics;
 	}
 	
 	/**
@@ -175,7 +159,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 							cmd.addArg("INPUT", in.getPath());
 							cmd.addArg("OUTPUT", extractedFile.getPath());
 							cmd.addArg("UNMAPPED_READS", "false"); // saves intermediate file space
-							cmd.addArg("METRICS_OUTPUT", getContext().getFileSystemContext().getSVMetrics(getFile()));
 							cmd.addArg("MIN_CLIP_LENGTH", getContext().getConfig().getSoftClip().minLength);
 							cmd.addArg("INSERT_SIZE_METRICS", getContext().getFileSystemContext().getInsertSizeMetrics(getFile()));
 							// Picard tools does not mark duplicates correctly. We need to keep them so we can

@@ -11,7 +11,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import gridss.analysis.StructuralVariantReadMetrics;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
@@ -61,26 +60,11 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		ExtractSVReads extract = new ExtractSVReads();
 		extract.INPUT = input;
 		extract.OUTPUT = output;
-		extract.METRICS_OUTPUT = new File(output.getAbsolutePath() + ".metrics");
 		extract.setup(getHeader(), extract.INPUT);
 		extract.acceptFragment(ImmutableList.of(Read(0, 1, "50M50S")), null);
 		extract.finish();
 		List<SAMRecord> out = getRecords(output);
 		assertEquals(1, out.size());
-	}
-	@Test
-	public void should_write_metrics() {
-		createInput();
-		ExtractSVReads extract = new ExtractSVReads();
-		extract.INPUT = input;
-		extract.OUTPUT = output;
-		extract.METRICS_OUTPUT = new File(output.getAbsolutePath() + ".metrics");
-		extract.setup(getHeader(), extract.INPUT);
-		extract.acceptFragment(ImmutableList.of(Read(0, 1, "50M50S")), null);
-		extract.finish();
-		assertTrue(extract.METRICS_OUTPUT.exists());
-		StructuralVariantReadMetrics metric = Iterators.getOnlyElement(Iterables.filter(MetricsFile.readBeans(extract.METRICS_OUTPUT), StructuralVariantReadMetrics.class).iterator(), null);
-		assertEquals(1, metric.SOFT_CLIPPED_READS);
 	}
 	/*
 	@Test

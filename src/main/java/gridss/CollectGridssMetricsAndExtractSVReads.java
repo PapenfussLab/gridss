@@ -50,8 +50,6 @@ public class CollectGridssMetricsAndExtractSVReads extends CollectGridssMetrics 
     public boolean UNMAPPED_READS = true;
     @Argument(doc="If true, also include reads marked as duplicates.")
 	public boolean INCLUDE_DUPLICATES = false;
-    @Argument(shortName="MO", doc="Output file containing SV metrics", optional=true)
-    public File METRICS_OUTPUT;
     @Argument(shortName = "SVO", doc = "File to write the output to.")
     public File SV_OUTPUT;
     public static void main(final String[] args) {
@@ -74,7 +72,6 @@ public class CollectGridssMetricsAndExtractSVReads extends CollectGridssMetrics 
     	extract.INSERT_SIZE_METRICS = INSERT_SIZE_METRICS;
     	extract.UNMAPPED_READS = UNMAPPED_READS;
         extract.INCLUDE_DUPLICATES = INCLUDE_DUPLICATES;
-    	extract.METRICS_OUTPUT = METRICS_OUTPUT;
     	extract.OUTPUT = SV_OUTPUT;
     	extract.INPUT = INPUT;
     	extract.ASSUME_SORTED = true;

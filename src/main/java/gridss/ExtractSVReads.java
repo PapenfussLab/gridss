@@ -6,7 +6,6 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
-import gridss.analysis.CollectStructuralVariantReadMetrics;
 import gridss.cmdline.ProcessStructuralVariantReadsCommandLineProgram;
 import gridss.filter.*;
 import htsjdk.samtools.*;
@@ -32,9 +31,6 @@ import java.util.List;
 )
 public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProgram {
 	private static final Log log = Log.getInstance(ExtractSVReads.class);
-    @Argument(shortName="MO", doc="Output file containing SV metrics", optional=true)
-    public File METRICS_OUTPUT;
-    private CollectStructuralVariantReadMetrics metricsCollector;
     private File tmpoutput;
     private SAMFileWriter writer;
     private SamRecordFilter readfilter;
@@ -42,12 +38,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
     private int count;
     @Override
     protected void setup(SAMFileHeader header, File samFile) {
-    	if (METRICS_OUTPUT != null) {
-    		metricsCollector = new CollectStructuralVariantReadMetrics();
-    		copyInput(metricsCollector);
-    		metricsCollector.OUTPUT = METRICS_OUTPUT;
-    		metricsCollector.setup(header, samFile);
-    	}
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
     	tmpoutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ExtractSVReads.") : OUTPUT;
     	writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput);
@@ -188,9 +178,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 				// ignore remaining reads
 			}
 		}
-		if (metricsCollector != null) {
-			metricsCollector.acceptFragment(records, lookup);
-		}
 	}
 	@Override
 	protected void finish() {
@@ -203,9 +190,6 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
 		} catch (IOException e) {
 			log.error(e);
 			throw new RuntimeException(e);
-		}
-		if (METRICS_OUTPUT != null) {
-			metricsCollector.finish();
 		}
 	}
 }

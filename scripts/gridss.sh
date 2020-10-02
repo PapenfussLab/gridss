@@ -2,7 +2,7 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.9.0-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
+# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -552,25 +552,38 @@ if [[ $do_preprocess == true ]] ; then
 			write_status "Unable to create directory $dir"
 			exit $EX_CANTCREAT
 		fi
+		have_metrics="false"
+		if [[ -f $prefix.cigar_metrics ]] &&
+				[[ -f $prefix.idsv_metrics ]] &&
+				[[ -f $prefix.insert_size_metrics ]] &&
+				[[ -f $prefix.mapq_metrics ]] &&
+				[[ -f $prefix.tag_metrics ]] ; then
+			have_metrics="true"
+		fi
 		if [[ ! -f $prefix.sv.bam ]] ; then
-			write_status "Running	CollectInsertSizeMetrics	$f	first $metricsrecords records"
-			{ $timecmd java -Xmx4g $jvm_args \
-					-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
-					REFERENCE_SEQUENCE=$reference \
-					TMP_DIR=$dir \
-					ASSUME_SORTED=true \
-					I=$f \
-					O=$tmp_prefix \
-					THRESHOLD_COVERAGE=$maxcoverage \
-					FILE_EXTENSION=null \
-					GRIDSS_PROGRAM=null \
-					GRIDSS_PROGRAM=CollectIdsvMetrics \
-					PROGRAM=null \
-					PROGRAM=CollectInsertSizeMetrics \
-					STOP_AFTER=$metricsrecords \
-					$picardoptions \
-			; } 1>&2 2>> $logfile
-			max_read_length=$(grep -A 1 "^MAX_READ_LENGTH" $tmp_prefix.idsv_metrics | cut -f 1 | tail -1)
+			if [[ $have_metrics == "true" ]] ; then
+				tmp_idsv_metrics_file=$prefix.idsv_metrics
+			else
+				write_status "Running	CollectInsertSizeMetrics	$f	first $metricsrecords records"
+				{ $timecmd java -Xmx4g $jvm_args \
+						-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
+						REFERENCE_SEQUENCE=$reference \
+						TMP_DIR=$dir \
+						ASSUME_SORTED=true \
+						I=$f \
+						O=$tmp_prefix \
+						THRESHOLD_COVERAGE=$maxcoverage \
+						FILE_EXTENSION=null \
+						GRIDSS_PROGRAM=null \
+						GRIDSS_PROGRAM=CollectIdsvMetrics \
+						PROGRAM=null \
+						PROGRAM=CollectInsertSizeMetrics \
+						STOP_AFTER=$metricsrecords \
+						$picardoptions \
+				; } 1>&2 2>> $logfile
+				tmp_idsv_metrics_file=$tmp_prefix.idsv_metrics
+			fi
+			max_read_length=$(grep -A 1 "^MAX_READ_LENGTH" $tmp_idsv_metrics_file | cut -f 1 | tail -1)
 			if [[ "0${max_read_length}" -ge $long_read_length_threshold ]] ; then
 				write_status "Treating	$f	as long read data. Warning: GRIDSS required error corrected/HiFi long read sequences."
 				write_status "*****"
@@ -595,7 +608,6 @@ if [[ $do_preprocess == true ]] ; then
 						PROGRAM=null \
 						PROGRAM=CollectInsertSizeMetrics \
 						SV_OUTPUT=$prefix.sv.bam \
-						METRICS_OUTPUT=$prefix.sv_metrics \
 						INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
 						$readpairing_args \
 						UNMAPPED_READS=false \
@@ -604,41 +616,66 @@ if [[ $do_preprocess == true ]] ; then
 						$picardoptions \
 				; } 1>&2 2>> $logfile
 			else
-				write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
-				{ $timecmd java -Xmx4g $jvm_args \
-						-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
-						REFERENCE_SEQUENCE=$reference \
-						TMP_DIR=$dir \
-						ASSUME_SORTED=true \
-						I=$f \
-						O=$prefix \
-						THRESHOLD_COVERAGE=$maxcoverage \
-						FILE_EXTENSION=null \
-						GRIDSS_PROGRAM=null \
-						GRIDSS_PROGRAM=CollectCigarMetrics \
-						GRIDSS_PROGRAM=CollectMapqMetrics \
-						GRIDSS_PROGRAM=CollectTagMetrics \
-						GRIDSS_PROGRAM=CollectIdsvMetrics \
-						GRIDSS_PROGRAM=ReportThresholdCoverage \
-						PROGRAM=null \
-						PROGRAM=CollectInsertSizeMetrics \
-						SV_OUTPUT=/dev/stdout \
-						COMPRESSION_LEVEL=0 \
-						METRICS_OUTPUT=$prefix.sv_metrics \
-						INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
-						$readpairing_args \
-						UNMAPPED_READS=false \
-						MIN_CLIP_LENGTH=5 \
-						INCLUDE_DUPLICATES=true \
-						$picardoptions \
-				| $timecmd samtools sort \
-						-n \
-						-T $tmp_prefix.namedsorted-tmp \
-						-Obam \
-						-o $tmp_prefix.namedsorted.bam \
-						-@ $threads \
-						/dev/stdin \
-				; } 1>&2 2>> $logfile
+				if [[ $have_metrics == "true" ]] ; then
+					write_status "Running	ExtractSVReads|samtools	$f"
+					{ $timecmd java -Xmx4g $jvm_args \
+							-cp $gridss_jar gridss.ExtractSVReads \
+							REFERENCE_SEQUENCE=$reference \
+							TMP_DIR=$dir \
+							ASSUME_SORTED=true \
+							I=$f \
+							O=/dev/stdout \
+							COMPRESSION_LEVEL=0 \
+							INSERT_SIZE_METRICS=$prefix.insert_size_metrics \
+							$readpairing_args \
+							UNMAPPED_READS=false \
+							MIN_CLIP_LENGTH=5 \
+							INCLUDE_DUPLICATES=true \
+							$picardoptions \
+					| $timecmd samtools sort \
+							-n \
+							-T $tmp_prefix.namedsorted-tmp \
+							-Obam \
+							-o $tmp_prefix.namedsorted.bam \
+							-@ $threads \
+							/dev/stdin \
+					; } 1>&2 2>> $logfile
+				else
+					write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
+					{ $timecmd java -Xmx4g $jvm_args \
+							-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
+							REFERENCE_SEQUENCE=$reference \
+							TMP_DIR=$dir \
+							ASSUME_SORTED=true \
+							I=$f \
+							O=$prefix \
+							THRESHOLD_COVERAGE=$maxcoverage \
+							FILE_EXTENSION=null \
+							GRIDSS_PROGRAM=null \
+							GRIDSS_PROGRAM=CollectCigarMetrics \
+							GRIDSS_PROGRAM=CollectMapqMetrics \
+							GRIDSS_PROGRAM=CollectTagMetrics \
+							GRIDSS_PROGRAM=CollectIdsvMetrics \
+							GRIDSS_PROGRAM=ReportThresholdCoverage \
+							PROGRAM=null \
+							PROGRAM=CollectInsertSizeMetrics \
+							SV_OUTPUT=/dev/stdout \
+							COMPRESSION_LEVEL=0 \
+							INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
+							$readpairing_args \
+							UNMAPPED_READS=false \
+							MIN_CLIP_LENGTH=5 \
+							INCLUDE_DUPLICATES=true \
+							$picardoptions \
+					| $timecmd samtools sort \
+							-n \
+							-T $tmp_prefix.namedsorted-tmp \
+							-Obam \
+							-o $tmp_prefix.namedsorted.bam \
+							-@ $threads \
+							/dev/stdin \
+					; } 1>&2 2>> $logfile
+				fi
 				if [[ "$externalaligner" == "true" ]] ; then
 					write_status "Running	ComputeSamTags|samtools	$f"
 					rm -f $tmp_prefix.coordinate-tmp*

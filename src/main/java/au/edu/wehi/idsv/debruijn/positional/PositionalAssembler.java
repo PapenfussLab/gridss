@@ -182,7 +182,6 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			FileUtils.copyFileToDirectory(fsc.getInsertSizeMetrics(samFile), samOutDir);
 			FileUtils.copyFileToDirectory(fsc.getMapqMetrics(samFile), samOutDir);
 			FileUtils.copyFileToDirectory(fsc.getTagMetrics(samFile), samOutDir);
-			FileUtils.copyFileToDirectory(fsc.getSVMetrics(samFile), samOutDir);
 
 			// Copy minimal set of reads
 			File outSam = new File(samOutDir, fsc.getSVBam(samFile).getName());
