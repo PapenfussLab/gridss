@@ -308,10 +308,20 @@ for tool in kraken2 gridss.sh gridss.sh gridss_annotate_vcf_kraken2.sh gridss_an
 done
 if which gridsstools > /dev/null ; then
 	write_status "Found $(which gridsstools)"
-	write_status "gridsstools version: $(gridsstools --version)"
+	if gridsstools --version > /dev/null ; then
+		write_status "gridsstools version: $(gridsstools --version)"
+	else
+		write_status "gridsstools failure. You will likely need to compile gridsstools from source."
+		write_status "Instructions are available at http://github.com/PapenfussLab/gridss/"
+	fi
 else 
 	write_status "MISSING gridsstools. Execution will take 2-3x time longer than when using gridsstools."
+	if [[ "$force" != "true" ]] ; then
+		write_status "If you really want to continue without gridsstools use --force"
+		exit $EX_CONFIG
+	fi
 fi
+
 if $(samtools --version-only 2>&1 >/dev/null) ; then
 	write_status "samtools version: $(samtools --version-only 2>&1)"
 else 
@@ -595,7 +605,7 @@ EOF
 			write_status "Gathering metrics from host alignment	$f"
 			mkdir -p $gridss_dir
 			# Ideally the metrics on the viral sequence would match the metrics from the host.
-			# Unfortunately, this is generally not the case.
+			# Unfortunately, this is generally not the case as viral coverage can be very low.
 			# To ensure we assemble fragments correctly, we need to grab the host alignment metrics.
 			# If GRIDSS has been run, we could use that but we don't want GRIDSS to be an explicit
 			# requirement of this pipeline
