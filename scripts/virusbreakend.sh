@@ -26,6 +26,7 @@ output_vcf=""
 threads=8
 kraken2args=""
 gridssargs=""
+rmargs="--species human"
 nodesdmp=""
 virushostdb=""
 minreads="50"
@@ -50,6 +51,7 @@ Usage: virusbreakend.sh [options] input.bam
 	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: $hosttaxid)
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
+	--rmargs: additional RepeatMasker arguments (Default: $rmargs)
 	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
 	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
@@ -58,7 +60,7 @@ Usage: virusbreakend.sh [options] input.bam
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -105,6 +107,10 @@ while true; do
 			;;
 		--gridssargs)
 			gridssargs=$2
+			shift 2
+			;;
+		--rmargs)
+			rmargs=$2
 			shift 2
 			;;
 		--nodesdmp)
@@ -705,6 +711,7 @@ if [[ ! -f $file_rm_annotated_vcf ]] ; then
 		-o $file_rm_annotated_vcf \
 		-j $gridss_jar \
 		--threads $threads \
+		--rmargs "$rmargs" \
 		$kraken2args \
 		$file_kraken_annotated_vcf \
 	; } 1>&2 2>> $logfile
