@@ -1,0 +1,21 @@
+@HD	VN:1.6
+@SQ	SN:kraken:taxid|489466|AB540583	LN:3215	M5:51d7f34db93d6edd8ba7ceefdef8948c	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB554014	LN:3215	M5:83ea4d722147761db39ed14c34dffba1	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB554015	LN:3215	M5:ace9d5c559ae40ed62ef5670942a09eb	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB554018	LN:3215	M5:d446c8439afe542c45e45086ab0ba0d5	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB554019	LN:3215	M5:e6a7d3d93e4e783156c8c46a0e5a658f	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB554020	LN:3215	M5:2317293b075d465e4edc3ad62e3bd622	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB554021	LN:3215	M5:a8482ad497b9206bea66eddb6169c22c	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB554025	LN:3215	M5:8a11238fddbffc9a9b75e8ae5afcd236	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB560661	LN:3215	M5:6ce19e8f5ea7afefdc4755dcdf1dff29	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB560662	LN:3215	M5:930d73c2006daafc1a48aff37a3d3557	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB644281	LN:3215	M5:34b152b85a9f03886f0422e3c9b6ce40	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB644283	LN:3215	M5:b0be7ca28fb8dd702cb42ba767323133	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB644284	LN:3215	M5:4a3490d14118909b389e78637f22da13	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB644286	LN:3215	M5:efe09e88a9d4f4e26fd481857cc54b0a	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB644287	LN:3215	M5:e3c524d6c8f2b461fe8a4424d673a3ed	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB819615	LN:4224	M5:ceffbafa7ae87cee79f4eaa18c70f171	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB819616	LN:4224	M5:37054594f5b953d9bee87bf2e94fe7d1	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB819617	LN:4224	M5:0af434d13cd94676e7936bc379d97a98	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB819618	LN:4224	M5:60b88fdabbf59112a04998555830f9fd	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa
+@SQ	SN:kraken:taxid|489466|AB981580	LN:3215	M5:384ac4252ade3695b91546bc097cee8a	UR:file:C:\dev\gridss\src\test\resources\kraken\multistrain\26T.virusbreakend.vcf.viral.fa

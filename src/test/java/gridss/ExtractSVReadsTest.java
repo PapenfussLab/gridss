@@ -218,7 +218,6 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		extract.instanceMain(new String[] {
 			"INPUT=example/chr12.1527326.DEL1024.bam",
 			"OUTPUT=" + output.toString(),
-			"METRICS_OUTPUT=" + output.toString() + ".sv.metrics",
 		});
 		assertTrue(output.exists());
 	}

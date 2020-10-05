@@ -54,8 +54,10 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             " Do not run kraken2-build --clean as these files will be removed." +
             " Files are checked in order and all the contigs for the given taxid from the first matching file are extracted.", optional = true)
     public List<File> KRAKEN_REFERENCES;
-    @Argument(doc="Maximum number of taxid to extract sequences for.", optional = true)
+    @Argument(doc="Maximum number of NCBI taxonomic identifiers to extract sequences for.", optional = true)
     public int TAXID_TO_RETURN = 1;
+    @Argument(doc="Maximum number of contigs to extract per NCBI taxonomic identifiers.", optional = true)
+    public int CONTIGS_PER_TAXID = 1;
     @Argument(doc="Minimum number of supporting reads", optional = true)
     public int MIN_SUPPORTING_READS = 1;
 
@@ -113,14 +115,14 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             }
             for (KrakenReportLine taxaToExport : interestingNodes) {
                 int taxid = taxaToExport.taxonomyId;
-                boolean found = false;
-                for (int i = 0; i < ref.size() && !found; i++) {
+                int contigsFound = 0;
+                for (int i = 0; i < ref.size(); i++) {
                     IndexedFastaSequenceFile fa = ref.get(i);
                     for (SAMSequenceRecord ssr : fa.getSequenceDictionary().getSequences()) {
                         int seqTaxId = extractTaxIdFromKrakenSequence(ssr);
-                        if (seqTaxId == taxid) {
+                        if (seqTaxId == taxid && contigsFound < CONTIGS_PER_TAXID) {
+                            contigsFound++;
                             sequenceIndexesToExport.get(i).add(ssr.getSequenceIndex());
-                            found = true;
                         }
                     }
                 }
