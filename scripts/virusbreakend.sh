@@ -653,6 +653,7 @@ fi
 if [[ ! -f $file_host_annotated_vcf ]] ; then
 	# Make sure we have the appropriate indexes for the host reference genome
 	{ $timecmd gridss.sh \
+		-w $workingdir \
 		-r $reference \
 		-t $threads \
 		-j $gridss_jar \
