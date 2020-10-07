@@ -34,8 +34,8 @@ public class SubsetToTaxonomy extends CommandLineProgram {
     public List<Integer> TAXONOMY_IDS = Lists.newArrayList(NCBI_VIRUS_TAXID);
     @Argument(doc="NCBI taxonomy nodes.dmp. Download and extract from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip")
     public File NCBI_NODES_DMP;
-    @Argument(doc="Include in output if any kmer unambiguously matches the taxonomic classification.", optional = true)
-    public Boolean ANY_KMER = true;
+    //@Argument(doc="Include in output if any kmer unambiguously matches the taxonomic classification.", optional = true)
+    //public Boolean ANY_KMER = true;
 
     public enum OutputFormat {
         /**

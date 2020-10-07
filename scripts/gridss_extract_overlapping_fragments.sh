@@ -27,6 +27,8 @@ threads=1
 targetbed=""
 targetvcf=""
 targetmargin=5000
+metricsrecords=1000000
+metricsmaxcoverage=100000
 USAGE_MESSAGE="
 Usage: gridss_extract_overlapping_fragments.sh [options] --targetbed <target.bed> --targetvcf <target.vcf> [--targetmargin $targetmargin] input.bam
 
@@ -53,11 +55,13 @@ Usage: gridss_extract_overlapping_fragments.sh [options] --targetbed <target.bed
 	--targetmargin: size of flanking region to include around the targeted region (Default: $targetmargin)
 	-o/--output: output BAM. Defaults to adding a .targeted.bam suffix to the input filename
 	-t/--threads: number of threads to use. (Default: $threads)
-	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir)
+	-w/--workingdir: directory to place intermediate, temporary files and GRIDSS metrics.
+			GRIDSS should be run using the same working directory or these metrics will be ignored (Default: $workingdir)
+	-j/--jar: location of GRIDSS jar
 "
 
-OPTIONS=r:o:t:w:
-LONGOPTS=output:,threads:,workingdir:,targetbed:,targetvcf:,targetmargin:
+OPTIONS=j:o:t:w:
+LONGOPTS=jar:,output:,threads:,workingdir:,targetbed:,targetvcf:,targetmargin:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -67,7 +71,11 @@ if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
 fi
 eval set -- "$PARSED"
 while true; do
-    case "$1" in	
+	case "$1" in
+		-j|--jar)
+			GRIDSS_JAR="$2"
+			shift 2
+			;;
 		-w|--workingdir)
 			workingdir="$2"
 			shift 2
@@ -152,6 +160,18 @@ else
 	fi
 	write_status "Using SVs in $targetvcf as regions of interest"
 fi
+### Find the jars
+find_jar() {
+	env_name=$1
+	if [[ -f "${!env_name:-}" ]] ; then
+		echo "${!env_name}"
+	else
+		write_status "Unable to find $2 jar. Specify using the environment variant $env_name, or the --jar command line parameter."
+		exit $EX_NOINPUT
+	fi
+}
+gridss_jar=$(find_jar GRIDSS_JAR gridss)
+write_status "Using GRIDSS jar $gridss_jar"
 ##### --output
 if [[ "$output_bam" == "" ]] ; then
 	output_bam="$1.targeted.bam"
@@ -169,7 +189,47 @@ if [[ "$threads" -lt 1 ]] ; then
 	exit $EX_USAGE
 fi
 write_status "Using $threads worker threads."
-mkdir -p $workingdir
+for tool in gridsstools samtools ; do
+	if ! which $tool >/dev/null; then
+		write_status "Error: unable to find $tool on \$PATH"
+		exit $EX_CONFIG
+	fi
+	write_status "Found $(which $tool)"
+done
+samtools_version=$(samtools --version | grep samtools | cut -b 10-)
+write_status "samtools version: $samtools_version"
+samtools_major_version=$(echo $samtools_version | cut -f 1 -d ".")
+samtools_minor_version=$(echo $samtools_version | cut -f 2 -d ".")
+if [[ "$samtools_major_version" == "1" ]] ; then
+	if [[ "$samtools_minor_version" -lt 10 ]] ; then
+		write_status "samtools 1.10 or later is required"
+		exit $EX_CONFIG
+	fi
+elif [[ "$samtools_major_version" -gt 1 ]] ; then
+	# newer samtools - assume it's fine
+	echo -n 
+else
+	write_status "samtools 1.10 or later is required"
+	exit $EX_CONFIG
+fi
+##### --workingdir
+echo "Using working directory \"$workingdir\"" 1>&2
+if [[ "$workingdir" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "Working directory must be specified. Specify using the --workingdir command line argument" 1>&2
+	exit $EX_USAGE
+fi
+if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
+		echo "workingdir cannot contain whitespace" 1>&2
+		exit $EX_USAGE
+	fi
+if [[ ! -d $workingdir ]] ; then
+	mkdir -p $workingdir
+	if [[ ! -d $workingdir ]] ; then
+		echo Unable to create working directory $workingdir 1>&2
+		exit $EX_CANTCREAT
+	fi
+fi
 working_prefix=$workingdir/tmp.$(basename "$output_bam").gridss
 target_no_slop_file=$working_prefix.target.no_slop.bed
 target_file=$working_prefix.target.bed
@@ -204,16 +264,31 @@ write_status "Extending regions of interest by $targetmargin bp"
 # bedtools slop is technically more correct but samtools is happy with
 # BED intevals hanging over the start/end of a contig so it doesn't matter
 grep -v "^#" $target_no_slop_file | grep -v "^browser" | grep -v "^track" | awk "{OFS=\"\t\"} {print \$1,\$2-$targetmargin,\$3+$targetmargin}" > $target_file
-
-for tool in gridsstools samtools ; do
-	if ! which $tool >/dev/null; then
-		write_status "Error: unable to find $tool on \$PATH"
-		exit $EX_CONFIG
-	fi
-done
 write_status "Extracting reads of interest"
-gridsstools extractFragmentsToBam -@ $threads -o $output_bam <(samtools view -M -@ $threads -L $target_file $input_bam | cut -f 1) $input_bam
-
+#gridsstools extractFragmentsToBam -@ $threads -o $output_bam <(samtools view -M -@ $threads -L $target_file $input_bam | cut -f 1) $input_bam
+gridss_dir=$workingdir/$(basename $output_bam).gridss.working
+gridss_prefix=$gridss_dir/$(basename $output_bam)
+if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
+	write_status "Generating GRIDSS metrics from first $metricsrecords records"
+	mkdir -p $gridss_dir
+	jvm_args=" \
+		-Dpicard.useLegacyParser=false \
+		-Dsamjdk.use_async_io_read_samtools=true \
+		-Dsamjdk.use_async_io_write_samtools=true \
+		-Dsamjdk.use_async_io_write_tribble=true \
+		-Dsamjdk.buffer_size=4194304 \
+		-Dsamjdk.async_io_read_threads=$threads"
+	java -Xmx2g $jvm_args \
+		-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
+		--INPUT $input_bam \
+		--OUTPUT $gridss_prefix \
+		--THRESHOLD_COVERAGE $metricsmaxcoverage \
+		--TMP_DIR $workingdir \
+		--FILE_EXTENSION null \
+		--STOP_AFTER $metricsrecords
+else 
+	write_status "Skipped GRIDSS metrics generation. Found	$gridss_prefix.insert_size_metrics"
+fi
 write_status "Done"
 rm -f $working_prefix*
 trap - EXIT

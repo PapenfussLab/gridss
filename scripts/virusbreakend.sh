@@ -214,6 +214,7 @@ find_jar() {
 	fi
 }
 gridss_jar=$(find_jar GRIDSS_JAR gridss)
+write_status "Using GRIDSS jar $gridss_jar"
 ##### --reference
 write_status "Using reference genome \"$reference\""
 if [[ "$reference" == "" ]] ; then
