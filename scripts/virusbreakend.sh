@@ -60,7 +60,7 @@ Usage: virusbreakend.sh [options] input.bam
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq,viralgenomes:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -124,6 +124,11 @@ while true; do
 		--hosttaxid)
 			printf -v hosttaxid '%d\n' "$2" 2>/dev/null
 			printf -v hosttaxid '%d' "$2" 2>/dev/null
+			shift 2
+			;;
+		--viralgenomes)
+			printf -v viralgenomes '%d\n' "$2" 2>/dev/null
+			printf -v viralgenomes '%d' "$2" 2>/dev/null
 			shift 2
 			;;
 		--virushostdb)
