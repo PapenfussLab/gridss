@@ -586,7 +586,7 @@ if [[ $do_preprocess == true ]] ; then
 				tmp_idsv_metrics_file=$tmp_prefix.idsv_metrics
 			fi
 			max_read_length=$(grep -A 1 "^MAX_READ_LENGTH" $tmp_idsv_metrics_file | cut -f 1 | tail -1)
-			if [[ "0${max_read_length}" -ge $long_read_length_threshold ]] ; then
+			if [[ "${max_read_length}" -ge $long_read_length_threshold ]] ; then
 				write_status "Treating	$f	as long read data. Warning: GRIDSS required error corrected/HiFi long read sequences."
 				write_status "*****"
 				write_status "Raw uncorrected ONT/PacBoio are not yet supported."
