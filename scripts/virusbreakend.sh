@@ -328,10 +328,10 @@ if which gridsstools > /dev/null ; then
 	fi
 else 
 	write_status "MISSING gridsstools. Execution will take 2-3x time longer than when using gridsstools."
-	if [[ "$force" != "true" ]] ; then
-		write_status "If you really want to continue without gridsstools use --force"
+	#if [[ "$force" != "true" ]] ; then
+	#	write_status "If you really want to continue without gridsstools use --force"
 		exit $EX_CONFIG
-	fi
+	#fi
 fi
 
 if $(samtools --version-only 2>&1 >/dev/null) ; then
@@ -416,6 +416,7 @@ file_kraken_annotated_vcf=$file_prefix.gridss.host.k2.vcf
 file_rm_annotated_vcf=$file_prefix.gridss.host.k2.rm.vcf
 file_filtered_vcf=$file_prefix.gridss.host.k2.rm.filtered.vcf
 file_readname=$file_prefix.readnames.txt
+file_junction_readname=$file_prefix.alsohuman.readnames.txt
 file_report=$file_prefix.kraken2.report.all.txt
 file_viral_report=$file_prefix.kraken2.report.viral.txt
 file_extracted_report=$file_prefix.kraken2.report.viral.extracted.txt
@@ -440,7 +441,7 @@ if [[ ! -f $file_readname ]] ; then
 		else
 			# BAM input
 			if which gridsstools > /dev/null ; then
-				echo "gridsstools unmappedSequencesToFastq -@ $threads $f" >> $exec_concat_fastq
+				echo "gridsstools unmappedSequencesToFastq -n $file_junction_readname -@ $threads $f" >> $exec_concat_fastq
 			else
 				cat >> $exec_concat_fastq << EOF
 java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.UnmappedSequencesToFastq \\
@@ -448,7 +449,8 @@ java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.Un
 	-OUTPUT /dev/stdout \\
 	-INCLUDE_SOFT_CLIPPED_BASES true \\
 	-MIN_SEQUENCE_LENGTH 20 \\
-	-UNIQUE_NAME false
+	-UNIQUE_NAME false \\
+	-PARTIALLY_ALIGNED_READ_NAMES $file_junction_readname
 EOF
 			fi
 		fi
@@ -511,7 +513,8 @@ for f in "$@" ; do
 	infile_fq1=$infile_prefix.viral.R1.fq
 	infile_fq2=$infile_prefix.viral.R2.fq
 	infile_unsorted_sam=$infile_prefix.viral.sam
-	infile_bam=$infile_prefix.viral.bam
+	infile_virus_bam=$infile_prefix.viral.bam
+	infile_virushost_bam=$infile_prefix.viral.host.bam
 	fastq_extension=""
 	for possible_extension in .fastq.gz .fq.gz .fq .fastq ; do
 		if [[ $(basename $cleanf $possible_extension) != "$cleanf" ]] ; then
@@ -596,26 +599,26 @@ EOF
 	else
 		write_status "Extracting viral reads	Skipped: found	$infile_fq"
 	fi
-	if [[ ! -f $infile_bam ]] ; then
+	if [[ ! -f $infile_virus_bam ]] ; then
 		write_status "Aligning viral reads	$f"
 		{ $timecmd cat \
 			<(bwa mem -Y -t $threads $file_viral_fa $infile_fq1 $infile_fq2) \
 			<(bwa mem -Y -t $threads $file_viral_fa $infile_fq | grep -v "^@") \
 		| samtools fixmate -m -O BAM - - \
-		| samtools sort -l 0 -@ $threads -T $infile_unsorted_sam.tmp.sorted -o $infile_bam.tmp.bam - \
-		&& mv $infile_bam.tmp.bam $infile_bam \
-		&& samtools index $infile_bam \
+		| samtools sort -l 0 -@ $threads -T $infile_unsorted_sam.tmp.sorted -o $infile_virus_bam.tmp.bam - \
+		&& mv $infile_virus_bam.tmp.bam $infile_virus_bam \
+		&& samtools index $infile_virus_bam \
 		; } 1>&2 2>> $logfile
 		# duplicates are not marked since fragmented insertion sites
 		# with a second breakpoint closer than the read length will
 		# call all supporting soft-clipped reads
 		# e.g. 198T TERT integration in Sung 2012
-		# | samtools markdup -O BAM -@ $threads - $infile_bam.tmp.bam \
+		# | samtools markdup -O BAM -@ $threads - $infile_virus_bam.tmp.bam \
 	else
-		write_status "Aligning viral reads	Skipped: found	$infile_bam"
+		write_status "Aligning viral reads	Skipped: found	$infile_virus_bam"
 	fi
-	gridss_dir=$workingdir/$(basename $infile_bam).gridss.working
-	gridss_prefix=$gridss_dir/$(basename $infile_bam)
+	gridss_dir=$workingdir/$(basename $infile_virus_bam).gridss.working
+	gridss_prefix=$gridss_dir/$(basename $infile_virus_bam)
 	if [[ $fastq_extension == "" ]] ; then
 		if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
 			write_status "Gathering metrics from host alignment	$f"
@@ -645,10 +648,28 @@ EOF
 		else
 			write_status "Gathering metrics from host alignment	Skipped: found	$gridss_prefix.insert_size_metrics"
 		fi
+		# symlink metrics
+		virushosthost_gridss_dir=$workingdir/$(basename $infile_virushost_bam).gridss.working
+		virushosthost_gridss_prefix=$gridss_dir/$(basename $infile_virushost_bam)
+		mkdir -p $virushosthost_gridss_dir
+		for metrics_suffix in .cigar_metrics .coverage.blacklist.bed .idsv_metrics .insert_size_metrics .mapq_metrics .tag_metrics ; do
+			if [[ ! -f $virushosthost_gridss_prefix$metrics_suffix ]] ; then
+				ln -s $gridss_prefix$metrics_suffix $virushosthost_gridss_prefix$metrics_suffix
+			fi
+		done
 	else
 		write_status "Unable to use host metrics for fastq $f	Skipping metrics pre-calculation"
 	fi
-	bam_list_args="$bam_list_args $infile_bam"
+	if [[ ! -f $infile_virushost_bam ]] ; then
+		write_status "Subsetting to host-viral fragments $f"
+		{ gridsstools extractFragmentsToBam \
+			-@ $threads \
+			-o $infile_virushost_bam \
+			$file_junction_readname \
+			$infile_virus_bam \
+		; } 1>&2 2>> $logfile
+	fi
+	bam_list_args="$bam_list_args $infile_virushost_bam"
 done
 if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
@@ -734,6 +755,7 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 		--INPUT $file_rm_annotated_vcf \
 		--OUTPUT $file_filtered_vcf \
 		--REFERENCE_SEQUENCE $reference \
+		--TAXONOMY_IDS $hosttaxid \
 	; } 1>&2 2>> $logfile
 fi
 if [[ ! -f $file_wgs_metrics ]] ; then

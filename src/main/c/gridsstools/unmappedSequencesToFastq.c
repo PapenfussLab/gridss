@@ -7,9 +7,10 @@
 
 static int usage() {
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Usage:   gridsstools extractFragmentsToFastq [options] [input.bam] ...\n\n");
+	fprintf(stderr, "Usage:   gridsstools unmappedSequencesToFastq [options] [input.bam] ...\n\n");
 	fprintf(stderr, "Options: -o FILE  output to file\n");
-	fprintf(stderr, "         -m INT   Minimum length of sequence export.Minimum length of sequence export. [20]\n");
+	fprintf(stderr, "         -n FILE  Read names of fragments with any reference alignment.\n");
+	fprintf(stderr, "         -m INT   Minimum length of sequence export. Minimum length of sequence export. [20]\n");
 	fprintf(stderr, "         -x       exclude soft clipped bases.\n");
 	fprintf(stderr, "         -u       Ensure exported names are unique by suffixing with '/1' or '/2'\n");
 	fprintf(stderr, "         -@       Number of threads to use\n");
@@ -83,6 +84,7 @@ static int parse_SA_tag_clipping(
 
 static int process(
 		BGZF *out,
+		FILE* readname_fptr,
 		kstring_t *linebuf,
 		int min_sequence_length,
 		int include_soft_clips,
@@ -151,24 +153,35 @@ static int process(
 	}
 	if (end - start >= min_sequence_length) {
 		write_fastq(record, out, linebuf, start, end, unique_names);
+		if (readname_fptr) {
+			if (!(record->core.flag & BAM_FUNMAP) || (record->core.flag & BAM_FPAIRED && !(record->core.flag & BAM_FMUNMAP))) {
+				fputs(bam_get_qname(record), readname_fptr);
+				fputc('\n', readname_fptr);
+			}
+		}
+		return 1;
 	}
+	return 0;
 }
 
 int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 	char *out_filename = "-";
+	char *readname_filename = NULL;
 	int min_sequence_length = 20, include_soft_clips = 1, unique_names = 0, threads = 1;
 	htsFile *fp_in = NULL;
 	BGZF *fp_out = NULL;
 	bam_hdr_t *hdr = NULL;
 	bam1_t *record = bam_init1();
+	FILE* readname_fptr = NULL;
 	int status = EXIT_SUCCESS;
 	kstring_t linebuf = KS_INITIALIZE;
 	int i;
 	// arg parsing
 	int c;
-	while ((c = getopt(argc, argv, "o:m:xu@:")) >= 0) {
+	while ((c = getopt(argc, argv, "o:n:m:xu@:")) >= 0) {
 		switch (c) {
 			case 'o': out_filename = strdup(optarg); break;
+			case 'n': readname_filename = strdup(optarg); break;
 			case 'm': min_sequence_length = strtol(optarg, 0, 0); break;
 			case 'x': include_soft_clips = 0; break;
 			case 'u': unique_names = 1; break;
@@ -190,20 +203,22 @@ int main_unmappedSequencesToFastq(int argc, char *argv[]) {
 			fprintf(stderr, "Unable to create thread pool with %d threads\n", threads);
 			goto error;
 		}
-		hdr = sam_hdr_read(fp_in);
-		if (hdr == NULL) {
+		if (!(hdr = sam_hdr_read(fp_in))) {
 			fprintf(stderr, "Unable to read SAM header.\n");
 			goto error;
 		}
-		fp_out = bgzf_open(out_filename, "wu");
-		if (!fp_out) {
+		if (!(fp_out = bgzf_open(out_filename, "wu"))) {
 			fprintf(stderr, "Unable to open output file\n");
+			goto error;
+		}
+		if (readname_filename && !(readname_fptr = fopen(readname_filename, "wb"))) {
+			fprintf(stderr, "Unable to open read name output file\n");
 			goto error;
 		}
 		// process records
 		int r;
 		while ((r = sam_read1(fp_in, hdr, record)) >= 0) {
-			process(fp_out, &linebuf, min_sequence_length, include_soft_clips, unique_names, record);
+			process(fp_out, readname_fptr, &linebuf, min_sequence_length, include_soft_clips, unique_names, record);
 		}
 		if (r < -1) {
 			fprintf(stderr, "Truncated file.\n");

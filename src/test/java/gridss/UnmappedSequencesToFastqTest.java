@@ -4,15 +4,18 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.util.RuntimeIOException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
 public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
-    private List<FastqRecord> go(boolean includeSoftClips, int minLen, boolean uniqueNames, boolean internalBases, SAMRecord... records) {
+    private Pair<List<FastqRecord>, List<String>> go(boolean includeSoftClips, int minLen, boolean uniqueNames, boolean internalBases, SAMRecord... records) {
         createInput(records);
         UnmappedSequencesToFastq cmd = new UnmappedSequencesToFastq();
         cmd.INPUT = ImmutableList.of(input);
@@ -21,15 +24,20 @@ public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
         cmd.INCLUDE_UNMAPPED_INTERNAL_BASES = internalBases;
         cmd.MIN_SEQUENCE_LENGTH = minLen;
         cmd.UNIQUE_NAME = uniqueNames;
+        cmd.PARTIALLY_ALIGNED_READ_NAMES = new File(output + ".readnames.txt");
         cmd.doWork();
         Assert.assertTrue(output.exists());
-        return getFastqRecords(output);
+        try {
+            return Pair.of(getFastqRecords(output), Files.readAllLines(cmd.PARTIALLY_ALIGNED_READ_NAMES.toPath()));
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
     @Test
     public void shouldNotExportMappedSplitReads() {
         SAMRecord r = Read(0, 1, "50M50S");
         r.setAttribute("SA", "polyA,1,+,50S50M,0,0");
-        List<FastqRecord> result = go(true, 1, false, false, r);
+        List<FastqRecord> result = go(true, 1, false, false, r).getLeft();
         Assert.assertEquals(0, result.size());
     }
     @Test
@@ -40,13 +48,13 @@ public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
         SAMRecord r = Read(0, 1, "2S3M7S");
         r.setReadBases(B("AACCGGTTACGT"));
         r.setAttribute("SA", "polyA,1,+,9S1M2S,0,0");
-        List<FastqRecord> result = go(true, 1, false, true, r);
+        List<FastqRecord> result = go(true, 1, false, true, r).getLeft();
         Assert.assertEquals("GTTA", result.get(0).getReadString());
     }
     @Test
     public void hardClips_should_be_Ns() {
         SAMRecord r = Read(0, 1, "2H2S3M");
-        List<FastqRecord> result = go(true, 1, false, false, r);
+        List<FastqRecord> result = go(true, 1, false, false, r).getLeft();
         Assert.assertEquals("NNAA", result.get(0).getReadString());
     }
     @Test
@@ -54,9 +62,19 @@ public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
         SAMRecord r1 = Read(0, 1, "5M5S");
         SAMRecord r2 = Read(0, 1, "6M4S");
         r1.setReadBases(B("CTTGGACGTA"));
-        List<FastqRecord> result = go(true, 5, false, false, r1, r2);
-        Assert.assertEquals(1, result.size());
-        Assert.assertEquals("ACGTA", result.get(0).getReadString());
+        Pair<List<FastqRecord>, List<String>> result = go(true, 5, false, false, r1, r2);
+        Assert.assertEquals(1, result.getLeft().size());
+        Assert.assertEquals("ACGTA", result.getLeft().get(0).getReadString());
+        Assert.assertEquals(1, result.getRight().size());
+        Assert.assertEquals(r1.getReadName(), result.getRight().get(0));
+    }
+    @Test
+    public void shouldTrackOEANames() throws CloneNotSupportedException {
+        SAMRecord[] r = OEA(0,1, "10M", true);
+        Pair<List<FastqRecord>, List<String>> result = go(true, 5, false, false, r);
+        Assert.assertEquals(1, result.getLeft().size());
+        Assert.assertEquals(1, result.getRight().size());
+        Assert.assertEquals(r[0].getReadName(), result.getRight().get(0));
     }
     @Test
     public void shouldExportUnmappedReads() {
@@ -70,8 +88,9 @@ public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
             r.setMappingQuality(0);
         }
 
-        List<FastqRecord> result = go(true, 5, false, false, r1, r2, r3);
-        Assert.assertEquals(2, result.size());
+        Pair<List<FastqRecord>, List<String>> result = go(true, 5, false, false, r1, r2, r3);
+        Assert.assertEquals(2, result.getLeft().size());
+        Assert.assertEquals(0, result.getRight().size());
     }
     @Test
     public void shouldMakeUniqueName() {
@@ -80,14 +99,14 @@ public class UnmappedSequencesToFastqTest extends IntermediateFilesTest {
             r.setReadUnmappedFlag(true);
             r.setMappingQuality(0);
         }
-        List<FastqRecord> result = go(true, 5, true, false, dp);
+        List<FastqRecord> result = go(true, 5, true, false, dp).getLeft();
         Assert.assertNotEquals(result.get(0).getReadName(), result.get(1).getReadName());
     }
     @Test
     public void shouldExtractQuals() {
         SAMRecord r = Read(0, 1, "1M4S");
         r.setBaseQualities(new byte[] { 1, 2, 3, 4, 5});
-        List<FastqRecord> result = go(true, 1, false, false, r);
+        List<FastqRecord> result = go(true, 1, false, false, r).getLeft();
         Assert.assertArrayEquals(new byte[] { 2,3,4,5}, result.get(0).getBaseQualities());
     }
     @Test

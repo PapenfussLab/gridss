@@ -31,9 +31,11 @@ test: \
 
 testUnmappedSequencesToFastq: gridsstools
 	./gridsstools unmappedSequencesToFastq \
+		-n testUnmappedSequencesToFastq.out.readnames.txt \
 		$(TEST_DIR)/unmappedSequencesToFastq/in.sam \
-		> testUnmappedSequencesToFastq.out
-	diff $(TEST_DIR)/unmappedSequencesToFastq/in.sam.out.fq testUnmappedSequencesToFastq.out > testUnmappedSequencesToFastq.diff
+		> testUnmappedSequencesToFastq.out.fq
+	diff $(TEST_DIR)/unmappedSequencesToFastq/in.sam.out.fq testUnmappedSequencesToFastq.out.fq > testUnmappedSequencesToFastq.fq.diff
+	diff $(TEST_DIR)/unmappedSequencesToFastq/in.sam.out.readnames.txt testUnmappedSequencesToFastq.out.readnames.txt > testUnmappedSequencesToFastq.readnames.diff
 	rm testUnmappedSequencesToFastq.*
 
 testExtractFragmentsToFastq: gridsstools

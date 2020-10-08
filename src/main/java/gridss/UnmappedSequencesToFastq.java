@@ -20,8 +20,7 @@ import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +48,9 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 	public boolean INCLUDE_UNMAPPED_INTERNAL_BASES = false;
 	@Argument(doc="Ensure exported names are unique by suffixing with '/1' or '/2'", optional=true)
 	public boolean UNIQUE_NAME = false;
+	@Argument(doc="Output file containing read names of fragments with an alignment to the reference." +
+			" May contained duplicate read names if a soft clipped reads has an unmapped mate.", optional=true)
+	public File PARTIALLY_ALIGNED_READ_NAMES = null;
 
 	public static void main(String[] argv) {
 		System.exit(new UnmappedSequencesToFastq().instanceMain(argv));
@@ -60,27 +62,35 @@ public class UnmappedSequencesToFastq extends CommandLineProgram {
 			IOUtil.assertFileIsReadable(input);
 		}
 		IOUtil.assertFileIsWritable(OUTPUT);
+		Writer readNameWriter = null;
 		try (FastqWriter fqw = new FastqWriterFactory().newWriter(OUTPUT)) {
+			if (PARTIALLY_ALIGNED_READ_NAMES != null) {
+				readNameWriter = new BufferedWriter(new FileWriter(PARTIALLY_ALIGNED_READ_NAMES));
+			}
 			for (File input : INPUT) {
 				try (SamReader reader = SamReaderFactory.makeDefault().open(input)) {
 					try (SAMRecordIterator rawIt = reader.iterator()) {
 						ProgressLoggingSAMRecordIterator loggedIt = new ProgressLoggingSAMRecordIterator(rawIt, new ProgressLogger(log, 10000000));
-						try (AsyncBufferedIterator<FastqRecord> it = new AsyncBufferedIterator(
-								Iterators.filter(
-										Iterators.transform(
-												loggedIt,
-												r -> getUnmappedFastqRecord(r)),
-										r -> r != null),
-								"toFastq")) {
+						try (AsyncBufferedIterator<SAMRecord> it = new AsyncBufferedIterator(loggedIt, "samIterator")) {
 							while (it.hasNext()) {
-								FastqRecord fq = it.next();
+								SAMRecord r = it.next();
+								FastqRecord fq = getUnmappedFastqRecord(r);
 								if (fq != null && fq.getReadLength() >= MIN_SEQUENCE_LENGTH) {
 									fqw.write(fq);
+									if (readNameWriter != null) {
+										if (!r.getReadUnmappedFlag() || (r.getReadPairedFlag() && !r.getMateUnmappedFlag())) {
+											readNameWriter.write(r.getReadName());
+											readNameWriter.write('\n');
+										}
+									}
 								}
 							}
 						}
 					}
 				}
+			}
+			if (readNameWriter != null) {
+				readNameWriter.close();
 			}
 		} catch (IOException e) {
 			log.error(e);
