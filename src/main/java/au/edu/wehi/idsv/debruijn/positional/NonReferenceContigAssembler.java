@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
+import au.edu.wehi.idsv.util.FilenameUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
@@ -600,20 +601,20 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		if (assembledContig != null) {
 			if (aes.getContext().getConfig().getVisualisation().assemblyGraph) {
 				try {
-					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + contigName + "." + assembledContig.getReadName() + ".dot"), k, graphByPosition, fullContig);
+					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, FilenameUtil.stripInvalidFilenameCharacters("assembly." + contigName + "." + assembledContig.getReadName() + ".dot")), k, graphByPosition, fullContig);
 				} catch (Exception ex) {
 					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getReadName() : "(null)", " ", contigName);
 				}
 			}
 			if (aes.getContext().getConfig().getVisualisation().assemblyGraphFullSize) {
 				try {
-					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + contigName + "." + assembledContig.getReadName() + ".dot"), k, graphByPosition, fullContig);
+					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, FilenameUtil.stripInvalidFilenameCharacters("assembly.fullsize." + contigName + "." + assembledContig.getReadName() + ".dot")), k, graphByPosition, fullContig);
 				} catch (Exception ex) {
 					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getReadName() : "(null)", " ", contigName);
 				}
 			}
 			if (aes.getContext().getConfig().getVisualisation().assemblyContigMemoization) {
-				File file = new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.path.memoization." + contigName + "." + Integer.toString(pathExportCount.incrementAndGet()) + ".csv");
+				File file = new File(aes.getContext().getConfig().getVisualisation().directory, FilenameUtil.stripInvalidFilenameCharacters("assembly.path.memoization." + contigName + "." + Integer.toString(pathExportCount.incrementAndGet()) + ".csv"));
 				try {
 					bestContigCaller.exportState(file);
 				} catch (IOException e) {

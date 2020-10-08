@@ -8,6 +8,7 @@ import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.util.FilenameUtil;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import com.google.common.collect.*;
@@ -264,7 +265,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		if (preload != null && preload.size() > 0) {
 			ArrayList<DirectedEvidence> list = Lists.newArrayList(preload);
 			list.sort(DirectedEvidenceOrder.ByNatural);
-			inputIterator = Iterators.peekingIterator(Iterators.concat(list.iterator(), it));
+			inputIterator = Iterators.peekingIterator(Iterators.concat(list.iterator(), inputIterator));
 		}
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(inputIterator, referenceIndex);
@@ -303,6 +304,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s_%d-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), firstPosition, direction);
+			filename = FilenameUtil.stripInvalidFilenameCharacters(filename);
 			File file = new File(vis.directory, filename);
 			PositionalDeBruijnGraphTracker exportTracker;
 			try {
