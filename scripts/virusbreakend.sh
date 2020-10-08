@@ -602,11 +602,15 @@ EOF
 			<(bwa mem -Y -t $threads $file_viral_fa $infile_fq1 $infile_fq2) \
 			<(bwa mem -Y -t $threads $file_viral_fa $infile_fq | grep -v "^@") \
 		| samtools fixmate -m -O BAM - - \
-		| samtools sort -l 0 -@ $threads -T $infile_unsorted_sam.tmp.sorted - \
-		| samtools markdup -O BAM -@ $threads - $infile_bam.tmp.bam \
+		| samtools sort -l 0 -@ $threads -T $infile_unsorted_sam.tmp.sorted -o $infile_bam.tmp.bam - \
 		&& mv $infile_bam.tmp.bam $infile_bam \
 		&& samtools index $infile_bam \
 		; } 1>&2 2>> $logfile
+		# duplicates are not marked since fragmented insertion sites
+		# with a second breakpoint closer than the read length will
+		# call all supporting soft-clipped reads
+		# e.g. 198T TERT integration in Sung 2012
+		# | samtools markdup -O BAM -@ $threads - $infile_bam.tmp.bam \
 	else
 		write_status "Aligning viral reads	Skipped: found	$infile_bam"
 	fi
