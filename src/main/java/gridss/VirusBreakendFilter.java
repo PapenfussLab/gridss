@@ -51,9 +51,11 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 	@Argument(shortName = StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc = "Filtered VCF")
 	public File OUTPUT;
 	@Argument(doc = "Minimum portion of host alignment that does not match a simple or low complexity repeat")
-	public double MINIMUM_REPEAT_OVERLAP = 0.5;
+	public double MINIMUM_REPEAT_OVERLAP = 1;
 	@Argument(doc = "Minimum portion of breakend sequence that aligns to host genome")
 	public double MINIMUM_HOST_OVERLAP = 0.5;
+	@Argument(doc = "Kraken taxonomic identifiers associated with host genome")
+	public List<Integer> TAXONOMY_IDS = null;
 
 	public static void main(String[] argv) {
         System.exit(new VirusBreakendFilter().instanceMain(argv));
@@ -170,6 +172,12 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 
 	private boolean shouldKeep(VariantContext vc) {
 		String alt = vc.getAlternateAllele(0).getDisplayString();
+		int taxid = vc.getAttributeAsInt(VcfInfoAttributes.INSERTED_SEQUENCE_NCBI_TAXONOMY_ID.attribute(), -1);
+		if (TAXONOMY_IDS != null && TAXONOMY_IDS.size() > 0) {
+			if (!TAXONOMY_IDS.contains(taxid)) {
+				return false;
+			}
+		}
 		//if (alt.contains("kraken")) return true;
 		// single breakends only
 		if (!alt.contains(".")) return false;
@@ -181,7 +189,9 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 			if ((hostAlignmentLength / (double)breakendLength) < MINIMUM_HOST_OVERLAP) continue;
 			RangeSet<Integer> overlappingRepeats = repeats.subRangeSet(Range.openClosed(hca.getFirstAlignedBaseReadOffset(), hca.getLastAlignedBaseReadOffset() + 1));
 			int overlap = overlappingRepeats.asRanges().stream().mapToInt(r -> r.upperEndpoint() - r.lowerEndpoint()).sum();
-			if (overlap / (double)hostAlignmentLength < MINIMUM_REPEAT_OVERLAP) return true;
+			if (overlap / (double)hostAlignmentLength <= MINIMUM_REPEAT_OVERLAP) {
+				return true;
+			}
 		}
 		return false;
 	}

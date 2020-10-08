@@ -1,6 +1,7 @@
 package gridss;
 
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import com.google.common.collect.ImmutableList;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.junit.Assert;
 import org.junit.Test;
@@ -11,7 +12,7 @@ import java.util.List;
 
 public class VirusBreakendFilterTest extends IntermediateFilesTest {
     @Test
-    public void should_filter_no_host_alignment() throws IOException {
+    public void should_filter_no_host_alignment() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
@@ -22,18 +23,19 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertFalse(vcf.stream().anyMatch(vc -> vc.getID().equals("no_host_alignment_host")));
     }
     @Test
-    public void should_filter_repeat_50_percent_overlap() throws IOException {
+    public void should_filter_repeat_50_percent_overlap() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
         cmd.OUTPUT = output;
+        cmd.MINIMUM_REPEAT_OVERLAP = 0.49;
         cmd.setReference(SMALL_FA_FILE);
         cmd.doWork();
         List<VariantContext> vcf = getRawVcf(output);
         Assert.assertFalse(vcf.stream().anyMatch(vc -> vc.getID().equals("repeat_overlap_host")));
     }
     @Test
-    public void should_filter_short_host_hits() throws IOException {
+    public void should_filter_short_host_hits() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
@@ -44,7 +46,7 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertFalse(vcf.stream().anyMatch(vc -> vc.getID().equals("short_host_alignment_host")));
     }
     @Test
-    public void should_filter_breakpoints() throws IOException {
+    public void should_filter_breakpoints() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
@@ -55,7 +57,7 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertFalse(vcf.stream().anyMatch(vc -> vc.getID().equals("breakpoint_host")));
     }
     @Test
-    public void should_retain_small_contained_repeat() throws IOException {
+    public void should_retain_small_contained_repeat() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
@@ -66,7 +68,7 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertTrue(vcf.stream().anyMatch(vc -> vc.getID().equals("small_contained_repeat_host")));
     }
     @Test
-    public void should_retain_simple_repeat_no_overlap() throws IOException {
+    public void should_retain_simple_repeat_no_overlap() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
@@ -77,7 +79,7 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertTrue(vcf.stream().anyMatch(vc -> vc.getID().equals("repeat_no_overlap_host")));
     }
     @Test
-    public void should_retain_complex_repeat_overlap() throws IOException {
+    public void should_retain_complex_repeat_overlap() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
@@ -88,7 +90,7 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertTrue(vcf.stream().anyMatch(vc -> vc.getID().equals("line_overlap_host")));
     }
     @Test
-    public void insert_sequence_should_match() throws IOException {
+    public void insert_sequence_should_match() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();
         File output = new File(testFolder.getRoot(), "out.vcf");
         cmd.INPUT = new File("src/test/resources/virusbreakend/test.vcf");
@@ -122,5 +124,18 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertEquals("[polyA:10[TGG", vc.getAlternateAllele(0).getDisplayString());
         vc = vcf.stream().filter(x -> x.getID().equals("virus_back_host_minus_host")).findFirst().get();
         Assert.assertEquals("[kraken:taxid|333760|NC_001526:1037[CAN", vc.getAlternateAllele(0).getDisplayString());
+    }
+    @Test
+    public void should_match_host_taxid() {
+        VirusBreakendFilter cmd = new VirusBreakendFilter();
+        File output = new File(testFolder.getRoot(), "out.vcf");
+        cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
+        cmd.OUTPUT = output;
+        cmd.TAXONOMY_IDS = ImmutableList.of(9606);
+        cmd.setReference(SMALL_FA_FILE);
+        cmd.doWork();
+        List<VariantContext> vcf = getRawVcf(output);
+        Assert.assertTrue(vcf.stream().anyMatch(vc -> vc.getID().equals("correct_host_taxid_host")));
+        Assert.assertFalse(vcf.stream().anyMatch(vc -> vc.getID().equals("wrong_host_taxid_host")));
     }
 }
