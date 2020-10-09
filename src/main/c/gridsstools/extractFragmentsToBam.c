@@ -52,8 +52,8 @@ static khash_t(str)* load_readnames(char* filename) {
 
 int main_extractFragmentsToBam(int argc, char *argv[]) {
 	int threads = 1;
-	htsFile *fp_in = NULL;
-	htsFile *fp_out = NULL;
+	samFile *fp_in = NULL;
+	samFile *fp_out = NULL;
 	bam_hdr_t *hdr = NULL;
 	bam1_t *record = bam_init1();
 	int status = EXIT_SUCCESS;
@@ -79,7 +79,7 @@ int main_extractFragmentsToBam(int argc, char *argv[]) {
 		goto error;
 	}
 	fprintf(stderr, "Read %d distinct read names\n", kh_size(readname_lookup));
-	if (!(fp_in = hts_open(in_filename, "r"))) {
+	if (!(fp_in = sam_open(in_filename, "r"))) {
 		fprintf(stderr, "Unable to open input file %s.\n", in_filename);
 		goto error;
 	}
@@ -96,7 +96,10 @@ int main_extractFragmentsToBam(int argc, char *argv[]) {
 		fprintf(stderr, "Unable to read SAM header.\n");
 		goto error;
 	}
-	if (!(fp_out = hts_open(out_filename, "w"))) {
+	char *out_format = "w";
+	if (strcmp(strrchr(out_filename, '.'), ".bam") == 0) out_format = "wb";
+	//if (strcmp(strrchr(out_filename, '.'), ".cram") == 0) out_format = "wc"; // cram needs a reference genome
+	if (!(fp_out = sam_open(out_filename, out_format))) {
 		fprintf(stderr, "Unable to open output file %s.\n", out_filename);
 		goto error;
 	}
