@@ -311,7 +311,7 @@ if [[ $force != "true" ]] ; then
 	done
 fi
 # Validate tools exist on path
-for tool in gzip kraken2 gridss.sh gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools java bwa Rscript ; do
+for tool in kraken2 gridss.sh gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools java bwa Rscript ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
@@ -409,14 +409,14 @@ jvm_args=" \
 	-Dsamjdk.async_io_read_threads=$threads"
 
 file_prefix=$workingdir/$(basename $output_vcf)
-file_virushost_gridss_vcf=$file_prefix.virushost.gridss.vcf
-file_virus_gridss_vcf=$file_prefix.virus.gridss.vcf
-file_host_annotated_vcf=$file_prefix.virushost.gridss.host.vcf
-file_kraken_annotated_vcf=$file_prefix.vhg.k2.vcf
-file_rm_annotated_vcf=$file_prefix.vhg.k2.rm.vcf
-file_filtered_vcf=$file_prefix.vhg.k2.rm.filtered.vcf
+file_assembly=$file_prefix.assembly.bam
+file_gridss_vcf=$file_prefix.gridss.vcf
+file_host_annotated_vcf=$file_prefix.gridss.host.vcf
+file_kraken_annotated_vcf=$file_prefix.gridss.host.k2.vcf
+file_rm_annotated_vcf=$file_prefix.gridss.host.k2.rm.vcf
+file_filtered_vcf=$file_prefix.gridss.host.k2.rm.filtered.vcf
 file_readname=$file_prefix.readnames.txt
-file_junction_readname=$file_prefix.alsohuman.readnames.txt.gz
+file_junction_readname=$file_prefix.alsohuman.readnames.txt
 file_report=$file_prefix.kraken2.report.all.txt
 file_viral_report=$file_prefix.kraken2.report.viral.txt
 file_extracted_report=$file_prefix.kraken2.report.viral.extracted.txt
@@ -441,7 +441,7 @@ if [[ ! -f $file_readname ]] ; then
 		else
 			# BAM input
 			if which gridsstools > /dev/null ; then
-				echo "gridsstools unmappedSequencesToFastq -n >(gzip -c --fast >$file_junction_readname) -@ $threads $f" >> $exec_concat_fastq
+				echo "gridsstools unmappedSequencesToFastq -n $file_junction_readname -@ $threads $f" >> $exec_concat_fastq
 			else
 				cat >> $exec_concat_fastq << EOF
 java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.UnmappedSequencesToFastq \\
@@ -450,7 +450,7 @@ java -Xmx256m $jvm_args -Dgridss.async.buffersize=2048 -cp $gridss_jar gridss.Un
 	-INCLUDE_SOFT_CLIPPED_BASES true \\
 	-MIN_SEQUENCE_LENGTH 20 \\
 	-UNIQUE_NAME false \\
-	-PARTIALLY_ALIGNED_READ_NAMES >(gzip --fast >$file_junction_readname)
+	-PARTIALLY_ALIGNED_READ_NAMES $file_junction_readname
 EOF
 			fi
 		fi
@@ -505,8 +505,7 @@ else
 	write_status "Creating index of viral sequences	Skipped: found	$file_viral_fa.bwt"
 fi
 
-bam_list_virus_host_args=""
-bam_list_virus_args=""
+bam_list_args=""
 for f in "$@" ; do
 	cleanf=$(clean_filename "$f")
 	infile_prefix=$workingdir/$cleanf
@@ -666,47 +665,27 @@ EOF
 		{ gridsstools extractFragmentsToBam \
 			-@ $threads \
 			-o $infile_virushost_bam \
-			<(gunzip -c $file_junction_readname) \
+			$file_junction_readname \
 			$infile_virus_bam \
 		; } 1>&2 2>> $logfile
 	fi
-	bam_list_virus_args="$bam_list_virus_args $infile_virus_bam"
-	bam_list_virus_host_args="$bam_list_virus_host_args $infile_virushost_bam"
+	bam_list_args="$bam_list_args $infile_virushost_bam"
 done
-if [[ ! -f $file_virushost_gridss_vcf ]] ; then
-	write_status "Calling virus-host structural variants"
+if [[ ! -f $file_gridss_vcf ]] ; then
+	write_status "Calling structural variants"
 	{ $timecmd gridss.sh \
 		-w $workingdir \
 		-t $threads \
 		-r $file_viral_fa \
 		-j $gridss_jar \
-		-o $file_virushost_gridss_vcf \
-		-a $file_virushost_gridss_vcf.assembly.bam \
+		-o $file_gridss_vcf \
+		-a $file_assembly \
 		--maxcoverage $maxcoverage \
 		$gridssargs \
-		$bam_list_virus_host_args \
+		$bam_list_args \
 	; } 1>&2 2>> $logfile
 else
-	write_status "Calling structural variants	Skipped: found	$file_virushost_gridss_vcf"
-fi
-if [[ ! -f $file_virus_gridss_vcf ]] ; then
-	# This step is optional. It is useful to understand
-	# the viral integration structure but is not used in
-	# the output
-	write_status "Calling all viral structural variants"
-	{ $timecmd gridss.sh \
-		-w $workingdir \
-		-t $threads \
-		-r $file_viral_fa \
-		-j $gridss_jar \
-		-o $file_virus_gridss_vcf \
-		-a $file_virus_gridss_vcf.assembly.bam \
-		--maxcoverage $maxcoverage \
-		$gridssargs \
-		$bam_list_virus_args \
-	; } 1>&2 2>> $logfile
-else
-	write_status "Calling structural variants	Skipped: found	$file_virus_gridss_vcf"
+	write_status "Calling structural variants	Skipped: found	$file_gridss_vcf"
 fi
 if [[ ! -f $file_host_annotated_vcf ]] ; then
 	# Make sure we have the appropriate indexes for the host reference genome
@@ -716,9 +695,9 @@ if [[ ! -f $file_host_annotated_vcf ]] ; then
 		-t $threads \
 		-j $gridss_jar \
 		-s setupreference \
-		-a $file_virushost_gridss_vcf.assembly.bam \
+		-a $file_assembly \
 		-o placeholder.vcf \
-		$bam_list_virus_host_args \
+		$bam_list_args \
 	; } 1>&2 2>> $logfile
 	write_status "Annotating host genome integrations"
 	{ $timecmd java -Xmx4g $jvm_args \
@@ -728,7 +707,7 @@ if [[ ! -f $file_host_annotated_vcf ]] ; then
 			--WORKING_DIR $workingdir \
 			--REFERENCE_SEQUENCE $reference \
 			--WORKER_THREADS $threads \
-			--INPUT $file_virushost_gridss_vcf \
+			--INPUT $file_gridss_vcf \
 			--OUTPUT $file_host_annotated_vcf \
 	; } 1>&2 2>> $logfile
 	# external bwa process
@@ -781,9 +760,8 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 fi
 if [[ ! -f $file_wgs_metrics ]] ; then
 	write_status "Calculating virus WGS metrics"
-	{ $timecmd samtools merge -@ $threads $file_merged_bam $bam_list_virus_args \
-	&& samtools index $file_merged_bam \
-	&& java -Xmx1g $jvm_args \
+	{ $timecmd samtools merge -@ $threads $file_merged_bam $bam_list_args && \
+		java -Xmx1g $jvm_args \
 			-cp $gridss_jar picard.cmdline.PicardCommandLine CollectWgsMetrics \
 			--INPUT $file_merged_bam \
 			--OUTPUT $file_wgs_metrics \
