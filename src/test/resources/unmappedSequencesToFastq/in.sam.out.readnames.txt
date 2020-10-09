@@ -1,0 +1,6 @@
+startclipped
+endclipped
+reversestrand
+reversestrandend
+externallysplitread
+pairedonemapped
