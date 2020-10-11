@@ -265,7 +265,7 @@ write_status "Extending regions of interest by $targetmargin bp"
 # BED intevals hanging over the start/end of a contig so it doesn't matter
 grep -v "^#" $target_no_slop_file | grep -v "^browser" | grep -v "^track" | awk "{OFS=\"\t\"} {print \$1,\$2-$targetmargin,\$3+$targetmargin}" > $target_file
 write_status "Extracting reads of interest"
-#gridsstools extractFragmentsToBam -@ $threads -o $output_bam <(samtools view -M -@ $threads -L $target_file $input_bam | cut -f 1) $input_bam
+gridsstools extractFragmentsToBam -@ $threads -o $output_bam <(samtools view -M -@ $threads -L $target_file $input_bam | cut -f 1) $input_bam
 gridss_dir=$workingdir/$(basename $output_bam).gridss.working
 gridss_prefix=$gridss_dir/$(basename $output_bam)
 if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
