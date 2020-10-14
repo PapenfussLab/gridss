@@ -23,49 +23,18 @@ https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
 
 # Pre-requisites
 
-To run VIRUSBreakend the following must be installed:
+VIRUSBreakend is part of the GRIDSS software suite.
 
-* java 1.8 or later
-* R 3.6 or later
-* samtools
-* bwa
+All tools used by VIRUSBreakend must be on `PATH` including:
+* java
+* GRIDSS
 * Kraken2
 * RepeatMasker
-* htslib 1.10
-* GRIDSS
+* samtools
+* bcftools
+* bwa
 
-The driver script requires:
-
-* bash
-* getopt(1) (part of [util-linux](https://en.wikipedia.org/wiki/Util-linux))
-
-Once 
-* Ensure GRIDSS, Kraken2, RepeatMasker, samtools and bwa are on `PATH`
-* Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
-
-
-## gridsstools
-
-Performance-critical steps in VIRUSBreakend are implemented in C using htslib.
-A precompiled version of `gridsstools` is included as part of GRIDSS releases.
-If this precompiled version does not run on your system you will need to build it from source.
-
-To build `gridsstools` from source run the following:
-
-```
-git clone http://github.com/PapenfussLab/gridss/
-cd gridss
-git submodule init
-git submodule update
-cd src/main/c/gridsstools/htslib/
-autoheader
-autoconf
-./configure && make
-cd ..
-autoheader
-autoconf
-./configure && make all
-```
+Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
 
 ## Reference data setup
 
@@ -101,11 +70,10 @@ virusbreakend.sh \
 
 # Output
 
-The output format is a VCF file containing the location of single breakend from the viral sequence.
-The integration location in the host is encoded in the `BEALN` field.
-Note that depending on the host alignment and single breakend orientations, the integration position will be at either the start or end of the `BEALN` alignment position.
-
-In future versions, this is likely to be replaced by a more readable breakpoint `BND` notation.
+VIRUSBreakend outputs:
+* A VCF containing the integration breakpoints
+* The kraken2 report of the virus(es) for which viral integration was run upon
+* Coverage statistics of the vvirus(es) for which viral integration was run upon
 
 ## Ambigous insertions
 

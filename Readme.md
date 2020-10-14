@@ -35,13 +35,47 @@ To run GRIDSS the following must be installed:
 
 * java 1.8 or later
 * R 3.6 or later
+  * `gridss_somatic_filter.R` requires the following R libraries:
+  * argparser
+  * tidyverse
+  * stringdist
+  * testthat
+  * stringr
+  * StructuralVariantAnnotation
+  * rtracklayer
+  * BSgenome package for your reference genome (optional)
 * samtools
 * bwa
-
-The driver script requires:
-
 * bash
 * getopt(1) (part of [util-linux](https://en.wikipedia.org/wiki/Util-linux))
+
+To run VIRUSBreakend, kraken2, or repeatmasker annotations, the following additional software must be installed:
+* kraken2
+  * Note that `virusbreakend-build` requires all `kraken2-build` dependencies
+* RepeatMasker
+* bcftools
+
+# Building gridsstools
+
+Some performance-critical steps are implemented in C using htslib.
+A precompiled version of `gridsstools` is included as part of GRIDSS releases.
+If this precompiled version does not run on your system you will need to build it from source.
+
+To build `gridsstools` from source run the following:
+```
+git clone http://github.com/PapenfussLab/gridss/
+cd gridss
+git submodule init
+git submodule update
+cd src/main/c/gridsstools/htslib/
+autoheader
+autoconf
+./configure && make
+cd ..
+autoheader
+autoconf
+./configure && make all
+```
 
 # Running
 
@@ -53,6 +87,11 @@ The following scripts are included in GRIDSS releases:
 |---|---|
 gridss.sh|Driver script for running GRIDSS. Use this to run GRIDSS
 gridss_somatic_filter.R|Somatic filtering script. Identifies somatic events for tumour samples with a matched normal. Multiple tumour biopsies are supported
+gridss_extract_overlapping_fragments.sh|Extracts all alignments for read pairs with at least one aligment overlapping set of regions of interest. Correctly handles supplementary alignments. Use this script to extract reads of interest for targeted GRIDSS variant calling.
+gridss_annotate_vcf_repeatmasker.sh|Annotates breakpoint and single breakend inserted sequences with the RepeatMasker classification of the sequence.
+gridss_annotate_vcf_kraken2.sh|Annotates breakpoint and single breakend inserted sequences with the Kraken2 classification of the sequence.
+virusbreakend.sh|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
+virusbreakend-build.sh|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
 
 ## gridss.sh command-line arguments
 
@@ -72,7 +111,6 @@ argument|description
 --maxcoverage|maximum coverage. Regions with coverage in excess of this are ignored. (Default: 50000)
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
---repeatmaskerbed|bedops rmsk2bed BED file for reference genome. Optional parameter for annotating inserted sequences with RepeatMasker repeat type/class (Optional)
 --jobindex|zero-based index of this assembly job node. Used to spread GRIDSS assembly across multiple compute nodes. Use only with `-s assemble`. Once all jobs have completed, a `-s assemble` or `-s all` job should be run to gather the results together.
 --jobnodes|total number of assembly jobs scheduled.
 
