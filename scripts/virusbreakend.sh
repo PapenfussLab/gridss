@@ -25,7 +25,7 @@ reference=""
 output_vcf=""
 threads=8
 kraken2args=""
-gridssargs=""
+gridssargs="--jvmheap 13g"
 rmargs="--species human"
 nodesdmp=""
 virushostdb=""
@@ -614,6 +614,7 @@ if [[ ! -f $file_host_annotated_vcf ]] ; then
 		-s setupreference \
 		-a $file_assembly \
 		-o placeholder.vcf \
+		$gridssargs \
 		$bam_list_args \
 	; } 1>&2 2>> $logfile
 	write_status "Annotating host genome integrations"
