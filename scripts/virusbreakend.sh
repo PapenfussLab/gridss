@@ -171,6 +171,7 @@ if [[ "$(tr -d ' 	\n' <<< "$workingdir")" != "$workingdir" ]] ; then
 		exit $EX_USAGE
 	fi
 workingdir=$(dirname $workingdir/placeholder)
+rootworkingdir=$workingdir
 workingdir=$workingdir/$(basename $output_vcf).virusbreakend.working
 if [[ ! -d $workingdir ]] ; then
 	mkdir -p $workingdir
@@ -551,18 +552,25 @@ for f in "$@" ; do
 	gridss_dir=$bam.gridss.working
 	gridss_prefix=$gridss_dir/$(basename $bam)
 	if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
-		write_status "Gathering metrics from host alignment	$f"
 		mkdir -p $gridss_dir
-		# Ideally the metrics on the viral sequence would match the metrics from the host.
-		# Unfortunately, this is generally not the case as viral coverage can be very low.
-		# To ensure we assemble fragments correctly, we need to grab the host alignment metrics.
-		# If GRIDSS has been run, we could use that but we don't want GRIDSS to be an explicit
-		# requirement of this pipeline
-		# This approach doesn't work for fastq input files.
-		exec_extract_host_metrics=$prefix_adjusted.extract_host_metrics.sh
-		rm -f $exec_extract_host_metrics
-		echo "#!/bin/bash" > $exec_extract_host_metrics
-		cat >> $exec_extract_host_metrics << EOF
+		full_gridss_metrics_prefix=$rootworkingdir/$(basename $infile_filename_prefix).gridss.working/$(basename $infile_filename_prefix)
+		if [[ -f $full_gridss_metrics_prefix.insert_size_metrics ]] ; then
+			echo "Found existing GRIDSS metrics - copying from 	$(dirname $full_gridss_metrics_prefix)"
+			for metric_suffix in cigar_metrics idsv_metrics insert_size_metrics mapq_metrics tag_metrics ; do
+				cp $full_gridss_metrics_prefix.$metric_suffix $gridss_prefix.$metric_suffix
+			done
+		else 
+			write_status "Gathering metrics from host alignment	$f"
+			# Ideally the metrics on the viral sequence would match the metrics from the host.
+			# Unfortunately, this is generally not the case as viral coverage can be very low.
+			# To ensure we assemble fragments correctly, we need to grab the host alignment metrics.
+			# If GRIDSS has been run, we could use that but we don't want GRIDSS to be an explicit
+			# requirement of this pipeline
+			# This approach doesn't work for fastq input files.
+			exec_extract_host_metrics=$prefix_adjusted.extract_host_metrics.sh
+			rm -f $exec_extract_host_metrics
+			echo "#!/bin/bash" > $exec_extract_host_metrics
+			cat >> $exec_extract_host_metrics << EOF
 java -Xmx4g $jvm_args \
 	-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 	--INPUT $f \
@@ -573,8 +581,9 @@ java -Xmx4g $jvm_args \
 	--FILE_EXTENSION null \
 	--STOP_AFTER $metricsrecords
 EOF
-		chmod +x $exec_extract_host_metrics
-		{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
+			chmod +x $exec_extract_host_metrics
+			{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
+		fi
 	else
 		write_status "Gathering metrics from host alignment	Skipped: found	$gridss_prefix.insert_size_metrics"
 	fi
