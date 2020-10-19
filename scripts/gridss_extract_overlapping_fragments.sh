@@ -27,7 +27,7 @@ threads=1
 targetbed=""
 targetvcf=""
 targetmargin=5000
-metricsrecords=1000000
+metricsrecords=10000000
 metricsmaxcoverage=100000
 USAGE_MESSAGE="
 Usage: gridss_extract_overlapping_fragments.sh [options] --targetbed <target.bed> --targetvcf <target.vcf> [--targetmargin $targetmargin] input.bam
@@ -58,10 +58,15 @@ Usage: gridss_extract_overlapping_fragments.sh [options] --targetbed <target.bed
 	-w/--workingdir: directory to place intermediate, temporary files and GRIDSS metrics.
 			GRIDSS should be run using the same working directory or these metrics will be ignored (Default: $workingdir)
 	-j/--jar: location of GRIDSS jar
+	--metricsrecords: number of reads to process to generate metrics. (Default: $metricsrecords)
+			Note that these are not a random subsample but the first N reads in the input file.
+			This means that the sampling is biased towards telomeric sequence which,
+			if insufficent number of reads are samples, will reduce the QUAL scores due to the
+			higher soft clipping and discordant mapping rate in telomeric sequences.
 "
 
 OPTIONS=j:o:t:w:
-LONGOPTS=jar:,output:,threads:,workingdir:,targetbed:,targetvcf:,targetmargin:
+LONGOPTS=jar:,output:,threads:,workingdir:,targetbed:,targetvcf:,targetmargin:,metricsrecords:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -100,6 +105,11 @@ while true; do
 		--targetmargin)
 			printf -v targetmargin '%d\n' "$2" 2>/dev/null
 			printf -v targetmargin '%d' "$2" 2>/dev/null
+			shift 2
+			;;
+		--metricsrecords)
+			printf -v metricsrecords '%d\n' "$2" 2>/dev/null
+			printf -v metricsrecords '%d' "$2" 2>/dev/null
 			shift 2
 			;;
 		--)
