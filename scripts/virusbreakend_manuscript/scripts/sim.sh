@@ -91,3 +91,11 @@ EOF
 	done
 done
 chmod +x gen/*.sh
+
+# merge outputs
+#cat $(find . -name 'final_hits.txt') | grep -v LIB > gen/all_final_hits.txt
+#grep MSA gen/all_final_hits.txt > ../publicdata/sim/batvi_all_final_hits_MSA.txt
+#grep -v MSA gen/all_final_hits.txt > ../publicdata/sim/batvi_all_final_hits_noMSA.txt
+#grep "^#" $(find gen/gen -name 'virusbreakend*.vcf' | head -1) > ../publicdata/sim/virusbreakend.vcf
+#grep -v "##" $(find gen/gen -name 'virusbreakend*.vcf') | grep -v "#CHROM" >> ../publicdata/sim/virusbreakend.vcf
+
