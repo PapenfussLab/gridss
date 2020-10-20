@@ -598,6 +598,7 @@ file_kraken_annotated_vcf=$prefix_adjusted.gridss.bealn.k2.vcf
 file_rm_annotated_vcf=$prefix_adjusted.gridss.bealn.k2.rm.vcf
 file_filtered_vcf=$prefix_adjusted.gridss.bealn.k2.rm.filtered.vcf
 file_wgs_metrics=$prefix_adjusted.wgs_metrics.txt
+rm -f $file_gridss_configuration
 cat > $file_gridss_configuration << EOF
 assembly.positional.maximumNodeDensity = 20
 assembly.positional.safetyModePathCountThreshold = 250000
