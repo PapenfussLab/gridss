@@ -591,12 +591,18 @@ EOF
 done
 # GRIDSS files
 file_gridss_vcf=$prefix_adjusted.gridss.vcf
+file_gridss_configuration=$prefix_adjusted.gridss.properties
 file_assembly=$prefix_adjusted.gridss.assembly.bam
 file_host_annotated_vcf=$prefix_adjusted.gridss.bealn.vcf
 file_kraken_annotated_vcf=$prefix_adjusted.gridss.bealn.k2.vcf
 file_rm_annotated_vcf=$prefix_adjusted.gridss.bealn.k2.rm.vcf
 file_filtered_vcf=$prefix_adjusted.gridss.bealn.k2.rm.filtered.vcf
 file_wgs_metrics=$prefix_adjusted.wgs_metrics.txt
+cat > $file_gridss_configuration << EOF
+assembly.positional.maximumNodeDensity = 20
+assembly.positional.safetyModePathCountThreshold = 250000
+assembly.positional.safetyModeContigsToCall = 12
+EOF
 if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
 	{ $timecmd gridss.sh \
@@ -606,6 +612,7 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		-j $gridss_jar \
 		-o $file_gridss_vcf \
 		-a $file_assembly \
+		-c $file_gridss_configuration \
 		--maxcoverage $maxcoverage \
 		$gridssargs \
 		$bam_list_args \
