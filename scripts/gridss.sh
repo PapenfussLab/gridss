@@ -518,23 +518,44 @@ if [[ "$useproperpair" == "true" ]] ; then
 fi
 
 if [[ $do_setupreference == true ]] ; then
+	lock_file=$reference.tmp.gridsslock
 	if [[ ! -f ${reference}.fai ]] && [[ ! -f $(basename $reference .fa).fai ]] && [[ ! -f $(basename $reference .fasta).fai ]]  ; then
-		write_status "Running	samtools faidx	(once-off setup for reference genome)"
-		$timecmd samtools faidx $reference 1>&2 2>> $logfile
+		if mkdir $lock_file ; then
+			write_status "Running	samtools faidx	(once-off setup for reference genome)"
+			$timecmd samtools faidx $reference 1>&2 2>> $logfile
+			rmdir $lock_file
+		else
+			write_status "Multiple instances of setupreference cannot be run concurrently. Aborting due to existence of $lock_file"
+			exit $EX_CANTCREAT
+		fi
 	fi
 	if [[ ! -f ${reference}.bwt  ]] ; then
-		write_status "Running	bwa index	(once-off setup for reference genome)"
-		$timecmd bwa index $reference 1>&2 2>> $logfile
+		if mkdir $lock_file ; then
+			write_status "Running	bwa index	(once-off setup for reference genome)"
+			$timecmd bwa index $reference 1>&2 2>> $logfile
+			rmdir $lock_file
+		else
+			write_status "Multiple instances of setupreference cannot be run concurrently. Aborting due to existence of $lock_file"
+			exit $EX_CANTCREAT
+		fi
 	fi
 	#if [[ ! -f ${reference}.idx  ]] ; then
 	#	write_status "Running	minimap2 index	(once-off setup for reference genome)"
 	#	$timecmd minimap2 -d ${reference}.idx ${reference} 1>&2 2>> $logfile
 	#fi
-	write_status "Running	PrepareReference	(once-off setup for reference genome)"
-	$timecmd java -Xmx4g $jvm_args \
-		-cp $gridss_jar gridss.PrepareReference \
-		REFERENCE_SEQUENCE=$reference \
-		1>&2 2>> $logfile
+	if [[ ! -f ${reference}.gridsscache ]] || [[ ! -f ${reference}.img ]] || [[ ! -f ${reference}.dict ]] ; then
+		if mkdir $lock_file ; then
+			write_status "Running	PrepareReference	(once-off setup for reference genome)"
+			$timecmd java -Xmx4g $jvm_args \
+				-cp $gridss_jar gridss.PrepareReference \
+				REFERENCE_SEQUENCE=$reference \
+				1>&2 2>> $logfile
+			rmdir $lock_file
+		else
+			write_status "Multiple instances of setupreference cannot be run concurrently. Aborting due to existence of $lock_file"
+			exit $EX_CANTCREAT
+		fi
+	fi
 fi
 
 if [[ $do_preprocess == true ]] ; then

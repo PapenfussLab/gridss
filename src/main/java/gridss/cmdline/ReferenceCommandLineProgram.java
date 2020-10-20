@@ -48,9 +48,9 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	public static boolean ensureSequenceDictionary(File referenceFile) {
 		try (ReferenceSequenceFile rsf = new FastaSequenceFile(referenceFile, false)) {
 			Path path = referenceFile.toPath().toAbsolutePath();
-			if (rsf.getSequenceDictionary() == null) {
+			Path dictPath = path.resolveSibling(path.getFileName().toString() + FileExtensions.DICT);
+			if (!dictPath.toFile().exists()) {
 				log.info("Attempting to create sequence dictionary for " + referenceFile);
-				Path dictPath = path.resolveSibling(path.getFileName().toString() + FileExtensions.DICT);
 				CommandLineProgramHelper cmd = new CommandLineProgramHelper(new picard.sam.CreateSequenceDictionary());
 				cmd.addArg("OUTPUT", dictPath.toFile());
 				cmd.addArg("R", referenceFile.getPath());
