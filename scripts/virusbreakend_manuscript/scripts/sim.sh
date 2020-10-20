@@ -10,20 +10,19 @@ flank=50000
 breakoffset=10
 virus_lengh=1000
 readlen=150
-virusbreakenddb=~/dev/virusbreakend/virusbreakenddb
-ref=~/dev/ref/hg19.fa
+virusbreakenddb=~/projects/virusbreakend/virusbreakenddb
+ref=~/projects/reference_genomes/human/hg19.fa
 if [[ ! -f gen/chm13.bam.gridss.working/chm13.bam.insert_size_metrics ]] ; then
 	# GRIDSS uses WGS metrics which are going to be wrong for the small simulation - create a baseline
 	wgsim -r 0 -R 0 -X 0 -N 20000000 -1 $readlen -2 $readlen chm13.draft_v1.0.fasta gen/chm13.1.fq gen/chm13.2.fq
 	bwa mem -t $(nproc) $ref gen/chm13.1.fq gen/chm13.2.fq | samtools sort -@ $(nproc) -o gen/chm13.bam -O BAM -
 	gridss.sh -r $ref -s preprocess gen/chm13.bam -w gen/
 fi
-rm -f gen/wgsim.sh
 while [[ $n -lt 248 ]] ; do
 	n=$(($n + 1))
 	pos=$(($n * 1000000))
 	virus_pos=$(($n * 8))
-	file=gen/chr1_${pos}.fa
+	file=$PWD/gen/chr1_${pos}.fa
 	if [[ ! -f $file ]] ; then
 		echo ">$file" >> $file
 		samtools faidx chm13.draft_v1.0.fasta chr1:$(($pos - $flank))-$(($pos)) | grep -v ">" | tr -d '\n' >> $file
@@ -48,19 +47,25 @@ while [[ $n -lt 248 ]] ; do
 				fi
 			done
 cat > gen/slurm_virusbreakend_${n}_${depth}x.sh << EOF
+#!/bin/bash
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16g
 #SBATCH --time=12:00:00
 #SBATCH -p regular
 #SBATCH --output=log.virusbreakend.%x.out
 #SBATCH --error=log.virusbreakend.%x.err
-export PATH=~/projects/virusbreakend/gridss/scripts:$PATH
+. ~/conda_crest/etc/profile.d/conda.sh
+conda activate virusbreakend
+export PATH=~/projects/virusbreakend/gridss/scripts:\$PATH
+export PATH=~/projects/virusbreakend/gridss/src/main/c/gridsstools:\$PATH
+cd $PWD
+cd gen
 if [[ ! -f $bam ]] ; then
 	echo "Creating $bam"
 	bwa mem -t 4 $ref $file.${depth}x.1.fq $file.${depth}x.2.fq | samtools sort -@ 4 -o $bam -O BAM -
 	samtools index $bam
 fi
-virusbreakend.sh --db $virusbreakenddb -r $ref -t 4 -o $vcf -j $GRIDSS_JAR --rmargs "-e rmblast" -w gen/ $bam
+virusbreakend.sh --db $virusbreakenddb -r $ref -t 4 -o $vcf -j $GRIDSS_JAR --rmargs "-e rmblast" -w $PWD/gen/ $bam
 EOF
 		fi
 		mkdir -p gen/batvi_${n}_${depth}x
@@ -69,6 +74,7 @@ EOF
 			echo > gen/batvi_${n}_${depth}x/batvirun.log.placeholder
 		fi
 		cat > gen/slurm_batvi_${n}_${depth}x.sh << EOF
+#!/bin/bash
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16g
 #SBATCH --time=12:00:00
@@ -80,7 +86,8 @@ conda activate virusbreakend
 cd $PWD
 cd batvi_${n}_${depth}x
 echo > batvirun.log.placeholder
-~/projects/virusbreakend/batvi/batvi1.03/call_integrations.sh $PWD/batvi/batvi_${n}_${depth}x
+~/projects/virusbreakend/batvi/batvi1.03/call_integrations.sh $PWD/gen/batvi_${n}_${depth}x
 EOF
 	done
 done
+chmod +x gen/*.sh
