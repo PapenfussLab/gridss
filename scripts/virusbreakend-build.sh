@@ -27,9 +27,12 @@ An the
 
 This program requires kraken2 and samtools to be on PATH
 
-Usage: virusbreakend-build.sh [--db $dbname]"
-OPTIONS=h
-LONGOPTS=help,db:
+Usage: virusbreakend-build.sh [--db $dbname]
+	--db: directory to create database in (Default: $dbname)
+	-j/--jar: location of GRIDSS jar
+	-h/--help: display this message"
+OPTIONS=hj:
+LONGOPTS=help,db:,jar:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -46,6 +49,10 @@ while true; do
 			;;
 		--db)
 			dbname=$2
+			shift 2
+			;;
+		-j|--jar)
+			GRIDSS_JAR="$2"
 			shift 2
 			;;
 		--)
@@ -65,13 +72,25 @@ fi
 write_status() {
 	echo "$(date): $1" 1>&2
 }
-for tool in kraken2-build samtools gunzip wget awk tar dustmasker rsync ; do
+for tool in kraken2-build samtools gunzip wget awk tar dustmasker rsync java ; do
 	if ! which $tool >/dev/null; then
 		echo "Error: unable to find $tool on \$PATH" 1>&2
 		exit $EX_CONFIG
 	fi
 	write_status "Found $(which $tool)"
 done
+### Find the jars
+find_jar() {
+	env_name=$1
+	if [[ -f "${!env_name:-}" ]] ; then
+		echo "${!env_name}"
+	else
+		write_status "Unable to find $2 jar. Specify using the environment variant $env_name, or the --jar command line parameter."
+		exit $EX_NOINPUT
+	fi
+}
+gridss_jar=$(find_jar GRIDSS_JAR gridss)
+write_status "Using GRIDSS jar $gridss_jar"
 
 kraken2-build --download-taxonomy --db $dbname
 kraken2-build --download-library human --db $dbname
@@ -91,7 +110,16 @@ cd -
 kraken2-build --add-to-library $dbname/virusbreakend.virushostdb.genomic.fna --db $dbname
 # TODO why does masking result in empty .mask files?
 kraken2-build --build --db $dbname
-for f in $(find $dbname/ -name '*.fna') ; do samtools faidx $f; done
+for f in $(find $dbname/ -name '*.fna') ; do
+	# TODO: CreateSequenceDictionary
+	samtools faidx $f
+	rm -f $f.dict
+	java -cp $GRIDSS_JAR \
+		picard.cmdline.PicardCommandLine \
+		CreateSequenceDictionary \
+		I=$f \
+		R=$f.dict
+done
 
 cd $dbname
 cd ..

@@ -555,7 +555,7 @@ for f in "$@" ; do
 		mkdir -p $gridss_dir
 		full_gridss_metrics_prefix=$rootworkingdir/$(basename $infile_filename_prefix).gridss.working/$(basename $infile_filename_prefix)
 		if [[ -f $full_gridss_metrics_prefix.insert_size_metrics ]] ; then
-			echo "Found existing GRIDSS metrics - copying from 	$(dirname $full_gridss_metrics_prefix)"
+			write_status "Found existing GRIDSS metrics - copying from 	$(dirname $full_gridss_metrics_prefix)"
 			for metric_suffix in cigar_metrics idsv_metrics insert_size_metrics mapq_metrics tag_metrics ; do
 				cp $full_gridss_metrics_prefix.$metric_suffix $gridss_prefix.$metric_suffix
 			done
