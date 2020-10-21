@@ -88,6 +88,25 @@ cd batvi_${n}_${depth}x
 echo > batvirun.log.placeholder
 ~/projects/virusbreakend/batvi/batvi1.03/call_integrations.sh $PWD/gen/batvi_${n}_${depth}x
 EOF
+		verse_dir=gen/verse/${n}/${depth}x
+		if [[ ! -d $verse_dir ]] ; then
+			mkdir -p $verse_dir
+			cp ~/projects/virusbreakend/verse/verse.config $verse_dir/verse.config
+			echo "alignment_file = $bam" >> $verse_dir/verse.config
+		fi
+		cat gen/slurm_verse_${n}_${depth}x.sh << EOF
+#!/bin/bash
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16g
+#SBATCH --time=48:00:00
+#SBATCH -p regular
+#SBATCH --output=$verse_dir/log.verse.%x.out
+#SBATCH --error=$verse_dir/log.verse.%x.err
+. ~/conda_crest/etc/profile.d/conda.sh
+conda activate virusbreakend
+cd $verse_dir
+perl ~/projects/virusbreakend/verse/VirusFinder2.0/VirusFinder.pl -c $verse_dir/verse.config -o $verse_dir
+EOF
 	done
 done
 chmod +x gen/*.sh
