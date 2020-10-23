@@ -37,8 +37,8 @@ while [[ $n -lt 248 ]] ; do
 			wgsim -r 0 -R 0 -X 0 -N $(( $depth * $reflen / $pairbases )) -1 150 -2 150 $file $file.${depth}x.1.fq $file.${depth}x.2.fq
 		fi
 		vcf=gen/virusbreakend_${n}_${depth}x.vcf
+		bam=$file.${depth}x.bam
 		if [[ ! -f $vcf.virusbreakend.working/$(basename $vcf).kraken2.report.viral.extracted.txt ]] ; then
-			bam=$file.${depth}x.bam
 			metrics_prefix=$vcf.virusbreakend.working/adjusted/$(basename $bam).viral.bam.gridss.working/$(basename $bam).viral.bam
 			mkdir -p $(dirname $metrics_prefix)
 			for metric_suffix in cigar_metrics idsv_metrics insert_size_metrics mapq_metrics tag_metrics ; do
@@ -46,7 +46,8 @@ while [[ $n -lt 248 ]] ; do
 					cp gen/chm13.bam.gridss.working/chm13.bam.$metric_suffix $metrics_prefix.$metric_suffix
 				fi
 			done
-cat > gen/slurm_virusbreakend_${n}_${depth}x.sh << EOF
+			if [[ -f gen/$vcf ]] ; then
+				cat > gen/slurm_virusbreakend_${n}_${depth}x.sh << EOF
 #!/bin/bash
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16g
@@ -67,13 +68,15 @@ if [[ ! -f $bam ]] ; then
 fi
 virusbreakend.sh --db $virusbreakenddb -r $ref -t 4 -o $vcf -j $GRIDSS_JAR --rmargs "-e rmblast" -w $PWD/gen/ $bam
 EOF
+			fi
 		fi
 		mkdir -p gen/batvi_${n}_${depth}x
-		if [[ ! -f gen/batvi_${n}_${depth}x/filelist.txt ]] ; then
-			echo "$file.${depth}x.1.fq;$file.${depth}x.1.fq;500" > gen/batvi_${n}_${depth}x/filelist.txt
-			echo > gen/batvi_${n}_${depth}x/batvirun.log.placeholder
-		fi
-		cat > gen/slurm_batvi_${n}_${depth}x.sh << EOF
+		if [[ ! -f gen/batvi_${n}_${depth}x/final_hits.txt ]] ; then
+			if [[ ! -f gen/batvi_${n}_${depth}x/filelist.txt ]] ; then
+				echo "$file.${depth}x.1.fq;$file.${depth}x.1.fq;500" > gen/batvi_${n}_${depth}x/filelist.txt
+				echo > gen/batvi_${n}_${depth}x/batvirun.log.placeholder
+			fi
+			cat > gen/slurm_batvi_${n}_${depth}x.sh << EOF
 #!/bin/bash
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16g
@@ -88,25 +91,28 @@ cd batvi_${n}_${depth}x
 echo > batvirun.log.placeholder
 ~/projects/virusbreakend/batvi/batvi1.03/call_integrations.sh $PWD/gen/batvi_${n}_${depth}x
 EOF
-		verse_dir=gen/verse/${n}/${depth}x
-		if [[ ! -d $verse_dir ]] ; then
-			mkdir -p $verse_dir
-			cp ~/projects/virusbreakend/verse/verse.config $verse_dir/verse.config
-			echo "alignment_file = $bam" >> $verse_dir/verse.config
 		fi
-		cat gen/slurm_verse_${n}_${depth}x.sh << EOF
+		verse_dir=gen/verse/${n}/${depth}x
+		if [[ ! -f $verse_dir/integration-sites.txt ]] ; then
+			if [[ ! -d $verse_dir ]] ; then
+				mkdir -p $verse_dir
+				cp ~/projects/virusbreakend/verse/verse.config $verse_dir/verse.config
+				echo "alignment_file = $bam" >> $verse_dir/verse.config
+			fi
+			cat > gen/slurm_verse_${n}_${depth}x.sh << EOF
 #!/bin/bash
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16g
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=10g
 #SBATCH --time=48:00:00
 #SBATCH -p regular
-#SBATCH --output=$verse_dir/log.verse.%x.out
-#SBATCH --error=$verse_dir/log.verse.%x.err
+#SBATCH --output=$(realpath $verse_dir)/log.verse.%x.out
+#SBATCH --error=$(realpath $verse_dir)/log.verse.%x.err
 . ~/conda_crest/etc/profile.d/conda.sh
-conda activate virusbreakend
-cd $verse_dir
-perl ~/projects/virusbreakend/verse/VirusFinder2.0/VirusFinder.pl -c $verse_dir/verse.config -o $verse_dir
+conda activate verse
+cd $(realpath $verse_dir)
+perl ~/projects/virusbreakend/verse/VirusFinder2.0/VirusFinder.pl -c verse.config
 EOF
+		fi
 	done
 done
 chmod +x gen/*.sh
@@ -117,4 +123,5 @@ chmod +x gen/*.sh
 #grep -v MSA gen/all_final_hits.txt > ../publicdata/sim/batvi_all_final_hits_noMSA.txt
 #grep "^#" $(find gen/gen -name 'virusbreakend*.vcf' | head -1) > ../publicdata/sim/virusbreakend.vcf
 #grep -v "##" $(find gen/gen -name 'virusbreakend*.vcf') | grep -v "#CHROM" >> ../publicdata/sim/virusbreakend.vcf
+#grep -v Confidence $(find gen/verse -name integration-sites.txt) > ../publicdata/sim/verse.tsv
 
