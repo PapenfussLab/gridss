@@ -34,7 +34,9 @@ while [[ $n -lt 248 ]] ; do
 	pairbases=$(( 2 * $readlen ))
 	for depth in 5 10 15 30 60 ; do
 		if [[ ! -f $file.${depth}x.1.fq ]] ; then
-			wgsim -r 0 -R 0 -X 0 -N $(( $depth * $reflen / $pairbases )) -1 150 -2 150 $file $file.${depth}x.1.fq $file.${depth}x.2.fq
+			wgsim -S 1 -r 0 -R 0 -X 0 -N $(( $depth * $reflen / $pairbases )) -1 150 -2 150 $file $file.${depth}x.1.fq $file.${depth}x.2.fq
+			cat ecoli_1.fq >> $file.${depth}x.1.fq
+			cat ecoli_2.fq >> $file.${depth}x.2.fq
 		fi
 		vcf=gen/virusbreakend_${n}_${depth}x.vcf
 		bam=$file.${depth}x.bam
