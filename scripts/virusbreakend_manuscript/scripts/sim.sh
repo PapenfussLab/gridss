@@ -38,6 +38,8 @@ while [[ $n -lt 248 ]] ; do
 			wgsim -S 1 -r 0 -R 0 -X 0 -N $(( $depth * $reflen / $pairbases )) -1 150 -2 150 $file $file.${depth}x.1.fq $file.${depth}x.2.fq
 			cat ecoli_1.fq >> $file.${depth}x.1.fq
 			cat ecoli_2.fq >> $file.${depth}x.2.fq
+			sed -i 's/222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222/FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2/' $file.${depth}x.1.fq
+			sed -i 's/222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222/FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF2/' $file.${depth}x.2.fq
 		fi
 		vcf=gen/virusbreakend_${n}_${depth}x.vcf
 		bam=$file.${depth}x.bam
@@ -158,27 +160,28 @@ python $VIFI_DIR/scripts/run_vifi.py -f $file.${depth}x.1.fq -r $file.${depth}x.
 # -b $bam
 EOF
 		fi
-		vifi_dir=gen/vifi/${n}/${depth}x
-		mkdir -p $vifi_dir
-export VIFI_DIR=~/projects/virusbreakend/ViFi_hbv_hg19
-export AA_DATA_REPO=$VIFI_DIR/data_repo
-export REFERENCE_REPO=$VIFI_DIR/data
-		if [[ ! -f $vifi_dir/output.clusters.txt.range ]] ; then
-			cat > gen/slurm_vifi_${n}_${depth}x.sh << EOF
+		gridss_dir=gen/gridss/${n}/${depth}x
+		mkdir -p $gridss_dir
+		if [[ ! -f $gridss_dir/ ]] ; then
+			cat > gen/slurm_gridss_${n}_${depth}x.sh << EOF
 #!/bin/bash
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32g
 #SBATCH --time=48:00:00
 #SBATCH -p regular
-#SBATCH --output=$(realpath $vifi_dir)/log.vifi.%x.out
-#SBATCH --error=$(realpath $vifi_dir)/log.vifi.%x.err
+#SBATCH --output=$(realpath $vifi_dir)/log.gridss.%x.out
+#SBATCH --error=$(realpath $vifi_dir)/log.gridss.%x.err
 . ~/conda_crest/etc/profile.d/conda.sh
 conda activate virusbreakend
+
+# TODO: 
 cd $(realpath $vifi_dir)
-python $VIFI_DIR/scripts/run_vifi.py -f $file.${depth}x.1.fq -r $file.${depth}x.2.fq -v hbv -c 4
-#-l $REFERENCE_REPO/hbv/hmms/hmms.txt
-# -b $bam
+copy WGS metrics
+gridss.bam -r $ref -a assembly.bam -o gridss.raw.vcf $bam
+kraken annotate
+filter to viral insertions
 EOF
+		fi
 	done
 done
 chmod +x gen/*.sh
