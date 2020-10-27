@@ -1,4 +1,5 @@
 #!/bin/bash
+#conda create -n vifi bwa=0.7.17 python=2.7 pysam=0.15.2 samtools=1.9 hmmer
 export PATH=~/dev/gridss/:$PATH
 export GRIDSS_JAR=~/projects/virusbreakend/gridss-2.10.1-gridss-jar-with-dependencies.jar
 hpv=MT783410.1
@@ -14,7 +15,7 @@ virusbreakenddb=~/projects/virusbreakend/virusbreakenddb
 ref=~/projects/reference_genomes/human/hg19.fa
 if [[ ! -f gen/chm13.bam.gridss.working/chm13.bam.insert_size_metrics ]] ; then
 	# GRIDSS uses WGS metrics which are going to be wrong for the small simulation - create a baseline
-	wgsim -r 0 -R 0 -X 0 -N 20000000 -1 $readlen -2 $readlen chm13.draft_v1.0.fasta gen/chm13.1.fq gen/chm13.2.fq
+	wgsim -s 1 -e 0.005 -r 0 -R 0 -X 0 -N 20000000 -1 $readlen -2 $readlen chm13.draft_v1.0.fasta gen/chm13.1.fq gen/chm13.2.fq
 	bwa mem -t $(nproc) $ref gen/chm13.1.fq gen/chm13.2.fq | samtools sort -@ $(nproc) -o gen/chm13.bam -O BAM -
 	gridss.sh -r $ref -s preprocess gen/chm13.bam -w gen/
 fi
@@ -40,6 +41,26 @@ while [[ $n -lt 248 ]] ; do
 		fi
 		vcf=gen/virusbreakend_${n}_${depth}x.vcf
 		bam=$file.${depth}x.bam
+		if [[ ! -f $bam ]]; then
+				cat > gen/slurm_bwa_${n}_${depth}x.sh << EOF
+#!/bin/bash
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=10g
+#SBATCH --time=12:00:00
+#SBATCH -p regular
+#SBATCH --output=log.bwa.%x.out
+#SBATCH --error=log.bwa.%x.err
+. ~/conda_crest/etc/profile.d/conda.sh
+conda activate virusbreakend
+cd $PWD
+cd gen
+if [[ ! -f $bam ]] ; then
+	echo "Creating $bam"
+	bwa mem -t 4 $ref $file.${depth}x.1.fq $file.${depth}x.2.fq | samtools sort -@ 4 -o $bam -O BAM -
+	samtools index $bam
+fi
+EOF
+		fi
 		if [[ ! -f $vcf.virusbreakend.working/$(basename $vcf).kraken2.report.viral.extracted.txt ]] ; then
 			metrics_prefix=$vcf.virusbreakend.working/adjusted/$(basename $bam).viral.bam.gridss.working/$(basename $bam).viral.bam
 			mkdir -p $(dirname $metrics_prefix)
@@ -48,7 +69,7 @@ while [[ $n -lt 248 ]] ; do
 					cp gen/chm13.bam.gridss.working/chm13.bam.$metric_suffix $metrics_prefix.$metric_suffix
 				fi
 			done
-			if [[ -f gen/$vcf ]] ; then
+			if [[ ! -f gen/$vcf ]] ; then
 				cat > gen/slurm_virusbreakend_${n}_${depth}x.sh << EOF
 #!/bin/bash
 #SBATCH --cpus-per-task=4
@@ -63,13 +84,10 @@ export PATH=~/projects/virusbreakend/gridss/scripts:\$PATH
 export PATH=~/projects/virusbreakend/gridss/src/main/c/gridsstools:\$PATH
 cd $PWD
 cd gen
-if [[ ! -f $bam ]] ; then
-	echo "Creating $bam"
-	bwa mem -t 4 $ref $file.${depth}x.1.fq $file.${depth}x.2.fq | samtools sort -@ 4 -o $bam -O BAM -
-	samtools index $bam
-fi
 virusbreakend.sh --db $virusbreakenddb -r $ref -t 4 -o $vcf -j $GRIDSS_JAR --rmargs "-e rmblast" -w $PWD/gen/ $bam
 EOF
+			else
+				echo "Found $vcf - skipping virusbreakend"
 			fi
 		fi
 		mkdir -p gen/batvi_${n}_${depth}x
@@ -115,6 +133,52 @@ cd $(realpath $verse_dir)
 perl ~/projects/virusbreakend/verse/VirusFinder2.0/VirusFinder.pl -c verse.config
 EOF
 		fi
+		vifi_dir=gen/vifi/${n}/${depth}x
+		mkdir -p $vifi_dir
+		export VIFI_DIR=~/projects/virusbreakend/ViFi_hbv_hg19
+		export AA_DATA_REPO=$VIFI_DIR/data_repo
+		export REFERENCE_REPO=$VIFI_DIR/data
+		if [[ ! -f $vifi_dir/output.clusters.txt.range ]] ; then
+			cat > gen/slurm_vifi_${n}_${depth}x.sh << EOF
+#!/bin/bash
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=10g
+#SBATCH --time=48:00:00
+#SBATCH -p regular
+#SBATCH --output=$(realpath $vifi_dir)/log.vifi.%x.out
+#SBATCH --error=$(realpath $vifi_dir)/log.vifi.%x.err
+. ~/conda_crest/etc/profile.d/conda.sh
+conda activate vifi
+export VIFI_DIR=$VIFI_DIR
+export AA_DATA_REPO=$AA_DATA_REPO
+export REFERENCE_REPO=$REFERENCE_REPO
+cd $(realpath $vifi_dir)
+python $VIFI_DIR/scripts/run_vifi.py -f $file.${depth}x.1.fq -r $file.${depth}x.2.fq -v hbv -c 4
+#-l $REFERENCE_REPO/hbv/hmms/hmms.txt
+# -b $bam
+EOF
+		fi
+		vifi_dir=gen/vifi/${n}/${depth}x
+		mkdir -p $vifi_dir
+export VIFI_DIR=~/projects/virusbreakend/ViFi_hbv_hg19
+export AA_DATA_REPO=$VIFI_DIR/data_repo
+export REFERENCE_REPO=$VIFI_DIR/data
+		if [[ ! -f $vifi_dir/output.clusters.txt.range ]] ; then
+			cat > gen/slurm_vifi_${n}_${depth}x.sh << EOF
+#!/bin/bash
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32g
+#SBATCH --time=48:00:00
+#SBATCH -p regular
+#SBATCH --output=$(realpath $vifi_dir)/log.vifi.%x.out
+#SBATCH --error=$(realpath $vifi_dir)/log.vifi.%x.err
+. ~/conda_crest/etc/profile.d/conda.sh
+conda activate virusbreakend
+cd $(realpath $vifi_dir)
+python $VIFI_DIR/scripts/run_vifi.py -f $file.${depth}x.1.fq -r $file.${depth}x.2.fq -v hbv -c 4
+#-l $REFERENCE_REPO/hbv/hmms/hmms.txt
+# -b $bam
+EOF
 	done
 done
 chmod +x gen/*.sh
