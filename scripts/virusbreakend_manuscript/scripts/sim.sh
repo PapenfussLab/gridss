@@ -193,4 +193,4 @@ chmod +x gen/*.sh
 #grep "^#" $(find gen/gen -name 'virusbreakend*.vcf' | head -1) > ../publicdata/sim/virusbreakend.vcf
 #grep -v "##" $(find gen/gen -name 'virusbreakend*.vcf') | grep -v "#CHROM" >> ../publicdata/sim/virusbreakend.vcf
 #grep -v Confidence $(find gen/verse -name integration-sites.txt) > ../publicdata/sim/verse.tsv
-
+#grep chr $(find gen/vifi -name 'output.clusters.txt.range') | tr ':' ',' > ../publicdata/sim/vifi.tsv
