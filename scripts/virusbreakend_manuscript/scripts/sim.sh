@@ -163,28 +163,64 @@ EOF
 		gridss_dir=gen/gridss/${n}/${depth}x
 		mkdir -p $gridss_dir
 		if [[ ! -f $gridss_dir/ ]] ; then
+			vcf=$gridss_dir/gridss_{n}_${depth}x.vcf
+			metrics_prefix=$gridss_dir/$(basename $bam).gridss.working/$(basename $bam)
+			mkdir -p $(dirname $metrics_prefix)
+			for metric_suffix in cigar_metrics idsv_metrics insert_size_metrics mapq_metrics tag_metrics ; do
+				if [[ ! -f $metrics_prefix.$metric_suffix ]] ; then
+					cp gen/chm13.bam.gridss.working/chm13.bam.$metric_suffix $metrics_prefix.$metric_suffix
+				fi
+			done
 			cat > gen/slurm_gridss_${n}_${depth}x.sh << EOF
 #!/bin/bash
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=32g
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16g
 #SBATCH --time=48:00:00
 #SBATCH -p regular
-#SBATCH --output=$(realpath $vifi_dir)/log.gridss.%x.out
-#SBATCH --error=$(realpath $vifi_dir)/log.gridss.%x.err
+#SBATCH --output=$(realpath $gridss_dir)/log.gridss.%x.out
+#SBATCH --error=$(realpath $gridss_dir)/log.gridss.%x.err
 . ~/conda_crest/etc/profile.d/conda.sh
 conda activate virusbreakend
-
-# TODO: 
-cd $(realpath $vifi_dir)
-copy WGS metrics
-gridss.bam -r $ref -a assembly.bam -o gridss.raw.vcf $bam
-kraken annotate
-filter to viral insertions
+cd $(realpath $gridss_dir)
+gridss.sh --jvmheap 14g -t 4 -j $GRIDSS_JAR -r $ref -a assembly.bam -o gridss.raw.vcf $bam
+gridss_annotate_vcf_kraken2.sh \
+		-o gridss.ann.vcf \
+		-t 4 \
+		--kraken2db $virusbreakenddb \
+		gridss.raw.vcf
+	grep INSTAXID gridss.ann.vcf | grep -v "INSTAXID=9606;" > $vcf
 EOF
 		fi
 	done
 done
 chmod +x gen/*.sh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # merge outputs
 #cat $(find . -name 'final_hits.txt') | grep -v LIB > gen/all_final_hits.txt
