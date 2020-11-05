@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.kraken;
 
+import au.edu.wehi.idsv.ncbi.TaxonomyLevel;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
