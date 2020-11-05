@@ -25,6 +25,16 @@ vbe = data.frame(
 	)
 vbe = bind_cols(vbe, getndepth(as.character(seqnames(vbevcf))))
 
+gridssvcf = readVcf("../publicdata/sim/gridss2.vcf")
+gridss = data.frame(
+	host_chr=str_match(as.character(seqnames(gridssvcf)), ".vcf:(.*)$")[,2],
+	host_pos=start(gridssvcf),
+	virus_taxid=info(gridssvcf)$INSTAXID,
+	qual=rowRanges(gridssvcf)$QUAL
+)
+gridss = bind_cols(gridss, getndepth(as.character(seqnames(gridssvcf))))
+
+
 versedf = read_tsv(
 		"../publicdata/sim/verse.tsv", #"../publicdata/sim/verse.tsv",
 		col_names=c("chr1", "pos1", "ori1", "chr2", "pos2", "ori2", "rpsr", "confidence"),
@@ -44,27 +54,25 @@ versedf = bind_cols(versedf, getndepth(versedf$file))
 
 vifidf = read_csv("../publicdata/sim/vifi.tsv", col_names=c("file", "host_chr","Min","Max","Split1","Split2"), col_types="ccnnnn")
 vifidf = bind_cols(vifidf, getndepth(vifidf$file))
-vificalls = bind_rows(
+
+
+calls_virus_position_not_reported = bind_rows(
 		vifidf %>% mutate(host_pos=Split1, ori="+"),
 		vifidf %>% mutate(host_pos=Split2, ori="-")) %>%
+	mutate(caller="ViFi") %>%
+	bind_rows(gridss %>% mutate(caller="GRIDSS2")) %>%
 	mutate(
 		host_chr_match=host_chr=="chr1",
 		host_pos_match=abs((n * 1000000) - host_pos) < 1000000,
 		tp=host_chr_match & host_pos_match) %>%
-	group_by(n, depth) %>%
+	group_by(caller, n, depth) %>%
 	mutate(tp = tp & cumsum(tp) <= 2) %>%
 	ungroup() %>%
 	mutate(
 		fp = !tp,
 		hom_tp = FALSE, # Doesn't report viral position so we can't know
-		score=0, # TODO use cluster detail as qual proxy
-		caller="ViFi") %>%
+		score=0) %>%
 	dplyr::select(n, depth, caller, host_chr, host_pos, score, tp, hom_tp, fp)
-	
-	
-	
-		
-
 calls=bind_rows(
 		batvi %>% mutate(caller="BATVI", score=as.numeric(reads)),
 		vbe %>% mutate(caller="VIRUSBreakend", score=qual),
@@ -73,9 +81,8 @@ calls=bind_rows(
 	mutate(
 		n=as.numeric(n),
 		depth=as.numeric(depth)) %>%
-	dplyr::select(n, depth, caller, host_chr, host_pos, virus_pos, score, n)
-
-calls = calls %>% mutate(
+	dplyr::select(n, depth, caller, host_chr, host_pos, virus_pos, score, n) %>%
+	mutate(
 		host_chr_match=host_chr=="chr1",
 		host_pos_match=abs((n * 1000000) - host_pos) < 1000000,
 		virus_start_match=abs((n * 8) - virus_pos) < 100,
@@ -100,7 +107,8 @@ calls = calls %>% mutate(
 		tp=start_tp | end_tp,
 		hom_tp = start_hom_tp | end_hom_tp,
 		fp=!tp & !hom_tp) %>%
-	bind_rows(vificalls)
+	bind_rows(calls_virus_position_not_reported) %>%
+	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi")))
 
 # sanity check we never have more than 2 true positives
 calls %>% group_by(caller, n, depth) %>%
