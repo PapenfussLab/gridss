@@ -28,13 +28,10 @@ kraken2args=""
 gridssargs="--jvmheap 13g"
 rmargs="--species human"
 nodesdmp=""
-virushostdb=""
 minreads="50"
-viralgenomes="1"
 metricsrecords=10000000
 metricsmaxcoverage=100000
 maxcoverage=1000000
-hosttaxid=9606
 force="false"
 forceunpairedfastq="false"
 USAGE_MESSAGE="
@@ -48,19 +45,17 @@ Usage: virusbreakend.sh [options] input.bam
 	-t/--threads: number of threads to use. (Default: $threads).
 	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
 	--db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build.sh to build.
-	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: $hosttaxid)
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
 	--rmargs: additional RepeatMasker arguments (Default: $rmargs)
 	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
-	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
 # handled by virusbreakend-build.sh
 #--kraken2db: kraken2 database
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq,viralgenomes:
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -119,20 +114,6 @@ while true; do
 			;;
 		--minreads)
 			minreads="$2"
-			shift 2
-			;;
-		--hosttaxid)
-			printf -v hosttaxid '%d\n' "$2" 2>/dev/null
-			printf -v hosttaxid '%d' "$2" 2>/dev/null
-			shift 2
-			;;
-		--viralgenomes)
-			printf -v viralgenomes '%d\n' "$2" 2>/dev/null
-			printf -v viralgenomes '%d' "$2" 2>/dev/null
-			shift 2
-			;;
-		--virushostdb)
-			virushostdb="$2"
 			shift 2
 			;;
 		-f|--force)
@@ -269,9 +250,6 @@ if [[ ! -d "$kraken2db" ]] ; then
 	write_status "Unable to find kraken2 database directory '$kraken2db'" 
 	exit $EX_NOINPUT
 fi
-if [[ "$virushostdb" == "" ]] ; then
-	virushostdb="$kraken2db/virushostdb.tsv"
-fi
 if [[ "$nodesdmp" == "" ]] ; then
 	nodesdmp="$kraken2db/taxonomy/nodes.dmp"
 fi
@@ -282,26 +260,19 @@ if [[ ! -f "$nodesdmp" ]] ; then
 	write_status "nodes.dmp can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip"
 	exit $EX_NOINPUT
 fi
-taxid_args="-TAXONOMY_IDS null"
-if [[ "$hosttaxid" -gt 0 ]] ; then
-	if [[ ! -f "$virushostdb" ]] ; then
-		write_status "Missing virushostdb file. Specify with --virushostdb"
-		write_status "virushostdb can be downloaded from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv"
-	fi
-	write_status "Found virushostdb file $virushostdb"
-	i=0
-	for taxid in $(cut -f 1,8 $virushostdb | grep "	$hosttaxid\$" | cut -f 1) ; do
-		i=$(($i + 1))
-		taxid_args="$taxid_args -TAXONOMY_IDS $taxid"
-	done
-	write_status "Found $i viral sequences associated with host NCBI:txid${hosttaxid}"
-	if [[ $i -eq 0 ]]; then
-		write_status "Terminating early due to 0 sequences of interest for host NCBI:txid${hosttaxid}"
-		exit $EX_CONFIG
-	fi
-else
-	taxid_args="$taxid_args -TAXONOMY_IDS 10239" 	# All viruses
-fi
+# TODO only virus genomes than can integrate into the host genomes (proviruses)
+# HBV: Viruses; Riboviria; Pararnavirae; Artverviricota; [Revtraviricetes]; Blubervirales; Hepadnaviridae; Orthohepadnavirus	
+# HIV: Viruses; Riboviria; Pararnavirae; Artverviricota; [Revtraviricetes]; Ortervirales; Retroviridae; Orthoretrovirinae; Lentivirus
+# HPV:                       Viruses; Monodnaviria; Shotokuvirae; Cossaviricota; [Papovaviricetes]; Zurhausenvirales; Papillomaviridae; Firstpapillomavirinae; Alphapapillomavirus; Alphapapillomavirus 10
+# Merkcel cell polyomavirus: Viruses; Monodnaviria; Shotokuvirae; Cossaviricota; [Papovaviricetes]; Sepolyvirales; Polyomaviridae; Alphapolyomavirus; Human polyomavirus 5
+# EBV: Viruses; Duplodnaviria; Heunggongvirae; Peploviricota; Herviviricetes; Herpesvirales; Herpesviridae; Gammaherpesvirinae; Lymphocryptovirus
+# HHV-8
+# HCV
+# HTLV-1
+# AAV2
+# HHV4
+# PCAWG filter: https://www.nature.com/articles/s41588-019-0558-9
+# This subset of viruses included: herpesviruses (HHV1, HHV2, HHV4, HHV5, HHV6A/B), simian virus 40 (SV40) and 12 (SV12), human immunodeficiency virus (HIV1), human and simian T-cell lymphotropic virus type 1 (HTLV1 and STLV1), BK polyomavirus (BKP), human parvovirus B19, mouse mammary tumor virus, murine type C retrovirus, Mason–Pfizer monkey virus, HBV, HPV (HPV16, HPV18 and HPV6a) and AAV2. 
 if [[ $force != "true" ]] ; then
 	for f in "$@" ; do
 		if [[ "$(tr -d ' 	\n' <<< "$f")" != "$f" ]] ; then
@@ -405,6 +376,7 @@ file_readname=$prefix_working.readnames.txt
 file_report=$prefix_working.kraken2.report.all.txt
 file_viral_report=$prefix_working.kraken2.report.viral.txt
 file_extracted_report=$prefix_working.kraken2.report.viral.extracted.txt
+file_summary_csv=$prefix_working.summary.csv
 exec_concat_fastq=$prefix_working.cat_input_as_fastq.sh
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
@@ -434,8 +406,7 @@ else
 fi
 if [[ ! -f $file_extracted_report ]] ; then
 	write_status "Identifying viruses in sample based on kraken2 summary report"
-	# The sort is so we will include the virushostdb sequences in
-	# library/added before the kraken sequences in library/viral
+	# The sort is so we will include any library/added before the default RefSeq sequences (in library/viral)
 	kraken_references_arg=$(for fa in $(find $kraken2db -path '**/library/**/*.fna' | sort) ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
 	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
 	{ $timecmd java -Xmx4g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestSequencesBasedOnReport \
@@ -443,11 +414,11 @@ if [[ ! -f $file_extracted_report ]] ; then
 		--OUTPUT $prefix_working.kraken2.fa \
 		--REPORT_OUTPUT $file_viral_report \
 		--SUMMARY_REPORT_OUTPUT $file_extracted_report \
+		--SUMMARY_OUTPUT $file_summary_csv \
 		--NCBI_NODES_DMP $nodesdmp \
 		$kraken_references_arg \
 		--MIN_SUPPORTING_READS $minreads \
-		--TAXID_TO_RETURN $viralgenomes \
-		$taxid_args \
+		--TAXONOMIC_DEDUPLICATION_LEVEL Genus \
 	; } 1>&2 2>> $logfile
 else
 	write_status "Identifying viruses	Skipped: found	$file_extracted_report"
@@ -600,7 +571,9 @@ file_filtered_vcf=$prefix_adjusted.gridss.bealn.k2.rm.filtered.vcf
 file_wgs_metrics=$prefix_adjusted.wgs_metrics.txt
 rm -f $file_gridss_configuration
 cat > $file_gridss_configuration << EOF
-assembly.positional.maximumNodeDensity = 20
+assembly.downsample.acceptDensityPortion = 5
+assembly.downsample.targetEvidenceDensity = 50
+assembly.positional.maximumNodeDensity = 100
 assembly.positional.safetyModePathCountThreshold = 250000
 assembly.positional.safetyModeContigsToCall = 12
 EOF
@@ -684,6 +657,12 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 		--TAXONOMY_IDS $hosttaxid \
 	; } 1>&2 2>> $logfile
 fi
+# if not summary file
+if [[ ! -f $file_summary ]] ; then
+	for row in extracted ; done
+		append to summary file
+	done
+fi
 if [[ ! -f $file_wgs_metrics ]] ; then
 	write_status "Calculating virus WGS metrics"
 	{ $timecmd java -Xmx1g $jvm_args \
@@ -698,6 +677,10 @@ fi
 cp $file_filtered_vcf $output_vcf
 cp $file_extracted_report $output_vcf.kraken2.summary.csv
 cp $file_wgs_metrics $output_vcf.wgs_metrics.txt
+
+# TODO summary results file:
+#taxid_genus,name_genus,taxid_species,name_species,taxid,name,ref,reads_genus,reads_species,reads_direct,meandepth,integration_sites
+
 
 write_status "Generated $output_vcf"
 write_status "Done"
