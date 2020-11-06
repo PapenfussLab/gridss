@@ -155,4 +155,23 @@ public class ExtractBestSequencesBasedOnReportTest extends IntermediateFilesTest
         }
         Assert.assertEquals(2, refList.size());
     }
+    @Test
+    public void summary_output_should_traverse_species_genus() throws IOException {
+        ExtractBestSequencesBasedOnReport cmd = new ExtractBestSequencesBasedOnReport();
+        cmd.INPUT = new File("src/test/resources/kraken/multistrain/26T.virusbreakend.vcf.kraken2.report.all.txt");
+        cmd.KRAKEN_REFERENCES = ImmutableList.of(
+                new File("src/test/resources/kraken/multistrain/26T.virusbreakend.vcf.viral.fa")
+        );
+        cmd.NCBI_NODES_DMP = new File("src/test/resources/kraken/multistrain/relevant_nodes.dmp");
+        cmd.OUTPUT = new File(output.toString() + ".fa");;
+        cmd.REPORT_OUTPUT = new File(output.toString() + ".report.txt");
+        cmd.SUMMARY_REPORT_OUTPUT = new File(output.toString() + ".summary.report.txt");
+        cmd.SUMMARY_OUTPUT = new File(output.toString() + ".summary.tsv");
+        cmd.TAXONOMY_IDS = ImmutableList.of(10239);
+        cmd.MIN_SUPPORTING_READS = 1;
+        cmd.doWork();
+
+        List<String> summary = Files.readAllLines(cmd.SUMMARY_OUTPUT.toPath());
+        Assert.assertEquals("10405\tOrthohepadnavirus\t858\t10407\tHepatitis B virus\t856\t489466\tHBV genotype C\t277\tkraken:taxid|489466|AB540583", summary.get(1));
+    }
 }

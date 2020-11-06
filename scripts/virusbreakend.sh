@@ -27,7 +27,9 @@ threads=8
 kraken2args=""
 gridssargs="--jvmheap 13g"
 rmargs="--species human"
+host=human
 nodesdmp=""
+virusnbr=""
 minreads="50"
 metricsrecords=10000000
 metricsmaxcoverage=100000
@@ -44,6 +46,7 @@ Usage: virusbreakend.sh [options] input.bam
 	-j/--jar: location of GRIDSS jar
 	-t/--threads: number of threads to use. (Default: $threads).
 	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
+	--host: NBCI host filter. Valid values are algae, archaea, bacteria, eukaryotic algae, fungi, human, invertebrates, land plants, plants, protozoa, vertebrates (Default: $host)
 	--db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build.sh to build.
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
@@ -55,7 +58,7 @@ Usage: virusbreakend.sh [options] input.bam
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq,host:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -81,6 +84,10 @@ while true; do
 			;;
 		-o|--output)
 			output_vcf="$2"
+			shift 2
+			;;
+		--host)
+			host="$2"
 			shift 2
 			;;
 		-j|--jar)
@@ -253,6 +260,16 @@ fi
 if [[ "$nodesdmp" == "" ]] ; then
 	nodesdmp="$kraken2db/taxonomy/nodes.dmp"
 fi
+if [[ "$virusnbr" == "" ]] ; then
+	virusnbr="$kraken2db/taxid10239.nbr"
+fi
+if [[ ! -f "$virusnbr" ]] ; then
+	echo "$USAGE_MESSAGE"
+	write_status "Unable to find $virusnbr."
+	write_status "Use virusbreakend-build.sh to generate or download from"
+	write_status "https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239&cmd=download2"
+	exit $EX_NOINPUT
+fi
 if [[ ! -f "$nodesdmp" ]] ; then
 	echo "$USAGE_MESSAGE"
 	write_status "Unable to find NCBI nodes.dmp file. Specify with --nodesdmp."
@@ -377,6 +394,7 @@ file_report=$prefix_working.kraken2.report.all.txt
 file_viral_report=$prefix_working.kraken2.report.viral.txt
 file_extracted_report=$prefix_working.kraken2.report.viral.extracted.txt
 file_summary_csv=$prefix_working.summary.csv
+file_summary_annotated_csv=$prefix_working.summary.ann.csv
 exec_concat_fastq=$prefix_working.cat_input_as_fastq.sh
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
@@ -405,6 +423,17 @@ else
 	write_status "Identifying viral sequences	Skipped: found	$file_readname"
 fi
 if [[ ! -f $file_extracted_report ]] ; then
+	taxid_args=""
+	if [[ "$host" != "" ]] ; then
+		# get the taxid for every contig in $virusnbr
+		taxid_args=$(cat $(find $kraken2db -path '**/library/**/*.fna.fai' | grep -v human | grep -v UniVec_Core) \
+			| cut -f 1 \
+			| grep -F -f <(grep $host $virusnbr | cut -f 1,2 | tr ',\t' '\n\n' | sort -u | sed 's/$/./' | grep -v "^.$") \
+			| cut -d '|' -f 2 \
+			| sed 's/^/--TAXONOMY_IDS /' \
+			| tr '\n' ' ')
+		taxid_args="--TAXONOMY_IDS null $taxid_args"
+	fi
 	write_status "Identifying viruses in sample based on kraken2 summary report"
 	# The sort is so we will include any library/added before the default RefSeq sequences (in library/viral)
 	kraken_references_arg=$(for fa in $(find $kraken2db -path '**/library/**/*.fna' | sort) ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
@@ -419,6 +448,7 @@ if [[ ! -f $file_extracted_report ]] ; then
 		$kraken_references_arg \
 		--MIN_SUPPORTING_READS $minreads \
 		--TAXONOMIC_DEDUPLICATION_LEVEL Genus \
+		$taxid_args \
 	; } 1>&2 2>> $logfile
 else
 	write_status "Identifying viruses	Skipped: found	$file_extracted_report"
@@ -650,37 +680,35 @@ else
 fi
 if [[ ! -f $file_filtered_vcf ]] ; then
 	write_status "Filtering to host integrations"
+	hosttaxid_arg=""
+	if [[ "$host" == "human" ]] ; then
+		hosttaxid_arg="--TAXONOMY_IDS 9606"
+	fi
 	{ $timecmd java -Xmx64m $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
 		--INPUT $file_rm_annotated_vcf \
 		--OUTPUT $file_filtered_vcf \
 		--REFERENCE_SEQUENCE $reference \
-		--TAXONOMY_IDS $hosttaxid \
+		$hosttaxid_arg \
 	; } 1>&2 2>> $logfile
 fi
-# if not summary file
-if [[ ! -f $file_summary ]] ; then
-	for row in extracted ; done
-		append to summary file
-	done
-fi
-if [[ ! -f $file_wgs_metrics ]] ; then
-	write_status "Calculating virus WGS metrics"
-	{ $timecmd java -Xmx1g $jvm_args \
-			-cp $gridss_jar picard.cmdline.PicardCommandLine CollectWgsMetrics \
-			--INPUT $prefix_adjusted.merged.bam \
-			--OUTPUT $file_wgs_metrics \
-			--REFERENCE_SEQUENCE $prefix_adjusted.viral.fa \
-			--COVERAGE_CAP 10000 \
-			--COUNT_UNPAIRED true \
-	; } 1>&2 2>> $logfile
+if [[ ! -f $file_summary_annotated_csv ]] ; then
+	write_status "Writing annotated summary to $file_summary_annotated_csv"
+	rm -f $prefix_adjusted.merged.bam.coverage
+	samtools coverage $prefix_adjusted.merged.bam > $prefix_adjusted.merged.bam.coverage
+	while read inline; do
+		if [[ $inline = taxid_genus* ]] ; then
+			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations" >> $file_summary_annotated_csv
+		else
+			taxid=$(echo "$inline" | cut -f 7)
+			coverage_stats=$(grep _taxid_${taxid}_ $prefix_adjusted.merged.bam.coverage)
+			contig=$(echo "$coverage_stats" | cut -f 1)
+			hits=$(grep -E ^adj $file_filtered_vcf | grep -F $contig | wc -l || true)
+			echo "$inline	$coverage_stats	$hits"  >> $file_summary_annotated_csv
+		fi
+	done < $file_summary_csv
 fi
 cp $file_filtered_vcf $output_vcf
-cp $file_extracted_report $output_vcf.kraken2.summary.csv
-cp $file_wgs_metrics $output_vcf.wgs_metrics.txt
-
-# TODO summary results file:
-#taxid_genus,name_genus,taxid_species,name_species,taxid,name,ref,reads_genus,reads_species,reads_direct,meandepth,integration_sites
-
+cp $file_summary_annotated_csv $output_vcf.summary.csv
 
 write_status "Generated $output_vcf"
 write_status "Done"

@@ -72,7 +72,7 @@ fi
 write_status() {
 	echo "$(date): $1" 1>&2
 }
-for tool in kraken2-build samtools gunzip tar dustmasker rsync java ; do
+for tool in kraken2-build samtools gunzip tar dustmasker rsync java wget ; do
 	if ! which $tool >/dev/null; then
 		echo "Error: unable to find $tool on \$PATH" 1>&2
 		exit $EX_CONFIG
@@ -104,16 +104,18 @@ for f in $(find $dbname/ -name '*.fna') ; do
 	java -cp $GRIDSS_JAR \
 		picard.cmdline.PicardCommandLine \
 		CreateSequenceDictionary \
-		I=$f \
-		R=$f.dict
+		R=$f \
+		O=$f.dict
 done
 
 cd $dbname
+wget --output-document=taxid10239.nbr "https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239&cmd=download2"
 cd ..
 tar -czvf virusbreakend.db.$(basename $dbname).tar.gz \
 	$(basename $dbname)/*.k2d \
 	$(basename $dbname)/taxonomy/nodes.dmp \
 	$(basename $dbname)/library/viral/*.fna* \
+	$(basename $dbname)/taxid10239.nbr
 
 write_status "VIRUSBreakend build successful"
 write_status "The full build (including intermediate files) can be found in $dbname"

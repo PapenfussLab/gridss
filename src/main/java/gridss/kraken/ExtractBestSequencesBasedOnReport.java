@@ -129,6 +129,8 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             for (IndexedFastaSequenceFile fa : ref) {
                 sequenceIndexesToExport.add(new ArrayList<>());
             }
+            List<String> summary = new ArrayList<>();
+            summary.add(createSummaryHeader());
             Map<KrakenReportLine, List<String>> exportedRefs = new HashMap<>();
             for (KrakenReportLine taxaToExport : interestingNodes) {
                 List<String> refsForThisTaxa = new ArrayList<>();
@@ -141,6 +143,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
                         if (seqTaxId == taxid && contigsFound < CONTIGS_PER_TAXID) {
                             contigsFound++;
                             sequenceIndexesToExport.get(i).add(ssr.getSequenceIndex());
+                            summary.add(createSummaryLine(fullReport, taxa, taxaToExport, ssr.getSequenceName()));
                         }
                     }
                 }
@@ -150,11 +153,6 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             }
             if (SUMMARY_OUTPUT != null) {
                 log.info("Writing summary csv report to ", SUMMARY_OUTPUT);
-                List<String> summary = new ArrayList<>();
-                summary.add(createSummaryHeader());
-                for (Map.Entry<KrakenReportLine, List<String>> in : exportedRefs.entrySet()) {
-                    summary.add(createSummaryLine(fullReport, taxa, in.getKey(), in.getValue()));
-                }
                 Files.write(SUMMARY_OUTPUT.toPath(), summary);
             }
             if (sequenceIndexesToExport.stream().anyMatch(list -> !list.isEmpty())) {
@@ -189,7 +187,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
         return "taxid_genus\tname_genus\treads_genus\ttaxid_species\treads_species\tname_species\ttaxid\tname\treads\treference";
     }
 
-    private String createSummaryLine(List<KrakenReportLine> fullReport, Map<Integer, MinimalTaxonomyNode> taxa, KrakenReportLine line, List<String> ref) {
+    private String createSummaryLine(List<KrakenReportLine> fullReport, Map<Integer, MinimalTaxonomyNode> taxa, KrakenReportLine line, String ref) {
         Map<Integer, KrakenReportLine> lookup = fullReport.stream().collect(Collectors.toMap(x -> x.taxonomyId, x -> x));
         KrakenReportLine genus = line;
         KrakenReportLine species = line;
@@ -197,10 +195,10 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
         while (current != null && current.taxonomyId > 1) {
             switch (current.rank) {
                 case "S":
-                    species = line;
+                    species = current;
                     break;
                 case "G":
-                    genus = line;
+                    genus = current;
                     break;
             }
             int parent_taxid = taxa.get(current.taxonomyId).parentTaxId;
@@ -209,9 +207,9 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
         }
         return String.format("%d\t%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%s",
                 genus.taxonomyId, genus.scientificName.trim(),genus.countAssignedToTree,
-                genus.taxonomyId, species.scientificName.trim(),species.countAssignedToTree,
+                species.taxonomyId, species.scientificName.trim(),species.countAssignedToTree,
                 line.taxonomyId, line.scientificName.trim(),line.countAssignedToTree,
-                ref.stream().collect(Collectors.joining(",")));
+                ref);
     }
 
     /**
