@@ -2,6 +2,7 @@
 #conda create -n vifi bwa=0.7.17 python=2.7 pysam=0.15.2 samtools=1.9 hmmer
 export PATH=~/dev/gridss/:$PATH
 export GRIDSS_JAR=~/projects/virusbreakend/gridss-2.10.2-gridss-jar-with-dependencies.jar
+conda activate virusbreakend
 hpv=MT783410.1
 hbv=LC500247.1
 chr1_len=248387497
@@ -13,7 +14,7 @@ virus_length=2000
 readlen=150
 virusbreakenddb=~/projects/virusbreakend/virusbreakenddb
 ref=~/projects/reference_genomes/human/hg19.fa
-art_args="--noALN --paired --seqSys HSXn -ir 0 -ir2 0 -dr 0 -dr2 0 -k 0 -l 150 -m 500 -s 100 -rs 1 "
+art_args="--noALN --paired --seqSys HSXn -ir 0 -ir2 0 -dr 0 -dr2 0 -k 0 -l 150 -m 500 -s 100 -rs 1 --id read"
 if [[ ! -f gen/chm13.bam.gridss.working/chm13.bam.insert_size_metrics ]] ; then
 	file=$PWD/gen/chr13.fa
 	depth=30
@@ -23,7 +24,7 @@ if [[ ! -f gen/chm13.bam.gridss.working/chm13.bam.insert_size_metrics ]] ; then
 		samtools faidx $hbv.fa $hbv:3215 | grep -v ">" | tr -d '\n' >> $file
 		samtools faidx chm13.draft_v1.0.fasta chr1:33000001-248387497 | grep -v ">" | tr -d '\n' >> $file
 		# GRIDSS uses WGS metrics which are going to be wrong for the small simulation - create a baseline
-		art_illumina $art_args --fcov $depth --in $file  -o $file.${depth}x.
+		art_illumina $art_args --fcov $depth --in $file -o $file.${depth}x.
 		cat ecoli_1.fq >> $file.${depth}x.1.fq
 		cat ecoli_2.fq >> $file.${depth}x.2.fq
 	fi
@@ -32,29 +33,28 @@ if [[ ! -f gen/chm13.bam.gridss.working/chm13.bam.insert_size_metrics ]] ; then
 	fi
 	gridss.sh -r $ref -s preprocess gen/chm13.bam -w gen/
 fi
-exit 0
 while [[ $n -lt 248 ]] ; do
 	n=$(($n + 1))
 	pos=$(($n * 1000000))
 	virus_pos=$(($n * 4))
-	mkdir -p $PWD/gen/${n}/
-	file=$PWD/gen/${n}/chr1_${pos}.fa
+	mkdir -p $PWD/gen/in/${n}/
+	file=$PWD/gen/in/${n}/chr1_${pos}.fa
 	if [[ ! -f $file ]] ; then
+		echo "Generating $file"
 		echo ">$file" >> $file
 		samtools faidx chm13.draft_v1.0.fasta chr1:$(($pos - $flank))-$(($pos)) | grep -v ">" | tr -d '\n' >> $file
 		samtools faidx $hbv.fa $hbv:$virus_pos-$(($virus_pos + $virus_length)) | grep -v ">" | tr -d '\n' >> $file
 		samtools faidx chm13.draft_v1.0.fasta chr1:$(($pos + $breakoffset))-$(($pos + $flank + $breakoffset)) | grep -v ">" | tr -d '\n' >> $file
-		echo "Generated $n"
 	fi
 	reflen=$(( 2 * $flank + $virus_length ))
 	pairbases=$(( 2 * $readlen ))
 	for depth in 5 10 15 30 60 ; do
 		if [[ ! -f $file.${depth}x.1.fq ]] ; then
-			conda activate virusbreakend
 			art_illumina $art_args --fcov $depth --in $file -o $file.${depth}x.
 			#wgsim -S 1 -r 0 -R 0 -X 0 -N $(( $depth * $reflen / $pairbases )) -1 150 -2 150 $file $file.${depth}x.1.fq $file.${depth}x.2.fq
 			cat ecoli_1.fq >> $file.${depth}x.1.fq
 			cat ecoli_2.fq >> $file.${depth}x.2.fq
+			sed -i -E 's/^\@.*read([0-9]+).*$/@read\1/' $file.${depth}x.1.fq $file.${depth}x.2.fq
 		fi
 		bam=$file.${depth}x.bam
 		if [[ ! -f $bam ]]; then
@@ -197,8 +197,8 @@ EOF
 					cp gen/chm13.bam.gridss.working/chm13.bam.$metric_suffix $metrics_prefix.$metric_suffix
 				fi
 			done
-			if [[ ! -f $gridss_dir/$gridss_vcf ]]
-			cat > gen/slurm_gridss_${n}_${depth}x.sh << EOF
+			if [[ ! -f $gridss_dir/$gridss_vcf ]] ; then
+				cat > gen/slurm_gridss_${n}_${depth}x.sh << EOF
 #!/bin/bash
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16g
@@ -209,6 +209,9 @@ EOF
 echo "\$(date) Start"
 . ~/conda_crest/etc/profile.d/conda.sh
 conda activate virusbreakend
+export PATH=~/projects/virusbreakend/gridss/scripts:\$PATH
+export PATH=~/projects/virusbreakend/gridss/src/main/c/gridsstools:\$PATH
+export PATH=~/projects/virusbreakend/:\$PATH
 cd $(realpath $gridss_dir)
 gridss.sh --jvmheap 14g -t 4 -j $GRIDSS_JAR -r $ref -a assembly.bam -o gridss.raw.vcf $bam
 gridss_annotate_vcf_kraken2.sh \
@@ -219,6 +222,7 @@ gridss_annotate_vcf_kraken2.sh \
 grep INSTAXID gridss.ann.vcf | grep -v "INSTAXID=9606;" > $gridss_vcf
 echo "\$(date) End"
 EOF
+			fi
 		fi
 	done
 done
@@ -235,13 +239,13 @@ chmod +x gen/*.sh
 
 
 # merge outputs
-#cat $(find . -name 'final_hits.txt') | grep -v LIB > gen/all_final_hits.txt
+#cat $(find gen/batvi -name 'final_hits.txt') | grep -v LIB > gen/all_final_hits.txt
 #grep MSA gen/all_final_hits.txt > ../publicdata/sim/batvi_all_final_hits_MSA.txt
 #grep -v MSA gen/all_final_hits.txt > ../publicdata/sim/batvi_all_final_hits_noMSA.txt
-#grep "^#" $(find gen/gen -name 'virusbreakend*.vcf' | head -1) > ../publicdata/sim/virusbreakend.vcf
-#grep -v "##" $(find gen/gen -name 'virusbreakend*.vcf') | grep -v "#CHROM" >> ../publicdata/sim/virusbreakend.vcf
+#grep "^#" $(find gen/virusbreakend -name 'virusbreakend*.vcf' | head -1) > ../publicdata/sim/virusbreakend.vcf
+#grep -v "##" $(find gen/virusbreakend -name 'virusbreakend*.vcf') | grep -v "#CHROM" >> ../publicdata/sim/virusbreakend.vcf
 #grep -v Confidence $(find gen/verse -name integration-sites.txt) > ../publicdata/sim/verse.tsv
 #grep chr $(find gen/vifi -name 'output.clusters.txt.range') | tr ':' ',' > ../publicdata/sim/vifi.tsv
-#grep "^#" gen/gridss/1/60x/gridss_1_60x.vcf > ../publicdata/sim/virusbreakend.vcf
+#grep "^#" gen/gridss/1/60x/gridss_1_60x.vcf > ../publicdata/sim/gridss2.vcf
 #grep -v "##" $(find gen/gridss -name 'gridss_*x.vcf') | grep -v "#CHROM" | grep INSTAXID >> ../publicdata/sim/gridss2.vcf
 
