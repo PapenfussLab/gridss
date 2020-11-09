@@ -331,6 +331,7 @@ else
 fi
 write_status "R version: $(Rscript --version 2>&1)"
 write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
+write_status "$(kraken2 --version | head -1)"
 #write_status "minimap2 $(minimap2 --version)"
 if which /usr/bin/time >/dev/null ; then
 	write_status "time version: $(/usr/bin/time --version 2>&1)"
