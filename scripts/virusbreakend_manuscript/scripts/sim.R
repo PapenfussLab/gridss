@@ -85,8 +85,8 @@ calls=bind_rows(
 	mutate(
 		host_chr_match=host_chr=="chr1",
 		host_pos_match=abs((n * 1000000) - host_pos) < 1000000,
-		virus_start_match=abs((n * 8) - virus_pos) < 100,
-		virus_end_match=abs((n * 8 + 1000) - virus_pos) < 100) %>%
+		virus_start_match=abs((n * 4) - virus_pos) < 100,
+		virus_end_match=abs((n * 4 + 2000) - virus_pos) < 100) %>%
 	group_by(caller, n, depth) %>%
 	mutate(
 		start_tp=host_chr_match & host_pos_match & virus_start_match,

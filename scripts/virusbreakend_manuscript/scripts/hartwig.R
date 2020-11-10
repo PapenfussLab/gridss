@@ -2,30 +2,30 @@ library(tidyverse)
 library(VariantAnnotation)
 theme_set(theme_bw())
 setwd("../virusbreakend_manuscript/scripts")
-library(RMySQL)
-if (!exists("db")) db = dbConnect(MySQL(), dbname='hmfpatients', groups="RAnalysis")
-cancertypedf = DBI::dbGetQuery(db, "select sampleId, primaryTumorLocation FROM clinical")
-krakendf = read_tsv(
-		"../protecteddata/hmf/viral.out",
-		col_name=c("file", "pct", "treereads", "directreads", "level", "taxid", "name"),
-		col_types="cniicic") %>%
-	mutate(sample=str_extract(str_replace(file, stringr::fixed("./"), ""), "^[^.]+"))
-
-extracteddf = read_tsv(
-		"../protecteddata/hmf/extracted.out",
-		col_name=c("file", "pct", "treereads", "directreads", "level", "taxid", "name"),
-		col_types="cniicic") %>%
-	mutate(sample=str_extract(str_replace(file, stringr::fixed("./"), ""), "^[^.]+"))
-
-krakendf = left_join(krakendf, extracteddf %>% mutate(extracted=TRUE) %>% dplyr::select(sample, taxid, extracted), by=c("sample", "taxid")) %>%
-	replace_na(list(extracted=FALSE))
-
-wgsdf = read_tsv(
-		"../protecteddata/hmf/wgs_metrics.out",
-		col_names=c("file","GENOME_TERRITORY","MEAN_COVERAGE","SD_COVERAGE","MEDIAN_COVERAGE","MAD_COVERAGE","PCT_EXC_ADAPTER","PCT_EXC_MAPQ","PCT_EXC_DUPE","PCT_EXC_UNPAIRED","PCT_EXC_BASEQ","PCT_EXC_OVERLAP","PCT_EXC_CAPPED","PCT_EXC_TOTAL","PCT_1X","PCT_5X","PCT_10X","PCT_15X","PCT_20X","PCT_25X","PCT_30X","PCT_40X","PCT_50X","PCT_60X","PCT_70X","PCT_80X","PCT_90X","PCT_100X","HET_SNP_SENSITIVITY","HET_SNP_Q"),
-		col_types="cddddddddddddddddddddddddddddd") %>%
-	mutate(sample=str_extract(str_replace(file, stringr::fixed("./"), ""), "^[^.]+"))
-
+if (!file.exists("../protecteddata/hmf_cancertype.csv")) {
+	library(RMySQL)
+	if (!exists("db")) db = dbConnect(MySQL(), dbname='hmfpatients', groups="RAnalysis")
+	cancertypedf = DBI::dbGetQuery(db, "select sampleId, primaryTumorLocation, primaryTumorSubLocation, primaryTumorType, primaryTumorSubType, primaryTumorExtraDetails FROM clinical")
+	write_tsv(cancertypedf, "../protecteddata/hmf_cancertype.csv")
+}
+# krakendf = read_tsv(
+# 		"../protecteddata/hmf/viral.out",
+# 		col_name=c("file", "pct", "treereads", "directreads", "level", "taxid", "name"),
+# 		col_types="cniicic") %>%
+# 	mutate(sample=str_extract(str_replace(file, stringr::fixed("./"), ""), "^[^.]+"))
+# extracteddf = read_tsv(
+# 		"../protecteddata/hmf/extracted.out",
+# 		col_name=c("file", "pct", "treereads", "directreads", "level", "taxid", "name"),
+# 		col_types="cniicic") %>%
+# 	mutate(sample=str_extract(str_replace(file, stringr::fixed("./"), ""), "^[^.]+"))
+sampledf = read_tsv("../protecteddata/hmf/samples.csv", col_names="sample", col_types="c")
+cancertypedf = cancertypedf %>% filter(sampleId %in% sampledf$sample)
+cancertype_summary = cancertypedf %>% group_by(primaryTumorLocation) %>% summarise(n=n())
+summarydf = read_tsv("../protecteddata/hmf/merged.vcf.summary.csv") %>%
+	left_join(cancertypedf, by=c("sample"="sampleId")) %>%
+	mutate(hasIntegration=integrations > 0)
+names(summarydf)[6] = "name_species"
+names(summarydf)[7] = "reads_species"
 mergedvcf = readVcf("../protecteddata/hmf/merged.vcf")
 rownames(mergedvcf) = NULL
 alt = str_match(as.character(rowRanges(mergedvcf)$ALT), "([^\\[\\]]*)([\\[\\]])adjusted_kraken_taxid_([0-9]+)_(.*):([0-9]+)[\\[\\]]([^\\[\\]]*)")
@@ -43,23 +43,137 @@ sitedf = as.data.frame(alt) %>%
 		mapq=as.integer(str_extract(unlist(lapply(BEALN, function(x) x[[1]])), "[0-9]+$")),
 		bealn_hits=elementNROWS(BEALN))
 
+friendly_species_name = c(
+	"Adeno-associated dependoparvovirus A"="AAV-2",
+	"Alphapapillomavirus 7"="HPV-18",
+	"Alphapapillomavirus 9"="HPV-16",
+	"Gammapapillomavirus 16"="HPV", #-137",
+	"Gammapapillomavirus 19"="HPV", #"HPV-166",
+	"Gammapapillomavirus 8"="HPV", #"HPV-112"
+	"Gammapapillomavirus 9"="HPV", #"HPV-112"
+	"Betapapillomavirus 4"="HPV",
+	"Torque teno virus"="Other",
+	"Torque teno virus 1"="Other",
+	"Torque teno virus 6"="Other",
+	"Torque teno virus 9"="Other",
+	"Human alphaherpesvirus 1"="HSV-1",
+	"Human alphaherpesvirus 3"="HHV-3",
+	"Human betaherpesvirus 5"="HHV-5", # aka HCMV
+	"Human betaherpesvirus 6A"="HHV-6",
+	"Human betaherpesvirus 6B"="HHV-6",
+	"Human betaherpesvirus 7" = "HHV-7",
+	"Human gammaherpesvirus 4"="EBV",
+	"Human gammaherpesvirus 8"="HHV-8",
+	"Human polyomavirus 1"="BKPyV",
+	"Human polyomavirus 5"="MCPyV",
+	"Human polyomavirus 6"="HPyV6",
+	"Human polyomavirus 7"="HPyV7",
+	"Hepatitis B virus"="HBV",
+	"Baboon endogenous virus"="Other",
+	"Primate erythroparvovirus 1"="Other",
+	"Porcine type-C oncovirus"="Other",
+	"Vaccinia virus"="Other",
+	"Human erythrovirus V9"="Other")
 
-ggplot(wgsdf) +
-	aes(x=PCT_1X) +
-	geom_histogram() +
-	labs(title="Coverage of extracted virus")
+friendly_summary_species_name = c(
+	"Adeno-associated dependoparvovirus A"="Other",
+	"Alphapapillomavirus 7"="HPV",
+	"Alphapapillomavirus 9"="HPV",
+	"Gammapapillomavirus 16"="HPV", #-137",
+	"Gammapapillomavirus 19"="HPV", #"HPV-166",
+	"Gammapapillomavirus 8"="HPV", #"HPV-112"
+	"Gammapapillomavirus 9"="HPV", #"HPV-112"
+	"Betapapillomavirus 4"="HPV",
+	"Human alphaherpesvirus 1"="HSV",
+	"Human alphaherpesvirus 3"="HHV",
+	"Human betaherpesvirus 5"="HHV", # aka HCMV
+	"Human betaherpesvirus 6A"="HHV",
+	"Human betaherpesvirus 6B"="HHV",
+	"Human betaherpesvirus 7" = "HHV",
+	"Human gammaherpesvirus 4"="EBV",
+	"Human gammaherpesvirus 8"="HHV",
+	"Human polyomavirus 1"="BKPyV",
+	"Human polyomavirus 5"="MCPyV",
+	"Human polyomavirus 6"="HPyV",
+	"Human polyomavirus 7"="HPyV",
+	"Hepatitis B virus"="HBV",
+	"Torque teno virus"="Other",
+	"Torque teno virus 1"="Other",
+	"Torque teno virus 6"="Other",
+	"Torque teno virus 9"="Other",
+	"Baboon endogenous virus"="Other",
+	"Primate erythroparvovirus 1"="Other",
+	"Porcine type-C oncovirus"="Other",
+	"Vaccinia virus"="Other",
+	"Human erythrovirus V9"="Other")
 
-ggplot(wgsdf) +
-	aes(x=PCT_1X, y=MEAN_COVERAGE) +
+
+p = ggplot(summarydf) +
+	aes(x=coverage, y=meandepth, colour=integrations > 0, shape=integrations > 0) +
 	geom_point() +
-	scale_y_log10() + 
-	labs(title="Uniformity of coverage")
+	labs(title="Viral coverage") +
+	scale_y_log10()
+ggMarginal(p, margins="y", type="histogram", groupFill=TRUE)
 
-extraggplot(wgsdf) +
-	aes(x=PCT_1X, y=MEAN_COVERAGE) +
-	geom_point() +
-	scale_y_log10() + 
-	labs(title="Uniformity of coverage")
+ggplot(summarydf) +
+	aes(x=meandepth, fill=integrations > 0) +
+	geom_histogram(bins=50) +
+	scale_x_log10() +
+	labs(title="Viral coverage")
+
+ggplot(summarydf) +
+	aes(x=reads_species, fill=integrations > 0) +
+	geom_bar() +
+	theme(axis.text.x = element_text(angle = 90)) +
+	labs(fill="Viral\nIntegration\nFound", x="Virus", y="")
+
+# Viral prevalence by cancer type
+fulldf = expand.grid(sample=cancertypedf$sampleId, friendly_summary_species_name=unique(friendly_summary_species_name)) %>%
+	inner_join(cancertypedf, by=c("sample"="sampleId")) %>%
+	left_join(summarydf %>% mutate(friendly_summary_species_name=friendly_summary_species_name[name_species])) %>%
+	mutate(
+		status=ifelse(is.na(integrations), "Not found", ifelse(integrations > 0, "Integrated", "Found")),
+		primary=paste(primaryTumorLocation, primaryTumorSubLocation))
+ggplot(fulldf) +
+	aes(x=friendly_summary_species_name, fill=status) +
+	geom_bar() +
+	facet_wrap(~ primary, scales="free") +
+	theme(axis.text.x = element_text(angle = 90)) +
+	labs(fill="Viral\nIntegration\nFound", x="Virus", y="")
+
+genusfulldf = expand.grid(sample=cancertypedf$sampleId, name_genus=unique(summarydf$name_genus)) %>%
+	inner_join(cancertypedf, by=c("sample"="sampleId")) %>%
+	left_join(summarydf) %>%
+	mutate(
+		status=ifelse(is.na(integrations), "Not found", ifelse(integrations > 0, "Integrated", "Found")),
+		primary=paste(primaryTumorLocation, primaryTumorSubLocation))
+
+genusfulldf %>%
+	group_by(primary, name_genus) %>%
+	summarise(
+		n=n(),
+		found=sum(status != "Not found"),
+		found_integrated=sum(status=="Integrated")) %>%
+	filter(
+		(name_genus =="Orthohepadnavirus" & str_detect(primary, "Liver ")) | 
+		(name_genus =="Alphapapillomavirus" & str_detect(primary, "Cervix"))
+	)
+# Cervical samples without HPV
+cervical_without_hpv = cancertypedf %>% filter(primaryTumorSubLocation=="Cervix") %>%
+	left_join(summarydf %>% filter(name_genus=="Alphapapillomavirus"), by=c("sampleId"="sample")) %>%
+	filter(is.na(integrations)) %>%
+	pull(sampleId)
+summarydf %>% filter(sample %in% cervical_without_hpv)
+
+
+ggplot(summarydf) +
+	aes(x=reads_species, fill=integrations > 0) +
+	geom_bar() +
+	theme(axis.text.x = element_text(angle = 90)) +
+	labs(fill="Viral\nIntegration\nFound", x="Virus", y="")
+
+# TODO: follow up on these samples to see why we don't have integrations
+summarydf %>% filter(meandepth > 10 & integrations == 0)
 
 inner_join(wgsdf, extracteddf, by="sample") %>%
 	mutate(found_insertion=sample %in% sitedf$sample) %>%
