@@ -184,7 +184,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
     }
 
     private String createSummaryHeader() {
-        return "taxid_genus\tname_genus\treads_genus\ttaxid_species\treads_species\tname_species\ttaxid\tname\treads\treference";
+        return "taxid_genus\tname_genus\treads_genus\ttaxid_species\tname_species\treads_species\ttaxid\tname\treads\treference";
     }
 
     private String createSummaryLine(List<KrakenReportLine> fullReport, Map<Integer, MinimalTaxonomyNode> taxa, KrakenReportLine line, String ref) {
