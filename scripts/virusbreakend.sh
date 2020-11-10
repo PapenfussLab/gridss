@@ -300,7 +300,7 @@ if [[ $force != "true" ]] ; then
 	done
 fi
 # Validate required dependencies exist on PATH
-for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools bcftools java bwa Rscript ; do
+for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools bcftools java bwa Rscript RepeatMasker ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
