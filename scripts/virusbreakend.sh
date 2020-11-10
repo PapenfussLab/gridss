@@ -456,6 +456,14 @@ else
 fi
 if [[ ! -s $prefix_working.kraken2.fa ]] ; then
 	write_status "No viral sequences supported by at least $minreads reads."
+	rm -f $output_vcf.summary.csv $output_vcf
+	file_header = ""
+	for f in "$@" ; do
+		file_header="$file_header	$(clean_filename \"$f\")"
+	done
+	echo "##fileformat=VCFv4.2" > $output_vcf
+	echo "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$file_header" >> $output_vcf
+	touch $output_vcf.summary.csv
 	trap - EXIT
 	exit 0 # success!
 fi

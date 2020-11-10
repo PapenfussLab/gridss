@@ -30,6 +30,6 @@ chmod +x *.sh
 # Nifty hack in which we don't even need to download the file: we can stream directly from the bucket
 # Note that we need to encapulate the redirect as a string and not as the file descriptor itself
 gce_file_direct_from_bucket="<( gsutil -u $bucket_user cat $cram )"
-./virusbreakend.sh --force -t $(nproc) -r $ref --db $db -o ${sample}.virusbreakend.vcf --jar $GRIDSS_JAR --gridssargs "--jvmheap 13g" "$gce_file_direct_from_bucket" 2>&1 > ${sample}.virusbreakend.log
+./virusbreakend.sh --force -t $(nproc) -r $ref --db $db -o ${sample}.virusbreakend.vcf --jar $GRIDSS_JAR --gridssargs "--jvmheap 14.5g" "$gce_file_direct_from_bucket" 2>&1 > ${sample}.virusbreakend.log
 gsutil -u $bucket_user -m cp -r ${sample}.* gs://virusbreakend/
 sudo shutdown -P now
