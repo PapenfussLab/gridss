@@ -1,10 +1,12 @@
 package gridss;
 
+import au.edu.wehi.idsv.Hg19Tests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import com.google.common.collect.ImmutableList;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
@@ -137,5 +139,17 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         List<VariantContext> vcf = getRawVcf(output);
         Assert.assertTrue(vcf.stream().anyMatch(vc -> vc.getID().equals("correct_host_taxid_host")));
         Assert.assertFalse(vcf.stream().anyMatch(vc -> vc.getID().equals("wrong_host_taxid_host")));
+    }
+    @Test
+    @Category(Hg19Tests.class)
+    public void regression_should_not_crash_when_viral_contig_contains_period() {
+        VirusBreakendFilter cmd = new VirusBreakendFilter();
+        File output = new File(testFolder.getRoot(), "out.vcf");
+        cmd.INPUT = new File("src/test/resources/virusbreakend/VirusBreakendFilter_regression.vcf");
+        cmd.OUTPUT = output;
+        cmd.TAXONOMY_IDS = ImmutableList.of(9606);
+        cmd.setReference(Hg19Tests.findBroadHg19Reference());
+        cmd.doWork();
+        List<VariantContext> vcf = getRawVcf(output);
     }
 }
