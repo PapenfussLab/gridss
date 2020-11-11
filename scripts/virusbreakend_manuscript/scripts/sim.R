@@ -25,11 +25,14 @@ vbe = data.frame(
 	)
 vbe = bind_cols(vbe, getndepth(as.character(seqnames(vbevcf))))
 
-gridssvcf = readVcf("../publicdata/sim/gridss2.vcf")
+#java -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence I=gridss2.vcf O=gridss2.hbv.vcf R=~/dev/virusbreakend/hbv.fa
+gridssvcf = readVcf("../publicdata/sim/gridss2.hbv.vcf")
+gridssvcf = gridssvcf[elementNROWS(info(gridssvcf)$BEALN) > 0]
 gridss = data.frame(
 	host_chr=str_match(as.character(seqnames(gridssvcf)), ".vcf:(.*)$")[,2],
 	host_pos=start(gridssvcf),
-	virus_taxid=info(gridssvcf)$INSTAXID,
+	virus_chr=str_extract(StructuralVariantAnnotation:::elementExtract(info(gridssvcf)$BEALN, 1), "^[^:]+"),
+	virus_pos=as.integer(str_match(StructuralVariantAnnotation:::elementExtract(info(gridssvcf)$BEALN, 1), ":([0-9]+)[|]")[,2]),
 	qual=rowRanges(gridssvcf)$QUAL
 )
 gridss = bind_cols(gridss, getndepth(as.character(seqnames(gridssvcf))))
@@ -60,7 +63,6 @@ calls_virus_position_not_reported = bind_rows(
 		vifidf %>% mutate(host_pos=Split1, ori="+"),
 		vifidf %>% mutate(host_pos=Split2, ori="-")) %>%
 	mutate(caller="ViFi") %>%
-	bind_rows(gridss %>% mutate(caller="GRIDSS2")) %>%
 	mutate(
 		host_chr_match=host_chr=="chr1",
 		host_pos_match=abs((n * 1000000) - host_pos) < 1000000,
@@ -76,7 +78,8 @@ calls_virus_position_not_reported = bind_rows(
 calls=bind_rows(
 		batvi %>% mutate(caller="BATVI", score=as.numeric(reads)),
 		vbe %>% mutate(caller="VIRUSBreakend", score=qual),
-		versedf %>% mutate(caller="VERSE")) %>%
+		versedf %>% mutate(caller="VERSE"),
+		gridss %>% mutate(caller="GRIDSS2")) %>%
 	replace_na(list(score=0)) %>%
 	mutate(
 		n=as.numeric(n),
@@ -85,8 +88,8 @@ calls=bind_rows(
 	mutate(
 		host_chr_match=host_chr=="chr1",
 		host_pos_match=abs((n * 1000000) - host_pos) < 1000000,
-		virus_start_match=abs((n * 4) - virus_pos) < 100,
-		virus_end_match=abs((n * 4 + 2000) - virus_pos) < 100) %>%
+		virus_start_match=abs((n * 4) - virus_pos) < 750,
+		virus_end_match=abs((n * 4 + 2000) - virus_pos) < 750) %>%
 	group_by(caller, n, depth) %>%
 	mutate(
 		start_tp=host_chr_match & host_pos_match & virus_start_match,
@@ -135,6 +138,27 @@ ggplot(full_calls) +
 	facet_grid( ~ caller) +
 	labs(x="Sequencing Depth", fill="", y="Insertions")
 
+# FDR
+calls %>% group_by(caller) %>% summarise(fdr=sum(fp)/sum(tp+hom_tp+fp))
+precdf = full_calls %>%
+	group_by(depth, caller) %>%
+	summarise(
+	#	fdr=sum(fp)/sum(tp+fp),
+		precision=sum(tp+hom_tp)/sum(tp+hom_tp+fn))
+precdf %>% spread(caller, precision)
+precdf %>%
+	group_by(depth) %>%
+	mutate(precision_delta=max(precision) - precision) %>%
+	filter(precision_delta != 0) %>%
+	summarise(precision_delta=min(precision_delta))
+precdf %>%
+	filter(depth > 5) %>%
+	group_by(depth) %>%
+	mutate(precision_delta=max(precision) - precision) %>%
+	group_by(caller) %>%
+	filter(precision_delta != 0) %>%
+	summarise(avg_delta=mean(precision_delta))
+
 callsroc = calls %>%
 	group_by(caller, depth, score) %>%
 	summarise(tp=sum(tp | hom_tp), fp=sum(fp)) %>%
@@ -148,12 +172,12 @@ ggplot(callsroc) +
 
 
 # Insert sites unique to VIRUSBreakend
-calls %>% group_by(n) %>%
+calls %>% filter(tp) %>% group_by(n) %>%
 	filter(!any(caller != "VIRUSBreakend")) %>%
 	summarise()
 
 
-
+calls %>% filter(caller == "VIRUSBreakend" & fp)
 
 
 
