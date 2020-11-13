@@ -457,7 +457,7 @@ fi
 if [[ ! -s $prefix_working.kraken2.fa ]] ; then
 	write_status "No viral sequences supported by at least $minreads reads."
 	rm -f $output_vcf.summary.csv $output_vcf
-	file_header = ""
+	file_header=""
 	for f in "$@" ; do
 		file_header="$file_header	$(clean_filename \"$f\")"
 	done

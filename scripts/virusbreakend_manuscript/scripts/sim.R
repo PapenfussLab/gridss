@@ -13,6 +13,13 @@ batvinomsa = read_tsv("../publicdata/sim/batvi_all_final_hits_noMSA.txt", col_na
 batvi = bind_rows(batvimsa, batvinomsa)
 batvi = bind_cols(batvi, getndepth(batvi$lib))
 
+
+batvi_lc = read_tsv(
+	"../publicdata/sim/batvi_lc.tsv",
+	col_names=c("lib", "host_ori", "host_chr", "host_pos", "host_end", "virus_ori", "virus_pos", "virus_end", "median_rank", "readcount", "splitread", "uniquelymapped","multimapped", "rank1hits"),
+	col_type="ccciiciiiiiiin")
+batvi_lc = bind_cols(batvi_lc, getndepth(batvi_lc$lib))
+
 vbevcf = readVcf("../publicdata/sim/virusbreakend.vcf")
 vbevcf = vbevcf[!str_detect(as.character(seqnames(vbevcf)), "adjusted_kraken_taxid")]
 vbe = data.frame(
@@ -77,6 +84,7 @@ calls_virus_position_not_reported = bind_rows(
 	dplyr::select(n, depth, caller, host_chr, host_pos, score, tp, hom_tp, fp)
 calls=bind_rows(
 		batvi %>% mutate(caller="BATVI", score=as.numeric(reads)),
+		#batvi_lc %>% mutate(caller="BATVI\nAll calls", score=as.numeric(readcount)),
 		vbe %>% mutate(caller="VIRUSBreakend", score=qual),
 		versedf %>% mutate(caller="VERSE"),
 		gridss %>% mutate(caller="GRIDSS2")) %>%
@@ -136,8 +144,28 @@ ggplot(full_calls) +
 	scale_fill_manual(values=c("#d95f02", "#BBBBBB", "#7570b3", "#1b9e77")) + 
 	scale_y_continuous(expand = c(0, 0, 0.01, 0)) + 
 	facet_grid( ~ caller) +
-	labs(x="Sequencing Depth", fill="", y="Insertions")
+	labs(x="Sequencing Depth", fill="", y="Integrations")
 
+data.frame(
+		caller=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi"),
+		tp=c(15, 15, 16, 13, 12),
+		homtp=c(4,0,0,0,0)) %>%
+	mutate(fp=22-tp-homtp) %>%
+	gather("status", n, 2:4) %>%
+	mutate(
+		classification=factor(
+			ifelse(status=="tp", "True positive", ifelse(status=="homtp", "Homologous call", "False negative")),
+			levels=c("False negative", "Homologous call", "True positive"))) %>%
+	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi"))) %>%
+	ggplot() +
+	aes(x=caller, y=n, fill=classification) +
+	geom_bar(position="stack", stat="identity") +
+	scale_fill_manual(values=c("#BBBBBB", "#7570b3", "#1b9e77")) + 
+	theme(axis.text.x = element_text(angle = 90)) +
+	scale_y_continuous(expand=c(0,0)) +
+	theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+	labs(fill="", x="", y="Integrations")
+	
 # FDR
 calls %>% group_by(caller) %>% summarise(fdr=sum(fp)/sum(tp+hom_tp+fp))
 precdf = full_calls %>%

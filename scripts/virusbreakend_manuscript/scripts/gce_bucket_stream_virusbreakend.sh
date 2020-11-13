@@ -32,4 +32,4 @@ chmod +x *.sh
 gce_file_direct_from_bucket="<( gsutil -u $bucket_user cat $cram )"
 ./virusbreakend.sh --force -t $(nproc) -r $ref --db $db -o ${sample}.virusbreakend.vcf --jar $GRIDSS_JAR --gridssargs "--jvmheap 14.5g" "$gce_file_direct_from_bucket" 2>&1 > ${sample}.virusbreakend.log
 gsutil -u $bucket_user -m cp -r ${sample}.* gs://virusbreakend/
-sudo shutdown -P now
+#sudo shutdown -P now

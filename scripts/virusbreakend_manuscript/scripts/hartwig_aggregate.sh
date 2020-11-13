@@ -7,4 +7,4 @@ grep -vE "^(#|(adjusted))" *.virusbreakend.vcf | sed 's/.virusbreakend.vcf:/	/' 
 echo -n "sample	" > merged.vcf.summary.csv
 grep taxid_genus $(ls -1 *.virusbreakend.vcf.summary.csv | head -1) >> merged.vcf.summary.csv
 grep kraken *.virusbreakend.vcf.summary.csv | sed -r 's/^([^.]+).virusbreakend.vcf.summary.csv:/\1\t/' >> merged.vcf.summary.csv
-ls -1 *.log | cut -f 1 -d . > samples.csv
+ls -1 *.vcf | cut -f 1 -d . > samples.csv
