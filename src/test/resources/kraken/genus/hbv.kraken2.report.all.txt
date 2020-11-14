@@ -1,0 +1,28 @@
+ 99.37	49329966	49329966	U	0	unclassified
+  0.63	314705	41	R	1	root
+  0.00	921	0	D	10239	  Viruses
+  0.00	859	0	D1	2559587	    Riboviria
+  0.00	858	0	K	2732397	      Pararnavirae
+  0.00	858	0	P	2732409	        Artverviricota
+  0.00	858	0	C	2732514	          Revtraviricetes
+  0.00	858	0	O	2732515	            Blubervirales
+  0.00	858	0	F	10404	              Hepadnaviridae
+  0.00	858	2	G	10405	                Orthohepadnavirus
+  0.00	856	271	S	10407	                  Hepatitis B virus
+  0.00	277	277	S1	489466	                    HBV genotype C
+  0.00	86	0	S1	621278	                    recombinant Hepatitis B virus
+  0.00	74	74	S2	621277	                      Hepatitis B virus 146/Thailand
+  0.00	12	12	S2	1282342	                      Hepatitis B virus subgenotype A3/genotype E
+  0.00	58	12	S1	489483	                    HBV genotype D
+  0.00	44	44	S2	1219353	                      HBV genotype D3
+  0.00	2	2	S2	1219352	                      HBV genotype D4
+  0.00	50	50	S1	106820	                    Hepatitis B virus subtype adr
+  0.00	40	40	S1	113194	                    Orangutan hepadnavirus
+  0.00	25	25	S1	489484	                    HBV genotype E
+  0.00	17	0	S1	489455	                    hepatitis B virus genotype A
+  0.00	12	12	S2	489450	                      HBV genotype A1
+  0.00	5	5	S2	489451	                      HBV genotype A2
+  0.00	17	17	S1	489460	                    HBV genotype B
+  0.00	12	3	S1	489491	                    HBV genotype F
+  0.00	9	9	S2	1219350	                      HBV genotype F2
+  0.00	3	3	S1	489493	                    HBV genotype H

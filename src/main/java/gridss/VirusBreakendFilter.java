@@ -180,7 +180,8 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 		}
 		//if (alt.contains("kraken")) return true;
 		// single breakends only
-		if (!alt.contains(".")) return false;
+		if (!alt.startsWith(".") && !alt.endsWith(".")) return false;
+		if (alt.length() < 2) return false;
 		int breakendLength = alt.length() - 2;
 		List<ChimericAlignment> host = infoToChimeric(vc, VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute());
 		RangeSet<Integer> repeats = repeatRanges(vc);

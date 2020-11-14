@@ -27,14 +27,13 @@ threads=8
 kraken2args=""
 gridssargs="--jvmheap 13g"
 rmargs="--species human"
+host=human
 nodesdmp=""
-virushostdb=""
+virusnbr=""
 minreads="50"
-viralgenomes="1"
 metricsrecords=10000000
 metricsmaxcoverage=100000
 maxcoverage=1000000
-hosttaxid=9606
 force="false"
 forceunpairedfastq="false"
 USAGE_MESSAGE="
@@ -47,20 +46,19 @@ Usage: virusbreakend.sh [options] input.bam
 	-j/--jar: location of GRIDSS jar
 	-t/--threads: number of threads to use. (Default: $threads).
 	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
+	--host: NBCI host filter. Valid values are algae, archaea, bacteria, eukaryotic algae, fungi, human, invertebrates, land plants, plants, protozoa, vertebrates (Default: $host)
 	--db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build.sh to build.
-	--hosttaxid: NCBI taxonomy id of host. Used to filter viral sequences of interest to those infecting this host. Default: $hosttaxid)
 	--kraken2args: additional kraken2 arguments
 	--gridssargs: additional GRIDSS arguments
 	--rmargs: additional RepeatMasker arguments (Default: $rmargs)
 	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
-	--viralgenomes: number of viral genomes to consider. Multiple closely related genomes will result in a high false negative rate due to multi-mapping reads. (Default: $viralgenomes)
 	"
 # handled by virusbreakend-build.sh
 #--kraken2db: kraken2 database
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,hosttaxid:,virushostdb:,force,forceunpairedfastq,viralgenomes:
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq,host:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -86,6 +84,10 @@ while true; do
 			;;
 		-o|--output)
 			output_vcf="$2"
+			shift 2
+			;;
+		--host)
+			host="$2"
 			shift 2
 			;;
 		-j|--jar)
@@ -119,20 +121,6 @@ while true; do
 			;;
 		--minreads)
 			minreads="$2"
-			shift 2
-			;;
-		--hosttaxid)
-			printf -v hosttaxid '%d\n' "$2" 2>/dev/null
-			printf -v hosttaxid '%d' "$2" 2>/dev/null
-			shift 2
-			;;
-		--viralgenomes)
-			printf -v viralgenomes '%d\n' "$2" 2>/dev/null
-			printf -v viralgenomes '%d' "$2" 2>/dev/null
-			shift 2
-			;;
-		--virushostdb)
-			virushostdb="$2"
 			shift 2
 			;;
 		-f|--force)
@@ -269,11 +257,18 @@ if [[ ! -d "$kraken2db" ]] ; then
 	write_status "Unable to find kraken2 database directory '$kraken2db'" 
 	exit $EX_NOINPUT
 fi
-if [[ "$virushostdb" == "" ]] ; then
-	virushostdb="$kraken2db/virushostdb.tsv"
-fi
 if [[ "$nodesdmp" == "" ]] ; then
 	nodesdmp="$kraken2db/taxonomy/nodes.dmp"
+fi
+if [[ "$virusnbr" == "" ]] ; then
+	virusnbr="$kraken2db/taxid10239.nbr"
+fi
+if [[ ! -f "$virusnbr" ]] ; then
+	echo "$USAGE_MESSAGE"
+	write_status "Unable to find $virusnbr."
+	write_status "Use virusbreakend-build.sh to generate or download from"
+	write_status "https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239&cmd=download2"
+	exit $EX_NOINPUT
 fi
 if [[ ! -f "$nodesdmp" ]] ; then
 	echo "$USAGE_MESSAGE"
@@ -282,26 +277,19 @@ if [[ ! -f "$nodesdmp" ]] ; then
 	write_status "nodes.dmp can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip"
 	exit $EX_NOINPUT
 fi
-taxid_args="-TAXONOMY_IDS null"
-if [[ "$hosttaxid" -gt 0 ]] ; then
-	if [[ ! -f "$virushostdb" ]] ; then
-		write_status "Missing virushostdb file. Specify with --virushostdb"
-		write_status "virushostdb can be downloaded from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv"
-	fi
-	write_status "Found virushostdb file $virushostdb"
-	i=0
-	for taxid in $(cut -f 1,8 $virushostdb | grep "	$hosttaxid\$" | cut -f 1) ; do
-		i=$(($i + 1))
-		taxid_args="$taxid_args -TAXONOMY_IDS $taxid"
-	done
-	write_status "Found $i viral sequences associated with host NCBI:txid${hosttaxid}"
-	if [[ $i -eq 0 ]]; then
-		write_status "Terminating early due to 0 sequences of interest for host NCBI:txid${hosttaxid}"
-		exit $EX_CONFIG
-	fi
-else
-	taxid_args="$taxid_args -TAXONOMY_IDS 10239" 	# All viruses
-fi
+# TODO only virus genomes than can integrate into the host genomes (proviruses)
+# HBV: Viruses; Riboviria; Pararnavirae; Artverviricota; [Revtraviricetes]; Blubervirales; Hepadnaviridae; Orthohepadnavirus	
+# HIV: Viruses; Riboviria; Pararnavirae; Artverviricota; [Revtraviricetes]; Ortervirales; Retroviridae; Orthoretrovirinae; Lentivirus
+# HPV:                       Viruses; Monodnaviria; Shotokuvirae; Cossaviricota; [Papovaviricetes]; Zurhausenvirales; Papillomaviridae; Firstpapillomavirinae; Alphapapillomavirus; Alphapapillomavirus 10
+# Merkcel cell polyomavirus: Viruses; Monodnaviria; Shotokuvirae; Cossaviricota; [Papovaviricetes]; Sepolyvirales; Polyomaviridae; Alphapolyomavirus; Human polyomavirus 5
+# EBV: Viruses; Duplodnaviria; Heunggongvirae; Peploviricota; Herviviricetes; Herpesvirales; Herpesviridae; Gammaherpesvirinae; Lymphocryptovirus
+# HHV-8
+# HCV
+# HTLV-1
+# AAV2
+# HHV4
+# PCAWG filter: https://www.nature.com/articles/s41588-019-0558-9
+# This subset of viruses included: herpesviruses (HHV1, HHV2, HHV4, HHV5, HHV6A/B), simian virus 40 (SV40) and 12 (SV12), human immunodeficiency virus (HIV1), human and simian T-cell lymphotropic virus type 1 (HTLV1 and STLV1), BK polyomavirus (BKP), human parvovirus B19, mouse mammary tumor virus, murine type C retrovirus, Mason–Pfizer monkey virus, HBV, HPV (HPV16, HPV18 and HPV6a) and AAV2. 
 if [[ $force != "true" ]] ; then
 	for f in "$@" ; do
 		if [[ "$(tr -d ' 	\n' <<< "$f")" != "$f" ]] ; then
@@ -312,7 +300,7 @@ if [[ $force != "true" ]] ; then
 	done
 fi
 # Validate required dependencies exist on PATH
-for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools bcftools java bwa Rscript ; do
+for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools bcftools java bwa Rscript RepeatMasker ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
@@ -343,6 +331,7 @@ else
 fi
 write_status "R version: $(Rscript --version 2>&1)"
 write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
+write_status "$(kraken2 --version | head -1)"
 #write_status "minimap2 $(minimap2 --version)"
 if which /usr/bin/time >/dev/null ; then
 	write_status "time version: $(/usr/bin/time --version 2>&1)"
@@ -405,6 +394,8 @@ file_readname=$prefix_working.readnames.txt
 file_report=$prefix_working.kraken2.report.all.txt
 file_viral_report=$prefix_working.kraken2.report.viral.txt
 file_extracted_report=$prefix_working.kraken2.report.viral.extracted.txt
+file_summary_csv=$prefix_working.summary.csv
+file_summary_annotated_csv=$prefix_working.summary.ann.csv
 exec_concat_fastq=$prefix_working.cat_input_as_fastq.sh
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
@@ -433,9 +424,19 @@ else
 	write_status "Identifying viral sequences	Skipped: found	$file_readname"
 fi
 if [[ ! -f $file_extracted_report ]] ; then
+	taxid_args=""
+	if [[ "$host" != "" ]] ; then
+		# get the taxid for every contig in $virusnbr
+		taxid_args=$(cat $(find $kraken2db -path '**/library/**/*.fna.fai' | grep -v human | grep -v UniVec_Core) \
+			| cut -f 1 \
+			| grep -F -f <(grep $host $virusnbr | cut -f 1,2 | tr ',\t' '\n\n' | sort -u | sed 's/$/./' | grep -v "^.$") \
+			| cut -d '|' -f 2 \
+			| sed 's/^/--TAXONOMY_IDS /' \
+			| tr '\n' ' ')
+		taxid_args="--TAXONOMY_IDS null $taxid_args"
+	fi
 	write_status "Identifying viruses in sample based on kraken2 summary report"
-	# The sort is so we will include the virushostdb sequences in
-	# library/added before the kraken sequences in library/viral
+	# The sort is so we will include any library/added before the default RefSeq sequences (in library/viral)
 	kraken_references_arg=$(for fa in $(find $kraken2db -path '**/library/**/*.fna' | sort) ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
 	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
 	{ $timecmd java -Xmx4g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestSequencesBasedOnReport \
@@ -443,10 +444,11 @@ if [[ ! -f $file_extracted_report ]] ; then
 		--OUTPUT $prefix_working.kraken2.fa \
 		--REPORT_OUTPUT $file_viral_report \
 		--SUMMARY_REPORT_OUTPUT $file_extracted_report \
+		--SUMMARY_OUTPUT $file_summary_csv \
 		--NCBI_NODES_DMP $nodesdmp \
 		$kraken_references_arg \
 		--MIN_SUPPORTING_READS $minreads \
-		--TAXID_TO_RETURN $viralgenomes \
+		--TAXONOMIC_DEDUPLICATION_LEVEL Genus \
 		$taxid_args \
 	; } 1>&2 2>> $logfile
 else
@@ -454,6 +456,14 @@ else
 fi
 if [[ ! -s $prefix_working.kraken2.fa ]] ; then
 	write_status "No viral sequences supported by at least $minreads reads."
+	rm -f $output_vcf.summary.csv $output_vcf
+	file_header=""
+	for f in "$@" ; do
+		file_header="$file_header	$(clean_filename \"$f\")"
+	done
+	echo "##fileformat=VCFv4.2" > $output_vcf
+	echo "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$file_header" >> $output_vcf
+	touch $output_vcf.summary.csv
 	trap - EXIT
 	exit 0 # success!
 fi
@@ -591,12 +601,21 @@ EOF
 done
 # GRIDSS files
 file_gridss_vcf=$prefix_adjusted.gridss.vcf
+file_gridss_configuration=$prefix_adjusted.gridss.properties
 file_assembly=$prefix_adjusted.gridss.assembly.bam
 file_host_annotated_vcf=$prefix_adjusted.gridss.bealn.vcf
 file_kraken_annotated_vcf=$prefix_adjusted.gridss.bealn.k2.vcf
 file_rm_annotated_vcf=$prefix_adjusted.gridss.bealn.k2.rm.vcf
 file_filtered_vcf=$prefix_adjusted.gridss.bealn.k2.rm.filtered.vcf
 file_wgs_metrics=$prefix_adjusted.wgs_metrics.txt
+rm -f $file_gridss_configuration
+cat > $file_gridss_configuration << EOF
+assembly.downsample.acceptDensityPortion = 5
+assembly.downsample.targetEvidenceDensity = 50
+assembly.positional.maximumNodeDensity = 100
+assembly.positional.safetyModePathCountThreshold = 250000
+assembly.positional.safetyModeContigsToCall = 12
+EOF
 if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
 	{ $timecmd gridss.sh \
@@ -606,6 +625,7 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		-j $gridss_jar \
 		-o $file_gridss_vcf \
 		-a $file_assembly \
+		-c $file_gridss_configuration \
 		--maxcoverage $maxcoverage \
 		$gridssargs \
 		$bam_list_args \
@@ -669,27 +689,35 @@ else
 fi
 if [[ ! -f $file_filtered_vcf ]] ; then
 	write_status "Filtering to host integrations"
+	hosttaxid_arg=""
+	if [[ "$host" == "human" ]] ; then
+		hosttaxid_arg="--TAXONOMY_IDS 9606"
+	fi
 	{ $timecmd java -Xmx64m $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
 		--INPUT $file_rm_annotated_vcf \
 		--OUTPUT $file_filtered_vcf \
 		--REFERENCE_SEQUENCE $reference \
-		--TAXONOMY_IDS $hosttaxid \
+		$hosttaxid_arg \
 	; } 1>&2 2>> $logfile
 fi
-if [[ ! -f $file_wgs_metrics ]] ; then
-	write_status "Calculating virus WGS metrics"
-	{ $timecmd java -Xmx1g $jvm_args \
-			-cp $gridss_jar picard.cmdline.PicardCommandLine CollectWgsMetrics \
-			--INPUT $prefix_adjusted.merged.bam \
-			--OUTPUT $file_wgs_metrics \
-			--REFERENCE_SEQUENCE $prefix_adjusted.viral.fa \
-			--COVERAGE_CAP 10000 \
-			--COUNT_UNPAIRED true \
-	; } 1>&2 2>> $logfile
+if [[ ! -f $file_summary_annotated_csv ]] ; then
+	write_status "Writing annotated summary to $file_summary_annotated_csv"
+	rm -f $prefix_adjusted.merged.bam.coverage
+	samtools coverage $prefix_adjusted.merged.bam > $prefix_adjusted.merged.bam.coverage
+	while read inline; do
+		if [[ $inline = taxid_genus* ]] ; then
+			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations" >> $file_summary_annotated_csv
+		else
+			taxid=$(echo "$inline" | cut -f 7)
+			coverage_stats=$(grep _taxid_${taxid}_ $prefix_adjusted.merged.bam.coverage)
+			contig=$(echo "$coverage_stats" | cut -f 1)
+			hits=$(grep -E ^adj $file_filtered_vcf | grep -F $contig | wc -l || true)
+			echo "$inline	$coverage_stats	$hits"  >> $file_summary_annotated_csv
+		fi
+	done < $file_summary_csv
 fi
 cp $file_filtered_vcf $output_vcf
-cp $file_extracted_report $output_vcf.kraken2.summary.csv
-cp $file_wgs_metrics $output_vcf.wgs_metrics.txt
+cp $file_summary_annotated_csv $output_vcf.summary.csv
 
 write_status "Generated $output_vcf"
 write_status "Done"
