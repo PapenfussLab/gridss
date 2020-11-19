@@ -177,7 +177,7 @@ public class InsertedSequenceAnnotator implements CloseableIterator<VariantConte
 		}
 		nextRecord = builder.make();
 	}
-	private List<String> writeAlignmentAnnotation(List<SAMRecord> alignments) {
+	public static List<String> writeAlignmentAnnotation(List<SAMRecord> alignments) {
 		List<String> aln = new ArrayList<>(alignments.size());
 		for (SAMRecord r : alignments) {
 			String sb = r.getReferenceName().replace('|', '_') +
@@ -196,7 +196,7 @@ public class InsertedSequenceAnnotator implements CloseableIterator<VariantConte
 				for (String xs : r.getAttribute("XA").toString().split(";")) {
 					String[] fields = xs.split(",");
 					if(fields.length == 4 && fields[1].length() > 1) {
-						String xa = fields[0] +
+						String xa = fields[0].replace('|', '_') +
 								':' +
 								fields[1].substring(1) +
 								'|' +
