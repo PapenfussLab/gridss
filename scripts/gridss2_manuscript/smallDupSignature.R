@@ -54,6 +54,86 @@ ggplot(persamplesmldupdf) +
 	scale_x_continuous(expand=c(0,0,0,0), breaks=seq(0, 3800, 50))
 figsave("small_dup_samples_all", width=100, height=4, limitsize=FALSE)
 
+ggplot(persamplesmldupdf) +
+	aes(x=label_text, y=lt100dup) +
+	coord_cartesian(ylim=c(0,25)) +
+	geom_boxplot() +
+	geom_violin()
+
+
+indeldf = read_tsv(paste0(privatedatadir, "/hartwig/indel.tsv"), col_names = c("SampleId", "len", "count"), col_types="cii")
+indelbindf = indeldf %>%
+	mutate(bin=cut(abs(len), breaks=c(0, 8, 16, 1000))) %>%
+	group_by(SampleId, bin) %>%
+	summarise(indels=sum(count))
+
+event_count_df =
+	persamplesmldupdf %>%
+	inner_join(lnx_svs %>% group_by(SampleId) %>% summarise(total_svs=n())) %>%
+	inner_join(lnx_svs %>% filter(Type == "DUP") %>% group_by(SampleId) %>% summarise(dups=n())) %>%
+	left_join(indeldf %>% filter(len > 0 & abs(len) < 8) %>% group_by(SampleId) %>% summarise(del_0_8=n())) %>%
+	left_join(indeldf %>% filter(len > 0 & abs(len) >= 8 & abs(len) < 16) %>% group_by(SampleId) %>% summarise(del_8_16=n())) %>%
+	left_join(indeldf %>% filter(len > 0 & abs(len) >= 16) %>% group_by(SampleId) %>% summarise(del_16_=n())) %>%
+	left_join(indeldf %>% filter(len < 0 & abs(len) < 8) %>% group_by(SampleId) %>% summarise(ins_0_8=n())) %>%
+	left_join(indeldf %>% filter(len < 0 & abs(len) >= 8 & abs(len) < 16) %>% group_by(SampleId) %>% summarise(ins_8_16=n())) %>%
+	left_join(indeldf %>% filter(len < 0 & abs(len) >= 16) %>% group_by(SampleId) %>% summarise(ins_16_=n())) %>%
+	replace_na(list(ins_0_8=0, ins_8_16=0, ins_16_=0, del_0_8=0, del_8_16=0, del_16_=0))
+
+with(event_count_df, cor(lt100dup, total_svs - lt100dup))
+with(event_count_df, cor(lt100dup, dups - lt100dup))
+with(event_count_df, cor(lt100dup, del_0_8))
+with(event_count_df, cor(lt100dup, del_8_16))
+with(event_count_df, cor(lt100dup, del_16_))
+with(event_count_df, cor(lt100dup, ins_0_8))
+with(event_count_df, cor(lt100dup, ins_8_16))
+with(event_count_df, cor(lt100dup, ins_16_))
+
+ggplot(event_count_df) +
+	aes(y=lt100dup, x=total_svs - lt100dup) +
+	geom_point(size=0.1)
+
+ggplot(event_count_df) +
+	aes(y=lt100dup, x=dups - lt100dup) +
+	geom_point(size=0.1)
+
+ggplot(event_count_df) +
+	aes(y=lt100dup, x=del_16_) +
+	geom_jitter(size=0.1)
+
+ggplot(event_count_df) +
+	aes(y=lt100dup, x=ins_16_) +
+	geom_jitter(size=0.1)
+
+
+indeldf %>% inner_join(persamplesmldupdf, by="SampleId", suffix=c(".indel", ".lt100dup")) %>%
+	mutate(
+		type=ifelse(len < 0, "DEL", "INS"),
+		lt100dup_gt10=ifelse(lt100dup > 10, "10+ DUPs", "<10 DUPs"),
+		clipped_length=pmin(abs(len), 32)) %>%
+	ggplot() +
+	#aes(x=count.indel, y=lt100dup) +
+	#geom_jitter() +
+	aes(x=count.indel) +
+	geom_histogram(bins=100) +
+	facet_grid(type + lt100dup_gt10 ~ clipped_length, scales="free")
+
+ggplot(indeldf %>% mutate(len=sign(len) * pmin(abs(len), 32))) +
+	aes(x=count) +
+	geom_histogram() +
+	facet_wrap(~ len, scales="free") +
+	labs(title="Indel length distribution")
+
+indeldf %>%
+	mutate(lt100dup_ge20 = SampleId %in% (persamplesmldupdf %>% filter(lt100dup >= 20) %>% pull(SampleId))) %>%
+	group_by(len, lt100dup_ge20) %>%
+	summarise(count=sum(count)) %>%
+	filter(abs(len) < 32, abs(len) > 0) %>%
+ggplot() +
+	aes(x=len, y=count, fill=lt100dup_ge20) +
+	geom_bar(stat="identity") +
+	facet_wrap(~ lt100dup_ge20, scales="free") +
+	labs(title="Indel length distribution")
+
 
 
 # PCAWG comparison

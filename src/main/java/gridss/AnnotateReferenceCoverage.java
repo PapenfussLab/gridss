@@ -16,8 +16,7 @@ public class AnnotateReferenceCoverage extends VcfTransformCommandLineProgram {
 	public CloseableIterator<VariantContextDirectedEvidence> iterator(CloseableIterator<VariantContextDirectedEvidence> calls, ExecutorService threadpool) {
 		ProcessingContext context = getContext();
 		List<SAMEvidenceSource> sources = getSamEvidenceSources();
-		AssemblyEvidenceSource asm = getAssemblySource();
-		int windowSize = SAMEvidenceSource.maximumWindowSize(context, sources, asm);
+		int windowSize = SAMEvidenceSource.maximumWindowSize(context, sources, null);
 		return new SequentialCoverageAnnotator<VariantContextDirectedEvidence>(context, sources, calls, 2 * windowSize + WINDOW_SIZE_SAFETY_MARGIN, threadpool);
 	}
 	public static void main(String[] argv) {

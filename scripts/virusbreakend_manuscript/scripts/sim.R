@@ -1,5 +1,6 @@
 library(StructuralVariantAnnotation)
 library(tidyverse)
+library(cowplot)
 theme_set(theme_bw())
 setwd("../virusbreakend_manuscript/scripts")
 
@@ -44,6 +45,16 @@ gridss = data.frame(
 )
 gridss = bind_cols(gridss, getndepth(as.character(seqnames(gridssvcf))))
 
+gsvvcf = readVcf("../publicdata/sim/gsv.vcf")
+gsvvcf = gsvvcf[str_detect(as.character(seqnames(gsvvcf)), "NC_003977.2")]
+gsv = data.frame(
+	host_chr=str_match(as.character(rowRanges(gsvvcf)$ALT), "(\\[|\\])([^:]+):([0-9]+)")[,3],
+	host_pos=as.integer(str_match(as.character(rowRanges(gsvvcf)$ALT), "(\\[|\\])([^:]+):([0-9]+)")[,4]),
+	virus_chr=str_match(as.character(seqnames(gsvvcf)), ".vcf:(.*)$")[,2],
+	virus_pos=start(gsvvcf),
+	qual=rowRanges(gsvvcf)$QUAL
+)
+gsv = bind_cols(gsv, getndepth(as.character(seqnames(gsvvcf))))
 
 versedf = read_tsv(
 		"../publicdata/sim/verse.tsv", #"../publicdata/sim/verse.tsv",
@@ -87,7 +98,8 @@ calls=bind_rows(
 		#batvi_lc %>% mutate(caller="BATVI\nAll calls", score=as.numeric(readcount)),
 		vbe %>% mutate(caller="VIRUSBreakend", score=qual),
 		versedf %>% mutate(caller="VERSE"),
-		gridss %>% mutate(caller="GRIDSS2")) %>%
+		gridss %>% mutate(caller="GRIDSS2\nSingle Breakend"),
+		gsv %>% mutate(caller="GRIDSS2\nBreakpoint")) %>%
 	replace_na(list(score=0)) %>%
 	mutate(
 		n=as.numeric(n),
@@ -119,7 +131,7 @@ calls=bind_rows(
 		hom_tp = start_hom_tp | end_hom_tp,
 		fp=!tp & !hom_tp) %>%
 	bind_rows(calls_virus_position_not_reported) %>%
-	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi")))
+	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "BATVI", "VERSE", "ViFi", "GRIDSS2\nSingle Breakend", "GRIDSS2\nBreakpoint")))
 
 # sanity check we never have more than 2 true positives
 calls %>% group_by(caller, n, depth) %>%
@@ -138,15 +150,20 @@ full_calls = expand_grid(n=1:248, depth=c(5, 10, 15, 30, 60), caller=unique(call
 			ifelse(tp, "True positive", ifelse(hom_tp, "Homologous call", ifelse(fn, "False negative", "False positive"))),
 			levels=c("False positive",  "False negative", "Homologous call", "True positive")))
 
-ggplot(full_calls) +
+plot_sim = ggplot(full_calls) +
 	aes(x=as.factor(depth), fill=classification) +
 	geom_bar() +
 	scale_fill_manual(values=c("#d95f02", "#BBBBBB", "#7570b3", "#1b9e77")) + 
 	scale_y_continuous(expand = c(0, 0, 0.01, 0)) + 
 	facet_grid( ~ caller) +
-	labs(x="Sequencing Depth", fill="", y="Integrations")
+	labs(x="Sequencing Depth", fill="", y="Integrations\n(Simulation)")
+#ggsave("sim.pdf", width=9, height=5)
 
-data.frame(
+
+
+#######
+# HCC
+plot_hcc = data.frame(
 		caller=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi"),
 		tp=c(15, 15, 16, 13, 12),
 		homtp=c(4,0,0,0,0)) %>%
@@ -156,16 +173,50 @@ data.frame(
 		classification=factor(
 			ifelse(status=="tp", "True positive", ifelse(status=="homtp", "Homologous call", "False negative")),
 			levels=c("False negative", "Homologous call", "True positive"))) %>%
-	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi"))) %>%
+	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "BATVI", "VERSE", "ViFi", "GRIDSS2"))) %>%
 	ggplot() +
 	aes(x=caller, y=n, fill=classification) +
 	geom_bar(position="stack", stat="identity") +
 	scale_fill_manual(values=c("#BBBBBB", "#7570b3", "#1b9e77")) + 
-	theme(axis.text.x = element_text(angle = 90)) +
+	#theme(axis.text.x = element_text(angle = 90)) +
 	scale_y_continuous(expand=c(0,0)) +
 	theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-	labs(fill="", x="", y="Integrations")
-	
+	labs(fill="", x="", y="Integrations\n(Sung et al validated)")
+#ggsave("hcc.pdf", width=4.5, height=4)
+
+#######
+# Timing
+timingdf = read_tsv("../publicdata/sim/timing.tsv", col_names = c("caller", "n", "depth", "day", "time", "checkpoint"), col_types="cncctc") %>%
+	mutate(depth=as.numeric(str_replace(depth, "x", "")))
+hcctiming = read_csv("../runtime.csv", col_names=c("log", "caller", "slurm", "caller2", "sample", "Day", "time", "zone", "year", "checkpoint", "duration"), col_types="ccccccccccd")
+plot_timing = hcctiming %>%
+	filter(!is.na(duration)) %>%
+	filter(sample %in% c("177T")) %>%
+	mutate(caller=factor(c("virusbreakend"="VIRUSbreakend", "batvi"="BATVI", "verse"="VERSE", "vifi"="ViFi")[caller], levels=c("VIRUSbreakend", "BATVI", "VERSE", "ViFi"))) %>%
+	ggplot() +
+	aes(x=caller, y=duration*24) +
+	geom_bar(stat="identity", position="dodge") +
+	geom_text(aes(label=signif(duration*24, 2), y=duration*24 + 2)) +
+	scale_y_continuous(expand = c(0,0), limits=c(0,50)) +
+	theme(panel.grid.major.x=element_blank()) +
+	labs(x="", y="Hours")
+ggsave("timing.pdf", width=4, height=3)
+
+
+plot_grid(plot_sim, plot_hcc, ncol=1, labels=c("a", "b"))
+ggsave("figure2.pdf", width=10, height=6)
+
+full_calls %>% group_by(caller, depth) %>%
+	summarise(
+		precision=sum(tp)/(sum(tp)+sum(fp)),
+		recall=sum(tp)/(sum(tp)+sum(fn)),
+		fscore=2*precision*recall/(precision+recall)) %>%
+	arrange(depth, fscore) %>%
+	View()
+
+
+
+
 # FDR
 calls %>% group_by(caller) %>% summarise(fdr=sum(fp)/sum(tp+hom_tp+fp))
 precdf = full_calls %>%
@@ -206,12 +257,6 @@ calls %>% filter(tp) %>% group_by(n) %>%
 
 
 calls %>% filter(caller == "VIRUSBreakend" & fp)
-
-
-
-
-
-
 
 
 

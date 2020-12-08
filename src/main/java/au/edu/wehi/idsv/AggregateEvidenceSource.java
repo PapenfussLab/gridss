@@ -9,12 +9,12 @@ import java.util.List;
 public class AggregateEvidenceSource extends EvidenceSource implements Iterable<DirectedEvidence> {
 	private final SAMEvidenceSource.EvidenceSortOrder eso;
 	private List<SAMEvidenceSource> all;
-	public AggregateEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> reads, AssemblyEvidenceSource assemblies, SAMEvidenceSource.EvidenceSortOrder eso) {
+	public AggregateEvidenceSource(ProcessingContext processContext, List< ? extends SAMEvidenceSource> reads, List<AssemblyEvidenceSource> assemblies, SAMEvidenceSource.EvidenceSortOrder eso) {
 		super(processContext, null, null);
 		this.all = new ArrayList<>(reads);
 		this.eso = eso;
 		if (assemblies != null) {
-			this.all.add(assemblies);
+			this.all.addAll(assemblies);
 		}
 	}
 	@Override

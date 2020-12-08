@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ../protecteddata/hmf/
+cd ../protecteddata/hmfv3/
 grep "^#" $(ls -1 *.virusbreakend.vcf | head -1) | grep -v "##contig" | grep -v "#CHROM" > merged.vcf
 echo "##INFO=<ID=SAMPLE,Number=1,Type=String,Description=\"Sample identifier\">" >> merged.vcf
 echo "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample" >> merged.vcf

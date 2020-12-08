@@ -125,7 +125,7 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 	public void iterator_exception_should_surface_from_parsing_error_275() throws IOException {
 		ArrayList<SAMEvidenceSource> sess = Lists.newArrayList(new MockSAMEvidenceSource(getContext(), new File("src/test/resources/malformedsv.sam")));
 		MockAssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), sess, new File("src/test/resources/empty.bam"));
-		VariantCaller vc = new VariantCaller(getContext(), sess, aes);
+		VariantCaller vc = new VariantCaller(getContext(), sess, ImmutableList.of(aes));
 		ExecutorService threadpool = Executors.newFixedThreadPool(2, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Test275-%d").build());
 		vc.callBreakends(new File(testFolder.getRoot(), "out275.vcf"), threadpool);
 	}

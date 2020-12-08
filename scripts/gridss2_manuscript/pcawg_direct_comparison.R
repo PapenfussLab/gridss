@@ -2,12 +2,15 @@ source("libbenchmark.R")
 library(openxlsx)
 library(ggExtra)
 
+#gsutil -m cp gs://patient-report-bucket-umc/**/*.purple.qc .
+#gsutil -m cp gs://patient-report-bucket-umc/**/*.purple.sv.vcf.gz .
+#gsutil -m cp gs://patient-report-bucket-umc/**/*.purple.cnv.somatic.tsv .
 #grep QCStatus *.qc | sed -e 's/T.purple.qc:QCStatus//' > qcstatus.txt
 purple_qc_status = read_tsv(paste0(privatedatadir, "/pcawg/qcstatus.txt"), col_types="cc", col_names=c("donor_ID", "QCStatus"))
 
 fullmddf = read.xlsx(paste0(privatedatadir, "/pcawg/PCAWG_meta.xlsx"))
 #names(fullmddf) = make.names(names(fullmddf), unique=TRUE)
-raw_metadata_df = read.xlsx(paste0(privatedatadir, "/pcawg/PCAWG_meta.xlsx"), sheet="GPL")
+#raw_metadata_df = read.xlsx(paste0(privatedatadir, "/pcawg/PCAWG_meta.xlsx"), sheet="GPL")
 metadata_df = fullmddf %>%
 	inner_join(purple_qc_status, by="donor_ID") %>%
 	filter(
@@ -18,13 +21,13 @@ metadata_df = fullmddf %>%
 		file.exists(paste0(privatedatadir, "/pcawg/", donor_ID, "T.purple.sv.vcf.gz")),
 		file.exists(paste0(privatedatadir, "/pcawg/", donor_ID, "T.purple.cnv.somatic.tsv")),
 		)
-write(paste("Found files and unique donor_ID<->SAMPLE mapping for", nrow(metadata_df), "of", nrow(raw_metadata_df), "PCAWG samples."), stderr())
+write(paste("Found files and unique donor_ID<->SAMPLE mapping for", nrow(metadata_df), "of", "PCAWG samples."), stderr())
 metadata_df = metadata_df %>% filter(QCStatus == "PASS")
 write(paste(nrow(metadata_df), "passing PURPLE QC"), stderr())
 
 #### Hartwig Pipeline on PCAWG data ####
 pcawg_gpl_evaluate_cn_transitions = function(sampleId) {
-	donorId = metadata_df$donor_ID[metadata_df$GUID==sampleId]
+	donorId = metadata_df$donor_ID[metadata_df$SAMPLE==sampleId]
 	write(paste("Processing ", sampleId, donorId), stderr())
 	gridss_vcf = readVcf(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.sv.vcf.gz"))
 	purple_df = read_table2(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.cnv.somatic.tsv"), col_types="ciiddddcccidiidd")
@@ -39,18 +42,20 @@ pcawg_gpl_evaluate_cn_transitions = function(sampleId) {
 	gridss_gr = c(
 		breakpointRanges(gridss_vcf),
 		breakendRanges(gridss_vcf))
-	names(gridss_gr) = paste0(sampleId, "_", names(gridss_gr))
-	gridss_gr$partner = ifelse(is.na(gridss_gr$partner), NA, paste0(sampleId, "_", gridss_gr$partner))
+	if (length(gridss_gr) > 0) {
+		names(gridss_gr) = paste0(sampleId, "_", names(gridss_gr))
+		gridss_gr$partner = ifelse(is.na(gridss_gr$partner), NA, paste0(sampleId, "_", gridss_gr$partner))
+	}
 	result = evaluate_cn_transitions(purple_gr, gridss_gr)
-	result$sv$sampleId=sampleId
-	result$cn_transition$sampleId=sampleId
+	result$sv$sampleId=rep(sampleId, length(result$sv))
+	result$cn_transition$sampleId=rep(sampleId, length(result$cn_transition))
 	return(result)
 }
 
-gpl_pcawg_sv_cn_transitions_list = lapply(metadata_df$GUID, pcawg_gpl_evaluate_cn_transitions)
+gpl_pcawg_sv_cn_transitions_list = lapply(metadata_df$SAMPLE, pcawg_gpl_evaluate_cn_transitions)
 gpl_pcawg_cn_transitions_gr = unlist(GRangesList(lapply(gpl_pcawg_sv_cn_transitions_list, function(x) { x$cn_transition } )))
 gpl_pcawg_sv_transitions_gr = unlist(GRangesList(lapply(gpl_pcawg_sv_cn_transitions_list, function(x) { x$sv } )))
-consensus_pcawg_sv_cn_transitions_list = lapply(metadata_df$GUID, pcawg_evaluate_cn_transitions)
+consensus_pcawg_sv_cn_transitions_list = lapply(metadata_df$SAMPLE, pcawg_evaluate_cn_transitions)
 consensus_pcawg_cn_transitions_gr = unlist(GRangesList(lapply(consensus_pcawg_sv_cn_transitions_list, function(x) { x$cn_transition } )))
 consensus_pcawg_sv_transitions_gr = unlist(GRangesList(lapply(consensus_pcawg_sv_cn_transitions_list, function(x) { x$sv } )))
 

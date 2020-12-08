@@ -17,6 +17,7 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Structural variant supporting contigs generated from assembly
@@ -46,6 +48,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private int cachedMaxReadMappedLength = -1;
 	private AssemblyTelemetry telemetry;
 	private SAMFileHeader header;
+	private List<String> assembledCategories;
+	private int[] assemblyOrdinalToProcessingCategoryLookup;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -53,13 +57,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
 		super(processContext, assemblyFile, null, -1);
 		this.source = filterOutLongReadLibraries(evidence);
-		this.header = processContext.getBasicSamHeader();
-		if (!this.header.getComments().stream().anyMatch(s -> s.contains(INPUT_CATEGORY_SAM_HEADER_PREFIX))) {
-			for (int i = 0; i < processContext.getCategoryCount(); i++) {
-				String category = processContext.getCategoryLabel(i);
-				this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
-			}
-		}
 	}
 
 	private static List<SAMEvidenceSource> filterOutLongReadLibraries(List<SAMEvidenceSource> evidence) {
@@ -188,9 +185,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		Stopwatch timer = Stopwatch.createStarted();
 		File filteredout = FileSystemContext.getWorkingFileFor(output, "filtered.");
 		File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.");
-		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, tmpout)) {
+		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(getHeader(), false, tmpout)) {
 			if (getContext().getAssemblyParameters().writeFiltered) {
-				try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, filteredout)) {
+				try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(getHeader(), false, filteredout)) {
 					for (BreakendDirection direction : BreakendDirection.values()) {
 						assembleChunk(writer, filteredWriter, chunkNumber, qi, direction, assemblyNameGenerator, excludedRegions, safetyRegions, downsampledRegions);
 					}
@@ -310,7 +307,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			return true;
 		}
 		// too few reads
-		if (attr.getOriginatingFragmentID(null, null, null).size() < ap.minReads) {
+		if (attr.getOriginatingFragmentID(null, null, null, null).size() < ap.minReads) {
 			return true;
 		}
 		// unanchored assembly that not actually any longer than any of the reads that were assembled
@@ -466,38 +463,121 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	@Override
 	protected SamReader getReader() {
 		SamReader reader = super.getReader();
-		SAMFileHeader header = reader.getFileHeader();
+		this.header = reader.getFileHeader();
+		this.assembledCategories = getAssemblyCategories(getHeader());
+		return reader;
+	}
+
+	/**
+	 * Checks that all input categories have been assembled.
+	 * @param aesList
+	 */
+	public static void validateAllCategoriesAssembled(ProcessingContext pc, List<AssemblyEvidenceSource> aesList) {
+		Set<String> pcCategories = IntStream.range(0, pc.getCategoryCount())
+				.mapToObj(x -> pc.getCategoryLabel(x))
+				.collect(Collectors.toSet());
+		for (int i = 0; i < aesList.size(); i++) {
+			AssemblyEvidenceSource aes1 = aesList.get(i);
+			// Assembled but not in input
+			List<String> extra = aes1.getAssemblyCategories().stream()
+					.filter(x -> !pcCategories.contains(x))
+					.collect(Collectors.toList());
+			if (extra.size() > 0) {
+				String msg = String.format(
+						"Fatal error: Found %s in GRIDSS assembly files %s but not in input." +
+								" GRIDSS does not support including assembly of reads included in INPUT files." +
+								" If labels are used, they must match for both assembly and variant calling.",
+						extra.get(0),
+						aes1.getFile());
+				throw new RuntimeException(msg);
+			}
+			// Assembly duplicate
+			for (int j = i + 1; j < aesList.size(); j++) {
+				AssemblyEvidenceSource aes2 = aesList.get(j);
+				List<String> common = aes1.getAssemblyCategories().stream()
+						.filter(x -> aes2.getAssemblyCategories().contains(x))
+						.collect(Collectors.toList());
+				if (common.size() > 0) {
+					String msg = String.format(
+							"Fatal error: Found %s in GRIDSS assembly files %s and %s. " +
+									"Each input file/label must be assembled in exactly one assembly.",
+							common.get(0),
+							aes1.getFile(),
+							aes2.getFile());
+					throw new RuntimeException(msg);
+				}
+			}
+		}
+		// Missing in assembly
+		List<String> allAssembledCategories = aesList.stream()
+				.flatMap(aes -> aes.getAssemblyCategories().stream())
+				.collect(Collectors.toList());
+		for (int i = 0; i < pc.getCategoryCount(); i++) {
+			String label = pc.getCategoryLabel(i);
+			if (!allAssembledCategories.contains(label)) {
+				String msg = String.format(
+						"Fatal error: Missing assembly for %s. All input files must have a corresponding assembly.",
+						label);
+				throw new RuntimeException(msg);
+			}
+		}
+	}
+
+	public List<String> getAssemblyCategories() {
+		if (assembledCategories == null) {
+			assembledCategories = getAssemblyCategories(getHeader());
+		}
+		return assembledCategories;
+	}
+
+	public static List<String> getAssemblyCategories(SAMFileHeader header) {
 		List<String> categories = header.getComments().stream()
 				.map(s -> s.replaceFirst("@CO	", ""))
 				.filter(s -> s.startsWith(INPUT_CATEGORY_SAM_HEADER_PREFIX))
 				.map(s -> s.replaceFirst(INPUT_CATEGORY_SAM_HEADER_PREFIX, ""))
 				.collect(Collectors.toList());
-		if (categories.size() > 0) {
-			if (categories.size() != getContext().getCategoryCount()) {
-				String msg = String.format("Fatal error: GRIDSS assembly does not have the expected number of input categories (found %d, expected %d). " +
-						"GRIDSS performs joint assembly and does not support per-input assembly. " +
-						"Make sure the same input and labels are specified in the same order for the assembly and variant calling steps.",
-						categories.size(),
-						getContext().getCategoryCount());
-				log.error(msg);
-				throw new RuntimeException(msg);
-			}
-			for (int i = 0; i < getContext().getCategoryCount(); i++) {
-				String expected = getContext().getCategoryLabel(i);
-				String actual = categories.get(i);
-				if (!Objects.equals(expected, actual)) {
-					String msg = String.format("Fatal error: GRIDSS assembly categories do not match those supplied on the command line. " +
-							"All steps except pre-processing must have input files (and labels) in the same order. " +
-							"Make sure the same input and labels are specified in the same order for the assembly and variant calling steps.");
-					log.error(msg);
-					throw new RuntimeException(msg);
+		return categories;
+	}
+	/**
+	 * Transforms assembly categories into their processing context offsets.
+	 * @return category for each assembly support ordinal
+	 */
+	public int[] getAssemblyCategoryToProcessingContextCategoryLookup() {
+		if (assemblyOrdinalToProcessingCategoryLookup == null) {
+			List<String> ac = getAssemblyCategories();
+			assemblyOrdinalToProcessingCategoryLookup = new int[ac.size()];
+			for (int j = 0; j < ac.size(); j++) {
+				String assemblyLabel = ac.get(j);
+				for (int i = 0; i < getContext().getCategoryCount(); i++) {
+					String pcLabel = getContext().getCategoryLabel(i);
+					if (pcLabel.equals(assemblyLabel)) {
+						assemblyOrdinalToProcessingCategoryLookup[j] = i;
+						break;
+					}
 				}
 			}
 		}
-		return reader;
+		return assemblyOrdinalToProcessingCategoryLookup;
 	}
 
 	public SAMFileHeader getHeader() {
-		return header;
+		if (this.header == null) {
+			if (!getFile().exists()) {
+				this.header = getContext().getBasicSamHeader();
+				if (!this.header.getComments().stream().anyMatch(s -> s.contains(INPUT_CATEGORY_SAM_HEADER_PREFIX))) {
+					for (int i = 0; i < getContext().getCategoryCount(); i++) {
+						String category = getContext().getCategoryLabel(i);
+						this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
+					}
+				}
+			} else {
+				try (SamReader reader = getReader()) {
+					// getReader() populates the header for us
+				} catch (IOException e) {
+					throw new RuntimeIOException(e);
+				}
+			}
+		}
+		return this.header;
 	}
 }

@@ -4,6 +4,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import htsjdk.samtools.*;
@@ -265,25 +266,20 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	if (BLACKLIST != null && !BLACKLIST.exists()) {
 			return new String[] { "Missing BLACKLIST file " + BLACKLIST.getName() };
 		}
-		String[] err = getWorkingDirectoryFilenameCollisions(null, "");
+		String[] err = getWorkingDirectoryFilenameCollisions(ImmutableList.of(INPUT), WORKING_DIR);
 		if (err != null) {
 			return err;
 		}
     	return null;
 	}
-	protected String[] getWorkingDirectoryFilenameCollisions(File file, String param) {
-		if (INPUT.stream().collect(Collectors.toSet()).size() != INPUT.size()) {
-			return new String[]{"INPUT files must not be specified multiple times"};
+	protected static String[] getWorkingDirectoryFilenameCollisions(List<List<File>> files, File workingDir) {
+		List<File> fileList = files.stream().flatMap(s -> s.stream()).collect(Collectors.toList());
+		if (fileList.stream().collect(Collectors.toSet()).size() != fileList.size()) {
+			return new String[]{ "The same file cannot be specified mulitiple times."};
 		}
-		if (file != null && INPUT.contains(file)) {
-			return new String[]{param + " filename cannot match INPUT filename."};
-		}
-		if (WORKING_DIR != null) {
-			if (INPUT.size() != INPUT.stream().map(f -> f.getName()).distinct().count()) {
-				return new String[]{"INPUT files must have unique names if WORKING_DIR is specified."};
-			}
-			if (file != null && INPUT.stream().map(f -> f.getName()).anyMatch(f -> f.equals(file.getName()))) {
-				return new String[]{param + " filename cannot match INPUT filename."};
+		if (workingDir != null) {
+			if (fileList.size() != fileList.stream().map(f -> f.getName()).distinct().count()) {
+				return new String[]{" Files must have unique names if WORKING_DIR is specified."};
 			}
 		}
 		return null;

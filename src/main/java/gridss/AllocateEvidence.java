@@ -6,11 +6,14 @@ import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import gridss.cmdline.VcfTransformCommandLineProgram;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
@@ -18,7 +21,9 @@ import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
+import java.io.Closeable;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -59,7 +64,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	}
 	public CloseableIterator<DirectedEvidence> getAssemblyIterator() {
 		CloseableIterator<DirectedEvidence> evidenceIt;
-		evidenceIt = getAssemblySource().iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
+		evidenceIt = new AggregateEvidenceSource(getContext(), getAssemblySource(), null, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition).iterator();
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new AutoClosingIterator<>(
 					new PairedEvidenceTracker<>("Assemblies", new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural), false),
@@ -80,19 +85,31 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		return new AutoClosingIterator<>(it, calls, rawReads, reads, assemblies, bufferedAnnotator);
 	}
 	private CloseableIterator<DirectedEvidence> annotateAssembly(CloseableIterator<DirectedEvidence> it) {
-		AssemblyEvidenceSource aes = getAssemblySource();
-		// need to use the raw breakend assembly file (prior to realignment) so we annotate correctly
-		File assemblyFile = aes.getFile();
-		if (assemblyFile == null || !assemblyFile.exists()) {
-			log.error("Missing assembly file. BAN* annotations will be incorrect.");
-			return it;
+		List<Closeable> assToClose = new ArrayList<>();
+		List<Iterator<SAMRecord>> rawAssemblies = new ArrayList<>();
+		int windowSize = 0;
+		for (AssemblyEvidenceSource aes : getAssemblySource()) {
+			// need to use the raw breakend assembly file (prior to realignment) so we annotate correctly
+			File assemblyFile = aes.getFile();
+			if (assemblyFile == null || !assemblyFile.exists()) {
+				if (getContext().getConfig().getVariantCalling().ignoreMissingAssemblyFile) {
+					log.error("Missing assembly file. BAN* annotations will be incorrect.");
+					return it;
+				} else {
+					throw new RuntimeException("Missing assembly file " + (assemblyFile == null ? "" : assemblyFile.getName()));
+				}
+			}
+			windowSize = Math.max(windowSize, aes.getMaxAssemblyLength() + 2 * aes.getMaxConcordantFragmentSize());
+			// defensive over-eager loading
+			windowSize *= 2;
+			SamReader reader = getContext().getSamReader(assemblyFile);
+			SAMRecordIterator assit = reader.iterator();
+			rawAssemblies.add(assit);
+			assToClose.add(assit);
+			assToClose.add(reader);
 		}
-		int windowSize = aes.getMaxAssemblyLength() + 2 * aes.getMaxConcordantFragmentSize();
-		// defensive over-eager loading
-		windowSize *= 2;
-		SamReader reader = getContext().getSamReader(assemblyFile);
-		SAMRecordIterator assit = reader.iterator();
-		return new AutoClosingIterator<>(new AssemblyAssociator(it, assit, windowSize), assit, reader);
+		AutoClosingMergedIterator mergedAssemblies = new AutoClosingMergedIterator(rawAssemblies, new SAMRecordCoordinateOnlyComparator());
+		return new AutoClosingIterator<>(new AssemblyAssociator(it, mergedAssemblies, windowSize), assToClose.toArray(new Closeable[0]));
 	}
 	private VariantContextDirectedEvidence annotate(VariantEvidenceSupport ves) {
 		VariantCallingConfiguration vc = getContext().getConfig().getVariantCalling();

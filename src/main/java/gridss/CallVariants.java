@@ -110,6 +110,9 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsWritable(OUTPUT);
 		File lockFile = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.lock.");
+		if (ASSEMBLY == null || ASSEMBLY.size() != 1) {
+			throw new IllegalArgumentException("CallVariants supports only a single joint assembly. Use gridss.sh for sharded assembly");
+		}
 		if (lockFile.mkdir()) {
 			log.debug("Created lock ", lockFile);
 			// Set up lock file clean-up if GRIDSS execution is forcibly terminated using SIGINT
@@ -120,8 +123,8 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 				}
 			});
 	    	extractEvidence(threadpool, getSamEvidenceSources());
-	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY);
-	    	if (!ASSEMBLY.exists()) {
+	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY.get(0));
+	    	if (!ASSEMBLY.get(0).exists()) {
 	    		assemblyEvidence.assembleBreakends(threadpool);
 	    	}
 	    	// convert breakend assemblies into breakpoint via split read identification

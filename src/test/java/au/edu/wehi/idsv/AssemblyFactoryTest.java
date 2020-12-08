@@ -100,8 +100,8 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
-		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
-		assertEquals(4, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), (AssemblyEvidenceSource)bigr().source));
+		assertEquals(4, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), (AssemblyEvidenceSource)bigr().source));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_LENGTH_MAX() {
@@ -109,8 +109,8 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_COUNT() {
-		assertEquals(1, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)));
-		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)));
+		assertEquals(1, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), (AssemblyEvidenceSource)bigr().source));
+		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), (AssemblyEvidenceSource)bigr().source));
 	}
 //	@Test
 //	public void should_set_assembly_attribute_ASSEMBLY_REMOTE_COUNT() {

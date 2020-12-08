@@ -5,8 +5,10 @@ import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.MoreExecutors;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -50,12 +52,12 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
-		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
+		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
 		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
-		cmd.setAssemblySource(aes);
+		cmd.setAssemblySource(ImmutableList.of(aes));
 		cmd.setSamEvidenceSources(ImmutableList.of(ses));
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
 		List<VariantContextDirectedBreakpoint> vcfs = Lists.newArrayList(Iterables.filter(getVcf(output, null), VariantContextDirectedBreakpoint.class));
@@ -83,12 +85,12 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
-		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
+		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
 		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
-		cmd.setAssemblySource(aes);
+		cmd.setAssemblySource(ImmutableList.of(aes));
 		cmd.setSamEvidenceSources(ImmutableList.of(ses));
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
 		List<VariantContextDirectedBreakpoint> vcfs = Lists.newArrayList(Iterables.filter(getVcf(output, null), VariantContextDirectedBreakpoint.class));
@@ -117,23 +119,23 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 				in.add(dp[1]);
 			}
 		}
-		StubAssemblyEvidenceSource aes = new StubAssemblyEvidenceSource(pc);
+		AllocateEvidence cmd = new AllocateEvidence();
+		cmd.ASSEMBLY = ImmutableList.of(new File(testFolder.getRoot(), "assembly.bam"));
+		createBAM(cmd.ASSEMBLY.get(0), AES().getHeader()); // to shut up the command-line parsing
+		StubAssemblyEvidenceSource aes = new StubAssemblyEvidenceSource(pc, cmd.ASSEMBLY.get(0));
 		aes.fragSize = fragSize;
 		Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 		createInput(in);
-		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), aes);
+		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of(aes));
 		ExecutorService threadpool = Executors.newSingleThreadExecutor();
 		vc.callBreakends(output, threadpool);
 		threadpool.shutdown();
-		
-		AllocateEvidence cmd = new AllocateEvidence();
+
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
-		cmd.setAssemblySource(aes);
+		cmd.setAssemblySource(ImmutableList.of(aes));
 		cmd.setSamEvidenceSources(ImmutableList.of(ses));
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
-		cmd.ASSEMBLY = new File(testFolder.getRoot(), "assembly.bam");
-		createBAM(cmd.ASSEMBLY, SortOrder.coordinate, Collections.emptyList()); // to shut up the command-line parsing
 		cmd.doWork(null);
 		
 		//List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
@@ -176,12 +178,12 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
-		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
+		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
 		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
-		cmd.setAssemblySource(aes);
+		cmd.setAssemblySource(ImmutableList.of(aes));
 		cmd.setSamEvidenceSources(ImmutableList.of(ses));
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
 		List<VariantContextDirectedBreakpoint> vcfs = Lists.newArrayList(Iterables.filter(getVcf(output, null), VariantContextDirectedBreakpoint.class));
@@ -208,12 +210,12 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
-		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
+		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
 		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
-		cmd.setAssemblySource(aes);
+		cmd.setAssemblySource(ImmutableList.of(aes));
 		cmd.setSamEvidenceSources(ImmutableList.of(ses));
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
 		List<VariantContextDirectedBreakpoint> vcfs = Lists.newArrayList(Iterables.filter(getVcf(output, null), VariantContextDirectedBreakpoint.class));
@@ -237,16 +239,20 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
-		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
+		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
 		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
-		cmd.setAssemblySource(aes);
+		cmd.setAssemblySource(ImmutableList.of(aes));
 		cmd.setSamEvidenceSources(ImmutableList.of(ses));
 		cmd.OUTPUT_VCF = new File(testFolder.getRoot(), "annotated.vcf");
 		List<VariantContextDirectedBreakpoint> vcfs = Lists.newArrayList(Iterables.filter(getVcf(output, null), VariantContextDirectedBreakpoint.class));
 		List<VariantContextDirectedEvidence> results = Lists.newArrayList(cmd.iterator(new AutoClosingIterator<>(vcfs.iterator()), MoreExecutors.newDirectExecutorService()));
 		assertEquals(0, results.size());
+	}
+	@Test
+	public void should_support_sharded_assembly() {
+		Assert.fail();
 	}
 }

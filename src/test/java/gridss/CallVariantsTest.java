@@ -7,6 +7,7 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import gridss.cmdline.CommandLineProgramHelper;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
@@ -80,9 +81,16 @@ public class CallVariantsTest extends IntermediateFilesTest {
 		}).collect(Collectors.toList());
 		createInput(insam);
 		File assembly = new File(testFolder.getRoot(), "assembly.bam");
-		createBAM(assembly, SortOrder.coordinate);
+		File tumour = new File(testFolder.getRoot(), "tumour.bam");
+		SAMFileHeader header = AES().getHeader().clone();
+		header.setSortOrder(SortOrder.coordinate);
+		createBAM(assembly, header);
+		createBAM(tumour, SortOrder.coordinate);
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
+				"INPUT_LABEL=Normal",
+				"INPUT=" + tumour.toString(),
+				"INPUT_LABEL=Tumour",
 				"ASSEMBLY=" + assembly.toString(),
 				"REFERENCE_SEQUENCE=" + reference.toString(),
 				"OUTPUT=" + output.toString(),

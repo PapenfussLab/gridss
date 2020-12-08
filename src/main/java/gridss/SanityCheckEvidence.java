@@ -1,9 +1,11 @@
 package gridss;
 
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import com.google.common.collect.Iterables;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
 import htsjdk.samtools.util.Log;
 import org.broadinstitute.barclay.argparser.Argument;
@@ -64,14 +66,11 @@ public class SanityCheckEvidence extends FullEvidenceCommandLineProgram {
 	}
 	@Override
 	public int doWork(ExecutorService threadpool) throws IOException {
-		for (SAMEvidenceSource ses : getSamEvidenceSources()) {
+		for (SAMEvidenceSource ses : Iterables.concat(getSamEvidenceSources(), getAssemblySource())) {
 			log.info("Sanity checking " + ses.getFile().getName());
 			if (sanityCheck(ses) != 0) {
 				return 1;
 			}
-		}
-		if (sanityCheck(getAssemblySource()) != 0) {
-			return 1;
 		}
 		return 0;
 	}
