@@ -77,6 +77,12 @@ autoconf
 ./configure && make all
 ```
 
+## Conda issues
+
+Compiling with a conda environment active is likely to cause problems such as `undefined reference to 'libdeflate_crc32'`. This happens when the conda environment includes copies of the libraries used by htslib (z m bz2 lzma curl crypto pthread) without also including the headers for the libraries. This causes gridsstools to compile against the system headers, but link against the conda libraries, hence the error.
+
+Run either `conda install htslib` or `conda deactivate` if you have problems compiling gridsstools in a conda environment.
+
 # Running
 
 Scripts and pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases. GRIDSS invokes external tools at multiple points during processing. By default this is bwa mem, but can be configured to use bowtie2 or another aligner.
