@@ -11,5 +11,5 @@ fi
 echo Building GRIDSS $version
 docker build --tag gridss/gridss:latest .
 docker build --tag gridss/gridss:$version .
-docker push gridss/gridss:latest
-docker push gridss/gridss:$version
+echo docker push gridss/gridss:latest
+echo docker push gridss/gridss:$version
