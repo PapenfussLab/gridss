@@ -70,7 +70,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	}
     }
     private <T> T getOffset(List<T> list, int offset, T defaultValue) {
-    	if (offset >= list.size()) return defaultValue;
+    	if (list == null || offset >= list.size()) return defaultValue;
     	T obj = list.get(offset);
     	if (obj == null) return defaultValue;
     	return obj;

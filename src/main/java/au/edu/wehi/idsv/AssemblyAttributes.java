@@ -64,9 +64,11 @@ public class AssemblyAttributes {
 	 * @return true if the record is likely part of the breakend, false if definitely not
 	 */
 	public boolean isPartOfAssembly(DirectedEvidence e) {
-		return getSupport().stream().anyMatch(ee -> ee.getEvidenceID().equals(e.getEvidenceID()));
+		return getSupport(e.getEvidenceSource() instanceof AssemblyEvidenceSource ? (AssemblyEvidenceSource)e.getEvidenceSource() : null)
+				.stream()
+				.anyMatch(ee -> ee.getEvidenceID().equals(e.getEvidenceID()));
 	}
-	private Collection<AssemblyEvidenceSupport> getSupport() {
+	private Collection<AssemblyEvidenceSupport> getSupport(AssemblyEvidenceSource aes) {
 		if (support == null) {
 			support = new ArrayList<>();
 			if (!record.hasAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY)) {
@@ -84,6 +86,12 @@ public class AssemblyAttributes {
 					String msg = "Sanity check failure:" + record.getReadName() + " missing required evidence SAM tag.";
 					log.error(msg);
 					throw new IllegalStateException(msg);
+				}
+				if (aes != null) {
+					final int[] lookup = aes.getAssemblyCategoryToProcessingContextCategoryLookup();
+					for (int i = 0; i < category.length; i++) {
+						category[i] = lookup[category[i]];
+					}
 				}
 				if (type.length != category.length
 						|| type.length != intervalStart.length
@@ -212,12 +220,12 @@ public class AssemblyAttributes {
 		return isUnique;
 	}
 	private Stream<AssemblyEvidenceSupport> filterSupport(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes, AssemblyEvidenceSource aes) {
-		Stream<AssemblyEvidenceSupport> stream = getSupport().stream();
+		Stream<AssemblyEvidenceSupport> stream = getSupport(aes).stream();
 		if (assemblyContigOffset != null) {
 			stream = stream.filter(s -> s.getAssemblyContigOffset().isConnected(assemblyContigOffset));
 		}
 		if (supportingCategories != null) {
-			stream = stream.filter(s -> supportingCategories.contains(aes.getAssemblyCategoryToProcessingContextCategoryLookup()[s.getCategory()]));
+			stream = stream.filter(s -> supportingCategories.contains(s.getCategory()));
 		}
 		if (supportTypes != null) {
 			stream = stream.filter(s -> supportTypes.contains(s.getSupportType()));

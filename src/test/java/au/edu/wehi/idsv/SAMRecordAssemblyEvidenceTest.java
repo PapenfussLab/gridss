@@ -143,10 +143,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null, aes).contains("r4"));
 	}
 	@Test
-	public void should_convert_from_assembly_categories_to_processing_context_categories() {
-		Assert.fail();
-	}
-	@Test
 	public void getEvidenceIDs_should_return_underlying_evidence() {
 		DirectedEvidence e1 = SCE(BWD, Read(0, 1, "5S5M"));
 		DirectedEvidence e2 = SCE(BWD, Read(0, 1, "6S5M"));

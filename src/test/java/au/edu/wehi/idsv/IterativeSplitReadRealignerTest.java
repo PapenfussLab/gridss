@@ -14,6 +14,6 @@ public class IterativeSplitReadRealignerTest extends SplitReadRealignerTest {
     }
     @Override
     protected SplitReadRealigner createAligner(ProcessingContext pc) {
-        return new IterativeSplitReadRealigner(pc, new ExternalProcessFastqAligner(pc.getSamReaderFactory(), pc.getSamFileWriterFactory(false), ExternalAlignerTests.COMMAND_LINE));
+        return new IterativeSplitReadRealigner(pc, new ExternalProcessFastqAligner(pc.getSamReaderFactory(), pc.getSamFileWriterFactory(), ExternalAlignerTests.COMMAND_LINE));
     }
 }

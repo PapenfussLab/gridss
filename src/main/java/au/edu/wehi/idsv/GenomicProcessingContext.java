@@ -175,10 +175,10 @@ public class GenomicProcessingContext implements Closeable {
 		return applyCommonSAMRecordFilters(safeIterator);
 	}
 
-	public SAMFileWriterFactory getSamFileWriterFactory(boolean sorted) {
+	public SAMFileWriterFactory getSamFileWriterFactory() {
 		return new SAMFileWriterFactory()
 			.setTempDirectory(fsContext.getTemporaryDirectory())
-			.setCreateIndex(sorted); // also covered by -Dcreate_index=true
+			.setCreateIndex(true);
 	}
 
 	/**

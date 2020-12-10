@@ -2,9 +2,14 @@ package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Range;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.ArrayList;
 
 import static org.junit.Assert.*;
 
@@ -72,5 +77,24 @@ public class AssemblyAttributesTest extends TestHelper {
 		r.setAttribute(SamTags.ASSEMBLY_EVIDENCE_FRAGMENTID, "1 2 3");
 		AssemblyAttributes attr = new AssemblyAttributes(r);
 		assertEquals(3, attr.getMaxQualPosition(Range.closed(0, 15), null, null, null));
+	}
+	@Test
+	public void categories_should_map_to_processing_context() {
+		DirectedEvidence e1 = SCE(FWD, withMapq(10, Read(0, 1, "1M2S")));
+		DirectedEvidence e2 = SCE(FWD, withMapq(20, Read(0, 1, "1M1S")));
+		SAMRecord ass1 = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), new BreakendSummary(0, FWD, 1, 1, 2), ImmutableList.of(e1, e2), null, B("GTAC"), new byte[] {1,2,3,4});
+		ProcessingContext pc = new ProcessingContext(getFSContext(), SMALL_FA_FILE, SMALL_FA, new ArrayList<Header>(), getConfig());
+		pc.registerCategory("One");
+		pc.registerCategory("Two");
+		pc.registerCategory("Three");
+		pc.registerCategory("Four");
+		pc.registerCategory("Normal");
+		pc.registerCategory("Tumour");
+		StubAssemblyEvidenceSource aes = new StubAssemblyEvidenceSource(pc);
+		aes.setAssembledCategories(ImmutableList.of("Normal", "Tumour"));
+		NonReferenceReadPair asse = NonReferenceReadPair.create(aes, ass1);
+		AssemblyAttributes aa = new AssemblyAttributes(ass1);
+		Assert.assertEquals(0, aa.getEvidenceIDs(null, ImmutableSet.of(0, 1, 2, 3), null, aes).size());
+		Assert.assertEquals(2, aa.getEvidenceIDs(null, ImmutableSet.of(4, 5), null, aes).size());
 	}
 }

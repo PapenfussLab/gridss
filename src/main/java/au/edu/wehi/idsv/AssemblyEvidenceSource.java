@@ -48,7 +48,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private int cachedMaxReadMappedLength = -1;
 	private AssemblyTelemetry telemetry;
 	private SAMFileHeader header;
-	private List<String> assembledCategories;
+	protected List<String> assembledCategories;
 	private int[] assemblyOrdinalToProcessingCategoryLookup;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -489,7 +489,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 								" If labels are used, they must match for both assembly and variant calling.",
 						extra.get(0),
 						aes1.getFile());
-				throw new RuntimeException(msg);
+				throw new IllegalArgumentException(msg);
 			}
 			// Assembly duplicate
 			for (int j = i + 1; j < aesList.size(); j++) {
@@ -504,7 +504,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 							common.get(0),
 							aes1.getFile(),
 							aes2.getFile());
-					throw new RuntimeException(msg);
+					throw new IllegalArgumentException(msg);
 				}
 			}
 		}
@@ -518,7 +518,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				String msg = String.format(
 						"Fatal error: Missing assembly for %s. All input files must have a corresponding assembly.",
 						label);
-				throw new RuntimeException(msg);
+				throw new IllegalArgumentException(msg);
 			}
 		}
 	}

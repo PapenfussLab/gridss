@@ -191,7 +191,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				header = reader.getFileHeader();
 			}
 			// TODO: preserve original BAM ordering?
-			try (SAMFileWriter writer = context.getSamFileWriterFactory(true).setCreateIndex(true).makeBAMWriter(header, false, outSam)) {
+			try (SAMFileWriter writer = context.getSamFileWriterFactory().setCreateIndex(true).makeBAMWriter(header, false, outSam)) {
 				evidenceInCurrentAssembler.stream()
 						.filter(de -> de.getEvidenceSource() == source)
 						.forEach(a -> writer.addAlignment(a.getUnderlyingSAMRecord()));

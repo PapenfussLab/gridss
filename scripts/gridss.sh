@@ -102,7 +102,8 @@ while true; do
             shift 2
             ;;
 		-a|--assembly)
-            assembly="$2"
+            assembly="$assembly $2"
+			# TODO: support multiple assembly files
             shift 2
             ;;
 		-b|--blacklist)
@@ -208,7 +209,7 @@ write_status() {
 	echo "$(date): $1" | tee -a $logfile 1>&2
 }
 write_status "Full log file is: $logfile"
-trap 'echo "\"${last_command}\" command completed with exit code $?.\nThe underlying error message can be found in $logfile."' EXIT
+trap 'echo "\"${last_command}\" command completed with exit code $?." 1>&2; echo 1>&2; echo "The actual error message can be found in $logfile." 1>&2' EXIT
 # Timing instrumentation
 timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
 if which /usr/bin/time >/dev/null ; then
@@ -836,12 +837,12 @@ if [[ $do_assemble == true ]] ; then
 				WORKING_DIR=$workingdir \
 				REFERENCE_SEQUENCE=$reference \
 				WORKER_THREADS=$threads \
-				O=$assembly \
 				$input_args \
 				$blacklist_arg \
 				$config_args \
 				$picardoptions \
 				$readpairing_args \
+				O=$assembly \
 		; } 1>&2 2>> $logfile
 	else
 		write_status  "Skipping assembly as $assembly already exists.	$assembly"
@@ -945,6 +946,10 @@ if [[ $do_assemble == true ]] ; then
 else
 	write_status "Skipping assembly	$assembly"
 fi
+assembly_args=""
+for ass in $assembly ; do
+	assembly_args="$assembly_args ASSEMBLY=$ass"
+done
 if [[ $sanityCheck == "true" ]] ; then 
 	write_status "Running sanity checks"
 	java -Xmx$jvmheap $jvm_args \
@@ -956,7 +961,7 @@ if [[ $sanityCheck == "true" ]] ; then
 		$input_args \
 		$blacklist_arg \
 		$config_args \
-		ASSEMBLY=$assembly \
+		$assembly_args \
 		$readpairing_args \
 		OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt
 fi
@@ -985,7 +990,7 @@ if [[ $do_call == true ]] ; then
 				$input_args \
 				$blacklist_arg \
 				$config_args \
-				ASSEMBLY=$assembly \
+				$assembly_args \
 				OUTPUT_VCF=$prefix.unallocated.vcf \
 				$readpairing_args \
 		; } 1>&2 2>> $logfile
@@ -1001,7 +1006,7 @@ if [[ $do_call == true ]] ; then
 				$input_args \
 				$blacklist_arg \
 				$config_args \
-				ASSEMBLY=$assembly \
+				$assembly_args \
 				INPUT_VCF=$prefix.unallocated.vcf \
 				OUTPUT_VCF=$prefix.allocated.vcf \
 				$picardoptions \

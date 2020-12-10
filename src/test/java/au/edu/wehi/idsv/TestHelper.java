@@ -981,6 +981,9 @@ public class TestHelper {
 			return new AutoClosingIterator<>(assemblies.stream().filter(
 					e -> QueryIntervalUtil.overlaps(qi, e.getBreakendSummary())).iterator());
 		}
+		public void setAssembledCategories(ImmutableList<String> categories) {
+			this.assembledCategories = categories;
+		}
 	}
 	public static AssemblyEvidenceSource AES() {
 		return new AssemblyEvidenceSource(getContext(),
