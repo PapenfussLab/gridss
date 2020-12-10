@@ -209,7 +209,10 @@ write_status() {
 	echo "$(date): $1" | tee -a $logfile 1>&2
 }
 write_status "Full log file is: $logfile"
-trap 'echo "\"${last_command}\" command completed with exit code $?." 1>&2; echo 1>&2; echo "The actual error message can be found in $logfile." 1>&2' EXIT
+trap 'echo "\"${last_command}\" command completed with exit code $?.
+*****
+The underlying error message can be found in $logfile.
+*****"' EXIT
 # Timing instrumentation
 timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
 if which /usr/bin/time >/dev/null ; then
