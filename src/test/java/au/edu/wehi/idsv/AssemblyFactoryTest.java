@@ -540,5 +540,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(new BreakendSummary(0, BWD, 1), re.getBreakendSummary().localBreakend());
 		assertEquals(new BreakendSummary(1, FWD, 212, 202, 222), re.getBreakendSummary().remoteBreakend());
 	}
+	@Test
+	public void basequal_range_should_be_limited() {
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(
+				getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,null,
+				0, 1, 2, B("GTACC"), new byte[] { 92,93,(byte)254,-1,94 });
+		assertArrayEquals(new byte[] { 92, 93,93,93,93}, r.getBaseQualities());
+	}
 }
 
