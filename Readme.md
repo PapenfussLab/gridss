@@ -331,6 +331,21 @@ For ++ or -- breakpoints, left-aligning the lower breakend will force right-alig
 
 Secondly, using left or right alignment for imprecise call will result in the nominal call being at the edge of the confidence interval bounds. Centre-aligning imprecise calls makes sense as it is (usually) the centre position that is the most likely to be correct.
 
+### How do I perform most likely centromere allocation for single breakends?
+
+- Run GRIDSS
+- Annotate with `gridss_annotate_vcf_repeatmasker.sh`
+- Add centromeric annotations with `example/annotate_most_likely_centromere.R`
+
+Since hg19 has N-masked centromeres, it is unsuitable as a reference for performing centromeric annotations.
+Either hg38 or a full telomere to telomere reference genome should be used.
+
+For example:
+```
+Rscript example/annotate_most_likely_centromere.R --ref chm13.draft_v1.0.fasta --input example/DO52605T.purple.sv.vcf --output example/out.DO52605T.centromeric.vcf
+```
+
+
 ## GRIDSS JAR
 
 GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss.sh`.
