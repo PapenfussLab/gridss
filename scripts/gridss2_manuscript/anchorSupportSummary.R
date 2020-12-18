@@ -281,6 +281,9 @@ distance_to_phasable = function(gr, maxdistance=10000000, maxbreakpoints=10) {
   return(resultdf)
 }
 phasabledf = bind_rows(lapply(unique(gr$sampleid), function(s) distance_to_phasable(gr[gr$sampleid == s])))
+gpl_pcawg_sv_transitions_gr$sampleid = gpl_pcawg_sv_transitions_gr$sampleId
+tcga_phasabledf = bind_rows(lapply(unique(gpl_pcawg_sv_transitions_gr$sampleid), function(s) distance_to_phasable(gpl_pcawg_sv_transitions_gr[gpl_pcawg_sv_transitions_gr$sampleid == s])))
+
 # Calculate the theoretical distribution
 # we have enough data points that we can just simulate by creating breakpoints with total # matching our cohort
 hg19_chr_len = seqlengths(BSgenome.Hsapiens.UCSC.hg19)[1:24]
@@ -298,25 +301,29 @@ generate_random_breaks = function(breakendCount, sampleid) {
   return(randgr)
 }
 phasable_random_baseline_df = bind_rows(lapply(unique(gr$sampleid), function(s) distance_to_phasable(generate_random_breaks(sum(gr$sampleid == s), s))))
+tcga_phasable_random_baseline_df = bind_rows(lapply(unique(gpl_pcawg_sv_transitions_gr$sampleid), function(s) distance_to_phasable(generate_random_breaks(sum(gpl_pcawg_sv_transitions_gr$sampleid == s), s))))
 
 phasablesummarydf = bind_rows(
-    phasabledf %>% mutate(dataset="actual"),
-    phasable_random_baseline_df %>% mutate(dataset="expected")) %>%
+    phasabledf %>% mutate(cohort="Hartwig", dataset="actual"),
+    tcga_phasabledf %>% mutate(cohort="PCAWG", dataset="actual"),
+    phasable_random_baseline_df %>% mutate(cohort="Hartwig", dataset="expected"),
+    tcga_phasable_random_baseline_df %>% mutate(cohort="PCAWG", dataset="expected"),
+    ) %>%
   mutate(distance = signif(distance, 3)) %>% # round to 3 significant figures so we don't overplot
-  group_by(dataset, breakpoint, distance) %>%
+  group_by(cohort, dataset, breakpoint, distance) %>%
   summarise(count=n()) %>%
-  group_by(dataset, breakpoint) %>%
+  group_by(cohort, dataset, breakpoint) %>%
   arrange(distance) %>%
   mutate(cumcount=cumsum(count)) %>%
   mutate(cdf=2 * cumcount / length(gr)) # x2 because phasing two breakpoints makes the other side of the breakpoints also phased
 
 ggplot(phasablesummarydf %>% filter(breakpoint == 1)) +
-  aes(x = distance, y=cdf, linetype=dataset) +
+  aes(x = distance, y=cdf, linetype=dataset, colour=cohort) +
   scale_x_log10(limits=c(100, 10000000), expand=c(0,0), breaks=c(100, 1000, 10000, 100000, 1000000, 10000000), labels=c("100", "1kb", "10kb", "100kb", "1Mb", "10Mb")) +
   scale_y_continuous(expand=c(0,0, 0, 0.01), labels = scales::percent_format()) +
   geom_line() +
   labs(x="Distance to next breakpoint", y="Percentage of SVs in cohort")
-figsave("hartwig_distance_to_breakpoint", width=3, height=3)
+figsave("distance_to_breakpoint", width=3, height=3)
 
 ggplot(phasablesummarydf) +
   aes(x=distance, y=cdf, colour=as.factor(breakpoint), linetype=dataset) +
@@ -326,17 +333,135 @@ ggplot(phasablesummarydf) +
   labs(x="Distance to next breakpoint", y="Percentage of SVs in cohort")
 
 phasablesummarydf %>% filter(breakpoint == 1 & distance == 10000)
+
+
+
+########
+# Phasability breakdown
+#' returns the ordinal of the last TRUE value
+pcawg_linx_svs = read_tsv(paste0(privatedatadir, "/pcawg/pcawg.linx.vis_sv_data.tsv"))
+pcawg_linx_svs$Id = pcawg_linx_svs$SvId
+
+lnx_closest_phaseable_distance = function(df, missingDistance=1000000000) {
+  bind_rows(
+    df %>% dplyr::select(SampleId, Id, Chr=ChrStart, Pos=PosStart, Orient=OrientStart),
+    df %>% dplyr::select(SampleId, Id, Chr=ChrEnd, Pos=PosEnd, Orient=OrientEnd) %>% filter(Chr != 0)) %>%
+    group_by(SampleId, Chr) %>%
+    arrange(Pos) %>%
+    mutate(
+      isFragmentStart=Orient == -1,
+      isFragmentEnd=Orient == 1,
+      startOrdinal=lastTrueOrdinal(isFragmentStart),
+      closestStartId=       ifelse(startOrdinal<=0 | isFragmentStart, NA,       Id[pmax(1,startOrdinal)]),
+      closestStartFragSize= ifelse(startOrdinal<=0 | isFragmentStart, NA, Pos - Pos[pmax(1,startOrdinal)]),
+      startOrdinal2 = secondLastTrueOrdinal(isFragmentStart),
+      #secondClosestStartId=       ifelse(startOrdinal2<=0 | isFragmentStart, NA,        Id[pmax(1,startOrdinal2)]),
+      secondClosestStartFragSize= ifelse(startOrdinal2<=0 | isFragmentStart, NA, Pos - Pos[pmax(1,startOrdinal2)])
+      ) %>%
+    arrange(desc(Pos)) %>%
+    mutate(
+      endOrdinal=lastTrueOrdinal(isFragmentEnd),
+      closestEndId=       ifelse(endOrdinal<=0 | isFragmentEnd, NA,  Id[pmax(1,endOrdinal)]),
+      closestEndFragSize =ifelse(endOrdinal<=0 | isFragmentEnd, NA, Pos[pmax(1,endOrdinal)] - Pos),
+      endOrdinal2=secondLastTrueOrdinal(isFragmentEnd),
+      #secondClosestEndId=       ifelse(endOrdinal2<=0 | isFragmentEnd, NA,  Id[pmax(1,endOrdinal2)]),
+      secondClosestEndFragSize= ifelse(endOrdinal2<=0 | isFragmentEnd, NA, Pos[pmax(1,endOrdinal2)] - Pos)) %>%
+    arrange(SampleId, Chr, Pos) %>%
+    replace_na(list(
+      closestStartFragSize=missingDistance,
+      secondClosestStartFragSize=missingDistance,
+      closestEndFragSize=missingDistance,
+      secondClosestEndFragSize=missingDistance,
+      closestStartId=-1,
+      closestEndId=-1)) %>%
+    mutate(
+      phaseableDistance=pmin(closestStartFragSize, closestEndFragSize),
+      phaseableDistance_nonself=pmin(
+        ifelse(Id == closestStartId, secondClosestStartFragSize, closestStartFragSize),
+        ifelse(Id == closestEndId, secondClosestEndFragSize, closestEndFragSize))
+      ) %>%
+    group_by(SampleId, Id) %>%
+    summarise(
+      phaseableDistance=min(phaseableDistance),
+      phaseableDistance_nonself=min(phaseableDistance_nonself)) %>%
+    ungroup()
+}
+hartwig_svs_annotated = inner_join(lnx_svs, lnx_closest_phaseable_distance(lnx_svs %>% filter(Type != "INF")), by=c("SampleId", "Id"))
+pcawg_svs_annotated = inner_join(pcawg_linx_svs, lnx_closest_phaseable_distance(pcawg_linx_svs %>% filter(Type != "INF")), by=c("SampleId", "Id"))
+
+linx_friendly_classification = function(Type, ResolvedType) {
+  c(
+    #https://github.com/hartwigmedical/hmftools/sv-linx/src/main/java/com/hartwig/hmftools/linx/types/ResolvedType.java
+    "DUP_BE"="Other",
+    "LOW_VAF"="Other",
+    "PAIR_INF"="Other",
     
+    "DEL"="Deletion",
+    "DEL_TI"="Deletion",
+    "DUP"="Duplication",
+    "DUP_TI"="Duplication",
+    "SGL"="Other",
+    "INV"="Other",
+    "INS"="Other",
+    "INF"="Inferred",
+    "UNBAL_TRANS"="Unbalanced Translocation",
+    "UNBAL_TRANS_TI"="Unbalanced Translocation",
     
+    "RECIP_INV"="2-Break Reciprocal",
+    "RECIP_TRANS"="2-Break Reciprocal",
+    "RECIP_INV_DUPS"="2-Break Reciprocal",
+    "RECIP_INV_DEL_DUP"="2-Break Reciprocal",
+    "RECIP_TRANS_DUPS"="2-Break Reciprocal",
+    "RECIP_TRANS_DEL_DUP"="2-Break Reciprocal",
+    "SGL_PAIR_INS"="2-Break Other",
+    "SGL_PAIR_DUP"="2-Break Other",
+    "SGL_PAIR_DEL"="2-Break Other",
+    "PAIR_OTHER"="2-Break Other",
+    "RESOLVED_FOLDBACK"="2-Break Other",
+    "FB_INV_PAIR"="2-Break Other",
+    "PAIR_INF"="2-Break Other",
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    "LINE"="LINE",
+    "COMPLEX"="Complex",
+    "DOUBLE_MINUTE"="Complex"
+  )[ifelse(ResolvedType=="SIMPLE_GRP", Type, ResolvedType)]
+}
+svs_annotated = bind_rows(
+    pcawg_svs_annotated %>% mutate(cohort="PCAWG"),
+    hartwig_svs_annotated %>% mutate(cohort="Hartwig"))
+ggplot(svs_annotated) +
+  aes(x=phaseableDistance_nonself, fill=linx_friendly_classification(Type, ResolvedType)) +
+  geom_histogram() +
+  facet_grid(cohort ~ ., scales="free_y") +
+  geom_vline(xintercept=500) +
+  scale_fill_brewer(palette="Paired") +
+  scale_x_log10(breaks=c(10, 100, 500, 1000, 10000, 100000, 1000000, 10000000), labels=c("10bp", "", "500", "", "10k", "", "1Mbase", "")) +
+  labs(title="Distance to nearest phasable break (excluding self)", x="Distance (bp)", y="Count", fill="LINX Classification")
+figsave("linx_phasing_breakdown", width=8, height=8)
+
+hartwig_svs_annotated %>%
+  filter(phaseableDistance<=500 & linx_friendly_classification(Type, ResolvedType) == "Complex") %>%
+  ggplot() +
+  aes(x=pmin(ClusterCount, 200)) +
+  geom_histogram() +
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0)) +
+  labs(x="SVs in Complex event", y="Count")
+figsave("linx_phasing_breakdown_complex_cluster_hartwig", width=3, height=3)
+
+svs_annotated %>%
+  group_by(cohort) %>%
+  mutate(phase500=phaseableDistance<=500) %>%
+  summarise(phase500=sum(phase500)/n())
+
+
+
+
+
+
+
+
+
+
 
 

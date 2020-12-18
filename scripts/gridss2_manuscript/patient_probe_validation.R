@@ -139,3 +139,57 @@ rbind(
 	theme(axis.text.x = element_text(angle = 90))
 figsave("probe_results_32-100bp_DUP", width=5, height=4)
 
+
+###
+if (!exists("db")) db = dbConnect(MySQL(), dbname='hmfpatients', groups="RAnalysis")
+samplelookup = DBI::dbGetQuery(db, "Select hmfSampleId, SampleId from clinical WHERE hmfSampleId IN ('HMF000214A','HMF001434A','HMF000566A','HMF000823A','HMF000952A','HMF003333A','HMF001559A','HMF002624A','HMF002224A','HMF000379A','HMF002760A','HMF003228A','HMF001184A')")
+lnx_drivers = read_csv(paste0(privatedatadir, "/hartwig/LNX_DRIVERS.csv"))
+lnx_disruptions = read_csv(paste0(privatedatadir, "/hartwig/LNX_DISRUPTIONS.csv"))
+lnx_svs = read_csv(paste0(privatedatadir, "/hartwig/LNX_SVS.csv"))
+emblgenes=read_csv = read_csv(paste0(datadir, "ensembl_gene_data.csv"), col_types="cccnnncc")
+
+probe_sample_disruptions = lnx_disruptions %>%
+	inner_join(samplelookup, by=c("SampleId"="sampleId")) %>%
+	inner_join(emblgenes, by=c("GeneId", "GeneName")) %>%
+	dplyr::select(SampleId, Reportable, GeneName, GeneStart, GeneEnd) %>%
+	distinct()
+probe_sample_drivers = lnx_drivers %>%
+	inner_join(samplelookup, by=c("SampleId"="sampleId")) %>%
+	inner_join(emblgenes, by=c("Gene"="GeneName"))
+
+svs_in_driver_events = lnx_svs %>%
+	inner_join(samplelookup, by=c("SampleId"="sampleId")) %>%
+	inner_join(lnx_drivers, by=c("SampleId", "ClusterId"))
+
+driver_sv_links = inner_join(svs_in_driver_events, probeResult, by=c("hmfSampleId"="sampleId", "ChrStart"="startChromosome", "PosStart"="startPosition"))
+View(driver_sv_links %>%
+	group_by(hmfSampleId, Gene, callset, scope) %>%
+	summarise(count=n()) %>%
+	mutate(callset_scope=paste(callset, scope)) %>%
+	dplyr::select(-callset, -scope) %>%
+	spread(callset_scope, count))
+
+View(driver_sv_links %>%
+		 	group_by(hmfSampleId, Gene, DriverType, EventType, callset, scope) %>%
+		 	summarise(count=n()) %>%
+		 	mutate(callset_scope=paste(callset, scope)) %>%
+		 	dplyr::select(-callset, -scope) %>%
+		 	spread(callset_scope, count))
+
+driver_sv_links %>%
+	group_by(hmfSampleId, Gene, ClusterId, ClusterCount.x, callset, scope) %>%
+	summarise(count=n()) %>%
+	mutate(callset_scope=paste0(callset, "_", scope)) %>%
+	dplyr::select(-callset, -scope) %>%
+	spread(callset_scope, count) %>% 
+	group_by(hmfSampleId, ClusterId, ClusterCount.x, Gridss_Private, Gridss_SharedManta, Manta_Private) %>%
+	summarise(genes=n(), gene_names=paste(Gene, collapse=", ")) %>%
+	View()
+
+driver_sv_links %>% filter(callset=="Manta" & scope =="Private") %>% View()
+
+driver_sv_links %>% filter(
+
+
+
+

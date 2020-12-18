@@ -40,8 +40,8 @@ pcawg_gpl_evaluate_cn_transitions = function(sampleId) {
 		cn_minor=majorAllelePloidy,
 		sampleId=sampleId))
 	gridss_gr = c(
-		breakpointRanges(gridss_vcf),
-		breakendRanges(gridss_vcf))
+		breakpointRanges(gridss_vcf, nominalPosition=TRUE),
+		breakendRanges(gridss_vcf, nominalPosition=TRUE))
 	if (length(gridss_gr) > 0) {
 		names(gridss_gr) = paste0(sampleId, "_", names(gridss_gr))
 		gridss_gr$partner = ifelse(is.na(gridss_gr$partner), NA, paste0(sampleId, "_", gridss_gr$partner))
@@ -58,6 +58,10 @@ gpl_pcawg_sv_transitions_gr = unlist(GRangesList(lapply(gpl_pcawg_sv_cn_transiti
 consensus_pcawg_sv_cn_transitions_list = lapply(metadata_df$SAMPLE, pcawg_evaluate_cn_transitions)
 consensus_pcawg_cn_transitions_gr = unlist(GRangesList(lapply(consensus_pcawg_sv_cn_transitions_list, function(x) { x$cn_transition } )))
 consensus_pcawg_sv_transitions_gr = unlist(GRangesList(lapply(consensus_pcawg_sv_cn_transitions_list, function(x) { x$sv } )))
+
+save.image(paste0(privatedatadir, "pcawg1528_svcn_consistency.RData"))
+#load(paste0(privatedatadir, "pcawg1528_svcn_consistency.RData"))
+
 
 cn_transitions = bind_rows(
 	consensus_pcawg_cn_transitions_gr %>% as.data.frame() %>% mutate(cohort="Consensus"),
