@@ -34,16 +34,16 @@ https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
 To run GRIDSS the following must be installed:
 
 * java 1.8 or later
-* R 3.6 or later
+* R 4.0 or later
   * `gridss_somatic_filter.R` requires the following R libraries:
-  * argparser
-  * tidyverse
-  * stringdist
-  * testthat
-  * stringr
-  * StructuralVariantAnnotation
-  * rtracklayer
-  * BSgenome package for your reference genome (optional)
+    * argparser
+    * tidyverse
+    * stringdist
+    * testthat
+    * stringr
+    * StructuralVariantAnnotation
+    * rtracklayer
+    * BSgenome package for your reference genome (optional)
 * samtools
 * bwa
 * bash
@@ -58,7 +58,7 @@ To run VIRUSBreakend, kraken2, or repeatmasker annotations, the following additi
 # Building gridsstools
 
 Some performance-critical steps are implemented in C using htslib.
-A precompiled version of `gridsstools` is included as part of GRIDSS releases.
+A precompiled version of `gridsstools` for linux is included as part of GRIDSS releases.
 If this precompiled version does not run on your system you will need to build it from source.
 
 To build `gridsstools` from source run the following:
@@ -92,7 +92,7 @@ The following scripts are included in GRIDSS releases:
 |script|description
 |---|---|
 gridss.sh|Driver script for running GRIDSS. Use this to run GRIDSS
-gridss_somatic_filter.R|Somatic filtering script. Identifies somatic events for tumour samples with a matched normal. Multiple tumour biopsies are supported
+gridss_somatic_filter.R|Somatic filtering script. Depreciated as it has been reimplemented in [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
 gridss_extract_overlapping_fragments.sh|Extracts all alignments for read pairs with at least one aligment overlapping set of regions of interest. Correctly handles supplementary alignments. Use this script to extract reads of interest for targeted GRIDSS variant calling.
 gridss_annotate_vcf_repeatmasker.sh|Annotates breakpoint and single breakend inserted sequences with the RepeatMasker classification of the sequence.
 gridss_annotate_vcf_kraken2.sh|Annotates breakpoint and single breakend inserted sequences with the Kraken2 classification of the sequence.
@@ -164,6 +164,8 @@ To filter to somatic calls, use the `gridss_somatic_filter.R` script included in
 
 ### What aligner should I use?
 
+The default of `bwa mem` is sufficient for most use cases.
+
 Although GRIDSS aims to be aligner agnostic, not all aligners output BAM files suitable for processing by GRIDSS. GRIDSS requires:
 * One alignment per read. Supplementary (split read) alignments are ok, but secondary alignments are not.
   * This means that aligner settings such as the `-a` option of bwa mem and the `-k` and `-a` options of bowtie2 are unsuitable.
@@ -185,38 +187,18 @@ Run the [integrated GRIDSS PURPLE LINX pipeline script](https://github.com/hartw
 
 ### How do I do RepeatMasker annotation of breakend sequences?
 
-Run `gridss.AnnotateInsertedSequence` from the GRIDSS jar against your reference genome with `REPEAT_MASKER_BED` set to the RepeatMasker bed for your genome. Make sure your chromosome names match. The RepeatMasker bed can be generated using bedops `rmsk2bed`. For example:
-
-```
-java -Xmx3g -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence \
-				REFERENCE_SEQUENCE=$reference \
-				INPUT=$raw_gridss_output \
-				OUTPUT=$annotated_gridss_output \
-				WORKER_THREADS=$threads \
-				ALIGNMENT=REPLACE \
-				REPEAT_MASKER_BED=hg19.fa.out.bed 
-```
+Run `gridss_annotate_vcf_repeatmasker.sh` on the GRIDSS output.
 
 ### How do I do viral annotation?
 
-Run `gridss.AnnotateInsertedSequence` from the GRIDSS jar against your viral reference (fasta format). For example:
-
-```
-java -Xmx6g -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence \
-				REFERENCE_SEQUENCE=$viralreference \
-				INPUT=$raw_gridss_output \
-				OUTPUT=$annotated_gridss_output \
-				WORKER_THREADS=$threads \
-				ALIGNMENT=APPEND
-```
-
-This will add a `BEALN` INFO field to the VCF that contains the potential alignment locations in $viralreference for single breakend/breakpoint inserted sequences.
-
-Note: Be aware that low complexity sequences (e.g poly-A) can match viral sequences. This can be mitigated by either first aligning to the human reference (as done by `gridss.sh`), or making a human+viral reference sequence and running `AnnotateInsertedSequence` against that.
+Use VIRUSBreakend for viral annotations. See the [VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md) for more details.
 
 ### What does `gridss_somatic_filter.R` actually do?
 
 See documentation at https://github.com/PapenfussLab/gridss/wiki/Somatic-Filtering
+
+The Hartwig Medical Foundation has reimplemented `gridss_somatic_filter.R` in Java as [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
+GRIPSS is much faster, has additional features, and is the recommended tool for somatic filtering of GRIDSS output.
 
 ### How do I create the panel of normals required by `gridss_somatic_filter.R`?
 
@@ -227,7 +209,7 @@ Here is an example that generates a PON from every VCF in the current directory:
 ```
 mkdir -p pondir
 java -Xmx8g \
-	-cp ~/dev/gridss/target/gridss-2.6.2-gridss-jar-with-dependencies.jar \
+	-cp ~/dev/gridss/target/gridss-2.10.2-gridss-jar-with-dependencies.jar \
 	gridss.GeneratePonBedpe \
 	$(ls -1 *.vcf.gz | awk ' { print "INPUT=" $0 }' | head -$n) \
 	O=pondir/gridss_pon_breakpoint.bedpe \
@@ -248,6 +230,56 @@ GRIDSS joint calling has been tested on up 12 samples with ~1000x aggregate cove
 
 WARNING: multiple instances of GRIDSS generating reference files at the same time will result in file corruption. Make sure `setupreference` files have been generated before running parallel GRIDSS jobs.
 
+#### How do I perform assembly on multiple nodes?
+
+GRIDSS preprocessing and assembly can be spread across multiple nodes.
+Preprocess parallelisation is one job per input file.
+Assembly parallelisation is one thread per genomic region.
+To reduce wall times, regions can be distributed across multiple nodes using the `--jobindex` and `--jobnodes` parameters.
+
+Here is an example:
+```
+gridss.sh -s setupreference # once-off-setup
+# in parallel:
+gridss.sh -s preprocess input1.bam
+gridss.sh -s preprocess input2.bam
+gridss.sh -s preprocess input3.bam
+gridss.sh -s preprocess input4.bam
+# wait for all preprocessing jobs to complete
+# Perform assembly parallel (across three nodes in this example)
+gridss.sh -s assemble --jobindex 0 --jobnodes 3 -a assembly.bam  input1.bam input2.bam input3.bam input4.bam
+gridss.sh -s assemble --jobindex 1 --jobnodes 3 -a assembly.bam input1.bam input2.bam input3.bam input4.bam
+gridss.sh -s assemble --jobindex 2 --jobnodes 3 -a assembly.bam input1.bam input2.bam input3.bam input4.bam
+# wait for all assembly jobs to complete
+# Gather the assembly results togther. This job is essentially a file copy and completes very quicky
+gridss.sh -s assemble -a assembly.bam input1.bam input2.bam input3.bam input4.bam
+# perform variant calling
+gridss.sh -s call  -a assembly.bam input1.bam input1.bam input2.bam input3.bam input4.bam
+```
+
+####  How do I perform batched assembly?
+
+If you can perform joint assembly, do so.
+If you run out of memory when performing joint assembly, or hit regularly encounter assembly timeouts, batched assembly is required.
+You are likely to encounter these issues at, or above, 1000x coverage.
+
+To perform batched assembly, run the GRIDSS `assemble` step multiple times each with only a subset of the input files
+If you use input labels, all inputs with the same label must be in the same batch.
+
+Here is an example:
+```
+gridss.sh -s setupreference # once-off-setup
+gridss.sh -s preprocess input1.bam
+gridss.sh -s preprocess input2.bam
+gridss.sh -s preprocess input3.bam
+gridss.sh -s preprocess input4.bam
+gridss.sh -s assemble -a assembly12.bam input1.bam input2.bam
+gridss.sh -s assemble -a assembly34.bam input3.bam input4.bam
+gridss.sh -s call -a assembly12.bam -a assembly34.bam input1.bam input2.bam input3.bam input4.bam
+```
+
+Related samples should always be assembled together in the same batch.
+
 ### I encountered an error. What should I do?
 
 * Check the bottom of this page for commonly encountered errors and their solutions
@@ -256,7 +288,7 @@ WARNING: multiple instances of GRIDSS generating reference files at the same tim
 
 GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
 
-If scaling above 8 cores, it is recommended to run multiple GRIDSS assembly processes and use the `--jobindex` and `--jobnodes` parameters.
+If scaling above 8 cores, it is recommended to run multiple GRIDSS assembly processes and use the `--jobindex` and `--jobnodes` parameters. with each job allocated 8 cores/32gb.
 
 ### How much memory should I give GRIDSS?
 
@@ -279,7 +311,9 @@ GRIDSS relies on the aligner to determine the mapping location and quality of as
 
 ### How do I process only my region of interest?
 
-Extract all fragments overlapping your region of interest, then run gridss. See [gridss_targeted.sh](https://github.com/PapenfussLab/gridss/blob/master/example/gridss_targeted.sh) for an example.
+Extract all fragments overlapping your region of interest, using `gridss_extract_overlapping_fragments.sh` then run `gridss.sh` on the subset bam.
+`gridss_extract_overlapping_fragments.sh` is almost identical to filtering using `samtools view` except that it extracts alignment records for any fragment overlapping a region of interest (ie mate reads and supplementary alignments).
+That is, all records with read names matching the read name of an alignment overlapping any region of interest.
 
 ### How do I use GRIDSS to validate the calls from another caller?
 
@@ -296,6 +330,11 @@ Extract all fragments overlapping your region of interest, then run gridss. See 
 For ++ or -- breakpoints, left-aligning the lower breakend will force right-alignment of the upper breakend. Similarly for right-alignment of the lower. This means that it is impossible to univerally left-align, or right-align breakpoints without resulting in an incorrect nominal call position. Centre-alignment is the option that does not cause this problem ( technically speaking, you still have an off-by-one problem for odd-length homology but that's less problematic).
 
 Secondly, using left or right alignment for imprecise call will result in the nominal call being at the edge of the confidence interval bounds. Centre-aligning imprecise calls makes sense as it is (usually) the centre position that is the most likely to be correct.
+
+### What does `gridss_annotate_kraken2.sh` output?
+
+`gridss_annotate_kraken2.sh` adds Kraken2 classifications to single breakend and breakpoint inserted sequences.
+The [NCBI taxonomy ID](https://www.ncbi.nlm.nih.gov/taxonomy) for the inserted sequences is in the `INSTAXID` INFO field.
 
 ## GRIDSS JAR
 

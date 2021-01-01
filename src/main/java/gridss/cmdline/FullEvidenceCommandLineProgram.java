@@ -1,14 +1,17 @@
 package gridss.cmdline;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import com.google.common.collect.ImmutableList;
 import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.CommandLineProgram;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileCommandLineProgram {
 	@Argument(doc="Breakend assemblies which have undergone split read identification", optional=false)
-	public File ASSEMBLY;
+	public List<File> ASSEMBLY;
 	private final boolean requireAssembly;
 	public FullEvidenceCommandLineProgram() {
 		this(true);
@@ -16,14 +19,18 @@ public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileComm
 	public FullEvidenceCommandLineProgram(boolean requireAssembly) {
 		this.requireAssembly = requireAssembly;
 	}
-	private AssemblyEvidenceSource assemblyEvidenceSource;
-	public AssemblyEvidenceSource getAssemblySource() {
+	private List<AssemblyEvidenceSource> assemblyEvidenceSource;
+	public List<AssemblyEvidenceSource> getAssemblySource() {
 		if (assemblyEvidenceSource == null) {
-			assemblyEvidenceSource = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY); 
+			assemblyEvidenceSource = new ArrayList<>();
+			for (File ass : ASSEMBLY) {
+				assemblyEvidenceSource.add(new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ass));
+			}
+			AssemblyEvidenceSource.validateAllCategoriesAssembled(getContext(), assemblyEvidenceSource);
 		}
 		return assemblyEvidenceSource;
 	}
-	public void setAssemblySource(AssemblyEvidenceSource source) {
+	public void setAssemblySource(List<AssemblyEvidenceSource> source) {
 		assemblyEvidenceSource = source;
     }
 	@Override
@@ -34,10 +41,22 @@ public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileComm
 	}
 	public String[] assemblyCustomCommandLineValidation() {
 		if (requireAssembly) {
-			if (ASSEMBLY != null && !ASSEMBLY.exists()) {
+			if (ASSEMBLY == null || ASSEMBLY.size() == 0) {
 				return new String[]{"Missing ASSEMBLY file"};
 			}
-			String[] err = getWorkingDirectoryFilenameCollisions(ASSEMBLY, "ASSEMBLY");
+			for (int i = 0; i < ASSEMBLY.size(); i++) {
+				File left = ASSEMBLY.get(i);
+				for (int j = i + 1; j < ASSEMBLY.size(); j++) {
+					File right = ASSEMBLY.get(j);
+					if (left.getAbsolutePath().equals(right.getAbsolutePath())) {
+						return new String[] {"Multiple ASSEMBLY files with same name."};
+					}
+					if (WORKING_DIR != null && left.getName().equals(right.getName())) {
+						return new String[] {"ASSEMBLY files must have unique names."};
+					}
+				}
+			}
+			String[] err = getWorkingDirectoryFilenameCollisions(ImmutableList.of(ASSEMBLY, INPUT), WORKING_DIR);
 			if (err != null) {
 				return err;
 			}

@@ -131,6 +131,54 @@ ggplot(cn_transitions %>%
     x="Magnitude of copy number transition inconsistency",
     y="Portion of copy number transitions\nwith a single supporting structural variant")
 
+nthround = function(x,n) round(n * x, 0) / n
+cn_transitions %>%
+  filter(can_evaluate_cn_error) %>%
+  group_by(cohort) %>%
+  arrange(cn_error) %>%
+  mutate(
+    cum_count=seq(1, n()),
+    cohort_size=n()) %>%
+  filter(nthround(cn_error, 2) != nthround(lead(cn_error), 2)) %>%
+  mutate(pct=cum_count/cohort_size) %>%
+ggplot() +
+  aes(x=cn_error, y=1-pct, colour=cohort) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(xlim=c(0,8)) +
+  labs(
+    title="Copy number consistency",
+    x="Magnitude of copy number transition inconsistency",
+    y="Portion of copy number transitions\nwith a single supporting structural variant")
+
+cn_transitions %>%
+  filter(can_evaluate_cn_error) %>%
+  group_by(cohort) %>%
+  mutate(pct_cn_error=cn_error / pmax(cn_left, cn_right)) %>%
+  arrange(pct_cn_error) %>%
+  mutate(
+    cum_count=seq(1, n()),
+    cohort_size=n()) %>%
+  filter(round(pct_cn_error, 2) != round(lead(pct_cn_error), 2)) %>%
+  mutate(pct=cum_count/cohort_size) %>%
+  ggplot() +
+  aes(x=pct_cn_error, y=1 - pct, colour=cohort) +
+  geom_point() +
+  geom_line() +
+  coord_cartesian(xlim=c(0,8)) +
+  labs(
+    title="Copy number consistency",
+    x="Percentage copy number transition inconsistency",
+    y="Portion of copy number transitions\nwith a single supporting structural variant")
+
+
+
+
+
+
+
+cn_transitions$can_evaluate_cn_error
+
 ggplot(cn_transitions %>% filter(!is.na(distance))) +
   aes(x=distance) +
   facet_wrap(~ cohort, scales="free") +
@@ -295,3 +343,15 @@ cn_transitions %>%
   summarise(n=n()) %>%
   group_by(cohort) %>%
   mutate(percent=n/sum(n))
+
+
+
+
+
+
+
+
+
+
+
+

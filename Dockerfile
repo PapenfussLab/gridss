@@ -21,7 +21,7 @@ ENV R_INSTALL_STAGED=false
 RUN Rscript -e 'options(Ncpus=16L, repos="https://cloud.r-project.org/");install.packages(c("tidyverse", "assertthat", "testthat", "NMF", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite"))'
 RUN Rscript -e 'options(Ncpus=16L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c("copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene"))'
 
-ENV GRIDSS_VERSION=2.9.4
+ENV GRIDSS_VERSION=2.10.2
 ENV GRIDSS_JAR=/opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar
 LABEL version="1"
 LABEL software="GRIDSS"
@@ -31,10 +31,9 @@ LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
 
 RUN mkdir /opt/gridss/
-COPY target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
-COPY scripts/*.sh /opt/gridss/
-COPY scripts/*.R /opt/gridss/
-COPY src/main/c/gridsstools/gridsstools /opt/gridss/
+COPY target/github_package/* /opt/gridss/
+RUN chmod +x /opt/gridss/gridsstools /opt/gridss/*.R /opt/gridss/*.sh
+ENV PATH="/opt/gridss:$PATH"
 
 WORKDIR /data/
 ENTRYPOINT ["/opt/gridss/gridss.sh"]

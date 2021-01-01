@@ -29,7 +29,12 @@ public class VariantCallingConfiguration {
 		includeSupportingReadNames = config.getBoolean("includeSupportingReadNames");
 		breakendMaxAssemblySupportBias = config.getDouble("breakendMaxAssemblySupportBias");
 		callFullyAnchoredAssemblyVariants = config.getBoolean("callFullyAnchoredAssemblyVariants");
+		ignoreMissingAssemblyFile = config.getBoolean("ignoreMissingAssemblyFile");
 	}
+	/**
+	 * Ignore missing assembly file
+	 */
+	public boolean ignoreMissingAssemblyFile;
 	/**
 	 * Minimum number of reads supporting variant either directly or indirectly through assembly
 	 */

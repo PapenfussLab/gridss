@@ -39,7 +39,16 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 	private VCFHeader inputHeader = null;
 	@Override
 	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
-		IOUtil.assertFileIsReadable(ASSEMBLY);
+		if (INPUT != null) {
+			for (File f : INPUT) {
+				IOUtil.assertFileIsReadable(f);
+			}
+		}
+		if (ASSEMBLY != null) {
+			for (File a : ASSEMBLY) {
+				IOUtil.assertFileIsReadable(a);
+			}
+		}
 		IOUtil.assertFileIsReadable(INPUT_VCF);
 		IOUtil.assertFileIsWritable(OUTPUT_VCF);
 		if (INPUT_VCF.equals(OUTPUT_VCF)) {

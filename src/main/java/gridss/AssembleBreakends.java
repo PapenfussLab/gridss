@@ -3,6 +3,7 @@ package gridss;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import com.google.common.collect.ImmutableList;
 import gridss.cmdline.MultipleSamFileCommandLineProgram;
 import htsjdk.samtools.util.IOUtil;
 import org.broadinstitute.barclay.argparser.Argument;
@@ -46,7 +47,7 @@ public class AssembleBreakends extends MultipleSamFileCommandLineProgram {
 	protected String[] customCommandLineValidation() {
 		String[] val = multiSamFileInputCustomCommandLineValidation();
 		if (val != null) return val;
-		String[] err = getWorkingDirectoryFilenameCollisions(OUTPUT, "OUTPUT");
+		String[] err = getWorkingDirectoryFilenameCollisions(ImmutableList.of(ImmutableList.of(OUTPUT), INPUT), WORKING_DIR);
 		if (err != null) {
 			return err;
 		}

@@ -31,7 +31,7 @@ Usage: gridss_annotate_vcf_repeatmasker.sh [options] input.vcf
 	-t/--threads: number of threads to use. Defaults to the number of cores available ($threads)
 	-w/--workingdir: directory to place intermediate and temporary files (Default: $workingdir)
 	--rm: RepeatMasker executable. (Default: $rm)
-	--rmargs: additional RepeatMasker arguments
+	--rmargs: additional RepeatMasker arguments (Default: $rmargs)
 	--minlength: minimum length of inserted sequence to annotate. (Default: $minlength)
 	"
 #--fields: INFO fields to populate. (Default: $fields)

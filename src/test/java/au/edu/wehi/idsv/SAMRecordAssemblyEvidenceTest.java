@@ -8,6 +8,7 @@ import com.google.common.collect.Range;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
 import org.apache.commons.configuration.ConfigurationException;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -116,8 +117,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssembly(e3));
 		assertFalse(e.isPartOfAssembly(b1));
 		
-		assertEquals(2, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)));
-		assertEquals(1, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(2, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null));
+		assertEquals(1, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 	}
 	@Test
 	public void should_track_read_name() {
@@ -127,18 +128,19 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		MockSAMEvidenceSource cat2 = SES();
 		cat2.category = 1;
 		DirectedEvidence b1 = SCE(BWD, cat2, withReadName("r4", Read(0, 1, "7S5M")));
-		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3, b1), null,
+		AssemblyEvidenceSource aes = AES();
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), aes, new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3, b1), null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
 		AssemblyAttributes e = new AssemblyAttributes(r);
-		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r1"));
-		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r2"));
-		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r3"));
-		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r4"));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null, aes).contains("r1"));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null, aes).contains("r2"));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null, aes).contains("r3"));
+		assertTrue(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null, aes).contains("r4"));
 
-		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r1"));
-		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r2"));
-		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null).contains("r3"));
-		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null).contains("r4"));
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null, aes).contains("r1"));
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null, aes).contains("r2"));
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(1), null, aes).contains("r3"));
+		assertFalse(e.getOriginatingFragmentID(Range.closed(0,0), ImmutableSet.of(0), null, aes).contains("r4"));
 	}
 	@Test
 	public void getEvidenceIDs_should_return_underlying_evidence() {
@@ -148,7 +150,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(e1, e2, e3), null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
 		//Collection<String> ids = e.getEvidenceIDs();
-		Collection<String> eid = new AssemblyAttributes(e).getEvidenceIDs(Range.closed(0,0), null, null);
+		Collection<String> eid = new AssemblyAttributes(e).getEvidenceIDs(Range.closed(0,0), null, null, null);
 		assertEquals(3, eid.size());
 		assertTrue(eid.contains(e1.getEvidenceID()));
 		assertTrue(eid.contains(e2.getEvidenceID()));
@@ -158,7 +160,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void getEvidenceIDs_should_return_empty_collection_for_no_evidence() {
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, Lists.newArrayList(),null,
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4});
-		assertEquals(0, new AssemblyAttributes(e).getEvidenceIDs(Range.closed(0, 4), null, null).size());
+		assertEquals(0, new AssemblyAttributes(e).getEvidenceIDs(Range.closed(0, 4), null, null, null).size());
 	}
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();

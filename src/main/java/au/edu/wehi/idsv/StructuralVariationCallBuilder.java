@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import com.google.common.collect.*;
+import gridss.cmdline.programgroups.Assembly;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -388,7 +389,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					SingleReadEvidence e = (SingleReadEvidence) de;
 					if (AssemblyAttributes.isAssembly(e)) {
 						AssemblyAttributes aa = aaLookup.get(de);
-						int asmReads = aa.getSupportingReadCount(null, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read));
+						int asmReads = aa.getSupportingReadCount(null, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
 						reads += asmReads;
 						strandReads += aa.getStrandBias() * asmReads;
 					} else {
@@ -430,25 +431,29 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 								ass.getBreakendAssemblyContigOffset(),
 								ImmutableSet.of(category),
-								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read),
+								(AssemblyEvidenceSource)ass.getEvidenceSource()))
 						.sum();
 				asrp[category] = Stream.concat(Stream.concat(supportingAS.stream(), supportingRAS.stream()), supportingCAS.stream())
 						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 								ass.getBreakendAssemblyContigOffset(),
 								ImmutableSet.of(category),
-								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair),
+								(AssemblyEvidenceSource)ass.getEvidenceSource()))
 						.sum();
 				basr[category] = supportingBAS.stream()
 						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 								ass.getBreakendAssemblyContigOffset(),
 								ImmutableSet.of(category),
-								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)))
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read),
+								(AssemblyEvidenceSource)ass.getEvidenceSource()))
 						.sum();
 				basrp[category] = supportingBAS.stream()
 						.mapToInt(ass -> aaLookup.get(ass).getSupportingReadCount(
 								ass.getBreakendAssemblyContigOffset(),
 								ImmutableSet.of(category),
-								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)))
+								ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair),
+								(AssemblyEvidenceSource)ass.getEvidenceSource()))
 						.sum();
 
 				genotypeBuilder.get(category).attribute(VcfFormatAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute(), asr[category]);
@@ -561,7 +566,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private Collection<String> getOriginatingFragmentIDs(Map<SingleReadEvidence, AssemblyAttributes> aaLookup, int category, DirectedEvidence e) {
 		if (AssemblyAttributes.isAssembly(e)) {
 			SingleReadEvidence ass = (SingleReadEvidence)e;
-			return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(ass.getBreakendAssemblyContigOffset(), ass.getBreakendAssemblyContigOffset()), ImmutableSet.of(category), null);
+			return aaLookup.get(ass).getOriginatingFragmentID(Range.closed(ass.getBreakendAssemblyContigOffset(), ass.getBreakendAssemblyContigOffset()), ImmutableSet.of(category), null, (AssemblyEvidenceSource)e.getEvidenceSource());
 		}
 		return e.getOriginatingFragmentID(category);
 	}
@@ -583,7 +588,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			double assQual = (ass instanceof DirectedBreakpoint) ? ((DirectedBreakpoint)ass).getBreakpointQual() : ass.getBreakendQual();
 			double[] breakdownQual = new double[processContext.getCategoryCount()];
 			for (int i = 0; i < breakdownQual.length; i++) {
-				breakdownQual[i] = aa.getSupportingQualScore(offset, ImmutableSet.of(i), null);
+				breakdownQual[i] = aa.getSupportingQualScore(offset, ImmutableSet.of(i), null, (AssemblyEvidenceSource)ass.getEvidenceSource());
 			}
 			double breakdownTotal = DoubleStream.of(breakdownQual).sum();
 			if (breakdownTotal != 0) { // defensive check to mitigate impact of 0 qual assemblies (#156)

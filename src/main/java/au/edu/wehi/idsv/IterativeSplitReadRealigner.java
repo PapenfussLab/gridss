@@ -144,7 +144,7 @@ public class IterativeSplitReadRealigner extends SplitReadRealigner {
 			SAMFileUtil.merge(ImmutableList.of(tmpoutput, suppMerged),
 					output,
 					pc.getSamReaderFactory(),
-					pc.getSamFileWriterFactory(header.getSortOrder() == SortOrder.coordinate));
+					pc.getSamFileWriterFactory());
 		} else {
 			FileHelper.move(tmpoutput, output, true);
 			FileHelper.move(suppMerged, unorderedOutput, false);
