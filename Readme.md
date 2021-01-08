@@ -55,7 +55,14 @@ To run VIRUSBreakend, kraken2, or repeatmasker annotations, the following additi
 * RepeatMasker
 * bcftools
 
-# Building gridsstools
+## Building GRIDSS
+
+GRIDSS is mostly written in Java thus local building is not required.
+Just [download the latest release](https://github.com/PapenfussLab/gridss/releases) and ensure you have the Pre-requistes installed.
+
+If you wish to contribute to GRIDSS development, it can be built from source using maven with `mvn package`.
+
+### Building gridsstools
 
 Some performance-critical steps are implemented in C using htslib.
 A precompiled version of `gridsstools` for linux is included as part of GRIDSS releases.
