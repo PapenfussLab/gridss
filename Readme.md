@@ -176,7 +176,7 @@ The default of `bwa mem` is sufficient for most use cases.
 Although GRIDSS aims to be aligner agnostic, not all aligners output BAM files suitable for processing by GRIDSS. GRIDSS requires:
 * One alignment per read. Supplementary (split read) alignments are ok, but secondary alignments are not.
   * This means that aligner settings such as the `-a` option of bwa mem and the `-k` and `-a` options of bowtie2 are unsuitable.
-* MAPQ to meaningfully follow the SAM specifications. Aligners that do not follow the specifications (e.g. subreads) will have worse results.
+* MAPQ to meaningfully follow the SAM specifications. Aligners that do not follow the specifications (e.g. subread) will have worse results.
 
 Options such as the `-Y` option of bwa mem, or the fact that bowtie2 does not do split read alignment are not problematic as these differences are corrected in the GRIDSS preprocessing step.
 
@@ -209,7 +209,9 @@ GRIPSS is much faster, has additional features, and is the recommended tool for 
 
 ### How do I create the panel of normals required by `gridss_somatic_filter.R`?
 
-If you are using hg19, then a PON based on almost Dutch samples is available from https://resources.hartwigmedicalfoundation.nl/. If not, you'll need to create your own using `gridss.GeneratePonBedpe`
+If you are using hg19 or hg38, then a PON based on Dutch samples is available from https://resources.hartwigmedicalfoundation.nl/.
+Make sure the reference you are using and the PON both use the same chromosome notation or nothing will get filtered (e.g. `1` vs `chr1`).
+If these are not appropriate, you'll need to create your own using `gridss.GeneratePonBedpe`
 
 Here is an example that generates a PON from every VCF in the current directory:
 
@@ -228,6 +230,12 @@ The score fields of the bedpe/bed files is the count of the number of samples th
 I recommended filtering these output files to only variants found in 3+ samples.
 
 Note that `gridss_somatic_filter.R` requires the files to be named `gridss_pon_breakpoint.bedpe` and `gridss_pon_single_breakend.bed`.
+
+### How do I merge PONs?
+
+Merging of PONs is not supported but incremental updates are.
+Use `INPUT_BEDPE` and `INPUT_BED` files to `gridss.GeneratePonBedpe`.
+For example, you can add your samples to the Hartwig PONs by pointing `INPUT_BEDPE` and `INPUT_BED` to the Hartwig PONs and adding your VCFs as outlined above.
 
 ### Should I process each input BAM separately or together?
 
