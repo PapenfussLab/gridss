@@ -515,11 +515,10 @@ aligner_args_minimap2='
 	--ALIGNER_COMMAND_LINE %1$s
 	'
 
-readpairing_args=""
-
-READ_PAIR_CONCORDANT_PERCENT="$readpairpdistribution"
 if [[ "$useproperpair" == "true" ]] ; then
 	readpairing_args="READ_PAIR_CONCORDANT_PERCENT=null"
+else
+  readpairing_args="READ_PAIR_CONCORDANT_PERCENT=${readpairpdistribution}"
 fi
 
 if [[ $do_setupreference == true ]] ; then
