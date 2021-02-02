@@ -78,8 +78,8 @@ VIRUSBreakend outputs:
 
 ## summary.csv files
 
-field | meaning
----------------
+|field | meaning|
+|----|----|
 taxid_genus|NCBI taxonomy ID of genus of viral reference
 name_genus|NCBI taxonomy genus name
 reads_genus|Number of reads assigned to any virus in that genus by kraken2
