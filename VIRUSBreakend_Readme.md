@@ -104,7 +104,7 @@ integrations|Number of integration breakpoints found.
 Each viral integration should have 2 integration breakpoints (one for the start, one for the end) although there may be more if the integration site is rearranged or less if one side of the  integration site was missed.
 
 
-## Ambigous insertions
+## Ambiguous insertions
 
 The key differentiator of VIRUSBreakend is the ability to detect and classify integration sites in repetative sequences such as centromeres.
 Due to the repetative nature of these region, such integration sites cannot be unambigously placed in the host genome.
