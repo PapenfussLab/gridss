@@ -23,7 +23,7 @@ https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
 
 # Pre-requisites
 
-VIRUSBreakend is part of the GRIDSS software suite.
+VIRUSBreakend is part of the GRIDSS software suite. It can be downloaded from https://github.com/PapenfussLab/gridss/releases
 
 All tools used by VIRUSBreakend must be on `PATH` including:
 * java
