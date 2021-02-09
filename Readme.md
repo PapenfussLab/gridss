@@ -24,7 +24,7 @@ Genome Research, 2017
 doi: 10.1101/gr.222109.117
 
 
-For single breakend, structural variant phasing, and somatic variant calling, refere to our preprint:
+For single breakend, structural variant phasing, and somatic variant calling, refer to our preprint:
 
 GRIDSS2: harnessing the power of phasing and single breakends in somatic structural variant detection
 https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
@@ -55,7 +55,14 @@ To run VIRUSBreakend, kraken2, or repeatmasker annotations, the following additi
 * RepeatMasker
 * bcftools
 
-# Building gridsstools
+## Building GRIDSS
+
+GRIDSS is mostly written in Java thus local building is not required.
+Just [download the latest release](https://github.com/PapenfussLab/gridss/releases) and ensure you have the Pre-requistes installed.
+
+If you wish to contribute to GRIDSS development, it can be built from source using maven with `mvn package`.
+
+### Building gridsstools
 
 Some performance-critical steps are implemented in C using htslib.
 A precompiled version of `gridsstools` for linux is included as part of GRIDSS releases.
@@ -169,7 +176,7 @@ The default of `bwa mem` is sufficient for most use cases.
 Although GRIDSS aims to be aligner agnostic, not all aligners output BAM files suitable for processing by GRIDSS. GRIDSS requires:
 * One alignment per read. Supplementary (split read) alignments are ok, but secondary alignments are not.
   * This means that aligner settings such as the `-a` option of bwa mem and the `-k` and `-a` options of bowtie2 are unsuitable.
-* MAPQ to meaningfully follow the SAM specifications. Aligners that do not follow the specifications (e.g. subreads) will have worse results.
+* MAPQ to meaningfully follow the SAM specifications. Aligners that do not follow the specifications (e.g. subread) will have worse results.
 
 Options such as the `-Y` option of bwa mem, or the fact that bowtie2 does not do split read alignment are not problematic as these differences are corrected in the GRIDSS preprocessing step.
 
@@ -202,7 +209,9 @@ GRIPSS is much faster, has additional features, and is the recommended tool for 
 
 ### How do I create the panel of normals required by `gridss_somatic_filter.R`?
 
-If you are using hg19, then a PON based on almost Dutch samples is available from https://resources.hartwigmedicalfoundation.nl/. If not, you'll need to create your own using `gridss.GeneratePonBedpe`
+If you are using hg19 or hg38, then a PON based on Dutch samples is available from https://resources.hartwigmedicalfoundation.nl/.
+Make sure the reference you are using and the PON both use the same chromosome notation or nothing will get filtered (e.g. `1` vs `chr1`).
+If these are not appropriate, you'll need to create your own using `gridss.GeneratePonBedpe`
 
 Here is an example that generates a PON from every VCF in the current directory:
 
@@ -221,6 +230,12 @@ The score fields of the bedpe/bed files is the count of the number of samples th
 I recommended filtering these output files to only variants found in 3+ samples.
 
 Note that `gridss_somatic_filter.R` requires the files to be named `gridss_pon_breakpoint.bedpe` and `gridss_pon_single_breakend.bed`.
+
+### How do I merge PONs?
+
+Merging of PONs is not supported but incremental updates are.
+Use `INPUT_BEDPE` and `INPUT_BED` files to `gridss.GeneratePonBedpe`.
+For example, you can add your samples to the Hartwig PONs by pointing `INPUT_BEDPE` and `INPUT_BED` to the Hartwig PONs and adding your VCFs as outlined above.
 
 ### Should I process each input BAM separately or together?
 
@@ -331,20 +346,10 @@ For ++ or -- breakpoints, left-aligning the lower breakend will force right-alig
 
 Secondly, using left or right alignment for imprecise call will result in the nominal call being at the edge of the confidence interval bounds. Centre-aligning imprecise calls makes sense as it is (usually) the centre position that is the most likely to be correct.
 
-### How do I perform most likely centromere allocation for single breakends?
+### What does `gridss_annotate_kraken2.sh` output?
 
-- Run GRIDSS
-- Annotate with `gridss_annotate_vcf_repeatmasker.sh`
-- Add centromeric annotations with `example/annotate_most_likely_centromere.R`
-
-Since hg19 has N-masked centromeres, it is unsuitable as a reference for performing centromeric annotations.
-Either hg38 or a full telomere to telomere reference genome should be used.
-
-For example:
-```
-Rscript example/annotate_most_likely_centromere.R --ref chm13.draft_v1.0.fasta --input example/DO52605T.purple.sv.vcf --output example/out.DO52605T.centromeric.vcf
-```
-
+`gridss_annotate_kraken2.sh` adds Kraken2 classifications to single breakend and breakpoint inserted sequences.
+The [NCBI taxonomy ID](https://www.ncbi.nlm.nih.gov/taxonomy) for the inserted sequences is in the `INSTAXID` INFO field.
 
 ## GRIDSS JAR
 

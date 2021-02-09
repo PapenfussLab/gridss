@@ -16,14 +16,14 @@ This tool is part of GRIDSS - the Genomic Rearrangement IDentification Software 
 
 Please cite:
 
- - Preprint for VIRUSBreakend to be uploaded shortly
+ - VIRUSBreakend: https://www.biorxiv.org/content/10.1101/2020.12.09.418731v1
 
  - GRIDSS2: harnessing the power of phasing and single breakends in somatic structural variant detection
 https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
 
 # Pre-requisites
 
-VIRUSBreakend is part of the GRIDSS software suite.
+VIRUSBreakend is part of the GRIDSS software suite. It can be downloaded from https://github.com/PapenfussLab/gridss/releases
 
 All tools used by VIRUSBreakend must be on `PATH` including:
 * java
@@ -74,9 +74,37 @@ virusbreakend.sh \
 VIRUSBreakend outputs:
 * A VCF containing the integration breakpoints
 * The kraken2 report of the virus(es) for which viral integration was run upon
-* Coverage statistics of the vvirus(es) for which viral integration was run upon
+* Coverage statistics of the virus(es) for which viral integration was run upon
 
-## Ambigous insertions
+## summary.csv files
+
+|field | meaning|
+|----|----|
+taxid_genus|NCBI taxonomy ID of genus of viral reference
+name_genus|NCBI taxonomy genus name
+reads_genus|Number of reads assigned to any virus in that genus by kraken2
+taxid_species|NCBI taxonomy ID of species of viral reference
+reads_species|Number of reads assigned to that species (and any sub-species) by kraken2
+name_species| NCBI taxonomy species name
+taxid|NCBI taxonomy ID of viral reference
+name| NCBI taxonomy name of viral reference
+reads|Number of reads assigned to the viral reference by kraken2
+reference|kraken2 name of viral reference contig
+#rname|name of adjusted viral reference
+startpos|start position of adjusted viral reference. Always 1
+endpos|end position of adjusted viral reference. Always equal to the viral contig length
+numreads|Number of reads mapped to adjusted viral reference
+covbases|Number of bases with at least 1 read mapped
+coverage|Percentage of viral sequence with at least one read mapped
+meandepth|Mean alignment depth
+meanbaseq|Mean base quality of bases mapped to adjusted viral reference
+meanmapq|Mean mapping quality of reads mapped to adjusted viral reference
+integrations|Number of integration breakpoints found.
+
+Each viral integration should have 2 integration breakpoints (one for the start, one for the end) although there may be more if the integration site is rearranged or less if one side of the  integration site was missed.
+
+
+## Ambiguous insertions
 
 The key differentiator of VIRUSBreakend is the ability to detect and classify integration sites in repetative sequences such as centromeres.
 Due to the repetative nature of these region, such integration sites cannot be unambigously placed in the host genome.
