@@ -1,4 +1,2 @@
 *
-!/target/*-jar-with-dependencies.jar
-!/scripts/*
-
+!/target/github_package/*

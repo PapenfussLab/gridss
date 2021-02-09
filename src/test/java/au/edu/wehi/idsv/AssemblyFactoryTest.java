@@ -100,8 +100,8 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
-		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
-		assertEquals(4, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), (AssemblyEvidenceSource)bigr().source));
+		assertEquals(4, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), (AssemblyEvidenceSource)bigr().source));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_LENGTH_MAX() {
@@ -109,8 +109,8 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_COUNT() {
-		assertEquals(1, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)));
-		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read)));
+		assertEquals(1, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), (AssemblyEvidenceSource)bigr().source));
+		assertEquals(2, new AssemblyAttributes(bigr()).getSupportingReadCount(bigr().getBreakendAssemblyContigOffset(), ImmutableSet.of(1), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), (AssemblyEvidenceSource)bigr().source));
 	}
 //	@Test
 //	public void should_set_assembly_attribute_ASSEMBLY_REMOTE_COUNT() {
@@ -539,6 +539,13 @@ public class AssemblyFactoryTest extends TestHelper {
 		SplitReadEvidence re = (SplitReadEvidence)incorporateRealignment(AES(), r, ImmutableList.of(Read(1, 200, "3M")));
 		assertEquals(new BreakendSummary(0, BWD, 1), re.getBreakendSummary().localBreakend());
 		assertEquals(new BreakendSummary(1, FWD, 212, 202, 222), re.getBreakendSummary().remoteBreakend());
+	}
+	@Test
+	public void basequal_range_should_be_limited() {
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(
+				getContext(), AES(), new SequentialIdGenerator("asm"), BWD, null,null,
+				0, 1, 2, B("GTACC"), new byte[] { 92,93,(byte)254,-1,94 });
+		assertArrayEquals(new byte[] { 92, 93,93,93,93}, r.getBaseQualities());
 	}
 }
 

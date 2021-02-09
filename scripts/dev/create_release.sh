@@ -20,5 +20,12 @@ autoconf
 ./configure && make clean && make all
 cd -
 cp src/main/c/gridsstools/gridsstools target/github_package
+cd src/main/c/gridsstools/htslib
+make clean
+cd -
+cd src/main/c/gridsstools
+make clean
+cd - 
+tar -czvf target/github_package/gridsstools.src.tar.gz src/main/c/*
 cd target/github_package
 tar -czvf gridss-$version.tar.gz *

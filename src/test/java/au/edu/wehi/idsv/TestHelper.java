@@ -960,7 +960,13 @@ public class TestHelper {
 		public int fragSize = 300;
 		public List<DirectedEvidence> assemblies = new ArrayList<DirectedEvidence>();
 		public StubAssemblyEvidenceSource(ProcessingContext processContext) {
-			super(processContext, ImmutableList.<SAMEvidenceSource>of(), null);
+			this(processContext, null);
+		}
+		public StubAssemblyEvidenceSource(ProcessingContext processContext, File assemblyFile) {
+			super(processContext, ImmutableList.<SAMEvidenceSource>of(), assemblyFile);
+		}
+		@Override
+		public void assertPreprocessingComplete() {
 		}
 		@Override
 		public void assembleBreakends(ExecutorService threadpool) throws java.io.IOException {};
@@ -974,6 +980,9 @@ public class TestHelper {
 		public CloseableIterator<DirectedEvidence> iterator(QueryInterval[] qi, SAMEvidenceSource.EvidenceSortOrder eso) {
 			return new AutoClosingIterator<>(assemblies.stream().filter(
 					e -> QueryIntervalUtil.overlaps(qi, e.getBreakendSummary())).iterator());
+		}
+		public void setAssembledCategories(ImmutableList<String> categories) {
+			this.assembledCategories = categories;
 		}
 	}
 	public static AssemblyEvidenceSource AES() {

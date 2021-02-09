@@ -37,7 +37,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		aes.fragSize = fragSize;
 		Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 		createInput(in);
-		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), aes);
+		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of(aes));
 		ExecutorService threadpool = Executors.newSingleThreadExecutor();
 		vc.callBreakends(output, threadpool);
 		threadpool.shutdown();
@@ -76,7 +76,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		aes.fragSize = fragSize;
 		Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 		createInput(in);
-		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), aes);
+		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of(aes));
 		vc.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		//vc.annotateBreakpoints(MoreExecutors.newDirectExecutorService());
 		//List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);

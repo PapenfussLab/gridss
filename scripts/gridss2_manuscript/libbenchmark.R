@@ -53,6 +53,28 @@ score_for_caller = function(caller_name, vcf) {
 	return(qual)
 }
 
+#' Includes self
+lastTrueOrdinal = function(boolvec, missingValue=-1) {
+	cummax(ifelse(boolvec, seq_along(boolvec), missingValue))
+}
+#' Includes self so distance can be zero
+distanceToLastTrueValue = function(boolvec, missingValue=-1) {
+	lto = lastTrueOrdinal(boolvec, missingValue=missingValue)
+	ifelse(lto == missingValue, lto, seq_along(boolvec) - lto)
+}
+secondLastTrueOrdinal = function(boolvec, missingValue=-1) {
+	padded = c(TRUE, TRUE, boolvec)
+	lto = pmax(1, lastTrueOrdinal(padded, missingValue))
+	slto = lag(lto)[lto]
+	ifelse(is.na(slto) | slto - 2 <= 0, missingValue, slto - 2)[c(-1, -2)]
+}
+testthat::test_that("lastTrueOrdinal", {
+	assertthat::assert_that(assertthat::are_equal(lastTrueOrdinal(c(FALSE, TRUE, FALSE, TRUE, TRUE, FALSE)), c(-1, 2, 2, 4, 5, 5)))
+	assertthat::assert_that(assertthat::are_equal(secondLastTrueOrdinal(c(FALSE, TRUE, FALSE, TRUE, TRUE, FALSE)), c(-1, -1, -1, 2, 4, 4)))
+	assertthat::assert_that(assertthat::are_equal(distanceToLastTrueValue(c(F, T, T, F, F, F, T, F, T)), c(-1, 0, 0, 1, 2, 3, 0, 1, 0)))
+
+})
+
 calc_roc_pass_all = function(truth_gr, caller_gr, sample_name, ...) {
 	all_calls=calc_roc(truth_gr, caller_gr, ...)
 	all_calls$roc$subset = "All calls"
@@ -193,7 +215,7 @@ calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100,
 # segments
 # segments supported by SV
 # distance to SV
-evaluate_cn_transitions = function (cngr, svgr, margin=100000) {
+evaluate_cn_transitions = function (cngr, svgr, margin=100000, expectConsistent=TRUE) {
 	cn_transitions = with(cngr %>% as.data.frame(), IRanges::reduce(c(
 		GRanges(seqnames=seqnames, ranges=IRanges(start=start, width=1)),
 		GRanges(seqnames=seqnames, ranges=IRanges(start=end + 1, width=1)))))
@@ -214,6 +236,7 @@ evaluate_cn_transitions = function (cngr, svgr, margin=100000) {
 	cn_transitions[best_cn_hit$subjectHits]$distance = best_cn_hit$distance
 	svgr$distance = rep(NA, length(svgr))
 	svgr[best_sv_hit$queryHits]$distance = best_sv_hit$distance
+	
 	exact_bp_hit = best_sv_hit %>%
 		mutate(queryHits.p=match(svgr[queryHits]$partner, names(svgr))) %>%
 		filter(!is.na(queryHits.p)) %>%
@@ -243,6 +266,24 @@ evaluate_cn_transitions = function (cngr, svgr, margin=100000) {
 	cn_transitions$cn_error[exact_bp_hit$subjectHits] = exact_bp_hit$cn_error
 	cn_transitions$cn_error[!cn_transitions$can_evaluate_cn_error] = NA
 	
+	exact_sv_hit = findOverlaps(svgr, cn_transitions, maxgap=1, ignore.strand=TRUE) %>%
+		as.data.frame() %>%
+		mutate(distance=abs(start(svgr)[queryHits] + ifelse(as.character(strand(svgr)[queryHits]=="-"), -1, 0)) - start(cn_transitions)[subjectHits]) %>%
+		group_by(queryHits) %>%
+		filter(distance==min(distance))
+	svgr$cn_left = rep(NA, length(svgr))
+	svgr$cn_right = rep(NA, length(svgr))
+	svgr$orphaned = rep(FALSE, length(svgr))
+	svgr$cn_left[exact_sv_hit$queryHits] = cn_transitions$cn_left[exact_sv_hit$subjectHits]
+	svgr$cn_right[exact_sv_hit$queryHits] = cn_transitions$cn_right[exact_sv_hit$subjectHits]
+	svgr$orphaned[exact_sv_hit$queryHits] = FALSE
+	if (expectConsistent & any(svgr$orphaned)) {
+		browser()
+	} else {
+		orphan_sv_hits = findOverlaps(svgr, cngr, ignore.strand=TRUE) %>% as.data.frame()
+		svgr$cn_left[orphan_sv_hits$queryHits] = ifelse(!svgr$orphaned, svgr$cn_left[orphan_sv_hits$queryHits], cngr$cn[orphan_sv_hits$subjectHits])
+		svgr$cn_right = ifelse(!svgr$orphaned, svgr$cn_right, svgr$cn_left)
+	}
 	return(list(cn_transitions=cn_transitions, sv=svgr))
 }
 lnx_to_gr <- function(lnx_svs) {
@@ -327,7 +368,7 @@ pcawg_evaluate_cn_transitions = function(sampleId) {
 		cn_minor=minor_cn,
 		star=star))
 	# TODO: find sample pairing
-	result = evaluate_cn_transitions(cngr, svgr)
+	result = evaluate_cn_transitions(cngr, svgr, expectConsistent=FALSE)
 	result$sv$sampleId=rep(sampleId, length(result$sv))
 	result$cn_transition$sampleId=rep(sampleId, length(result$cn_transition))
 	return(result)

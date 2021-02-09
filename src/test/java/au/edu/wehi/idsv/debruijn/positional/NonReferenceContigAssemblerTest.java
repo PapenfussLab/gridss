@@ -75,7 +75,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, sce);
 		AssemblyAttributes attr = new AssemblyAttributes(output.get(0));
 		assertNotNull(attr);
-		assertEquals(1, attr.getSupportingReadCount(5, null, null));
+		assertEquals(1, attr.getSupportingReadCount(5, null, null, null));
 	}
 	@Test
 	public void should_call_simple_bwd_SC() {
@@ -441,11 +441,11 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
 		// GGTTGCATAGACGTGGTCGACCTAGTA
 		// 012345678901234567890123456
-		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 		for (int i = 1; i <= 26; i++) {
-			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 		}
-		assertEquals(0, aa.getSupportingReadCount(27, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(0, aa.getSupportingReadCount(27, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 	}
 	@Test
 	public void rp_support_without_anchor_should_extend_to_contig_start() {
@@ -464,9 +464,9 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		// CATAGACGTGGTCGACCTAGTA
 		// 0123456789012345678901
 		for (int i = 0; i <= 21; i++) {
-			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 		}
-		assertEquals(0, aa.getSupportingReadCount(22, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(0, aa.getSupportingReadCount(22, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 	}
 
 	@Test
@@ -486,11 +486,11 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
 		// GGTTGCATAGACGTGGTCGACC
 		// 0123456789012345678901
-		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 		for (int i = 1; i < output.get(0).getReadLength(); i++) {
-			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 		}
-		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 	}
 	@Test
 	public void should_not_write_inconsistent_anchors() {
@@ -529,15 +529,15 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals("1X29N1X10S", output.get(0).getCigarString());
 		// 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4
 		//  * * M M M M M M M M M M - -
-		assertEquals(0, aa.getSupportingReadCount(0, null, null));
-		assertEquals(0, aa.getSupportingReadCount(1, null, null));
-		assertEquals(1, aa.getSupportingReadCount(2, null, null));
-		assertEquals(1, aa.getSupportingReadCount(3, null, null));
-		assertEquals(1, aa.getSupportingReadCount(4, null, null));
-		assertEquals(1, aa.getSupportingReadCount(10, null, null));
-		assertEquals(1, aa.getSupportingReadCount(11, null, null));
-		assertEquals(0, aa.getSupportingReadCount(12, null, null));
-		assertEquals(0, aa.getSupportingReadCount(13, null, null));
+		assertEquals(0, aa.getSupportingReadCount(0, null, null, null));
+		assertEquals(0, aa.getSupportingReadCount(1, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(2, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(3, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(4, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(10, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(11, null, null, null));
+		assertEquals(0, aa.getSupportingReadCount(12, null, null, null));
+		assertEquals(0, aa.getSupportingReadCount(13, null, null, null));
 	}
 	@Test
 	public void unanchored_rp_should_support_at_contig_bounds_but_not_padding_bases_BWD() {
@@ -555,19 +555,19 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
 		assertTrue(output.get(0).hasAttribute(SamTags.UNANCHORED));
 		assertEquals("10S1X29N1X", output.get(0).getCigarString());
-		assertEquals(0, aa.getSupportingReadCount(0, null, null));
+		assertEquals(0, aa.getSupportingReadCount(0, null, null, null));
 		//  0 1 2 3 4 5 6 7 8 9 0 1 2 3
 		// M M M M M M M M M M * * - -
-		assertEquals(0, aa.getSupportingReadCount(0, null, null));
-		assertEquals(1, aa.getSupportingReadCount(1, null, null));
-		assertEquals(1, aa.getSupportingReadCount(2, null, null));
-		assertEquals(1, aa.getSupportingReadCount(3, null, null));
-		assertEquals(1, aa.getSupportingReadCount(8, null, null));
-		assertEquals(1, aa.getSupportingReadCount(9, null, null));
-		assertEquals(0, aa.getSupportingReadCount(10, null, null));
-		assertEquals(0, aa.getSupportingReadCount(11, null, null));
-		assertEquals(0, aa.getSupportingReadCount(12, null, null));
-		assertEquals(0, aa.getSupportingReadCount(13, null, null));
+		assertEquals(0, aa.getSupportingReadCount(0, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(1, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(2, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(3, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(8, null, null, null));
+		assertEquals(1, aa.getSupportingReadCount(9, null, null, null));
+		assertEquals(0, aa.getSupportingReadCount(10, null, null, null));
+		assertEquals(0, aa.getSupportingReadCount(11, null, null, null));
+		assertEquals(0, aa.getSupportingReadCount(12, null, null, null));
+		assertEquals(0, aa.getSupportingReadCount(13, null, null, null));
 	}
 	@Test
 	public void issue287_rp_support_for_anchor_with_no_valid_kmers_treated_as_anchoring_read_not_assembled() {
@@ -586,10 +586,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
 		// GGTTGCATAGACGTGGTCGACC
 		// 0123456789012345678901
-		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(0, aa.getSupportingReadCount(0, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 		for (int i = 1; i < output.get(0).getReadLength(); i++) {
-			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+			assertEquals(1, aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 		}
-		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair)));
+		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 	}
 }

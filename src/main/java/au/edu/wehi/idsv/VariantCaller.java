@@ -25,16 +25,18 @@ public class VariantCaller {
 	private static final Log log = Log.getInstance(VariantCaller.class);
 	private final ProcessingContext processContext;
 	private final List<SAMEvidenceSource> samEvidence;
-	private final AssemblyEvidenceSource assemblyEvidence;
+	private final List<AssemblyEvidenceSource> assemblyEvidence;
 	//private final EvidenceToCsv evidenceDump;
-	public VariantCaller(ProcessingContext context, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
+	public VariantCaller(ProcessingContext context, List<SAMEvidenceSource> samEvidence, List<AssemblyEvidenceSource> assemblyEvidence) {
 		this.processContext = context;
 		this.samEvidence = samEvidence;
 		this.assemblyEvidence = assemblyEvidence;
 	}
 	public void callBreakends(File vcf, ExecutorService threadpool) throws IOException {
 		samEvidence.stream().forEach(ses -> ses.assertPreprocessingComplete());
-		assemblyEvidence.assertPreprocessingComplete();
+		for (AssemblyEvidenceSource aes : assemblyEvidence) {
+			aes.assertPreprocessingComplete();
+		}
 		log.info("Identifying Breakpoints");
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();

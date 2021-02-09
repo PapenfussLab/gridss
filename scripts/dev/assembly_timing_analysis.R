@@ -1,7 +1,7 @@
 library(tidyverse)
 library(readr)
 
-posdf = bind_rows(lapply(list.files(path="C:/dev/debug_gridss/testForIssue139/visualisation", pattern="positional-.*.csv", full.names=TRUE), function (x) {
+posdf = bind_rows(lapply(list.files(path="C:/dev/debug_gridss/oom", pattern="positional-.*.csv", full.names=TRUE), function (x) {
 #posdf = bind_rows(lapply(list.files(path="D:/colo829/telemetry/", pattern="positional.*.csv", full.names=TRUE), function (x) {
   df = read_csv(x)
   df$file=x

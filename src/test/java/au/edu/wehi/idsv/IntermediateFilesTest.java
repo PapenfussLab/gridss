@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.SAMFileUtil;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import htsjdk.samtools.*;
@@ -12,6 +14,7 @@ import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -53,20 +56,24 @@ public class IntermediateFilesTest extends TestHelper {
 		reference = ref;
 	}
 	public ProcessingContext getCommandlineContext() {
+		return getCommandlineContext(ImmutableList.of("Normal", "Tumour"));
+	}
+	public ProcessingContext getCommandlineContext(List<String> categories) {
 		List<Header> headers = Lists.newArrayList();
 		headers.add(new StringHeader("TestHeader"));
 		ProcessingContext pc;
 		if (reference.equals(SMALL_FA_FILE)) {
 			pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000), reference, SMALL_FA, headers,
-				getConfig(testFolder.getRoot()));
+					new FileSystemContext(testFolder.getRoot(), 500000), reference, SMALL_FA, headers,
+					getConfig(testFolder.getRoot()));
 		} else {
 			pc = new ProcessingContext(
-					new FileSystemContext(testFolder.getRoot(), 500000), reference, null, headers, 
+					new FileSystemContext(testFolder.getRoot(), 500000), reference, null, headers,
 					getConfig(testFolder.getRoot()));
 		}
-		pc.registerCategory("Normal");
-		pc.registerCategory("Tumour");
+		for (String c : categories) {
+			pc.registerCategory(c);
+		}
 		return pc;
 	}
 	@After
@@ -171,8 +178,10 @@ public class IntermediateFilesTest extends TestHelper {
 	public List<IdsvVariantContext> getVcf(final File file, final EvidenceSource source) {
 		assertTrue(file.exists());
 		VCFFileReader reader = new VCFFileReader(file, false);
+		VCFHeader header = reader.getHeader();
 		List<IdsvVariantContext> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
+			r.fullyDecode(header, false);
 			list.add(IdsvVariantContext.create(getCommandlineContext().getDictionary(), source == null ? AES() : source, r));
 		}
 		reader.close();
@@ -181,7 +190,9 @@ public class IntermediateFilesTest extends TestHelper {
 	public List<VariantContext> getRawVcf(final File file) {
 		assertTrue(file.exists());
 		try (VCFFileReader reader = new VCFFileReader(file, false)) {
-			return Lists.newArrayList(reader.iterator());
+			VCFHeader header = reader.getHeader();
+			ArrayList<VariantContext> list = Lists.newArrayList(reader.iterator());
+			return list;
 		}
 	}
 	public List<IdsvVariantContext> getVcf(final File file, final ProcessingContext pc, final EvidenceSource source) {

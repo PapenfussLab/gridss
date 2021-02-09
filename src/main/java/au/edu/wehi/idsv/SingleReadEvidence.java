@@ -402,7 +402,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	@Override
 	public Collection<String> getOriginatingFragmentID(int category) {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
-			return new AssemblyAttributes(record).getOriginatingFragmentID(null, ImmutableSet.of(category), null);
+			return new AssemblyAttributes(record).getOriginatingFragmentID(null, ImmutableSet.of(category), null, null);
 		}
 		return source.getSourceCategory() == category ? ImmutableSet.of(record.getReadName()) : ImmutableSet.of();
 	}
@@ -420,7 +420,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public int constituentReads() {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
 			AssemblyAttributes aa = new AssemblyAttributes(record);
-			return aa.getSupportingReadCount(getBreakendAssemblyContigOffset(), null, null);
+			return aa.getSupportingReadCount(getBreakendAssemblyContigOffset(), null, null, null);
 		}
 		return 1;
 	}
@@ -482,7 +482,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public int getBreakendAssemblyContigOffset() {
 		if (assemblyOffset == Integer.MIN_VALUE && AssemblyAttributes.isAssembly(record)) {
 			AssemblyAttributes aa = new AssemblyAttributes(record);
-			assemblyOffset = aa.getMinQualPosition(getBreakendAssemblyContigBreakpointInterval(), null, null);
+			assemblyOffset = aa.getMinQualPosition(getBreakendAssemblyContigBreakpointInterval(), null, null, null);
 		}
 		return assemblyOffset;
 	}

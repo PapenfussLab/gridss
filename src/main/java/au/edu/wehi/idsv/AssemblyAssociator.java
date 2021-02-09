@@ -23,7 +23,7 @@ public class AssemblyAssociator implements CloseableIterator<DirectedEvidence> {
 	private final Iterator<SAMRecord> assit;
 	private final int windowSize;
 	private final HashMap<String, String> evidenceToAssemblyName = new HashMap<>();
-	private SAMRecord lastAssembly = null;;
+	private SAMRecord lastAssembly = null;
 	public AssemblyAssociator(Iterator<DirectedEvidence> it, Iterator<SAMRecord> rawAssemblies, int windowSize) {
 		this.it = it;
 		this.assit = rawAssemblies;
@@ -61,7 +61,7 @@ public class AssemblyAssociator implements CloseableIterator<DirectedEvidence> {
 	}
 	private void load(SAMRecord ass) {
 		assert(ass != null);
-		Collection<String> eids = new AssemblyAttributes(ass).getEvidenceIDs(null, null, null);
+		Collection<String> eids = new AssemblyAttributes(ass).getEvidenceIDs(null, null, null, null);
 		for (String eid : eids) {
 			evidenceToAssemblyName.put(eid, ass.getReadName());
 		}

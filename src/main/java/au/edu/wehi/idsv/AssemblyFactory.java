@@ -151,6 +151,9 @@ public final class AssemblyFactory {
 			record.setAttribute(SamTags.UNANCHORED, 1);
 		} else {
 			record.setReadBases(baseCalls);
+			for (int i = 0 ;i < baseQuals.length; i++) {
+				baseQuals[i] = (byte)Math.min((int)baseQuals[i] & 0xFF, 93);
+			}
 			record.setBaseQualities(baseQuals);
 			if (breakend.start != breakend.end) {
 				throw new IllegalArgumentException("Imprecisely anchored breakends not supported by this constructor");

@@ -261,7 +261,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals("131M", ra.getCigarString());
 	}
 	@Test
-	public void chunck_spanning_assemblies_should_not_be_repeated() throws IOException {
+	public void chunk_spanning_assemblies_should_not_be_repeated() throws IOException {
 		List<SAMRecord> in = new ArrayList<>();
 		for (int i = 50; i < 150; i++) {
 			in.add(withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, i, "41M58S"))[0]);
@@ -356,5 +356,21 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
 		ArrayList<DirectedEvidence> result = Lists.newArrayList(aes.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		Assert.assertEquals(1, result.size());
+	}
+	@Test
+	public void should_remap_assembly_categories() {
+		SAMFileHeader header = AES().getHeader().clone();
+		header.setComments(ImmutableList.of("gridss_input_category=Tumour", "gridss_input_category=Normal"));
+		createBAM(input, header);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
+		Assert.assertEquals(ImmutableList.of("Tumour", "Normal"), aes.getAssemblyCategories());
+		Assert.assertArrayEquals(new int[] { 1, 0 }, aes.getAssemblyCategoryToProcessingContextCategoryLookup());
+
+		header = AES().getHeader().clone();
+		header.setComments(ImmutableList.of("gridss_input_category=Tumour"));
+		createBAM(input, header);
+		aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
+		Assert.assertEquals(ImmutableList.of("Tumour"), aes.getAssemblyCategories());
+		Assert.assertArrayEquals(new int[] { 1 }, aes.getAssemblyCategoryToProcessingContextCategoryLookup());
 	}
 }

@@ -568,14 +568,15 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * breakend position supported by that evidence. 
 	 * @return maximum out-of-order distance between evidence ordered by SAM alignment position and the breakend start position 
 	 */
-	public static int maximumWindowSize(ProcessingContext context, List<SAMEvidenceSource> sources, AssemblyEvidenceSource assembly) {
+	public static int maximumWindowSize(ProcessingContext context, List<SAMEvidenceSource> sources, List<AssemblyEvidenceSource> assembly) {
 		int maxSize = 0;
 		for (EvidenceSource source : sources) {
 			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
 			maxSize = Math.max(samSource.getMaxConcordantFragmentSize(), Math.max(samSource.getMaxReadLength(), samSource.getMaxReadMappedLength()));
 		}
 		if (assembly != null) {
-			maxSize = Math.max(maxSize, assembly.getMaxAssemblyLength()) + context.getVariantCallingParameters().maxBreakendHomologyLength;
+			int maxAssemblyLength = assembly.stream().mapToInt(a -> a.getMaxAssemblyLength()).max().orElse(0);
+			maxSize = Math.max(maxSize, maxAssemblyLength) + context.getVariantCallingParameters().maxBreakendHomologyLength;
 		}
 		return maxSize + 2 * (context.getVariantCallingParameters().breakendMargin + 1);
 	}
