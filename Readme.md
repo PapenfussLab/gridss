@@ -62,6 +62,9 @@ Just [download the latest release](https://github.com/PapenfussLab/gridss/releas
 
 If you wish to contribute to GRIDSS development, it can be built from source using maven with `mvn package`.
 
+A prebuilt docker image is available as `gridss/gridss:latest` so building a docker image yourself is not necessary.
+If you do wish to build the docker image yourself, you need to run `scripts/dev/create_release.sh` so the necessary build artifacts exist in your environment.
+
 ### Building gridsstools
 
 Some performance-critical steps are implemented in C using htslib.
