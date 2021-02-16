@@ -33,7 +33,14 @@ import java.util.Locale;
 )
 public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);
-	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-L", "0,0", "-t", "%3$d", "%2$s", "%1$s");
+	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of(
+			"bwa",
+			"mem",
+			"-K", "10000000",
+			"-L", "0,0",
+			"-t", "%3$d",
+			"%2$s",
+			"%1$s");
 	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of("bowtie2", "--threads", "%3$d", "--local", "--mm", "--reorder", "-x", "%2$s", "-U", "%1$s");
     @Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input file", optional=false)
     public File INPUT;
