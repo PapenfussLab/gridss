@@ -35,7 +35,7 @@ To run GRIDSS the following must be installed:
 
 * java 1.8 or later
 * R 4.0 or later
-  * `gridss_somatic_filter.R` requires the following R libraries:
+  * `gridss_somatic_filter.R` and `gridss_extract_overlapping_fragments.sh` require the following R libraries:
     * argparser
     * tidyverse
     * stringdist
@@ -44,7 +44,7 @@ To run GRIDSS the following must be installed:
     * StructuralVariantAnnotation
     * rtracklayer
     * BSgenome package for your reference genome (optional)
-* samtools
+* samtools 1.10 or later
 * bwa
 * bash
 * getopt(1) (part of [util-linux](https://en.wikipedia.org/wiki/Util-linux))
