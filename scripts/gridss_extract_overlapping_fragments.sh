@@ -21,6 +21,12 @@ EX_NOINPUT=66
 EX_CANTCREAT=73
 EX_CONFIG=78
 
+SAMTOOLS_MAJOR_VERSION_REQUIREMENT="1"
+SAMTOOLS_MINOR_VERSION_REQUIREMENT="10"
+
+BEDTOOLS_MAJOR_VERSION_REQUIREMENT="2"
+BEDTOOLS_MINOR_VERSION_REQUIREMENT="27"
+
 workingdir="."
 output_bam=""
 threads=1
@@ -78,7 +84,7 @@ eval set -- "$PARSED"
 while true; do
 	case "$1" in
 		-j|--jar)
-			GRIDSS_JAR="$2"
+			GRIDSS_JAR="$2"  # FIXME appears unused
 			shift 2
 			;;
 		-w|--workingdir)
@@ -186,7 +192,7 @@ write_status "Using GRIDSS jar $gridss_jar"
 if [[ "$output_bam" == "" ]] ; then
 	output_bam="$1.targeted.bam"
 fi
-mkdir -p $(dirname $output_bam)
+mkdir -p "$(dirname $output_bam)"
 if [[ ! -d $(dirname $output_bam) ]] ; then
 	write_status "Unable to create directory for $output_bam for output file."
 	exit $EX_CANTCREAT
@@ -206,22 +212,45 @@ for tool in gridsstools samtools ; do
 	fi
 	write_status "Found $(which $tool)"
 done
+
+##### samtools version check
 samtools_version=$(samtools --version | grep samtools | cut -b 10-)
 write_status "samtools version: $samtools_version"
-samtools_major_version=$(echo $samtools_version | cut -f 1 -d ".")
-samtools_minor_version=$(echo $samtools_version | cut -f 2 -d ".")
-if [[ "$samtools_major_version" == "1" ]] ; then
-	if [[ "$samtools_minor_version" -lt 10 ]] ; then
-		write_status "samtools 1.10 or later is required"
+samtools_major_version=$(echo "$samtools_version" | cut -f 1 -d ".")
+samtools_minor_version=$(echo "$samtools_version" | cut -f 2 -d ".")
+if [[ "$samtools_major_version" == "$SAMTOOLS_MAJOR_VERSION_REQUIREMENT" ]] ; then
+	if [[ "$samtools_minor_version" -lt "$SAMTOOLS_MINOR_VERSION_REQUIREMENT" ]] ; then
+		write_status "samtools $SAMTOOLS_MAJOR_VERSION_REQUIREMENT.$SAMTOOLS_MINOR_VERSION_REQUIREMENT or later is required"
 		exit $EX_CONFIG
 	fi
-elif [[ "$samtools_major_version" -gt 1 ]] ; then
+elif [[ "$samtools_major_version" -gt "$SAMTOOLS_MAJOR_VERSION_REQUIREMENT" ]] ; then
 	# newer samtools - assume it's fine
 	echo -n 
 else
-	write_status "samtools 1.10 or later is required"
+	write_status "samtools $SAMTOOLS_MAJOR_VERSION_REQUIREMENT.$SAMTOOLS_MINOR_VERSION_REQUIREMENT or later is required"
 	exit $EX_CONFIG
 fi
+
+##### bedtools version check
+# bedtools --version yields 'bedtools vX.Y.Z'
+bedtools_version="$(bedtools --version | cut -d' ' -f2)"
+write_status "bedtools version: $bedtools_version"
+bedtools_major_version="$(echo "$bedtools_version" | cut -f1 -d"." | sed 's/v//')"
+bedtools_minor_version="$(echo "$bedtools_version" | cut -f2 -d".")"
+
+if [[ "$bedtools_major_version" == "$BEDTOOLS_MAJOR_VERSION_REQUIREMENT" ]] ; then
+	if [[ "$bedtools_minor_version" -lt "$BEDTOOLS_MINOR_VERSION_REQUIREMENT" ]] ; then
+		write_status "bedtools $BEDTOOLS_MAJOR_VERSION_REQUIREMENT.$BEDTOOLS_MINOR_VERSION_REQUIREMENT or later is required"
+		exit $EX_CONFIG
+	fi
+elif [[ "$bedtools_major_version" -gt "$BEDTOOLS_MAJOR_VERSION_REQUIREMENT" ]] ; then
+	# newer bedtools - assume it's fine
+	echo -n
+else
+	write_status "bedtools $BEDTOOLS_MAJOR_VERSION_REQUIREMENT.$BEDTOOLS_MINOR_VERSION_REQUIREMENT or later is required"
+	exit $EX_CONFIG
+fi
+
 ##### --workingdir
 echo "Using working directory \"$workingdir\"" 1>&2
 if [[ "$workingdir" == "" ]] ; then
@@ -243,6 +272,7 @@ fi
 working_prefix=$workingdir/tmp.$(basename "$output_bam").gridss
 target_no_slop_file=$working_prefix.target.no_slop.bed
 target_file=$working_prefix.target.bed
+genome_file=$working_prefix.bedtools.genome
 script_vcf_to_bed=$working_prefix.vcf2bed.R
 rm -f $working_prefix*
 if [[ "$targetbed" == "" ]] ; then
@@ -270,17 +300,36 @@ EOF
 else
 	cp $targetbed $target_no_slop_file
 fi
+
+# Create bedtools genome file from samtools header
+# Just the SN and LN attributes in tab-delimited format
+write_status "Generating bedtools genome file from bam header"
+# Start by pulling out the bam header
+samtools view -H "$input_bam" | {
+ # Capture only the lines starting with 'SQ'
+ # Example line would be SQ:<tab>SN:chr1<tab>LN:12345678
+ grep '^@SQ'
+} | {
+ # Run awk over lines to convert to chr1<tab>12345678
+ # Then write to $genome_file
+ awk '{ FS="\t"; OFS="\t" } { $2=gensub(/SN:/, "", "g", $2); $3=gensub(/LN:/, "", "g", $3) } { print $2,$3 }'
+} > "$genome_file"
+
+# Use bedtools slop to extend the bed file by margins set by targetmargin variable
 write_status "Extending regions of interest by $targetmargin bp"
-# bedtools slop is technically more correct but samtools is happy with
-# BED intevals hanging over the start/end of a contig so it doesn't matter
-grep -v "^#" $target_no_slop_file | grep -v "^browser" | grep -v "^track" | awk "{OFS=\"\t\"} {lower_bound=\$2-$targetmargin; lower_bound=(lower_bound < 1) ? 1 : lower_bound ; print \$1,lower_bound,\$3+$targetmargin}" > $target_file
+bedtools slop \
+  -i "$target_no_slop_file" \
+  -g "$genome_file" \
+  -b "$targetmargin" > "$target_file"
+
+# Then use gridsstools to extract the reads of interest
 write_status "Extracting reads of interest"
 gridsstools extractFragmentsToBam -@ $threads -o $output_bam <(samtools view -M -@ $threads -L $target_file $input_bam | cut -f 1) $input_bam
 gridss_dir=$workingdir/$(basename $output_bam).gridss.working
 gridss_prefix=$gridss_dir/$(basename $output_bam)
 if [[ ! -f $gridss_prefix.insert_size_metrics ]] ; then
 	write_status "Generating GRIDSS metrics from first $metricsrecords records"
-	mkdir -p $gridss_dir
+	mkdir -p "$gridss_dir"
 	jvm_args=" \
 		-Dpicard.useLegacyParser=false \
 		-Dsamjdk.use_async_io_read_samtools=true \
