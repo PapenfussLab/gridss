@@ -64,6 +64,31 @@ If you wish to contribute to GRIDSS development, it can be built from source usi
 
 A prebuilt docker image is available as `gridss/gridss:latest` so building a docker image yourself is not necessary.
 If you do wish to build the docker image yourself, you need to run `scripts/dev/create_release.sh` so the necessary build artifacts exist in your environment.
+To ensure you have run this correctly, I recommend you create the necessary artifacts themselves through a docker container.
+You must have also cloned this repository with the `--recursive` parameter to ensure htslib has been installed under 'gridss/src/main/c/gridsstools/'
+
+```bash
+# Step 1: Build the gridss-builder image
+# Maven open-jdk8 with build-essentials and htslib dependencies
+docker build \
+  --tag gridss-builder/gridss-builder:latest \
+  --file scripts/dev/Dockerfile .
+
+# Step 2: Create the release artifacts with your docker builder
+rm -rf target/
+docker run \
+  --volume "$PWD":"$PWD" \
+  --workdir "$PWD/scripts/dev" \
+  --user "$(id -u):$(id -g)" \
+  --rm \
+  --entrypoint bash \
+  gridss-builder/gridss-builder:latest \
+    create_release.sh
+
+# Step 3: Build the gridss docker image
+docker build \
+  --tag gridss/gridss:latest .
+```
 
 ### Building gridsstools
 
