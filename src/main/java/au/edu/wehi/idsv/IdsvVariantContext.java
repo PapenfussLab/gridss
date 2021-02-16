@@ -1,12 +1,16 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.debruijn.VariantEvidence;
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+
+import java.util.List;
 
 /**
  * Generates variant context records from the underlying @link {@link VariantContext}
@@ -81,6 +85,8 @@ public class IdsvVariantContext extends VariantContext {
 			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
 			        .compare(o1.getStart(), o2.getStart())
 			        .compare(o1.getEnd(), o2.getEnd())
+					.compare(o1.getReference(), o2.getReference())
+					.compare(getOrderingAllele(o1), getOrderingAllele(o2))
 			        .compare(o1.getID(), o2.getID())
 			        .result();
 		  }
@@ -91,6 +97,7 @@ public class IdsvVariantContext extends VariantContext {
 			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
 			        .compare(o1.getEnd(), o2.getEnd())
 			        .compare(o1.getStart(), o2.getStart())
+					.compare(getOrderingAllele(o1), getOrderingAllele(o2))
 			        .compare(o1.getID(), o2.getID())
 			        .result();
 		  }
@@ -114,9 +121,16 @@ public class IdsvVariantContext extends VariantContext {
 				        .compare(dictionary.getSequenceIndex(o1.getContig()), dictionary.getSequenceIndex(o2.getContig()))
 				        .compare(o1.getEnd(), o2.getEnd())
 				        .compare(o1.getStart(), o2.getStart())
+						.compare(getOrderingAllele(o1), getOrderingAllele(o2))
 				        .compare(o1.getID(), o2.getID())
 				        .result();
 			  }
 		};
-	}	
+	}
+	private static Allele getOrderingAllele(VariantContext v) {
+		List<Allele> alt = v.getAlleles();
+		if (alt.size() >= 2) return alt.get(1);
+		if (alt.size() >= 1) return alt.get(0);
+		return null;
+	}
 }

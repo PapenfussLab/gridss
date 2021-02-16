@@ -1,12 +1,14 @@
 package au.edu.wehi.idsv;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class IdsvVariantContextTest extends TestHelper {
 	@Test
@@ -90,5 +92,21 @@ public class IdsvVariantContextTest extends TestHelper {
 	public void getAttributeAsIntListOffset_should_default_should_get_ith_element() {
 		TestIdsvVariantContext vc = new TestIdsvVariantContext(minimalVariant().attribute("intlist", L("1", "2")).make());
 		assertEquals(1, vc.getAttributeAsIntListOffset("intlist", 0, 7));
+	}
+	@Test
+	public void ByLocation_should_have_stable_sort_order() {
+		IdsvVariantContext v1 = (IdsvVariantContext)new IdsvVariantContextBuilder(getContext()).chr("polyA").start(1).stop(1).alleles("A", "C").make();
+		IdsvVariantContext v2 = (IdsvVariantContext)new IdsvVariantContextBuilder(getContext()).chr("polyA").start(1).stop(1).alleles("A", "T").make();
+		for (Ordering<IdsvVariantContext> order : ImmutableList.of(IdsvVariantContext.ByLocationStart, IdsvVariantContext.ByLocationEnd)) {
+			List<IdsvVariantContext> list1 = new ArrayList<>();
+			list1.add(v1);
+			list1.add(v2);
+			List<IdsvVariantContext> list2 = new ArrayList<>();
+			list2.add(v2);
+			list2.add(v1);
+			list1.sort(order);
+			list2.sort(order);
+			assertEquals(list1, list2);
+		}
 	}
 }
