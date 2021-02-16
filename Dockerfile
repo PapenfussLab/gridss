@@ -28,6 +28,7 @@ RUN apt-get update && \
     build-essential \
     make \
     r-base \
+    gawk \
     libssl-dev \
     libcurl4-openssl-dev \
     libxml2-dev && \
