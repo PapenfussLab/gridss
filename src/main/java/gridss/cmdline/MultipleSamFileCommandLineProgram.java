@@ -138,27 +138,8 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	}
     }
 	public void ensureDictionariesMatch() throws IOException {
-		SAMSequenceDictionary dictionary = getReference().getSequenceDictionary();
-		final SamReaderFactory samFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
 		for (File f : INPUT) {
-			SamReader reader = null;
-			try {
-				reader = samFactory.open(f);
-				final SAMSequenceDictionary samDictionary = reader.getFileHeader().getSequenceDictionary();
-				if (samDictionary == null || samDictionary.isEmpty()) {
-					String message = String.format("Missing @SQ sequencing dictionary header lines in %s. "
-							+ " Are you sure this is a SAM/BAM/CRAM file? If so, make sure the @SQ headers are correct.", f);
-					log.error(message);
-					throw new RuntimeException(message);
-				}
-				SequenceUtil.assertSequenceDictionariesEqual(samDictionary, dictionary, f, REFERENCE_SEQUENCE);
-			} catch (htsjdk.samtools.util.SequenceUtil.SequenceListsDifferException e) {
-				log.error("Reference genome used by ", f, " does not match reference genome ", REFERENCE_SEQUENCE, ". ",
-						"The reference supplied must match the reference used for every input.");
-				throw e;
-			} finally {
-				if (reader != null) reader.close();
-			}
+			ensureDictionaryMatches(f);
 		}
 	}
     @Override
