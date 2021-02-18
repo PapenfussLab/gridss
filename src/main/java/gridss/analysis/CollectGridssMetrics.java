@@ -2,6 +2,11 @@ package gridss.analysis;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import gridss.cmdline.ReferenceCommandLineProgram;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.reference.FastaSequenceFile;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.SequenceUtil;
 import org.apache.commons.lang3.NotImplementedException;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
@@ -11,6 +16,7 @@ import picard.analysis.SinglePassSamProgram;
 import picard.cmdline.argumentcollections.RequiredOutputArgumentCollection;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -64,6 +70,13 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     	List<ProgramInterface> toRun = Lists.newArrayList(Iterables.transform(GRIDSS_PROGRAM, p -> new GridssProgramProgramInterfaceFactory().create(p)));
 		toRun.addAll(PROGRAM);
     	setProgramsToRun(toRun);
+    	if (REFERENCE_SEQUENCE != null && REFERENCE_SEQUENCE.exists()) {
+			try {
+				ReferenceCommandLineProgram.ensureDictionaryMatches(INPUT, new FastaSequenceFile(REFERENCE_SEQUENCE, true).getSequenceDictionary(), REFERENCE_SEQUENCE);
+			} catch (IOException e) {
+				throw new RuntimeIOException(e);
+			}
+		}
     	return super.doWork();
     }
     protected class GridssProgramProgramInterfaceFactory {

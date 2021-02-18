@@ -3,17 +3,23 @@ package gridss.cmdline;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.FileExtensions;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.CommandLineProgram;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 
 public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
@@ -92,6 +98,31 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 		return null;
 	}
 	public boolean referenceRequired() { return true; }
+	public void ensureDictionaryMatches(File input) throws IOException {
+		SAMSequenceDictionary dictionary = getReference().getSequenceDictionary();
+		ensureDictionaryMatches(input, dictionary, REFERENCE_SEQUENCE);
+	}
+	public static void ensureDictionaryMatches(File input, SAMSequenceDictionary referenceDictionary, File reference) throws IOException {
+		final SamReaderFactory samFactory = SamReaderFactory.makeDefault().referenceSequence(reference);
+		SamReader reader = null;
+		reader = samFactory.open(input);
+		try {
+			final SAMSequenceDictionary samDictionary = reader.getFileHeader().getSequenceDictionary();
+			if (samDictionary == null || samDictionary.isEmpty()) {
+				String message = String.format("Missing @SQ sequencing dictionary header lines in %s. "
+						+ " Are you sure this is a SAM/BAM/CRAM file? If so, make sure the @SQ headers are correct.", input);
+				log.error(message);
+				throw new RuntimeException(message);
+			}
+			SequenceUtil.assertSequenceDictionariesEqual(samDictionary, referenceDictionary, input, reference);
+		} catch (htsjdk.samtools.util.SequenceUtil.SequenceListsDifferException e) {
+			log.error("Reference genome used by ", input, " does not match reference genome ", reference, ". ",
+					"The reference supplied must match the reference used for every input.");
+			throw e;
+		} finally {
+			if (reader != null) reader.close();
+		}
+	}
 	/**
 	 * Copies the command line inputs to the given program
 	 * @param cmd program to set command line for

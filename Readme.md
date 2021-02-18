@@ -35,7 +35,7 @@ To run GRIDSS the following must be installed:
 
 * java 1.8 or later
 * R 4.0 or later
-  * `gridss_somatic_filter.R` requires the following R libraries:
+  * `gridss_somatic_filter.R` and `gridss_extract_overlapping_fragments.sh` require the following R libraries:
     * argparser
     * tidyverse
     * stringdist
@@ -44,7 +44,7 @@ To run GRIDSS the following must be installed:
     * StructuralVariantAnnotation
     * rtracklayer
     * BSgenome package for your reference genome (optional)
-* samtools
+* samtools 1.10 or later
 * bwa
 * bash
 * getopt(1) (part of [util-linux](https://en.wikipedia.org/wiki/Util-linux))
@@ -64,6 +64,7 @@ If you wish to contribute to GRIDSS development, it can be built from source usi
 
 A prebuilt docker image is available as `gridss/gridss:latest` so building a docker image yourself is not necessary.
 If you do wish to build the docker image yourself, you need to run `scripts/dev/create_release.sh` so the necessary build artifacts exist in your environment.
+
 To ensure you have run this correctly, I recommend you create the necessary artifacts themselves through a docker container.
 You must have also cloned this repository with the `--recursive` parameter to ensure htslib has been installed under 'gridss/src/main/c/gridsstools/'
 

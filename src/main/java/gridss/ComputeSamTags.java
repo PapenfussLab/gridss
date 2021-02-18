@@ -15,6 +15,7 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.samtools.util.SequenceUtil;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import picard.cmdline.StandardOptionDefinitions;
@@ -82,6 +83,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     	SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
     	try {
+			ensureDictionaryMatches(INPUT);
     		try (SamReader reader = readerFactory.open(INPUT)) {
     			SAMFileHeader header = reader.getFileHeader();
     			if (!ASSUME_SORTED) {

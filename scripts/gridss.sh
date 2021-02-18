@@ -482,6 +482,8 @@ aligner_args_bwa='
 	--ALIGNER_COMMAND_LINE null
 	--ALIGNER_COMMAND_LINE bwa
 	--ALIGNER_COMMAND_LINE mem
+	--ALIGNER_COMMAND_LINE -K
+	--ALIGNER_COMMAND_LINE 10000000
 	--ALIGNER_COMMAND_LINE -L
 	--ALIGNER_COMMAND_LINE 0,0
 	--ALIGNER_COMMAND_LINE -t
@@ -515,11 +517,10 @@ aligner_args_minimap2='
 	--ALIGNER_COMMAND_LINE %1$s
 	'
 
-readpairing_args=""
-
-READ_PAIR_CONCORDANT_PERCENT="$readpairpdistribution"
 if [[ "$useproperpair" == "true" ]] ; then
 	readpairing_args="READ_PAIR_CONCORDANT_PERCENT=null"
+else
+  readpairing_args="READ_PAIR_CONCORDANT_PERCENT=${readpairpdistribution}"
 fi
 
 if [[ $do_setupreference == true ]] ; then
