@@ -22,7 +22,10 @@ public class SAMRecordChangeTracker {
 	private static final String TRANSIENT_TRACKING_ATTRIBUTE_NAME = "scrt";
 	private static final int N_FLAGS = 16;
 	private final Changes changes = new Changes();
-	private static class Changes {
+
+	public Changes getChanges() { return changes; }
+
+	public static class Changes {
 		public long totalFragments = 0;
 		public long totalAlignments = 0;
 		public long removedAlignments = 0;
@@ -94,8 +97,8 @@ public class SAMRecordChangeTracker {
 				this.before = new ArrayList<>(records.size());
 				int i = 0;
 				for (SAMRecord r : records) {
+					r.setTransientAttribute(TRANSIENT_TRACKING_ATTRIBUTE_NAME, i);
 					SAMRecord mirror = (SAMRecord)r.clone();
-					mirror.setTransientAttribute(TRANSIENT_TRACKING_ATTRIBUTE_NAME, i);
 					before.add(mirror);
 				}
 			} catch (CloneNotSupportedException e) {
