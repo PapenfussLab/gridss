@@ -3,10 +3,10 @@ package au.edu.wehi.idsv.sam;
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-import au.edu.wehi.idsv.util.UngroupingIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import gridss.ComputeSamTags;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
@@ -524,7 +524,7 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 
 	@Test
-	public void calculateTemplateTags_should_write_FI_TC() {
+	public void calculateTagFI() {
 		SAMRecord read0 = Read(0, 1, "5M");
 		read0.setReadPairedFlag(true);
 		read0.setFirstOfPairFlag(true);
@@ -536,11 +536,27 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecord read5 = Read(0, 1, "5M");
 		read5.setAttribute("FI", 5);
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.FI.name(), SAMTag.TC.name()), false, false, false, false, false, false);
+		SAMRecordUtil.calculateTagFI(SAMRecordUtil.templateBySegment(ImmutableList.of(read0, read1, read5)));
 
 		assertEquals(0, (int) read0.getIntegerAttribute("FI"));
 		assertEquals(1, (int) read1.getIntegerAttribute("FI"));
 		assertEquals(5, (int) read5.getIntegerAttribute("FI"));
+	}
+
+	@Test
+	public void calculateTagTC() {
+		SAMRecord read0 = Read(0, 1, "5M");
+		read0.setReadPairedFlag(true);
+		read0.setFirstOfPairFlag(true);
+
+		SAMRecord read1 = Read(0, 1, "5M");
+		read1.setReadPairedFlag(true);
+		read1.setSecondOfPairFlag(true);
+
+		SAMRecord read5 = Read(0, 1, "5M");
+		read5.setAttribute("FI", 5);
+
+		SAMRecordUtil.calculateTagTC(SAMRecordUtil.templateBySegment(ImmutableList.of(read0, read1, read5)));
 
 		assertEquals(6, (int) read0.getIntegerAttribute("TC"));
 		assertEquals(6, (int) read1.getIntegerAttribute("TC"));
@@ -548,7 +564,7 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 
 	@Test
-	public void calculateTemplateTags_should_write_R2_Q2_using_next_segment_modulo_arithmetic() {
+	public void calculateTagRQ2_should_write_using_next_segment_modulo_arithmetic() {
 		SAMRecord read0 = Read(0, 1, "3M");
 		read0.setReadPairedFlag(true);
 		read0.setFirstOfPairFlag(true);
@@ -567,7 +583,8 @@ public class SAMRecordUtilTest extends TestHelper {
 		read5.setReadBases(B("GGT"));
 		read5.setBaseQualityString("890");
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.R2.name(), SAMTag.Q2.name()), false, false, false, false, false, false);
+		SAMRecordUtil.calculateTagR2(SAMRecordUtil.templateBySegment(ImmutableList.of(read0, read1, read5)));
+		SAMRecordUtil.calculateTagQ2(SAMRecordUtil.templateBySegment(ImmutableList.of(read0, read1, read5)));
 
 		assertEquals("AGT", read0.getStringAttribute("R2"));
 		assertEquals(null, read1.getStringAttribute("R2"));
@@ -579,29 +596,30 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 
 	@Test
-	public void calculateTemplateTags_R2_Q2_should_not_write_self() {
+	public void calculateTagRQ2_R2_Q2_should_not_write_self() {
 		SAMRecord read0 = Read(0, 1, "3M");
 		read0.setReadPairedFlag(true);
 		read0.setFirstOfPairFlag(true);
 		read0.setReadBases(B("AAC"));
 		read0.setBaseQualityString("123");
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0), ImmutableSet.of(SAMTag.R2.name(), SAMTag.Q2.name()), false, false, false, false, false, false);
+		SAMRecordUtil.calculateTagR2(SAMRecordUtil.templateBySegment(ImmutableList.of(read0)));
+		SAMRecordUtil.calculateTagQ2(SAMRecordUtil.templateBySegment(ImmutableList.of(read0)));
 
 		assertNull(read0.getAttribute("R2"));
 		assertNull(read0.getAttribute("Q2"));
 	}
 
 	@Test
-	public void calculateTemplateTags_should_handle_unpaired_reads() {
+	public void fixMates_should_handle_unpaired_reads() {
 		SAMRecord read = Read(0, 1, "3M");
 		SAMRecord anotherRead = Read(0, 1, "3M");
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read, anotherRead), SAMRecordUtil.TEMPLATE_TAGS, true, true, false, false, false, true);
+		SAMRecordUtil.fixMates(SAMRecordUtil.templateBySegment(ImmutableList.of(read, anotherRead)), true, true);
 	}
 
 	@Test
-	public void calculateTemplateTags_should_write_R2_Q2_based_on_sequencing_order() {
+	public void calculateTagRQ2_should_write_R2_Q2_based_on_sequencing_order() {
 		SAMRecord read0 = Read(0, 1, "3M");
 		read0.setReadPairedFlag(true);
 		read0.setFirstOfPairFlag(true);
@@ -615,7 +633,8 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setReadBases(B("ACT"));
 		read1.setBaseQualityString("456");
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.R2.name(), SAMTag.Q2.name()), false, false, false, false, false, false);
+		SAMRecordUtil.calculateTagR2(SAMRecordUtil.templateBySegment(ImmutableList.of(read0, read1)));
+		SAMRecordUtil.calculateTagQ2(SAMRecordUtil.templateBySegment(ImmutableList.of(read0, read1)));
 
 		assertEquals("AGT", read0.getStringAttribute("R2"));
 		assertEquals("AAC", read1.getStringAttribute("R2"));
@@ -625,21 +644,21 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 
 	@Test
-	public void calculateTemplateTags_SA_should_ignore_missing_NM() {
+	public void reinterpretAsSplitReadAlignment_should_handle_missing_NM() {
 		SAMRecord read0 = withMapq(10, withSequence("ANNNNN", Read(0, 1, "1M5S")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 
 		read0.setAttribute("NM", null);
 		read1.setAttribute("NM", null);
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, false);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(read0, read1), 0);
 
 		assertEquals("polyA,2,+,1H1M4H,11,", read0.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,1M5S,10,", read1.getStringAttribute("SA"));
 	}
 
 	@Test
-	public void calculateTemplateTags_SA_should_not_be_written_for_nonchimeric_reads() {
+	public void recalculateSupplementaryFromSA_SA_should_not_be_written_for_nonchimeric_reads() {
 		SAMRecord read0 = Read(0, 1, "3M");
 		read0.setReadPairedFlag(true);
 		read0.setFirstOfPairFlag(true);
@@ -653,7 +672,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setReadBases(B("ACT"));
 		read1.setBaseQualityString("456");
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA.name()), false, false, false, false, false, false);
+		SAMRecordUtil.recalculateSupplementaryFromSA(ImmutableList.of(read0, read1));
 
 		assertEquals(null, read0.getStringAttribute("SA"));
 		assertEquals(null, read1.getStringAttribute("SA"));
@@ -663,13 +682,12 @@ public class SAMRecordUtilTest extends TestHelper {
 	 * Conventionally, at a supplementary line, the first element points to the primary line
 	 */
 	@Test
-	public void calculateTemplateTags_SA_should_write_supplementary_alignments_last_for_chimeric_alignments() {
-		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
-		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
+	public void reinterpretAsSplitReadAlignment_should_write_supplementary_alignments_last_for_chimeric_alignments() {
+		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0]; // (4)
+		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0]; // (3) shortest max clip
 		// 1BP gap
-		SAMRecord read2 = withMapq(12, withSequence("G", Read(0, 4, "3H1M2H")))[0];
-		SAMRecord read3 = withMapq(13, withSequence("ACGTAA", Read(0, 5, "4S2M")))[0];
-		SAMRecord alt = withMapq(14, withSequence("ACGTAA", Read(0, 1, "6M")))[0];
+		SAMRecord read2 = withMapq(12, withSequence("G", Read(0, 4, "3H1M2H")))[0]; // (1) primary
+		SAMRecord read3 = withMapq(13, withSequence("ACGTAA", Read(0, 5, "4S2M")))[0]; // (2) shortest total clipping
 
 		read0.setSupplementaryAlignmentFlag(true);
 		read1.setSupplementaryAlignmentFlag(true);
@@ -686,14 +704,27 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setAttribute("NM", 2);
 		read3.setAttribute("NM", 3);
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, false);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(read0, read1, read2, read3), 0);
 
-		// "0,4,+,3H1M2H,12,2,;0,1,+,1M5H,10,0,;0,2,+,1H1M4H,11,1,;0,5,+,4S2M,13,3,"
-		//   read2                  read0            read1          read3
-		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,2,+,1H1M4H,11,1;polyA,5,+,4S2M,13,3", read0.getStringAttribute("SA"));
-		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,5,+,4S2M,13,3", read1.getStringAttribute("SA"));
-		assertEquals("polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1;polyA,5,+,4S2M,13,3", read2.getStringAttribute("SA"));
-		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1", read3.getStringAttribute("SA"));
+		// polyA,4,+,3H1M2H,12,2;polyA,5,+,4S2M,13,3;polyA,2,+,1H1M4H,11,1;polyA,1,+,1M5H,10,0;
+		// read2                 read3               read1                 read0
+		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,5,+,4S2M,13,3;polyA,2,+,1H1M4H,11,1", read0.getStringAttribute("SA"));
+		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,5,+,4S2M,13,3;polyA,1,+,1M5H,10,0", read1.getStringAttribute("SA"));
+		assertEquals("polyA,5,+,4S2M,13,3;polyA,2,+,1H1M4H,11,1;polyA,1,+,1M5H,10,0", read2.getStringAttribute("SA"));
+		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,2,+,1H1M4H,11,1;polyA,1,+,1M5H,10,0", read3.getStringAttribute("SA"));
+	}
+
+	/**
+	 * bwa voilates the SAM specs for ALT contigs
+	 */
+	@Test
+	public void reinterpretAsSplitReadAlignment_should_deprioritise_alt_contigs() {
+		SAMRecord primary = Read(0, 1, "5M5S");
+		SAMRecord alt = Read(0, 1, "10M");
+		alt.setReferenceName("decoy");
+		List<SAMRecord> list = SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(primary, alt), 25);
+		assertEquals(1, list.size());
+		assertEquals(primary, list.get(0));
 	}
 
 	@Test
@@ -713,7 +744,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setSecondaryAlignment(false);
 		alt1.setSecondaryAlignment(true);
 		alt2.setSecondaryAlignment(true);
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, alt1, alt2), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, false);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(read0, read1, alt1, alt2), 25);
 
 		assertEquals(null, alt1.getStringAttribute("SA"));
 		assertEquals(null, alt2.getStringAttribute("SA"));
@@ -838,7 +869,9 @@ public class SAMRecordUtilTest extends TestHelper {
 		r1.setMappingQuality(5);
 		r2.setMappingQuality(6);
 		r2.setReadNegativeStrandFlag(true);
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()), false, true, false, false, false, false);
+		r1.setReadPairedFlag(true);
+		r2.setReadPairedFlag(true);
+		SAMRecordUtil.fixMates(SAMRecordUtil.templateBySegment(ImmutableList.of(r1, r2)), true, true);
 
 		assertEquals(2, (int) r1.getMateReferenceIndex());
 		assertEquals(3, r1.getMateAlignmentStart());
@@ -858,7 +891,7 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void fix_mate_information_should_leave_unpaired() {
 		SAMRecord r = Read(0, 15, "5M6S");
 		assertFalse(r.getReadPairedFlag());
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r), ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()), false, true, false, false, false, false);
+		SAMRecordUtil.fixMates(SAMRecordUtil.templateBySegment(ImmutableList.of(r)), true, true);
 		assertFalse(r.getReadPairedFlag());
 	}
 
@@ -866,12 +899,12 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void fix_duplicate_should_mark_all_reads_if_any_are_duplicates() {
 		SAMRecord[] rp = RP(0, 1, 100);
 		rp[1].setDuplicateReadFlag(true);
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(rp[0], rp[1]), ImmutableSet.of(), false, false, true, false, false, false);
+		SAMRecordUtil.ensureConsistentDuplicateFlag(ImmutableList.of(rp[0], rp[1]));
 		Assert.assertTrue(Arrays.stream(rp).allMatch(r -> r.getDuplicateReadFlag()));
 	}
 
 	@Test
-	public void recalculateSupplementary_should_convert_to_secondary_SA_to_supplementary() {
+	public void reinterpretAsSplitReadAlignment_should_convert_to_secondary_SA_to_supplementary() {
 		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 
@@ -879,47 +912,48 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setAttribute("SA", "polyA,1,+,1M5H,10,0");
 		read0.setSecondaryAlignment(true);
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(), false, false, false, false, false, true);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(read0, read1), 25);
 
 		Assert.assertTrue(read0.getSupplementaryAlignmentFlag());
 		Assert.assertFalse(read1.getSupplementaryAlignmentFlag());
 	}
 
 	@Test
-	public void recalculateSupplementary_should_force_primary_to_supp() {
+	public void reinterpretAsSplitReadAlignment_should_force_primary_to_supp() {
 		SAMRecord read0 = withMapq(10, withSequence("ANNNNN", Read(0, 1, "1M5S")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 
 		read0.setAttribute("SA", "polyA,2,+,1H1M4H,11,0");
 		read1.setAttribute("SA", "polyA,1,+,1M5S,10,0");
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(), false, false, false, false, false, true);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(read0, read1), 25);
 
 		Assert.assertFalse(read0.getSupplementaryAlignmentFlag());
 		Assert.assertTrue(read1.getSupplementaryAlignmentFlag());
 	}
 
 	@Test
-	public void recalculateSupplementary_should_not_convert_unmapped_read_to_supplementary() {
+	public void reinterpretAsSplitReadAlignment_should_drop_all_except_one_unmapped_reads() {
 		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
+		SAMRecord read2 = withMapq(12, withSequence("ACGGT", Read(0, 3, "5M")))[0];
 
 		read0.setAttribute("SA", "polyA,2,+,1H1M4H,11,0");
 		read1.setAttribute("SA", "polyA,1,+,1M5H,10,0");
 
 		read0.setReadUnmappedFlag(true);
 		read1.setReadUnmappedFlag(true);
+		read2.setReadUnmappedFlag(true);
 
 		read1.setSecondaryAlignment(true);
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(), false, false, false, false, false, true);
+		List<SAMRecord> list = SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(read0, read1, read2), 25);
 
-		Assert.assertFalse(read0.getSupplementaryAlignmentFlag());
-		Assert.assertFalse(read1.getSupplementaryAlignmentFlag());
+		Assert.assertEquals(1, list.size());
 	}
 
 	@Test
-	public void recalculateSupplementary_should_recalculate_supplementary_based_on_SA_tag() {
+	public void recalculateSupplementaryFromSA_should_recalculate_supplementary_based_on_SA_tag() {
 		// primary split alignment
 		SAMRecord read1a = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
 		SAMRecord read1b = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
@@ -950,7 +984,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read3a.setSecondaryAlignment(true);
 		read3b.setSecondaryAlignment(true);
 
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read1a, read1b, read2, read3a, read3b), ImmutableSet.of(), false, false, false, false, false, true);
+		SAMRecordUtil.recalculateSupplementaryFromSA(ImmutableList.of(read1a, read1b, read2, read3a, read3b));
 
 		Assert.assertFalse(read1a.getSupplementaryAlignmentFlag());
 		Assert.assertTrue(read1b.getSupplementaryAlignmentFlag());
@@ -1054,9 +1088,23 @@ public class SAMRecordUtilTest extends TestHelper {
 		r1.setAttribute("SA", new ChimericAlignment(r2).toString() + ";" + new ChimericAlignment(r3).toString());
 		r2.setAttribute("SA", new ChimericAlignment(r1).toString() + ";" + new ChimericAlignment(r3).toString());
 		r3.setAttribute("SA", new ChimericAlignment(r1).toString() + ";" + new ChimericAlignment(r2).toString());
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2, r3), ImmutableSet.of(), true, false, false, false, false, false);
+		SAMRecordUtil.softenHardClips(ImmutableList.of(r1, r2, r3));
 		Assert.assertEquals("32S48M20S", r2.getCigarString());
 		Assert.assertEquals("64S36M", r3.getCigarString());
+	}
+
+	@Test
+	public void addMissingHardClipping_should_match_bases_with_other_read() {
+		SAMRecord r1 = Read(0, 100, "5M");
+		SAMRecord r2 = Read(0, 100, "3M");
+		r1.setReadBases(B("ACGTT"));
+		r1.setReadNegativeStrandFlag(true);
+		r2.setReadBases(B("ACG"));
+		// ACGTT
+		// AACGA   rc
+		//  ---    matching pos
+		SAMRecordUtil.addMissingHardClipping(ImmutableList.of(r1, r2));
+		Assert.assertEquals("1H3M1H", r2.getCigarString());
 	}
 
 	@Test
@@ -1099,28 +1147,28 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 
 	@Test
-	public void fixSA_should_regenerate_SA_tag() {
-		SAMRecord r1 = Read(0, 100, "10M20S");
-		SAMRecord r2 = Read(0, 200, "10S10M10S");
-		SAMRecord r3 = Read(0, 300, "20S10M");
+	public void reinterpretAsSplitReadAlignment_should_regenerate_SA_tag() {
+		SAMRecord r1 = Read(0, 100, "10M20S"); // 1st supp (lowest genomic position)
+		SAMRecord r2 = Read(0, 200, "10S11M9S"); // primary (shortest clip)
+		SAMRecord r3 = Read(0, 300, "20S10M"); // 2nd supp
 		r1.setAttribute("SA", new ChimericAlignment(r1).toString());
 		r2.setAttribute("SA", new ChimericAlignment(r1).toString());
 		r3.setAttribute("SA", new ChimericAlignment(r1).toString());
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2, r3), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, false);
-		Assert.assertEquals("polyA,200,+,10S10M10S,10,0;polyA,300,+,20S10M,10,0", r1.getStringAttribute("SA"));
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(r1, r2, r3), 25);
+		Assert.assertEquals("polyA,200,+,10S11M9S,10,0;polyA,300,+,20S10M,10,0", r1.getStringAttribute("SA"));
 		Assert.assertEquals("polyA,100,+,10M20S,10,0;polyA,300,+,20S10M,10,0", r2.getStringAttribute("SA"));
-		Assert.assertEquals("polyA,100,+,10M20S,10,0;polyA,200,+,10S10M10S,10,0", r3.getStringAttribute("SA"));
+		Assert.assertEquals("polyA,200,+,10S11M9S,10,0;polyA,100,+,10M20S,10,0", r3.getStringAttribute("SA"));
 	}
 
 	@Test
-	public void fixSA_should_consider_first_primary_record_as_primary() {
-		SAMRecord r1 = Read(0, 100, "10M20S");
-		SAMRecord r2 = Read(0, 200, "10S10M10S");
+	public void reinterpretAsSplitReadAlignment_should_consider_longest_primary_record_as_primary() {
+		SAMRecord r1 = Read(0, 100, "12M18S");
+		SAMRecord r2 = Read(0, 200, "10S11M9S");
 		SAMRecord r3 = Read(0, 300, "20S10M");
 		r1.setAttribute("SA", new ChimericAlignment(r1).toString());
 		r2.setAttribute("SA", new ChimericAlignment(r1).toString());
 		r3.setAttribute("SA", new ChimericAlignment(r1).toString());
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2, r3), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, true);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(r1, r2, r3), 1000);
 		Assert.assertFalse(r1.getSupplementaryAlignmentFlag());
 		Assert.assertFalse(r1.isSecondaryAlignment());
 		Assert.assertTrue(r2.getSupplementaryAlignmentFlag());
@@ -1130,10 +1178,10 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 
 	@Test
-	public void fixSA_convert_overlapping_read_to_split_read_alignment() {
+	public void reinterpretAsSplitReadAlignment_convert_overlapping_read_to_split_read_alignment() {
 		SAMRecord r1 = Read(0, 100, "70M30S");
 		SAMRecord r2 = Read(0, 200, "30S70M");
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, true);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(ImmutableList.of(r1, r2), 50);
 		Assert.assertFalse(r1.getSupplementaryAlignmentFlag());
 		Assert.assertFalse(r1.isSecondaryAlignment());
 		Assert.assertTrue(r2.getSupplementaryAlignmentFlag());
@@ -1143,56 +1191,57 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 
 	@Test
-	public void fixSA_should_remove_duplicate_alignments_starting_at_same_read_offset() {
+	public void reinterpretAsSplitReadAlignment_should_remove_duplicate_alignments_starting_at_same_read_offset() {
 		SAMRecord r1 = Read(0, 100, "70M30S");
 		SAMRecord r2 = Read(0, 200, "50M50S");
-		ArrayList list = Lists.newArrayList(r1, r2);
-		SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, true);
+		List list = Lists.newArrayList(r1, r2);
+		list = SAMRecordUtil.reinterpretAsSplitReadAlignment(list, 25);
+		Assert.assertEquals(1, list.size());
 	}
 
 	@Test
-	public void fixTruncated_should_add_hard_clipping_to_shorter_read_to_match_longer() {
+	public void addMissingHardClipping_should_add_hard_clipping_to_shorter_read_to_match_longer() {
 		// ACGTTTGGAAT
 		//    TTTGG
 		// HHHsmmmmHHH
 		SAMRecord r1 = withSequence("ACGTTTGGAAT", Read(0, 100, "11M"))[0];
 		SAMRecord r2 = withSequence("TTTGG", Read(0, 100, "1S4M1H"))[0];
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(), false, false, false, false, true, false);
+		SAMRecordUtil.addMissingHardClipping(ImmutableList.of(r1, r2));
 		Assert.assertEquals("3H1S4M3H", r2.getCigarString());
 	}
 
 	@Test
-	public void fixTruncated_should_consider_alignment_strand() {
+	public void addMissingHardClipping_should_consider_alignment_strand() {
 		//  TTCCAAACGT
 		//    CCAAA
 		//  HHsmmmmHHH
 		SAMRecord r1 = withSequence("ACGTTTGGAA", Read(0, 100, "10M"))[0];
 		SAMRecord r2 = onNegative(withSequence("CCAAA", Read(0, 100, "1S4M1H")))[0];
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(), false, false, false, false, true, false);
+		SAMRecordUtil.addMissingHardClipping(ImmutableList.of(r1, r2));
 		Assert.assertEquals("2H1S4M3H", r2.getCigarString());
 	}
 
 	@Test
-	public void fixTruncated_should_match_at_upper_bound() {
+	public void addMissingHardClipping_should_match_at_upper_bound() {
 		SAMRecord r1 = withSequence("ACGTTTGGAA", Read(0, 100, "10M"))[0];
 		SAMRecord r2 = withSequence("TGGAA", Read(0, 100, "1S4M"))[0];
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(), false, false, false, false, true, false);
+		SAMRecordUtil.addMissingHardClipping(ImmutableList.of(r1, r2));
 		Assert.assertEquals("5H1S4M", r2.getCigarString());
 	}
 
 	@Test
-	public void fixTruncated_should_match_at_lower_bound() {
+	public void addMissingHardClipping_should_match_at_lower_bound() {
 		SAMRecord r1 = withSequence("ACGTTTGGAA", Read(0, 100, "10M"))[0];
 		SAMRecord r2 = withSequence("ACGTT", Read(0, 100, "1S4M"))[0];
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(), false, false, false, false, true, false);
+		SAMRecordUtil.addMissingHardClipping(ImmutableList.of(r1, r2));
 		Assert.assertEquals("1S4M5H", r2.getCigarString());
 	}
 
 	@Test
-	public void fixTruncated_should_not_update_if_sequence_does_not_match() {
+	public void addMissingHardClipping_should_not_update_if_sequence_does_not_match() {
 		SAMRecord r1 = withSequence("AGGTTTGGAA", Read(0, 100, "10M"))[0];
 		SAMRecord r2 = withSequence("ACGTT", Read(0, 100, "1S4M1H"))[0];
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(), false, false, false, false, true, false);
+		SAMRecordUtil.addMissingHardClipping(ImmutableList.of(r1, r2));
 		Assert.assertEquals("1S4M1H", r2.getCigarString());
 	}
 
@@ -1331,10 +1380,13 @@ public class SAMRecordUtilTest extends TestHelper {
 		SynchronousReferenceLookupAdapter reflookup = new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref));
 		File input = new File("src/test/resources/sanity_failure_debug/bl21_de3_.ASM956v1_S2.bam");
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(input.getParentFile(), input.getParentFile(), SAMFileWriterImpl.getDefaultMaxRecordsInRam()), ref, reflookup, null, getConfig());
-		List<SAMRecord> results = Lists.newArrayList(new UngroupingIterator<>(new TemplateTagsIterator(
-				TemplateTagsIterator.withGrouping(getRecords(input).iterator()),
-				true, true, true, true, true, true, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()))));
-		List<SAMRecord> primary = results.stream().filter(r -> !r.isSecondaryOrSupplementary()).collect(Collectors.toList());
+		List<List<SAMRecord>> records = Lists.newArrayList((SAMRecordUtil.groupedByReadName(getRecords(input).iterator())));
+		for (List<SAMRecord> r : records) {
+			ComputeSamTags.transform(r, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()), true, true, true, true, true, 25, true, reflookup);
+		}
+		List<SAMRecord> primary = records.stream()
+				.flatMap(r -> r.stream())
+				.filter(r -> !r.isSecondaryOrSupplementary()).collect(Collectors.toList());
 		assertEquals(primary.get(0).getCigarString(), primary.get(1).getStringAttribute("MC"));
 		assertEquals(primary.get(1).getCigarString(), primary.get(0).getStringAttribute("MC"));
 	}
@@ -1384,13 +1436,13 @@ public class SAMRecordUtilTest extends TestHelper {
 			r.setSupplementaryAlignmentFlag(true);
 		});
 		list.get(0).setSupplementaryAlignmentFlag(false);
-		SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of(SAMTag.SA.name()), false, false, false, true, false, false);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(list, 25);
 	}
 
 	@Test
 	public void regression_hg38_fixSA_recalculateSupplementary_should_not_break_primary_flag() {
 		List<SAMRecord> records = getRecords(new File("src/test/resources/hg38_primary_flag_failure.sam"));
-		SAMRecordUtil.calculateTemplateTags(records, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name()), false, false, false ,true, false, false);
+		SAMRecordUtil.templateBySegment(records).stream().forEach(s -> SAMRecordUtil.reinterpretAsSplitReadAlignment(s, 25));
 		assertEquals(2, records.stream().filter(r -> !r.isSecondaryOrSupplementary()).count());
 	}
 
@@ -1400,19 +1452,82 @@ public class SAMRecordUtilTest extends TestHelper {
 		list.add(Read(0, 1, "40S40M40S"));
 		list.add(Read(0, 1, "20S80M20S"));
 		list.add(Read(0, 1, "40S80M"));
-		List<SAMRecord> removed = SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name(), SAMTag.SA.name()), false, false, false ,true, false, false);
-		assertEquals(1, removed.size());
-		assertEquals("40S40M40S", removed.get(0).getCigarString());
-		assertEquals(2, list.size());
+		list.get(1).setSupplementaryAlignmentFlag(true);
+		list.get(2).setSupplementaryAlignmentFlag(true);
+		List<SAMRecord> removed = SAMRecordUtil.reinterpretAsSplitReadAlignment (list, 1000);
+		assertEquals(1, list.size());
+		assertTrue(list.stream().anyMatch(r -> r.getCigarString() == "40S40M40S"));
 	}
 	@Test
-	public void fixSA_should_preferentially_remove_supp_alignments() {
+	public void reinterpretAsSplitReadAlignment_should_remove_containing_read() {
 		List<SAMRecord> list = new ArrayList<>();
-		list.add(Read(0, 1, "40S40M40S"));
+		list.add(Read(0, 1, "40S40M40S")); // keep the primary
 		list.add(Read(0, 1, "40S80M"));
 		list.get(1).setSupplementaryAlignmentFlag(true);
-		List<SAMRecord> removed = SAMRecordUtil.calculateTemplateTags(list, ImmutableSet.of(SAMTag.MC.name(), SAMTag.MQ.name(), SAMTag.SA.name()), false, false, false ,true, false, false);
-		assertEquals(1, removed.size());
-		assertEquals("40S80M", removed.get(0).getCigarString());
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(list, 1000);
+		assertEquals(1, list.size());
+		assertEquals("40S40M40S", list.get(0).getCigarString());
+	}
+	@Test
+	public void reinterpretAsSplitReadAlignment_should_remove_contained_read() {
+		List<SAMRecord> list = new ArrayList<>();
+		list.add(Read(0, 1, "40S80M")); // keep the primary
+		list.add(Read(0, 1, "40S40M40S"));
+		list.get(1).setSupplementaryAlignmentFlag(true);
+		SAMRecordUtil.reinterpretAsSplitReadAlignment(list, 1000);
+		assertEquals(1, list.size());
+		assertEquals("40S80M", list.get(0).getCigarString());
+	}
+	@Test
+	public void getFirstAlignedBaseReadOffset_should_incorporate_hard_clip_in_offset_calculation() {
+		SAMRecord r = Read(0, 1, "5H20M10H");
+		assertEquals(5, SAMRecordUtil.getFirstAlignedBaseReadOffset(r));
+		r.setReadNegativeStrandFlag(true);
+		assertEquals(10, SAMRecordUtil.getFirstAlignedBaseReadOffset(r));
+	}
+	@Test
+	public void getLastAlignedBaseReadOffset_should_incorporate_hard_clip_in_offset_calculation() {
+		SAMRecord r = Read(0, 1, "5H20M10H");
+		assertEquals(24, SAMRecordUtil.getLastAlignedBaseReadOffset(r));
+		r.setReadNegativeStrandFlag(true);
+		assertEquals(29, SAMRecordUtil.getLastAlignedBaseReadOffset(r));
+	}
+	// Specs got redefined so a D at the start moves the alignment
+	@Test
+	public void fixTerminalCigar_should_adjust_based_on_edit_distance_spec_compliant_record() {
+		SAMRecord r = Read(2, 3, "2D3M1D");
+		r.setReadBases(B(S(RANDOM).substring(2, 6)));
+		assertTrue(SAMRecordUtil.clipTerminalIndelCigars(r));
+		assertEquals(5, r.getAlignmentStart());
+		assertEquals("3M", r.getCigarString());
+	}
+	@Test
+	public void fixTerminalCigar_should_adjust_based_on_edit_distance_bwa() {
+		SAMRecord r = Read(2, 1, "2D3M1D");
+		r.setReadBases(B(S(RANDOM).substring(2, 6)));
+		assertTrue(SAMRecordUtil.clipTerminalIndelCigars(r));
+		assertEquals(3, r.getAlignmentStart());
+		assertEquals("3M", r.getCigarString());
+	}
+	@Test
+	public void reinterpretAsSplitReadAlignment_should_use_overlap_threshold_for_removal() {
+		List<SAMRecord> list = new ArrayList<>();
+		list.add(Read(0, 1, "50S50M"));
+		list.add(Read(0, 100, "55M45S"));
+		for (int i = 1; i < list.size(); i++) {
+			list.get(i).setSupplementaryAlignmentFlag(true);
+		}
+		list = SAMRecordUtil.reinterpretAsSplitReadAlignment(list, 5);
+		assertEquals(2, list.size());
+		list = SAMRecordUtil.reinterpretAsSplitReadAlignment(list, 4);
+		assertEquals(1, list.size());
+		assertEquals("50S50M", list.get(0).getCigarString());
+	}
+	@Test
+	public void fixTerminalCigar_should_handle_multiple_elements() {
+		SAMRecord r = Read(2, 1, "1I2D3I4D5M");
+		assertTrue(SAMRecordUtil.clipTerminalIndelCigars(r));
+		assertEquals(7, r.getAlignmentStart());
+		assertEquals("4S5M", r.getCigarString());
 	}
 }

@@ -2,6 +2,7 @@ package gridss;
 
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.SAMRecordChangeTracker;
 import au.edu.wehi.idsv.StreamingSplitReadRealigner;
 import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
@@ -50,21 +51,8 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 	@Argument(shortName=StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME, doc="Assume that all records with the same read name are consecutive. "
 			+ "Incorrect tags will be written if this is not the case.", optional=true)
 	public boolean ASSUME_SORTED = false;
-	@Argument(shortName="T", doc="Tags to calculate")
-	public Set<String> TAGS = Sets.newHashSet(
-			SAMTag.NM.name(),
-			SAMTag.SA.name(),
-			SAMTag.R2.name(),
-			//SAMTag.Q2.name(), // dropping Q2 to improve runtime performance and file size
-			SAMTag.MC.name(),
-			SAMTag.MQ.name());
-	// ComputeSamTags arguments that we require for GRIDSS
-	private boolean FIX_DUPLICATE_FLAG = true;
-	private boolean FIX_MATE_INFORMATION = true;
-	private boolean FIX_SA = true;
-	private boolean FIX_MISSING_HARD_CLIP = true;
-	private boolean RECALCULATE_SA_SUPPLEMENTARY = true;
-	private boolean SOFTEN_HARD_CLIPS = true;
+	@Argument(doc="Outputs a tsv containing an overview of the changes made.", optional=true)
+	public File MODIFICATION_SUMMARY_FILE = null;
 	@Argument(doc="Number of threads to use for realignment. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
 			shortName="THREADS")
@@ -82,11 +70,6 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		}
 		if (WORKER_THREADS < 1) {
 			return new String[]{"WORKER_THREADS must be at least 1."};
-		}
-		for (SAMTag tag : new SAMTag[] { SAMTag.R2, SAMTag.NM, SAMTag.SA, SAMTag.MC, SAMTag.MQ}) {
-			if (!TAGS.contains(tag.name())) {
-				return new String[]{"TAGS must contain " + tag.name()};
-			}
 		}
 		return super.customCommandLineValidation();
 	}
@@ -129,13 +112,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		ComputeSamTags tags = new ComputeSamTags();
 		tags.setReference(this.getReference());
 		tags.WORKER_THREADS = -1; // don't use ComputeSamTags workers - we're handling this ourselves
-		tags.TAGS = TAGS;
-		tags.FIX_DUPLICATE_FLAG = FIX_DUPLICATE_FLAG;
-		tags.FIX_MATE_INFORMATION = FIX_MATE_INFORMATION;
-		tags.FIX_SA = FIX_SA;
-		tags.FIX_MISSING_HARD_CLIP = FIX_MISSING_HARD_CLIP;
-		tags.RECALCULATE_SA_SUPPLEMENTARY = RECALCULATE_SA_SUPPLEMENTARY;
-		tags.SOFTEN_HARD_CLIPS = SOFTEN_HARD_CLIPS;
+		tags.MODIFICATION_SUMMARY_FILE = MODIFICATION_SUMMARY_FILE;
 		String threadPrefix = INPUT.getName() + "-";
 		try {
 			SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
@@ -153,18 +130,24 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 				}
 				// strip header because our output is unordered
 				header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
-
+				SAMRecordChangeTracker tracker = null;
+				if (MODIFICATION_SUMMARY_FILE != null) {
+					tracker = new SAMRecordChangeTracker();
+				}
 				try (SAMRecordIterator it = reader.iterator()) {
 					File tmpOutput = gridss.Defaults.OUTPUT_TO_TEMP_FILE ? FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.PreprocessForBReakendAssembly.") : OUTPUT;
 					try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpOutput)) {
 						CloseableIterator<SAMRecord> asyncIn = new AsyncBufferedIterator<>(it, threadPrefix + "raw");
-						// We can reuse the non-block task thread pool since the transforms aren't blocking operations
-						Iterator<SAMRecord> tagFixedIt = tags.transform(AsyncReadTaskRunner.getNonBlockingThreadpool(), Defaults.ASYNC_BUFFER_SIZE, asyncIn);
+						// We can reuse the non-blocking task thread pool since the transforms aren't blocking operations
+						Iterator<SAMRecord> tagFixedIt = tags.transform(AsyncReadTaskRunner.getNonBlockingThreadpool(), Defaults.ASYNC_BUFFER_SIZE, asyncIn, tracker);
 						realigner.process(tagFixedIt, writer, writer);
 					}
 					if (tmpOutput != OUTPUT) {
 						FileHelper.move(tmpOutput, OUTPUT, true);
 					}
+				}
+				if (tracker != null) {
+					tracker.writeSummary(MODIFICATION_SUMMARY_FILE);
 				}
 			}
 			sa.close();

@@ -162,7 +162,7 @@ public class BwaAligner implements Closeable {
                 SAMRecord r = createAlignment(fq, alignment);
                 result.add(r);
             }
-            SAMRecordUtil.reinterpretAsSplitReadAlignment(result, true);
+            SAMRecordUtil.reinterpretAsSplitReadAlignment(result, 25);
         }
         return result;
     }

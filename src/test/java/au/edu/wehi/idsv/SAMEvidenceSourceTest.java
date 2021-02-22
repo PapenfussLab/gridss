@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.alignment.StubFastqAligner;
 import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -500,7 +501,8 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void v272_colo829_10_55476344_regression_() throws FileNotFoundException {
 		File ref = Hg19Tests.findBroadHg19Reference();
 		FileSystemContext fsc = new FileSystemContext(new File("src/test/resources/colo829/v2.7.2_regression"), 100000);
-		ProcessingContext pc = new ProcessingContext(fsc, ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, getConfig());
+		ProcessingContext pc = new ProcessingContext(fsc, ref, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(ref)), null, new GridssConfiguration(TestHelper.getDefaultConfig(), fsc.getTemporaryDirectory()));
+		pc.getConfig().minMapq = 20;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, new File("src/test/resources/colo829/v2.7.2_regression/COLO829v003T_dedup.realigned.bam"), null, 0);
 		ArrayList<DirectedEvidence> evidence = Lists.newArrayList(ses.iterator(SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition));
 		List<DiscordantReadPair> rp = evidence.stream().filter(e -> e instanceof DiscordantReadPair).map(e -> (DiscordantReadPair) e).collect(Collectors.toList());

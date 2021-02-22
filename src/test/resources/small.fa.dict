@@ -6,3 +6,4 @@
 @SQ	SN:REF	LN:10000	M5:0f53217fc7c8e7f89e8a8558e64a7083	UR:file:/mnt/c/dev/gridss/src/test/resources/small.fa
 @SQ	SN:REF2	LN:10000	M5:166a24f666dd18ebb6b86136a4f465c5	UR:file:/mnt/c/dev/gridss/src/test/resources/small.fa
 @SQ	SN:homology	LN:9996	M5:b7fa28c7573a7222a5fcb9cd50ee3c8b	UR:file:/mnt/c/dev/gridss/src/test/resources/small.fa
+@SQ	SN:decoy	LN:10000	M5:0f53217fc7c8e7f89e8a8558e64a7083	UR:file:/mnt/c/dev/gridss/src/test/resources/small.fa

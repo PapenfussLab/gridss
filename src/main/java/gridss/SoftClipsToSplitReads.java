@@ -49,7 +49,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	@Argument(doc="Outputs new supplementary records and primary alignments with a new position to a separate file. " +
 			"Records ordering matches initial primary alignment records INPUT." +
 			"If this parameter is omitted, modified records are coordinate sorted and merged into the OUTPUT file. " +
-			"This parameter is useful for off-loading the sort and merge steps to an external tool with better sorting performance than htsjdk (e.g. sambamba)", optional=true)
+			"This parameter is useful for off-loading the sort and merge steps to an external tool with better sorting performance than htsjdk (e.g. samtools)", optional=true)
 	public File OUTPUT_UNORDERED_RECORDS = null;
     @Argument(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
     public int MIN_CLIP_LENGTH = 20;

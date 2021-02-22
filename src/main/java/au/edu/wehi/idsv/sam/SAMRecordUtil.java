@@ -7,6 +7,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.util.GroupingIterator;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.util.MessageThrottler;
@@ -24,6 +25,7 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -200,18 +202,27 @@ public class SAMRecordUtil {
 	}
 
 	public static SAMRecord ensureNmTag(ReferenceSequenceFile ref, SAMRecord record) {
-		if (record == null) return record;
-		if (record.getReadBases() == null) return record;
-		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE) return record;
-		if (record.getIntegerAttribute(SAMTag.NM.name()) != null) return record;
-		if (record.getReadUnmappedFlag()) return record;
-		byte[] refSeq = ref
-				.getSubsequenceAt(record.getReferenceName(), record.getAlignmentStart(), record.getAlignmentEnd())
-				.getBases();
-		final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSeq,
-				record.getAlignmentStart() - 1);
-		record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
+		if (record == null || record.getIntegerAttribute(SAMTag.NM.name()) != null) {
+			return record;
+		}
+		recalculateTagNm(ref, record);
 		return record;
+	}
+
+	public static int recalculateTagNm(ReferenceSequenceFile ref, SAMRecord record) {
+		if (record == null) return 0;
+		if (record.getReadUnmappedFlag() || record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE) {
+			record.setAttribute(SAMTag.NM.name(), null);
+			return 0;
+		} else {
+			byte[] refSeq = ref
+					.getSubsequenceAt(record.getReferenceName(), record.getAlignmentStart(), record.getAlignmentEnd())
+					.getBases();
+			final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSeq,
+					record.getAlignmentStart() - 1);
+			record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
+			return actualNucleotideDiffs;
+		}
 	}
 
 	/**
@@ -673,134 +684,87 @@ public class SAMRecordUtil {
 	}
 
 	/**
-	 * Computed tags requiring reads from the same template to be processed
-	 * together
+	 * Recalculates the FI tag.
 	 */
 	public static final Set<String> TEMPLATE_TAGS = ImmutableSet.of(SAMTag.CC.name(), SAMTag.CP.name(), SAMTag.FI.name(), SAMTag.HI.name(),
 			SAMTag.IH.name(), SAMTag.Q2.name(), SAMTag.R2.name(), SAMTag.MC.name(), SAMTag.MQ.name(), SAMTag.SA.name(), SAMTag.TC.name());
+	public static List<List<SAMRecord>> calculateTagFI(List<List<SAMRecord>> templateBySegments) {
+		// FI
+		for (int i = 0; i < templateBySegments.size(); i++) {
+			for (SAMRecord r : templateBySegments.get(i)) {
+				r.setAttribute(SAMTag.FI.name(), i);
+			}
+		}
+		return templateBySegments;
+	}
 
 	/**
-	 * Populates the missing template tags for the records originating from the
-	 * same template
-	 * 
-	 * @param records
-	 *            Records from the same template.
-	 * @param tags
-	 *            Tags to populate
-	 * @param restoreHardClips
-	 *            convert hard clips into soft clips if the sequence is
-	 *            available from a chimeric alignment of the same segmentt
-	 * @param fixMates
-	 * @param recalculateSupplementary
-	 * @return SAMRecords removed from input list
+	 * Recalculates the TC tag.
 	 */
-	public static List<SAMRecord> calculateTemplateTags(List<SAMRecord> records, Set<String> tags,
-			boolean restoreHardClips, boolean fixMates, boolean fixDuplicates, boolean fixSA, boolean fixTruncated, boolean recalculateSupplementary) {
-		List<SAMRecord> removed = Collections.emptyList();
-		// TODO: support secondary alignments by switching to templateBySegmentByAlignmentGroup() and handling split secondary reads
-		List<List<SAMRecord>> segments = templateBySegment(records);
-		// FI
-		if (tags.contains(SAMTag.FI.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.FI.name(), i);
-				}
-			}
-		}
+	public static List<List<SAMRecord>> calculateTagTC(List<List<SAMRecord>> templateBySegments) {
 		// TC
-		if (tags.contains(SAMTag.TC.name())) {
-			for (SAMRecord r : records) {
-				r.setAttribute(SAMTag.TC.name(), segments.size());
+		for (List<SAMRecord> segment : templateBySegments) {
+			for (SAMRecord r : segment) {
+				r.setAttribute(SAMTag.TC.name(), templateBySegments.size());
 			}
 		}
-		if (fixTruncated) {
-			for (int i = 0; i < segments.size(); i++) {
-				addMissingHardClipping(segments.get(i));
+		return templateBySegments;
+	}
+	public static List<List<SAMRecord>> calculateTagR2(List<List<SAMRecord>> templateBySegments) {
+		for (int i = 0; i < templateBySegments.size(); i++) {
+			byte[] br2 = getConsensusSequence(templateBySegments.get((i + 1) % templateBySegments.size()));
+			String r2 = br2 != null && br2 != SAMRecord.NULL_SEQUENCE && templateBySegments.size() > 1 ? StringUtil.bytesToString(br2) : null;
+			for (SAMRecord r : templateBySegments.get(i)) {
+				r.setAttribute(SAMTag.R2.name(), r2);
 			}
 		}
-		if (restoreHardClips) {
-			for (int i = 0; i < segments.size(); i++) {
-				softenHardClips(segments.get(i));
+		return templateBySegments;
+	}
+	public static List<List<SAMRecord>> calculateTagQ2(List<List<SAMRecord>> templateBySegments) {
+		for (int i = 0; i < templateBySegments.size(); i++) {
+			byte[] bq2 = getConsensusBaseQualities(templateBySegments.get((i + 1) % templateBySegments.size()));
+			String q2 = bq2 != null && bq2 != SAMRecord.NULL_QUALS && templateBySegments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
+			for (SAMRecord r : templateBySegments.get(i)) {
+				r.setAttribute(SAMTag.Q2.name(), q2);
 			}
 		}
-		if (fixDuplicates) {
-			boolean isDuplicate = false;
-			for (SAMRecord r : records) {
-				if (r.getDuplicateReadFlag()) {
-					isDuplicate = true;
-					break;
-				}
-			}
-			if (isDuplicate) {
-				for (SAMRecord r : records) {
-					r.setDuplicateReadFlag(true);
-				}
-			}
-		}
-		// Split read alignments
-		if (fixSA) {
-			for (int i = 0; i < segments.size(); i++) {
-				removed = SAMRecordUtil.reinterpretAsSplitReadAlignment(segments.get(i), recalculateSupplementary);
-				if (!removed.isEmpty()) {
-					records.removeAll(removed);
-				}
-			}
-		} else if (recalculateSupplementary) {
-			for (int i = 0; i < segments.size(); i++) {
-				recalculateSupplementaryFromSA(segments.get(i));
+		return templateBySegments;
+	}
+	/**
+	 * Ensures the duplicate flag is consistent.
+	 *
+	 * If any record in the template is flagged as a duplicate then all all.
+	 *
+	 * This fixes the issue in which duplicate marking software does not mark supplementary alignments
+	 * as duplicates.
+	 *
+	 * @param templateRecords all records for a given template
+	 * @return records
+	 */
+	public static List<SAMRecord> ensureConsistentDuplicateFlag(List<SAMRecord> templateRecords) {
+		boolean isDuplicate = false;
+		for (SAMRecord r : templateRecords) {
+			if (r.getDuplicateReadFlag()) {
+				isDuplicate = true;
+				break;
 			}
 		}
-		if (Sets.intersection(tags,
-				ImmutableSet.of(SAMTag.CC.name(), SAMTag.CP.name(), SAMTag.HI.name(), SAMTag.IH.name())).size() > 0) {
-			for (int i = 0; i < segments.size(); i++) {
-				calculateMultimappingTags(tags, segments.get(i));
+		if (isDuplicate) {
+			for (SAMRecord r : templateRecords) {
+				r.setDuplicateReadFlag(true);
 			}
 		}
-		if (fixMates || tags.contains(SAMTag.MC.name()) || tags.contains(SAMTag.MQ.name())) {
-			matchReadPairPrimaryAlignments(segments);
-			if (segments.size() >= 2) {
-				// hack to prevent SAMRecord getters from throwing an exception
-				records.stream().forEach(r -> r.setReadPairedFlag(true));
-				segments.get(0).stream().forEach(r -> r.setFirstOfPairFlag(true));
-				segments.get(1).stream().forEach(r -> r.setSecondOfPairFlag(true));
-				fixMates(segments, tags.contains(SAMTag.MC.name()), tags.contains(SAMTag.MQ.name()));
-			} else {
-				for (SAMRecord r : records) {
-					clearMateInformation(r, true);
-				}
-			}
-		}
-		// R2
-		if (tags.contains(SAMTag.R2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] br2 = getConsensusSequence(segments.get((i + 1) % segments.size()));
-				String r2 = br2 != null && br2 != SAMRecord.NULL_SEQUENCE &&  segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.R2.name(), r2);
-				}
-			}
-		}
-		// Q2
-		if (tags.contains(SAMTag.Q2.name())) {
-			for (int i = 0; i < segments.size(); i++) {
-				byte[] bq2 = getConsensusBaseQualities(segments.get((i + 1) % segments.size()));
-				String q2 = bq2 != null && bq2 != SAMRecord.NULL_QUALS && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
-				for (SAMRecord r : segments.get(i)) {
-					r.setAttribute(SAMTag.Q2.name(), q2);
-				}
-			}
-		}
-		return removed;
+		return templateRecords;
 	}
 	private static final Comparator<SAMRecord> ByReadLength = Comparator.comparingInt(r -> r.getReadLength());
-	private static void addMissingHardClipping(List<SAMRecord> list) {
-		if (list.isEmpty()) return;
-		SAMRecord longest = list.stream().max(ByReadLength).get();
+	public static List<SAMRecord> addMissingHardClipping(List<SAMRecord> segmentRecords) {
+		if (segmentRecords.isEmpty()) return segmentRecords;
+		SAMRecord longest = segmentRecords.stream().max(ByReadLength).get();
 		String longseq = longest.getReadString();
 		if (longest.getReadNegativeStrandFlag()) {
 			longseq = SequenceUtil.reverseComplement(longseq).toUpperCase();
 		}
-		for (SAMRecord r : list) {
+		for (SAMRecord r : segmentRecords) {
 			if (r.getReadUnmappedFlag()) continue;
 			if (r.getReadLength() == longseq.length()) continue;
 			List<CigarElement> cigar = r.getCigar().getCigarElements();
@@ -831,10 +795,11 @@ public class SAMRecordUtil {
 			}
 			if (!isFixed) {
 				if (!MessageThrottler.Current.shouldSupress(log, "Add missing hard clipping")) {
-					log.warn(String.format("Unable to restore hard clipping of truncated read %s. No sequence match to full length alignment record.", list.get(0).getReadName()));
+					log.warn(String.format("Unable to restore hard clipping of truncated read %s. No sequence match to full length alignment record.", segmentRecords.get(0).getReadName()));
 				}
 			}
 		}
+		return segmentRecords;
 	}
 
 	/**
@@ -847,27 +812,50 @@ public class SAMRecordUtil {
 				// already flagged as supp is bad  
 				.compareFalseFirst(arg1.getSupplementaryAlignmentFlag(), arg2.getSupplementaryAlignmentFlag())
 				// flagged as secondary is bad due to legacy treatment of secondary alignments as supplementary (eg bwa mem -M) 
-				.compareFalseFirst(arg1.isSecondaryAlignment(), arg2.isSecondaryAlignment()) 
-				// the record with the shorter soft clip is a better candidate
-				.compare(SAMRecordUtil.getStartClipLength(arg1) + SAMRecordUtil.getEndClipLength(arg1), SAMRecordUtil.getStartClipLength(arg2) + SAMRecordUtil.getEndClipLength(arg2))
+				.compareFalseFirst(arg1.isSecondaryAlignment(), arg2.isSecondaryAlignment())
+				// aligning to likely alt contigs is bad (https://github.com/lh3/bwa/issues/282)
+				.compareFalseFirst(isLikelyAltContig(arg1), isLikelyAltContig(arg2))
 				// longer read is better
 				.compare(arg2.getReadLength(), arg1.getReadLength())
 				// high MAPQ is better
 				.compare(arg2.getMappingQuality(), arg1.getMappingQuality())
+				// the record with the shorter soft clip is a better candidate
+				.compare(
+					SAMRecordUtil.getStartClipLength(arg1) + SAMRecordUtil.getEndClipLength(arg1),
+					SAMRecordUtil.getStartClipLength(arg2) + SAMRecordUtil.getEndClipLength(arg2))
+				.compare(
+					Math.max(SAMRecordUtil.getStartClipLength(arg1), SAMRecordUtil.getEndClipLength(arg1)),
+					Math.max(SAMRecordUtil.getStartClipLength(arg2), SAMRecordUtil.getEndClipLength(arg2)))
 				// in proper pair is better
-				.compareTrueFirst(arg1.getReadPairedFlag() && arg1.getProperPairFlag(), arg1.getReadPairedFlag() &&arg2.getProperPairFlag())
+				.compareTrueFirst(arg1.getReadPairedFlag() && arg1.getProperPairFlag(), arg1.getReadPairedFlag() && arg2.getProperPairFlag())
 				// lower edit distance is better
 				.compare(getNM(arg1, 0), getNM(arg2, 0))
 				// Other options are:
 				// - record is flagged as the mate of a read pair (strong support for that record to be the primary)
+				// Force a stable record sort order
+				.compare(arg1.getReferenceIndex(), arg2.getReferenceIndex())
+				.compare(arg1.getAlignmentStart(), arg2.getAlignmentStart())
+				.compare(arg1.getCigarString(), arg2.getCigarString())
 				.result();
 		}
 	};
+	private static boolean isLikelyAltContig(SAMRecord r) {
+		if (r.getReadUnmappedFlag()) return false;
+		// hg19
+		if (r.getReferenceName().contains("_random")) return true;
+		if (r.getReferenceName().contains("Un_gl")) return true;
+		// hg38
+		if (r.getReferenceName().contains("decoy")) return true;
+		if (r.getReferenceName().contains("HLA-")) return true;
+		if (r.getReferenceName().contains("_alt")) return true;
+		return false;
+	}
+
 	private static int getNM(SAMRecord r, int defaultValue) {
 		Integer value = r.getIntegerAttribute(SAMTag.NM.name());
 		return value == null ? defaultValue : value;
 	}
-	private static void recalculateSupplementaryFromSA(List<SAMRecord> segments) {
+	public static void recalculateSupplementaryFromSA(List<SAMRecord> segments) {
 		HashMap<List<ChimericAlignment>, List<SAMRecord>> saLookup = new HashMap<>();
 		for (SAMRecord r : segments) {
 			List<ChimericAlignment> splitca = ChimericAlignment.getChimericAlignments(r);
@@ -988,7 +976,7 @@ public class SAMRecordUtil {
 	 * @param fullClear
 	 *            strips all mate information from the read
 	 */
-	private static void clearMateInformation(SAMRecord r, boolean fullClear) {
+	public static void clearMateInformation(SAMRecord r, boolean fullClear) {
 		r.setReadPairedFlag(false);
 		if (fullClear) {
 			r.setReadPairedFlag(true);
@@ -1054,7 +1042,12 @@ public class SAMRecordUtil {
 		return best.orElse(null);
 	}
 
-	private static final List<List<SAMRecord>> templateBySegment(List<SAMRecord> records) {
+	/**
+	 * Groups records according to their segment index.
+	 *
+	 * List lengths is 1 for unpaired reads, 2 for paired reads.
+	 */
+	public static final List<List<SAMRecord>> templateBySegment(List<SAMRecord> records) {
 		List<List<SAMRecord>> segments = new ArrayList<List<SAMRecord>>();
 		for (SAMRecord r : records) {
 			int index = SAMRecordUtil.getSegmentIndex(r);
@@ -1089,81 +1082,61 @@ public class SAMRecordUtil {
 		}
 	}
 	// TODO support secondary alignments via CC, CP, HI, IH
-	public static List<SAMRecord> reinterpretAsSplitReadAlignment(List<SAMRecord> list, boolean updateSupplementary) {
-		if (list == null || list.isEmpty()) {
+	public static List<SAMRecord> reinterpretAsSplitReadAlignment(List<SAMRecord> segmentRecords, int overlapThreshold) {
+		if (segmentRecords == null || segmentRecords.isEmpty()) {
 			return Collections.emptyList();
 		}
-		List<SAMRecord> removalList = new ArrayList<>();
-		if (list.size() == 1) {
-			list.get(0).setAttribute(SAMTag.SA.name(), null);
+		try {
+			segmentRecords.sort(ByBestPrimarySplitCandidate);
+		} catch (UnsupportedOperationException e) {
+			segmentRecords = Lists.newArrayList(segmentRecords);
+			segmentRecords.sort(ByBestPrimarySplitCandidate);
+		}
+		SAMRecord primary = segmentRecords.get(0);
+		// TODO: actually support secondary alignments
+		for (SAMRecord r : segmentRecords) {
+			r.setSecondaryAlignment(false);
+			r.setSupplementaryAlignmentFlag(r != primary);
+		}
+		// Remove records that overlap or contain 'better' alignments
+		for (int i = 1; i < segmentRecords.size(); i++) {
+			SAMRecord r = segmentRecords.get(i);
+			int start = getFirstAlignedBaseReadOffset(r);
+			int end = getLastAlignedBaseReadOffset(r);
+			int totalOverlap = 0;
+			for (int j = 0; j < i; j++) {
+				SAMRecord prev = segmentRecords.get(j);
+				int prevStart = getFirstAlignedBaseReadOffset(prev);
+				int prevEnd = getLastAlignedBaseReadOffset(prev);
+				int minLength = Math.min(prevEnd - prevStart, end - start) + 1;
+				int overlap = IntervalUtil.overlapsWidthClosed(start, end, prevStart, prevEnd);
+				totalOverlap += overlap;
+				if (overlap == minLength || totalOverlap > overlapThreshold) {
+					segmentRecords.remove(i);
+					i--;
+					break;
+				}
+			}
+		}
+		if (segmentRecords.size() == 1) {
+			segmentRecords.get(0).setAttribute(SAMTag.SA.name(), null);
 		} else {
-			list.sort(ByFirstAlignedBaseReadOffset);
-			for (int i = 0; i < list.size() - 1; i++) {
-				SAMRecord r1 = list.get(i);
-				SAMRecord r2 = list.get(i + 1);
-				if (getFirstAlignedBaseReadOffset(r1) == getFirstAlignedBaseReadOffset(r2)) {
-					if (ByBestPrimarySplitCandidate.compare(r1, r2) <= 0) {
-						removalList.add(list.remove(i + 1));
-					} else {
-						removalList.add(list.remove(i));
-					}
-					// Don't throttle these messages. We want to absolutely spam their log file if they're
-					// attempting to use GRIDSS with a malformed BAM file.
-					// Update: bad idea. bwa writes bad split read alignments on hg38+alt
-					if (!MessageThrottler.Current.shouldSupress(log, "Overlapping Split Read Alignments")) {
-						String msg = String.format("Found two read alignments starting at the same read offset for read %s (%s:%d and %s:%d). " +
-								"Ignoring one. Note that GRIDSS does not support multiple (non-split) alignments for a single read such as those output by 'bwa mem -a'.",
-								r1.getReadName(),
-								r1.getReferenceName(),
-								r1.getAlignmentStart(),
-								r2.getReferenceName(),
-								r2.getAlignmentStart());
-						log.warn(msg);
-					}
-				}
-			}
-			SAMRecord primary = list.stream().
-					filter(r -> !r.isSecondaryOrSupplementary()).
-					findFirst().
-					orElse(list.get(0)); // if we don't have a primary, default to first alignment
-			// Clean to flags: TODO: actually support secondary alignments
-			if (updateSupplementary) {
-				for (SAMRecord r : list) {
-					r.setSecondaryAlignment(false);
-					r.setSupplementaryAlignmentFlag(r != primary);
-				}
-			}
-			// move primary to end of list
-			list.remove(primary);
-			list.add(primary);
-			List<String> saString = new ArrayList<>(list.size());
-			for (SAMRecord r : list) {
-				saString.add(new ChimericAlignment(r).toString());
-			}
-			for (int i = 0; i < list.size(); i++) {
-				SAMRecord r = list.get(i);
+			// primary is at start of list
+			List<String> saString = new ArrayList<>(segmentRecords.size());
+			for (SAMRecord r : segmentRecords) {
 				StringBuilder sb = new StringBuilder();
-				if (r != primary) {
-					sb.append(saString.get(saString.size() - 1));
-					sb.append(';');
-				}
-				for (int j = 0; j < list.size() - 1; j++) { // -1 since we added the primary at the start
-					if (i != j) { // don't add self
-						sb.append(saString.get(j));
+				for (SAMRecord r2 : segmentRecords) {
+					if (r != r2) {
+						sb.append(new ChimericAlignment(r2).toString());
 						sb.append(';');
 					}
 				}
 				// strip trailing semicolon
-				if (sb.length() == 0) {
-					r.setAttribute(SAMTag.SA.name(), null);
-				} else {
-					sb.setLength(sb.length() - 1);
-					r.setAttribute(SAMTag.SA.name(), sb.toString());
-				}
+				sb.setLength(sb.length() - 1);
+				r.setAttribute(SAMTag.SA.name(), sb.toString());
 			}
 		}
-		//warnIfInvalidSA(list);
-		return removalList;
+		return segmentRecords;
 	}
 
 	/**
@@ -1820,5 +1793,70 @@ public class SAMRecordUtil {
 			return Ints.compare(getFirstAlignedBaseReadOffset(arg1), getFirstAlignedBaseReadOffset(arg2));
 		}
 	};
+
+	public static boolean clipTerminalIndelCigars(SAMRecord r) {
+		if (r.getReadUnmappedFlag()) return false;
+		Cigar c = r.getCigar();
+		if (!c.containsOperator(CigarOperator.INSERTION) && !c.containsOperator(CigarOperator.DELETION)) return false;
+		List<CigarElement> cigar = Lists.newArrayList(r.getCigar().getCigarElements());
+		Pair<Integer, Integer> endBasesAdjusted = clipIndelEndCigar(cigar);
+		Pair<Integer, Integer> startBasesAdjusted = clipIndelStartCigar(cigar);
+		if (endBasesAdjusted.getFirst() + endBasesAdjusted.getSecond() + startBasesAdjusted.getFirst() + startBasesAdjusted.getSecond() == 0) return false;
+		int alignmentOffset = startBasesAdjusted.getSecond();
+		CigarUtil.clean(cigar, false);
+		r.setCigar(new Cigar(cigar)); // NB: https://github.com/samtools/htsjdk/pull/1538
+		r.setAlignmentStart(r.getAlignmentStart() + alignmentOffset);
+		return true;
+	}
+
+	/**
+	 *
+	 * @return bases removed from (read, reference)
+	 */
+	private static Pair<Integer, Integer> clipIndelEndCigar(List<CigarElement> cigar) {
+		int insBases = 0;
+		int delBases = 0;
+		for (int i = cigar.size() - 1; i >= 0; i--) {
+			CigarElement ce = cigar.get(i);
+			if (ce.getOperator().isIndel()) {
+				if (ce.getOperator() == CigarOperator.INSERTION) {
+					cigar.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+					insBases += ce.getLength();
+				} else {
+					cigar.remove(i);
+					delBases += ce.getLength();
+				}
+			} else if (!ce.getOperator().isClipping()) {
+				break;
+			}
+		}
+		return Pair.create(insBases, delBases);
+	}
+	private static Pair<Integer, Integer> clipIndelStartCigar(List<CigarElement> cigar) {
+		int insBases = 0;
+		int delBases = 0;
+		for (int i = 0; i < cigar.size(); i++) {
+			CigarElement ce = cigar.get(i);
+			if (ce.getOperator().isIndel()) {
+				if (ce.getOperator() == CigarOperator.INSERTION) {
+					cigar.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+					insBases += ce.getLength();
+				} else {
+					cigar.remove(i);
+					i--;
+					delBases += ce.getLength();
+				}
+			} else if (!ce.getOperator().isClipping()) {
+				break;
+			}
+		}
+		return Pair.create(insBases, delBases);
+	}
+	/**
+	 * Input records must be grouped by read name
+	 */
+	public static Iterator<List<SAMRecord>> groupedByReadName(Iterator<SAMRecord> it) {
+		return new GroupingIterator(it, Ordering.natural().onResultOf((SAMRecord r) -> r.getReadName()));
+	}
 }
 
