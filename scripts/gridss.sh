@@ -723,19 +723,8 @@ if [[ $do_preprocess == true ]] ; then
 							I=$tmp_prefix.namedsorted.bam \
 							O=/dev/stdout \
 							WORKER_THREADS=$threads \
-							RECALCULATE_SA_SUPPLEMENTARY=true \
-							SOFTEN_HARD_CLIPS=true \
-							FIX_MATE_INFORMATION=true \
-							FIX_DUPLICATE_FLAG=true \
-							FIX_SA=true \
-							FIX_MISSING_HARD_CLIP=true \
-							TAGS=null \
-							TAGS=NM \
-							TAGS=SA \
-							TAGS=R2 \
-							TAGS=MC \
-							TAGS=MQ \
 							ASSUME_SORTED=true \
+							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd samtools sort \
 							-T $tmp_prefix.coordinate-tmp \
@@ -790,6 +779,7 @@ if [[ $do_preprocess == true ]] ; then
 							WORKER_THREADS=$threads \
 							ALIGNER=BWAMEM \
 							ALIGNER_BATCH_SIZE=10000 \
+							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd samtools sort \
 							-@ $threads \
