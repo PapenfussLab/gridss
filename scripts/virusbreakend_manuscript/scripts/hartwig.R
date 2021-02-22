@@ -158,6 +158,16 @@ p = ggplot(summarydf) +
 	scale_y_log10()
 ggMarginal(p, margins="y", type="histogram", groupFill=TRUE)
 
+ggplot(summarydf) +
+	aes(x=coverage, y=meandepth, colour=integrations > 0, shape=integrations > 0) +
+	geom_point() +
+	labs(title="Viral coverage") +
+	facet_wrap(~friendly_species_name[name_species]) +
+	scale_y_log10()
+
+# what about the non-clonal HPV-16 integrations?
+summarydf %>% filter( friendly_species_name[name_species] == "HPV-16") %>% group_by(primaryTumorLocation) %>% filter(integrations==0, meandepth<10) %>% pull(sample)
+
 plot_hmf_depth = ggplot(summarydf) +
 	aes(x=meandepth, fill=integrations > 0) +
 	geom_histogram(bins=50) +
@@ -615,4 +625,3 @@ mapdf %>%
 		meanpct=mean(pct),
 		maxpct=max(pct)) %>%
 	arrange(meanpct)
-
