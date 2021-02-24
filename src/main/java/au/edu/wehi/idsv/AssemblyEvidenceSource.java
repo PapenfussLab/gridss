@@ -562,19 +562,23 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 
 	public SAMFileHeader getHeader() {
 		if (this.header == null) {
-			if (!getFile().exists()) {
-				this.header = getContext().getBasicSamHeader();
-				if (!this.header.getComments().stream().anyMatch(s -> s.contains(INPUT_CATEGORY_SAM_HEADER_PREFIX))) {
-					for (int i = 0; i < getContext().getCategoryCount(); i++) {
-						String category = getContext().getCategoryLabel(i);
-						this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
+			synchronized (this) {
+				if (this.header == null) {
+					if (!getFile().exists()) {
+						this.header = getContext().getBasicSamHeader();
+						if (!this.header.getComments().stream().anyMatch(s -> s.contains(INPUT_CATEGORY_SAM_HEADER_PREFIX))) {
+							for (int i = 0; i < getContext().getCategoryCount(); i++) {
+								String category = getContext().getCategoryLabel(i);
+								this.header.addComment(INPUT_CATEGORY_SAM_HEADER_PREFIX + category);
+							}
+						}
+					} else {
+						try (SamReader reader = getReader()) {
+							// getReader() populates the header for us
+						} catch (IOException e) {
+							throw new RuntimeIOException(e);
+						}
 					}
-				}
-			} else {
-				try (SamReader reader = getReader()) {
-					// getReader() populates the header for us
-				} catch (IOException e) {
-					throw new RuntimeIOException(e);
 				}
 			}
 		}

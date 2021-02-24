@@ -101,11 +101,12 @@ EOF
 #SBATCH --error=log.virusbreakend.%x.err
 echo "\$(date) Start"
 . ~/conda_crest/etc/profile.d/conda.sh
-conda activate virusbreakend
+conda activate vbe_minimal
+module add R
 export PATH=~/projects/virusbreakend/gridss/scripts:\$PATH
 export PATH=~/projects/virusbreakend/gridss/src/main/c/gridsstools:\$PATH
 cd $virusbreakend_dir
-virusbreakend.sh --db $virusbreakenddb -r $ref -t 4 -o $virusbreakend_vcf -j $GRIDSS_JAR --rmargs "-e rmblast" -w . $bam
+virusbreakend.sh --db $virusbreakenddb -r $ref -t 4 -o $virusbreakend_vcf -j $GRIDSS_JAR --rmargs "-e rmblast" -w . --minreads 15 $bam
 echo "\$(date) End"
 EOF
 			else
@@ -208,22 +209,60 @@ EOF
 #SBATCH --error=$(realpath $gridss_dir)/log.gridss.%x.err
 echo "\$(date) Start"
 . ~/conda_crest/etc/profile.d/conda.sh
-conda activate virusbreakend
+conda activate vbe_minimal
+module add R
 export PATH=~/projects/virusbreakend/gridss/scripts:\$PATH
 export PATH=~/projects/virusbreakend/gridss/src/main/c/gridsstools:\$PATH
 export PATH=~/projects/virusbreakend/:\$PATH
+export GRIDSS_JAR=$GRIDSS_JAR
 cd $(realpath $gridss_dir)
 gridss.sh --jvmheap 14g -t 4 -j $GRIDSS_JAR -r $ref -a assembly.bam -o gridss.raw.vcf $bam
-gridss_annotate_vcf_kraken2.sh \
-	-o gridss.ann.vcf \
-	-t 4 \
-	--kraken2db $virusbreakenddb \
-	gridss.raw.vcf
-grep INSTAXID gridss.ann.vcf | grep -v "INSTAXID=9606;" > $gridss_vcf
+gridss_annotate_vcf_kraken2.sh  -o gridss.k2.vcf  -t 4  -j $GRIDSS_JAR  --kraken2db $virusbreakenddb  gridss.raw.vcf
+java -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence I=gridss.raw.vcf O=gridss.bwa.vcf R=$virusbreakenddb/library/viral/library.fna
+grep -E "((^#)|(taxid))" gridss.bwa.vcf > $gridss_vcf
 echo "\$(date) End"
 EOF
 			fi
 		fi
+		gridss_dir=$PWD/gen/gsv/${n}/${depth}x
+        gridss_vcf=$gridss_dir/gsv_${n}_${depth}x.vcf
+		hbvref=~/projects/virusbreakend/hg19_hbv/hg19hpv.fa
+		hbvbam=$gridss_dir/hg19hpb_${n}_${depth}x.bam
+        mkdir -p $gridss_dir
+        if [[ ! -f $gridss_dir/ ]] ; then
+            metrics_prefix=$gridss_dir/$(basename $bam).gridss.working/$(basename $bam)
+            mkdir -p $(dirname $metrics_prefix)
+            for metric_suffix in cigar_metrics idsv_metrics insert_size_metrics mapq_metrics tag_metrics ; do
+                if [[ ! -f $metrics_prefix.$metric_suffix ]] ; then
+                    cp gen/chm13.bam.gridss.working/chm13.bam.$metric_suffix $metrics_prefix.$metric_suffix
+                fi
+            done
+            if [[ ! -f $gridss_dir/$gridss_vcf ]] ; then
+                cat > gen/slurm_gsv_${n}_${depth}x.sh << EOF
+#!/bin/bash
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=16g
+#SBATCH --time=48:00:00
+#SBATCH -p regular
+#SBATCH --output=$(realpath $gridss_dir)/log.gridss.%x.out
+#SBATCH --error=$(realpath $gridss_dir)/log.gridss.%x.err
+echo "\$(date) Start"
+. ~/conda_crest/etc/profile.d/conda.sh
+conda activate vbe_minimal
+module add R
+export PATH=~/projects/virusbreakend/gridss/scripts:\$PATH
+export PATH=~/projects/virusbreakend/gridss/src/main/c/gridsstools:\$PATH
+export PATH=~/projects/virusbreakend/:\$PATH
+export GRIDSS_JAR=$GRIDSS_JAR
+cd $(realpath $gridss_dir)
+bwa mem -t 4 $hbvref $file.${depth}x.1.fq $file.${depth}x.2.fq | samtools sort --write-index -@ 4 -o $hbvbam -O BAM -
+gridss.sh --jvmheap 14g -t 4 -j $GRIDSS_JAR -r $hbvref -a assembly.bam -o gridss.raw.vcf $hbvbam
+grep -E "((^#)|(NC_003977))" gridss.raw.vcf > $gridss_vcf
+echo "\$(date) End"
+EOF
+            fi
+        fi
+
 	done
 done
 chmod +x gen/*.sh

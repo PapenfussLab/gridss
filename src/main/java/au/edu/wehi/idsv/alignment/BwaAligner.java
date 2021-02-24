@@ -42,9 +42,13 @@ public class BwaAligner implements Closeable {
         this.dict = dict;
         this.header = getMinimalHeader(dict);
         this.aligner = new BwaMemAligner(this.index);
+        // -t
         this.aligner.setNThreadsOption(threads);
+        // -L 0,0
         this.aligner.setClip3PenaltyOption(0);
         this.aligner.setClip5PenaltyOption(0);
+        // -K 10000000
+        this.aligner.setChunkSizeOption(10000000);
         try {
             ensureMatchingReferences(this.index, dict);
         } catch (IllegalArgumentException e) {
@@ -158,7 +162,7 @@ public class BwaAligner implements Closeable {
                 SAMRecord r = createAlignment(fq, alignment);
                 result.add(r);
             }
-            SAMRecordUtil.reinterpretAsSplitReadAlignment(result, true);
+            SAMRecordUtil.reinterpretAsSplitReadAlignment(result, 25);
         }
         return result;
     }

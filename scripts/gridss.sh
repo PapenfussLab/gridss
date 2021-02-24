@@ -28,6 +28,7 @@ output_vcf=""
 assembly=""
 threads=8
 jvmheap="30g"
+otherjvmheap="4g"
 blacklist=""
 metricsrecords=10000000
 steps="all"
@@ -59,6 +60,7 @@ Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS
 	--jvmheap: size of JVM heap for assembly and variant calling. (Default: $jvmheap)
+	--otherjvmheap: size of JVM heap for all other steps. Useful to prevent java out of memory errors when using large (>4Gb reference genomes) (Default: $otherjvmheap)
 	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored. (Default: $maxcoverage)
 	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
 	--useproperpair: use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
@@ -70,7 +72,7 @@ Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam
 	"
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,otherjvmheap:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -116,6 +118,10 @@ while true; do
             ;;
 		--jvmheap)
             jvmheap="$2"
+            shift 2
+            ;;
+		--otherjvmheap)
+            otherjvmheap="$2"
             shift 2
             ;;
 		-t|--threads)
@@ -482,6 +488,8 @@ aligner_args_bwa='
 	--ALIGNER_COMMAND_LINE null
 	--ALIGNER_COMMAND_LINE bwa
 	--ALIGNER_COMMAND_LINE mem
+	--ALIGNER_COMMAND_LINE -K
+	--ALIGNER_COMMAND_LINE 10000000
 	--ALIGNER_COMMAND_LINE -L
 	--ALIGNER_COMMAND_LINE 0,0
 	--ALIGNER_COMMAND_LINE -t
@@ -515,11 +523,10 @@ aligner_args_minimap2='
 	--ALIGNER_COMMAND_LINE %1$s
 	'
 
-readpairing_args=""
-
-READ_PAIR_CONCORDANT_PERCENT="$readpairpdistribution"
 if [[ "$useproperpair" == "true" ]] ; then
 	readpairing_args="READ_PAIR_CONCORDANT_PERCENT=null"
+else
+  readpairing_args="READ_PAIR_CONCORDANT_PERCENT=${readpairpdistribution}"
 fi
 
 if [[ $do_setupreference == true ]] ; then
@@ -551,7 +558,7 @@ if [[ $do_setupreference == true ]] ; then
 	if [[ ! -f ${reference}.gridsscache ]] || [[ ! -f ${reference}.img ]] || [[ ! -f ${reference}.dict ]] ; then
 		if mkdir $lock_file ; then
 			write_status "Running	PrepareReference	(once-off setup for reference genome)"
-			$timecmd java -Xmx4g $jvm_args \
+			$timecmd java -Xmx$otherjvmheap $jvm_args \
 				-cp $gridss_jar gridss.PrepareReference \
 				REFERENCE_SEQUENCE=$reference \
 				1>&2 2>> $logfile
@@ -593,7 +600,7 @@ if [[ $do_preprocess == true ]] ; then
 				write_status "Skipping	CollectGridssMetrics	$f	found existing metrics"
 			else
 				write_status "Running	CollectGridssMetrics	$f	first $metricsrecords records"
-				{ $timecmd java -Xmx4g $jvm_args \
+				{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 						-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 						REFERENCE_SEQUENCE=$reference \
 						TMP_DIR=$dir \
@@ -618,7 +625,7 @@ if [[ $do_preprocess == true ]] ; then
 				write_status "Raw uncorrected ONT/PacBoio are not yet supported."
 				write_status "*****"
 				write_status "Running	CollectGridssMetricsAndExtractSVReads	$f"
-				{ $timecmd java -Xmx4g $jvm_args \
+				{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 						-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 						REFERENCE_SEQUENCE=$reference \
 						TMP_DIR=$dir \
@@ -646,7 +653,7 @@ if [[ $do_preprocess == true ]] ; then
 			else
 				if [[ $have_metrics == "true" ]] ; then
 					write_status "Running	ExtractSVReads|samtools	$f"
-					{ $timecmd java -Xmx4g $jvm_args \
+					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-cp $gridss_jar gridss.ExtractSVReads \
 							REFERENCE_SEQUENCE=$reference \
 							TMP_DIR=$dir \
@@ -670,7 +677,7 @@ if [[ $do_preprocess == true ]] ; then
 					; } 1>&2 2>> $logfile
 				else
 					write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
-					{ $timecmd java -Xmx4g $jvm_args \
+					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 							REFERENCE_SEQUENCE=$reference \
 							TMP_DIR=$dir \
@@ -707,7 +714,7 @@ if [[ $do_preprocess == true ]] ; then
 				if [[ "$externalaligner" == "true" ]] ; then
 					write_status "Running	ComputeSamTags|samtools	$f"
 					rm -f $tmp_prefix.coordinate-tmp*
-					{ $timecmd java -Xmx4g $jvm_args \
+					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-cp $gridss_jar gridss.ComputeSamTags \
 							TMP_DIR=$dir \
 							WORKING_DIR=$workingdir \
@@ -716,19 +723,8 @@ if [[ $do_preprocess == true ]] ; then
 							I=$tmp_prefix.namedsorted.bam \
 							O=/dev/stdout \
 							WORKER_THREADS=$threads \
-							RECALCULATE_SA_SUPPLEMENTARY=true \
-							SOFTEN_HARD_CLIPS=true \
-							FIX_MATE_INFORMATION=true \
-							FIX_DUPLICATE_FLAG=true \
-							FIX_SA=true \
-							FIX_MISSING_HARD_CLIP=true \
-							TAGS=null \
-							TAGS=NM \
-							TAGS=SA \
-							TAGS=R2 \
-							TAGS=MC \
-							TAGS=MQ \
 							ASSUME_SORTED=true \
+							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd samtools sort \
 							-T $tmp_prefix.coordinate-tmp \
@@ -739,7 +735,7 @@ if [[ $do_preprocess == true ]] ; then
 					; } 1>&2 2>> $logfile
 					$rmcmd $tmp_prefix.namedsorted.bam
 					write_status "Running	SoftClipsToSplitReads	$f"
-					{ $timecmd java -Xmx4g $jvm_args \
+					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-Dsamjdk.create_index=false \
 							-cp $gridss_jar gridss.SoftClipsToSplitReads \
 							TMP_DIR=$workingdir \
@@ -772,7 +768,7 @@ if [[ $do_preprocess == true ]] ; then
 				else
 					write_status "Running	PreprocessForBreakendAssembly|samtools	$f"
 					rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
-					{ $timecmd java -Xmx4g $jvm_args \
+					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-cp $gridss_jar gridss.PreprocessForBreakendAssembly \
 							TMP_DIR=$dir \
 							WORKING_DIR=$workingdir \
@@ -783,6 +779,7 @@ if [[ $do_preprocess == true ]] ; then
 							WORKER_THREADS=$threads \
 							ALIGNER=BWAMEM \
 							ALIGNER_BATCH_SIZE=10000 \
+							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd samtools sort \
 							-@ $threads \
@@ -860,7 +857,7 @@ if [[ $do_assemble == true ]] ; then
 	tmp_prefix=$dir/tmp.$(basename $assembly)
 	if [[ ! -f $prefix.sv.bam ]] ; then
 		write_status "Running	CollectGridssMetrics	$assembly"
-		{ $timecmd java -Xmx4g $jvm_args \
+		{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 				-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
 				I=$assembly \
 				O=$prefix \
@@ -881,7 +878,7 @@ if [[ $do_assemble == true ]] ; then
 		#externalaligner=true # TODO: get JNI minimap2 working
 		if [[ "$externalaligner" == "true" ]] ; then
 			write_status "Running	SoftClipsToSplitReads	$assembly"
-			{ $timecmd java -Xmx4g $jvm_args \
+			{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
 					-Dgridss.output_to_temp_file=true \
@@ -917,7 +914,7 @@ if [[ $do_assemble == true ]] ; then
 			; } 1>&2 2>> $logfile
 		else
 			write_status "Running	SoftClipsToSplitReads|samtools	$assembly"
-			{ $timecmd java -Xmx4g $jvm_args \
+			{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
 					-cp $gridss_jar gridss.SoftClipsToSplitReads \
@@ -1017,7 +1014,7 @@ if [[ $do_call == true ]] ; then
 		; } 1>&2 2>> $logfile
 		$rmcmd $prefix.unallocated.vcf
 		write_status "Running	AnnotateInsertedSequence	$output_vcf"
-		{ $timecmd java -Xmx4g $jvm_args \
+		{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateInsertedSequence \
 				TMP_DIR=$workingdir \

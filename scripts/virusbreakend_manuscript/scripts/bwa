@@ -1,0 +1,34 @@
+#!/bin/bash
+# Caches bwa indexes so VERSE doesn't run so slowly
+cache_dir=~/projects/virusbreakend/bwa_cache
+if [[ $(which -a bwa | wc -l ) -le 1 ]] ; then
+	echo "Can't find real bwa \"$@\"" 1>&2
+	exit 1
+else
+	bwa=$(which -a bwa |tail -1)
+	echo "$bwa $@" 1>&2
+fi
+mkdir -p $cache_dir
+if [[ "$1" == "index" ]] ; then
+	echo "Checking for existing bwa index in $cache_dir" 1>&2
+	ref="${@: -1 }"
+	md5=$(md5sum $ref | cut -b 1-32)
+	echo "MD5 is $md5" 1>&2
+	if [[ ! -f $cache_dir/$md5.sa ]] ; then
+		$bwa $@
+		for suffix in amb ann bwt pac sa ; do
+			if [[ -f $2.$suffix ]] ; then
+				mv $2.$suffix $cache_dir/$md5.$suffix
+			fi
+		done
+	fi
+	for suffix in amb ann bwt pac sa ; do
+		if [[ -f $cache_dir/$md5.$suffix ]] ; then
+			if [[ ! -f $2.$suffix ]] ; then
+				ln -s $cache_dir/$md5.$suffix $2.$suffix
+			fi
+		fi
+	done
+else
+	$bwa $@
+fi

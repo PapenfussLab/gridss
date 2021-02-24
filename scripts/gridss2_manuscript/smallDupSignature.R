@@ -245,6 +245,7 @@ lnx_drivers = read_csv(paste0(privatedatadir, "/hartwig/LNX_DRIVERS.csv"))
 lnx_disruptions = read_csv(paste0(privatedatadir, "/hartwig/LNX_DISRUPTIONS.csv"))
 lnx_svs_small_dups = lnx_svs %>% filter(ResolvedType=="DUP" & abs(PosEnd-PosStart) < 100)
 disruptions = lnx_disruptions %>% inner_join(lnx_svs_small_dups %>% dplyr::select(SvId=Id, SampleId=SampleId))
+disruptions %>% filter(Reportable) %>% nrow() / 2
 
 
 cohortsmalldupstatus %>% filter(SampleId %in% disruptions$SampleId) %>% View()

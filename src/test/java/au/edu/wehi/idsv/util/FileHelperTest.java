@@ -66,21 +66,23 @@ public class FileHelperTest extends IntermediateFilesTest {
 		File f3 = new File(nestedDir, "f1.txt");
 		Files.write(f3.toPath(), B("this is a nested file"));
 		FileHelper.zipDirectory(zip, tozip);
+		int entries = 0;
 		try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zip))) {
-			ZipEntry ze = zis.getNextEntry();
-			Assert.assertEquals("f1.txt", ze.getName());
-			//Assert.assertEquals(f1.length(), ze.getSize());
-
-			ze = zis.getNextEntry();
-			Assert.assertEquals("f2.txt", ze.getName());
-			//Assert.assertEquals(f2.length(), ze.getSize());
-
-			ze = zis.getNextEntry();
-			Assert.assertEquals("nested/f1.txt", ze.getName());
-			byte[] buffer = new byte[(int) f3.length()];
-			zis.read(buffer); //Assert.assertEquals(zis.read(buffer), ze.getSize());
-			Assert.assertEquals("this is a nested file", S(buffer));
+			for (ZipEntry ze = zis.getNextEntry(); ze != null; ze = zis.getNextEntry()) {
+				switch (ze.getName()) {
+					case "f1.txt":
+					case "f2.txt":
+						break;
+					case "nested/f1.txt":
+						byte[] buffer = new byte[(int) f3.length()];
+						zis.read(buffer); //Assert.assertEquals(zis.read(buffer), ze.getSize());
+						Assert.assertEquals("this is a nested file", S(buffer));
+						break;
+				}
+				entries++;
+			}
 		}
+		Assert.assertEquals(3, entries);
 	}
 	@Test
 	public void should_support_tbi_issue392() throws IOException {
