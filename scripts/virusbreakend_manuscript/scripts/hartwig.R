@@ -328,7 +328,12 @@ friendlyRepeatClass = function(x) sapply(x, function(xx) factor(ifelse(is.na(xx)
 	"SINE"="SINE",
 	"DNA"="DNA",
 	"LTR"="LTR",
-	"rRNA"="Other")),
+	"rRNA"="Other",
+	"Retroposon"="Other",
+	"srpRNA"="Other",
+	"Unknown"="Other",
+	"No repeat"="No repeat",
+	"No repeat")),
 	levels=c("DNA", "LINE", "LTR", "SINE", "Satellite", "Simple", "Other", "No repeat")))
 
 ggplot(sitedf %>% inner_join(summarydf, by=c("sample", "taxid"))) +

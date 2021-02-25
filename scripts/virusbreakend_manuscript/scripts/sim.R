@@ -1,13 +1,58 @@
 library(StructuralVariantAnnotation)
 library(tidyverse)
 library(cowplot)
+library(liftOver)
+library(rtracklayer)
 theme_set(theme_bw())
 setwd("../virusbreakend_manuscript/scripts")
 
+lift_over_host_margin = 1000
+no_lift_over_host_margin = 1000000
+
+# from http://github.com/PapenfussLab/sv_benchmark
+import.repeatmasker.fa.out <- function(repeatmasker.fa.out) {
+  rmdt <- read_table2(repeatmasker.fa.out, col_names=FALSE, skip=3)
+  grrm <- GRanges(
+    seqnames=rmdt$X5,
+    ranges=IRanges(start=rmdt$X6 + 1, end=rmdt$X7),
+    strand=ifelse(rmdt$X9=="C", "-", "+"),
+    repeatType=rmdt$X10,
+    repeatClass=rmdt$X11)
+  return(grrm)
+}
+# gunzip -c chm13.draft_v1.0_plus38Y_repeatmasker.out.gz | grep "chr1 " > chm13.draft_v1.0_chr1_repeatmasker.out
+chm13_repeats_gr = import.repeatmasker.fa.out("../publicdata/chm13.draft_v1.0_plus38Y_repeatmasker.out.gz")
+liftover_chm13_to_hg38 = import.chain("../publicdata/t2t-chm13-v1.0.hg38.over.chain")
+liftover_hg38_to_hg19 = import.chain(system.file(package="liftOver", "extdata", "hg38ToHg19.over.chain"))
+lift_positions = function(chain, positions, chr="chr1") {
+  grin = GRanges(seqnames="chr1", ranges=IRanges(start=ifelse(is.na(positions), -1000000, positions), width=1))
+  grl = liftOver(grin, chain)
+  offsets = pmax(1, cumsum(elementNROWS(grl)))
+  out_positions = ifelse(elementNROWS(grl) != 1 | as.character(seqnames(unlist(grl)[offsets])) != as.character(seqnames(grin)),
+    NA,
+    start(unlist(grl))[offsets])
+  assertthat::assert_that(all(is.na(out_positions) | elementNROWS(grl) == 1))
+  return(out_positions)
+}
+liftover_chrm1_tohg19_positions = function(chm13_position) {
+  hg38_position =lift_positions(liftover_chm13_to_hg38, chm13_position)
+  hg19_position =lift_positions(liftover_hg38_to_hg19, hg38_position)
+  return(hg19_position)
+}
+getCHM13Repeat = function(chm13_position) {
+  gr = GRanges(seqnames="chr1", ranges=IRanges(start=chm13_position, width=1))
+  gr$repeatType = ""
+  gr$repeatClass = ""
+  hits = findOverlaps(gr, chm13_repeats_gr)
+  gr$repeatType[queryHits(hits)] = chm13_repeats_gr$repeatType[subjectHits(hits)]
+  gr$repeatClass[queryHits(hits)] = chm13_repeats_gr$repeatClass[subjectHits(hits)]
+  return(as.data.frame(mcols(gr)))
+}
+
 #batvi_files = list.files("gen", pattern="final_hits.txt", recursive=TRUE, full.names=TRUE)
 getndepth = function(str) {
-	matches=str_match(str, "[_/]([0-9]+)[_/]([0-9]+)x")
-	return(data.frame(n=as.integer(matches[,2]), depth=as.integer(matches[,3])))
+	matches=str_match(str, "/([0-9]+)_([0-9]+)/([0-9]+)x")
+	return(data.frame(chm13pos=as.integer(matches[,2]), viruspos=as.integer(matches[,3]),depth=as.integer(matches[,4])))
 }
 batvimsa = read_tsv("../publicdata/sim/batvi_all_final_hits_MSA.txt", col_names=c("lib", "host_chr", "host_pos", "host_ori", "virus_ori", "virus_pos", "MSA", "reads", "sr", "uniquemap", "multimap", "rankonehits", "undocumented1"), col_types="cciccicciiiid")
 batvinomsa = read_tsv("../publicdata/sim/batvi_all_final_hits_noMSA.txt", col_names=c("lib", "host_chr", "host_pos", "host_ori", "virus_ori", "virus_pos", "reads", "sr", "uniquemap", "multimap", "rankonehits", "undocumented1", "undocumented2", "undocumented3"), col_types="ccicciciiiiddd")
@@ -34,7 +79,7 @@ vbe = data.frame(
 vbe = bind_cols(vbe, getndepth(as.character(seqnames(vbevcf))))
 
 #java -cp $GRIDSS_JAR gridss.AnnotateInsertedSequence I=gridss2.vcf O=gridss2.hbv.vcf R=~/dev/virusbreakend/hbv.fa
-gridssvcf = readVcf("../publicdata/sim/gridss2.hbv.vcf")
+gridssvcf = readVcf("../publicdata/sim/gridss2.vcf")
 gridssvcf = gridssvcf[elementNROWS(info(gridssvcf)$BEALN) > 0]
 gridss = data.frame(
 	host_chr=str_match(as.character(seqnames(gridssvcf)), ".vcf:(.*)$")[,2],
@@ -81,18 +126,20 @@ calls_virus_position_not_reported = bind_rows(
 		vifidf %>% mutate(host_pos=Split1, ori="+"),
 		vifidf %>% mutate(host_pos=Split2, ori="-")) %>%
 	mutate(caller="ViFi") %>%
+  mutate(hg19pos=liftover_chrm1_tohg19_positions(chm13pos)) %>%
 	mutate(
 		host_chr_match=host_chr=="chr1",
-		host_pos_match=abs((n * 1000000) - host_pos) < 1000000,
+		host_pos_match=ifelse(is.na(hg19pos), abs(chm13pos - host_pos) < no_lift_over_host_margin, abs(hg19pos-host_pos) < lift_over_host_margin),
 		tp=host_chr_match & host_pos_match) %>%
-	group_by(caller, n, depth) %>%
+	group_by(caller, chm13pos, depth) %>%
 	mutate(tp = tp & cumsum(tp) <= 2) %>%
 	ungroup() %>%
 	mutate(
 		fp = !tp,
 		hom_tp = FALSE, # Doesn't report viral position so we can't know
 		score=0) %>%
-	dplyr::select(n, depth, caller, host_chr, host_pos, score, tp, hom_tp, fp)
+	dplyr::select(chm13pos, depth, caller, host_chr, host_pos, score, tp, hom_tp, fp)
+
 calls=bind_rows(
 		batvi %>% mutate(caller="BATVI", score=as.numeric(reads)),
 		#batvi_lc %>% mutate(caller="BATVI\nAll calls", score=as.numeric(readcount)),
@@ -101,16 +148,16 @@ calls=bind_rows(
 		gridss %>% mutate(caller="GRIDSS2\nSingle Breakend"),
 		gsv %>% mutate(caller="GRIDSS2\nBreakpoint")) %>%
 	replace_na(list(score=0)) %>%
-	mutate(
-		n=as.numeric(n),
-		depth=as.numeric(depth)) %>%
-	dplyr::select(n, depth, caller, host_chr, host_pos, virus_pos, score, n) %>%
+	mutate(depth=as.numeric(depth)) %>%
+  mutate(hg19pos=liftover_chrm1_tohg19_positions(chm13pos)) %>%
+	dplyr::select(chm13pos, hg19pos, viruspos, depth, caller, host_chr, host_pos, virus_pos, score) %>%
+  filter(!is.na(virus_pos)) %>%
 	mutate(
 		host_chr_match=host_chr=="chr1",
-		host_pos_match=abs((n * 1000000) - host_pos) < 1000000,
-		virus_start_match=abs((n * 4) - virus_pos) < 750,
-		virus_end_match=abs((n * 4 + 2000) - virus_pos) < 750) %>%
-	group_by(caller, n, depth) %>%
+		host_pos_match=ifelse(is.na(hg19pos), abs(chm13pos - host_pos) < no_lift_over_host_margin, abs(hg19pos-host_pos) < lift_over_host_margin),
+		virus_start_match=abs(viruspos - virus_pos) < 750,
+		virus_end_match=abs(viruspos + 2000 - virus_pos) < 750) %>%
+	group_by(caller, chm13pos, depth) %>%
 	mutate(
 		start_tp=host_chr_match & host_pos_match & virus_start_match,
 		end_tp=host_chr_match & host_pos_match & virus_end_match) %>%
@@ -134,38 +181,125 @@ calls=bind_rows(
 	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "BATVI", "VERSE", "ViFi", "GRIDSS2\nSingle Breakend", "GRIDSS2\nBreakpoint")))
 
 # sanity check we never have more than 2 true positives
-calls %>% group_by(caller, n, depth) %>%
+calls %>% group_by(caller, chm13pos, depth) %>%
 	summarise(tp=sum(tp), hom_tp=sum(hom_tp)) %>%
 	group_by(caller, tp, hom_tp) %>%
 	filter(tp + hom_tp > 2)
 
-# 2 false negative records for everything then filter based on #TPs
-full_calls = expand_grid(n=1:248, depth=c(5, 10, 15, 30, 60), caller=unique(calls$caller), ordinal=c(1,2)) %>%
+expected_results_for = expand_grid(chm13pos=seq(200000, 248400000, 100000), depth=c(5, 10, 15, 30, 60), caller=unique(calls$caller))
+# sanity check we don't have results for a simulation we didn't do
+anti_join(calls, expected_results_for)
+
+call_summary = expected_results_for %>%
 	mutate(fn=TRUE, tp=FALSE, hom_tp=FALSE, fp=FALSE) %>%
 	bind_rows(calls %>% mutate(fn=FALSE)) %>%
-	group_by(caller, n, depth) %>%
-	filter(!fn | ordinal > sum(tp | hom_tp)) %>%
-	mutate(
-		classification=factor(
-			ifelse(tp, "True positive", ifelse(hom_tp, "Homologous call", ifelse(fn, "False negative", "False positive"))),
-			levels=c("False positive",  "False negative", "Homologous call", "True positive")))
+	group_by(caller, chm13pos, depth) %>%
+  summarise(
+    fp=sum(fp),
+    tp_both=sum(tp) == 2,
+    tp_single=sum(tp) == 1,
+    tp_hom = sum(tp) == 0 & sum(hom_tp) > 0,
+    fn=sum(tp + hom_tp) == 0
+  ) %>%
+  mutate(tp=tp_both | tp_single | tp_hom) %>%
+  # We didn't run all possible combinations: drop those with no results
+  mutate(cluster_group=chm13pos %% 1000000) %>%
+  group_by(caller, cluster_group, depth) %>%
+  filter(sum(tp) > 0)
 
-plot_sim = ggplot(full_calls) +
-	aes(x=as.factor(depth), fill=classification) +
-	geom_bar() +
-	scale_fill_manual(values=c("#d95f02", "#BBBBBB", "#7570b3", "#1b9e77")) + 
-	scale_y_continuous(expand = c(0, 0, 0.01, 0)) + 
-	facet_grid( ~ caller) +
-	labs(x="Sequencing Depth", fill="", y="Integrations\n(Simulation)")
-#ggsave("sim.pdf", width=9, height=5)
+summarised_calls = call_summary %>%
+  # generate aggregate statistics
+  group_by(caller, depth) %>%
+  summarise(
+    fp=sum(fp),
+    tp_both=sum(tp_both),
+    tp_single=sum(tp_single),
+    tp_hom=sum(tp_hom),
+    fn=sum(fn),
+    ) %>%
+  mutate(
+    total_sims=tp_both + tp_single + tp_hom + fn,
+    overall_sens=(tp_both + tp_single + tp_hom) / total_sims,
+    tp_sens=(tp_both + tp_single) / total_sims,
+    tp_both_sens=(tp_both) / total_sims,
+    fdr=fp/(fp + tp_both + tp_single + tp_hom)
+  )
+
+ggplot(summarised_calls) +
+  aes(x=as.factor(depth), y=fdr) +
+  geom_col(fill="#d95f02") +
+  facet_grid( ~ caller) +
+  scale_y_continuous(labels = scales::percent, expand = c(0, 0, 0, 0), limits=c(0,1)) +
+  labs(x="", y="FDR")
+ggsave("sim_fdr.pdf", width=9, height=5)
+
+ggplot(summarised_calls) +
+  aes(x=as.factor(depth)) +
+  geom_col(aes(y=overall_sens), fill="#7570b3") +
+  geom_col(aes(y=tp_sens), fill="#1b9e77") +
+  geom_col(aes(y=tp_both_sens), fill="#006400") +
+  facet_grid( ~ caller) +
+  scale_y_continuous(labels = scales::percent, expand = c(0, 0, 0, 0), limits=c(0,1)) +
+  labs(x="", y="Sensitivity")
+ggsave("sim_sens.pdf", width=9, height=5)
 
 
+shortRepeatSummary = function(x) {
+  x = as.character(friendlyRepeatClass(x))
+  ifelse(x %in% c("SINE", "LINE", "DNA", "LTR"), "SINE/LINE/DNA/LTR", x)
+}
+#######
+# Repeat breakdown
+repeat_summary = bind_cols(
+    call_summary,
+    getCHM13Repeat(call_summary$chm13pos)) %>%
+  filter(depth==60) %>%
+  ungroup() %>%
+  mutate(repeatSummary=shortRepeatSummary(repeatClass)) %>%
+  group_by(caller, repeatSummary) %>%
+  summarise(
+    fp=sum(fp),
+    tp_both=sum(tp_both),
+    tp_single=sum(tp_single),
+    tp_hom=sum(tp_hom),
+    fn=sum(fn),
+  ) %>%
+  mutate(
+    total_sims=tp_both + tp_single + tp_hom + fn,
+    tp=tp_both + tp_single + tp_hom,
+    overall_sens=(tp_both + tp_single + tp_hom) / total_sims,
+    tp_sens=(tp_both + tp_single) / total_sims,
+    tp_both_sens=(tp_both) / total_sims,
+    fdr=fp/(fp + tp_both + tp_single + tp_hom)
+  ) %>%
+  rowwise() %>%
+  do({
+    sens_test = prop.test(x=.$tp, n=.$total_sims)
+    fdr_test = prop.test(x=.$fp, n=.$fp + .$tp)
+    bind_cols(., data.frame(
+      sens_low=sens_test$conf.int[1],
+      sens_high=sens_test$conf.int[2],
+      fdr_low=fdr_test$conf.int[1],
+      fdr_high=fdr_test$conf.int[2]))
+  })
+
+ggplot(repeat_summary) +
+  aes(x=1-fdr, xmin=1-fdr_low, xmax=1-fdr_high, y=overall_sens, colour=caller, , ymin=sens_low, ymax=sens_high) +
+  geom_point(size=4) +
+  geom_errorbar() +
+  geom_errorbarh() +
+  scale_color_brewer(palette="Dark2") +
+  scale_x_continuous(labels = scales::percent, limits=c(0,1)) +
+  scale_y_continuous(labels = scales::percent, limits=c(0,1)) +
+  facet_grid(. ~ factor(repeatSummary, levels=c("No repeat", "SINE/LINE/DNA/LTR", "Satellite", "Simple", "Other"))) +
+  labs(x="Precision", y="Recall")
+ggsave("sim_repeat.pdf", width=8, height=4)
 
 #######
 # HCC
 plot_hcc = data.frame(
 		caller=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi"),
-		tp=c(15, 15, 16, 13, 12),
+		tp=c(15, 15, 16, 14, 16),
 		homtp=c(4,0,0,0,0)) %>%
 	mutate(fp=22-tp-homtp) %>%
 	gather("status", n, 2:4) %>%
