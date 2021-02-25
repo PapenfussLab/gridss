@@ -88,7 +88,7 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 			}
 		}
 	}
-	private static class PackedReferenceSequence extends PackedSequence implements Serializable {
+	public static class PackedReferenceSequence extends PackedSequence implements Serializable {
 		private final String name;
 	    private final int contigIndex;
 	    private final long length;
@@ -119,6 +119,13 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 				}
 			}
 			return seq;
+		}
+
+		/**
+		 * Determines whether any of the bases in the given 1-based inclusive range are ambiguous.
+		 */
+		public boolean anyAmbiguous(long start, long stop) {
+			return !ambiguous.get((int)start - 1, (int)stop).isEmpty();
 		}
 	}
 	@Override
@@ -180,11 +187,14 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	}
 	@Override
 	public ReferenceSequence getSequence(String contig) {
+		return getPackedSequence(contig).getSequence();
+	}
+	public PackedReferenceSequence getPackedSequence(String contig) {
 		PackedReferenceSequence seq = cache.get(contig);
 		if (seq == null) {
 			seq = addToCache(contig);
 		}
-		return seq.getSequence();
+		return seq;
 	}
 	@Override
 	public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {

@@ -29,6 +29,7 @@ gridssargs="--jvmheap 13g"
 rmargs="--species human"
 host=human
 nodesdmp=""
+seqidtaxidmap=""
 virusnbr=""
 minreads="50"
 metricsrecords=10000000
@@ -260,6 +261,9 @@ fi
 if [[ "$nodesdmp" == "" ]] ; then
 	nodesdmp="$kraken2db/taxonomy/nodes.dmp"
 fi
+if [[ $seqidtaxidmap == "" ]] ; then
+	seqidtaxidmap="$kraken2db/seqid2taxid.map"
+fi
 if [[ "$virusnbr" == "" ]] ; then
 	virusnbr="$kraken2db/taxid10239.nbr"
 fi
@@ -423,54 +427,6 @@ if [[ ! -f $file_readname ]] ; then
 else
 	write_status "Identifying viral sequences	Skipped: found	$file_readname"
 fi
-if [[ ! -f $file_extracted_report ]] ; then
-	taxid_args=""
-	if [[ "$host" != "" ]] ; then
-		# get the taxid for every contig in $virusnbr
-		taxid_args=$(cat $(find $kraken2db -path '**/library/**/*.fna.fai' | grep -v human | grep -v UniVec_Core) \
-			| cut -f 1 \
-			| grep -F -f <(grep $host $virusnbr | cut -f 1,2 | tr ',\t' '\n\n' | sort -u | sed 's/$/./' | grep -v "^.$") \
-			| cut -d '|' -f 2 \
-			| sed 's/^/--TAXONOMY_IDS /' \
-			| tr '\n' ' ')
-		taxid_args="--TAXONOMY_IDS null $taxid_args"
-	fi
-	write_status "Identifying viruses in sample based on kraken2 summary report"
-	# The sort is so we will include any library/added before the default RefSeq sequences (in library/viral)
-	kraken_references_arg=$(for fa in $(find $kraken2db -path '**/library/**/*.fna' | sort) ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
-	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
-	{ $timecmd java -Xmx4g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestSequencesBasedOnReport \
-		--INPUT $file_report \
-		--OUTPUT $prefix_working.kraken2.fa \
-		--REPORT_OUTPUT $file_viral_report \
-		--SUMMARY_REPORT_OUTPUT $file_extracted_report \
-		--SUMMARY_OUTPUT $file_summary_csv \
-		--NCBI_NODES_DMP $nodesdmp \
-		$kraken_references_arg \
-		--MIN_SUPPORTING_READS $minreads \
-		--TAXONOMIC_DEDUPLICATION_LEVEL Genus \
-		$taxid_args \
-	; } 1>&2 2>> $logfile
-else
-	write_status "Identifying viruses	Skipped: found	$file_extracted_report"
-fi
-if [[ ! -s $prefix_working.kraken2.fa ]] ; then
-	write_status "No viral sequences supported by at least $minreads reads."
-	rm -f $output_vcf.summary.csv $output_vcf
-	file_header=""
-	for f in "$@" ; do
-		file_header="$file_header	$(clean_filename \"$f\")"
-	done
-	echo "##fileformat=VCFv4.2" > $output_vcf
-	echo "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$file_header" >> $output_vcf
-	touch $output_vcf.summary.csv
-	trap - EXIT
-	exit 0 # success!
-fi
-mkdir -p $unadjusteddir
-if [[ ! -f $prefix_unadjusted.viral.fa ]] ; then
-	tr ':|' '__' < $prefix_working.kraken2.fa > $prefix_unadjusted.viral.fa
-fi
 for f in "$@" ; do
 	infile_filename_prefix=$(clean_filename "$f")
 	infile_fq=$workingdir/$infile_filename_prefix.viral.unpaired.fq
@@ -496,6 +452,56 @@ EOF
 		write_status "Extracting viral reads	Skipped: found	$infile_fq"
 	fi
 done
+if [[ ! -f $file_extracted_report ]] ; then
+	taxid_args=""
+	if [[ "$host" != "" ]] ; then
+		# get the taxid for every contig in $virusnbr
+		taxid_args=$(cat $(find $kraken2db -path '**/library/**/*.fna.fai' | grep -v human | grep -v UniVec_Core) \
+			| cut -f 1 \
+			| grep -F -f <(grep $host $virusnbr | cut -f 1,2 | tr ',\t' '\n\n' | sort -u | sed 's/$/./' | grep -v "^.$") \
+			| cut -d '|' -f 2 \
+			| sed 's/^/--TAXONOMY_IDS /' \
+			| tr '\n' ' ')
+		taxid_args="--TAXONOMY_IDS null $taxid_args"
+	fi
+	write_status "Identifying viruses in sample based on kraken2 summary report"
+	# The sort is so we will include any library/added before the default RefSeq sequences (in library/viral)
+	kraken_references_arg=$(for fa in $(find $kraken2db -path '**/library/**/*.fna' | sort) ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
+	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
+	{ $timecmd java -Xmx8g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestSequencesBasedOnReport \
+		--INPUT_KRAKEN2_REPORT $file_report \
+		--INPUT_VIRAL_READS <(cat $workingdir/$infile_filename_prefix.viral.*.fq) \
+		--OUTPUT $prefix_working.kraken2.fa \
+		--REPORT_OUTPUT $file_viral_report \
+		--SUMMARY_REPORT_OUTPUT $file_extracted_report \
+		--SUMMARY_OUTPUT $file_summary_csv \
+		--NCBI_NODES_DMP $nodesdmp \
+		--SEQID2TAXID_MAP $seqidtaxidmap \
+		$kraken_references_arg \
+		--MIN_SUPPORTING_READS $minreads \
+		--TAXONOMIC_DEDUPLICATION_LEVEL Genus \
+		$taxid_args \
+	; } 1>&2 2>> $logfile
+else
+	write_status "Identifying viruses	Skipped: found	$file_extracted_report"
+fi
+if [[ ! -s $prefix_working.kraken2.fa ]] ; then
+	write_status "No viral sequences supported by at least $minreads reads."
+	rm -f $output_vcf.summary.csv $output_vcf
+	file_header=""
+	for f in "$@" ; do
+		file_header="$file_header	$(clean_filename \"$f\")"
+	done
+	echo "##fileformat=VCFv4.2" > $output_vcf
+	echo "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$file_header" >> $output_vcf
+	touch $output_vcf.summary.csv
+	trap - EXIT
+	exit 0 # success!
+fi
+mkdir -p $unadjusteddir
+if [[ ! -f $prefix_unadjusted.viral.fa ]] ; then
+	tr ':|' '__' < $prefix_working.kraken2.fa > $prefix_unadjusted.viral.fa
+fi
 
 # $1: input file
 # $2: output prefix
@@ -708,6 +714,7 @@ if [[ ! -f $file_summary_annotated_csv ]] ; then
 		if [[ $inline = taxid_genus* ]] ; then
 			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations" >> $file_summary_annotated_csv
 		else
+			# TODO: add QC column to summary stats and fail it if coverage is too low
 			taxid=$(echo "$inline" | cut -f 7)
 			coverage_stats=$(grep _taxid_${taxid}_ $prefix_adjusted.merged.bam.coverage)
 			contig=$(echo "$coverage_stats" | cut -f 1)

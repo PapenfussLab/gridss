@@ -1,25 +1,48 @@
-FROM ubuntu:18.04
-LABEL base.image="ubuntu:18.04"
+FROM ubuntu:20.04
+LABEL base.image="ubuntu:20.04"
 
-RUN echo "deb http://mirror.aarnet.edu.au/ubuntu/ bionic main restricted" > /etc/apt/sources.list
-RUN echo "deb http://mirror.aarnet.edu.au/ubuntu/ bionic-security main restricted" >> /etc/apt/sources.list
-RUN echo "deb http://mirror.aarnet.edu.au/ubuntu/ bionic-updates main restricted" >> /etc/apt/sources.list
-RUN echo "deb http://mirror.aarnet.edu.au/ubuntu/ bionic universe multiverse" >> /etc/apt/sources.list
-RUN echo "deb http://mirror.aarnet.edu.au/ubuntu/ bionic-security universe multiverse" >> /etc/apt/sources.list
-RUN echo "deb http://mirror.aarnet.edu.au/ubuntu/ bionic-updates universe multiverse" >> /etc/apt/sources.list
+# Setup CRAN ubuntu package repository
+RUN apt-get update && \
+	DEBIAN_FRONTEND=noninteractive apt-get install -y \
+		wget \
+		apt-transport-https \
+		software-properties-common \
+		dirmngr \
+		gnupg && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
+RUN apt-key adv \
+	--keyserver hkp://keyserver.ubuntu.com:80 \
+	--recv-keys 0xE298A3A825C0D65DFD57CBB651716619E084DAB9
+RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
+RUN apt-get update && \
+	DEBIAN_FRONTEND=noninteractive apt-get install -y \
+		apt-utils \
+		gawk \
+		openjdk-11-jre-headless \
+		samtools \
+		bwa \
+		bedtools \
+		r-base \
+		time \
+		build-essential \
+		autotools-dev \
+		autoconf \
+		autogen \
+		make \
+		libssl-dev \
+		libcurl4-openssl-dev \
+		libxml2-dev \
+		zlib1g-dev \
+		libbz2-dev \
+		liblzma-dev && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
 
-# CRAN ubuntu package repository for the latest version of R
-RUN apt-get update ; apt-get install -y apt-transport-https software-properties-common ; apt-get clean ; rm -rf /var/lib/apt/lists/*
-RUN gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-RUN gpg -a --export E298A3A825C0D65DFD57CBB651716619E084DAB9 | apt-key add -
-RUN add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/'
-
-RUN apt-get update ; DEBIAN_FRONTEND=noninteractive apt-get install -y openjdk-8-jre-headless samtools bwa time build-essential make r-base libssl-dev libcurl4-openssl-dev libxml2-dev ; rm -rf /var/lib/apt/lists/*
-
-# R packages used by GRIDSS and PURPLE
+# R packages used by GRIDSS
 ENV R_INSTALL_STAGED=false
-RUN Rscript -e 'options(Ncpus=16L, repos="https://cloud.r-project.org/");install.packages(c("tidyverse", "assertthat", "testthat", "NMF", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite"))'
-RUN Rscript -e 'options(Ncpus=16L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c("copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene"))'
+RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");install.packages(c( "tidyverse", "assertthat", "testthat", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite" ))'
+RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c( "copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene" ))'
 
 ENV GRIDSS_VERSION=2.10.2
 ENV GRIDSS_JAR=/opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar
@@ -31,9 +54,18 @@ LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
 
 RUN mkdir /opt/gridss/
-COPY target/github_package/* /opt/gridss/
+#COPY target/github_package/* /opt/gridss/
+# downloading from github allows the docker images to be built with zero reliance on the local environment
+RUN wget -O /opt/gridss/gridss-${GRIDSS_VERSION}.tar.gz https://github.com/PapenfussLab/gridss/releases/download/v${GRIDSS_VERSION}/gridss-${GRIDSS_VERSION}.tar.gz
+RUN tar zxvf /opt/gridss/gridss-${GRIDSS_VERSION}.tar.gz -C /opt/gridss/ && \
+	tar zxvf /opt/gridss/gridsstools.src.tar.gz -C /opt/gridss/ && \
+	cd /opt/gridss/src/main/c/gridsstools/htslib && \
+	autoconf && autoheader && make -j 8 && \
+	cd /opt/gridss/src/main/c/gridsstools/ && \
+	autoconf && autoheader && make  -j 8 gridsstools && \
+	cp gridsstools /opt/gridss/gridsstools
 RUN chmod +x /opt/gridss/gridsstools /opt/gridss/*.R /opt/gridss/*.sh
 ENV PATH="/opt/gridss:$PATH"
 
 WORKDIR /data/
-ENTRYPOINT ["/opt/gridss/gridss.sh"]
+
