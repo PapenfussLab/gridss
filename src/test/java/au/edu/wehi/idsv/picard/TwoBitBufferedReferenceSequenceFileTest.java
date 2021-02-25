@@ -83,14 +83,14 @@ public class TwoBitBufferedReferenceSequenceFileTest extends TestHelper {
 	}
 	@Test
 	public void anyAmbiguous_should_return_ambiguous_overlap() throws IOException {
-		TwoBitBufferedReferenceSequenceFile b = new TwoBitBufferedReferenceSequenceFile(new InMemoryReferenceSequenceFile(new String[] { "test" }, new byte[][] { B("ACGTNAAAAN") }));
+		TwoBitBufferedReferenceSequenceFile b = new TwoBitBufferedReferenceSequenceFile(new InMemoryReferenceSequenceFile(new String[] { "test" }, new byte[][] { B("ACGNAAAAN") }));
 		TwoBitBufferedReferenceSequenceFile.PackedReferenceSequence prs = b.getPackedSequence("test");
-		Assert.assertFalse(prs.anyAmbiguous(1, 4));
+		Assert.assertFalse(prs.anyAmbiguous(1, 3));
 		Assert.assertTrue(prs.anyAmbiguous(1, 4));
 		Assert.assertTrue(prs.anyAmbiguous(4, 4));
 		Assert.assertTrue(prs.anyAmbiguous(4, 5));
 		Assert.assertTrue(prs.anyAmbiguous(3, 5));
 		Assert.assertFalse(prs.anyAmbiguous(5, 5));
-		Assert.assertTrue(prs.anyAmbiguous(5, 10));
+		Assert.assertTrue(prs.anyAmbiguous(5, 9));
 	}
 }
