@@ -94,8 +94,23 @@ write_status "Using GRIDSS jar $gridss_jar"
 
 kraken2-build --download-taxonomy --db $dbname
 kraken2-build --download-library human --db $dbname
-kraken2-build --download-library viral --db $dbname
+kraken2-build --download-library viral --db $dbname # --source genbank waiting on https://github.com/DerrickWood/kraken2/pull/418
 kraken2-build --download-library UniVec_Core --db $dbname
+esearch -db nuccore -query "Viruses[Organism] NOT cellular organisms[ORGN] NOT wgs[PROP] NOT AC_000001:AC_999999[pacc] NOT gbdiv syn[prop] AND (srcdb_refseq[PROP] OR nuccore genome samespecies[Filter])" \
+| efetch -format fasta > $dbname/neighbour.fa
+kraken2-build --add-to-library $dbname/neighbour.fa --db $dbname
+# Issue with neighbours: serotypes (e.g. HPV-45) are listed as neighbours of the species taxid
+# Use Neighbours for host taxid filtering. TODO: get a better source
+wget --output-document=$dbname/taxid10239.nbr "https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239&cmd=download2"
+#accessions=$(tail -n+3 taxid10239.nbr | cut -f 2 | tr '\n' ,)
+#awk 'NR==FNR{print "Array:" $2 "->" $3; a[">"$2]=$3;next} /^>/ { $1=">"$1 p=index($1," "); print $1 ", " $2 ", " $3; substr(0,p); }' test.nucl_gb.accession2taxid test.fa
+# get all the neighbour genomes
+# map back to taxid using nucl_gb.accession2taxid since HPV serotypes are neighbours of the species RefSeq genome
+#grep $KRAKEN2_DIR $(which kraken2-build) /home/daniel/miniconda3/envs/kraken2/libexec
+# Genomes:
+# https://ftp.ncbi.nlm.nih.gov/genomes/genbank/viral/assembly_summary.txt
+#cut -f 20 assembly_summary.txt | tail -n+3 | sed 's/ftp:\/\/ftp.ncbi.nlm.nih.gov\/genomes//' | sed -E 's/([^/]+)$/\1\/\1_genomic.fna.gz/' | sort > fna_urls.txt
+#rsync -av --files-from=fna_urls.txt rsync://ftp.ncbi.nlm.nih.gov/genomes/ genomes/
 # TODO why does masking result in empty .mask files?
 kraken2-build --build --db $dbname
 for f in $(find $dbname/ -name '*.fna') ; do
@@ -108,14 +123,13 @@ for f in $(find $dbname/ -name '*.fna') ; do
 		O=$f.dict
 done
 
-cd $dbname
-wget --output-document=taxid10239.nbr "https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239&cmd=download2"
-cd ..
 tar -czvf virusbreakend.db.$(basename $dbname).tar.gz \
 	$(basename $dbname)/*.k2d \
 	$(basename $dbname)/taxonomy/nodes.dmp \
 	$(basename $dbname)/library/viral/*.fna* \
-	$(basename $dbname)/taxid10239.nbr
+	$(basename $dbname)/library/added/*.fna* \
+	$(basename $dbname)/taxid10239.nbr \
+	$(basename $dbname)/seqid2taxid.map
 
 write_status "VIRUSBreakend build successful"
 write_status "The full build (including intermediate files) can be found in $dbname"

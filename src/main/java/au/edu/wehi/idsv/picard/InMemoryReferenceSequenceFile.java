@@ -5,6 +5,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Reference genome stored only in memory and not backed by a fasta file.
@@ -16,6 +17,14 @@ public class InMemoryReferenceSequenceFile implements ReferenceLookup {
 	private SAMSequenceDictionary dictionary;
 	private byte[][] sequences;
 	private int referenceIndex = 0;
+	public InMemoryReferenceSequenceFile(List<String> contigNames, List<byte[]> sequences) {
+		dictionary = new SAMSequenceDictionary();
+		this.sequences = new byte[sequences.size()][];
+		for (int i = 0; i < contigNames.size(); i++) {
+			dictionary.addSequence(new SAMSequenceRecord(contigNames.get(i), sequences.get(i).length));
+			this.sequences[i] = sequences.get(i);
+		}
+	}
 	public InMemoryReferenceSequenceFile(String[] contigNames, byte[][] sequences) {
 		dictionary = new SAMSequenceDictionary();
 		for (int i = 0; i < contigNames.length; i++) {
