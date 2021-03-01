@@ -456,10 +456,10 @@ if [[ ! -f $file_extracted_report ]] ; then
 	taxid_args=""
 	if [[ "$host" != "" ]] ; then
 		# get the taxid for every contig in $virusnbr
-		taxid_args=$(cat $(find $kraken2db -path '**/library/**/*.fna.fai' | grep -v human | grep -v UniVec_Core) \
-			| cut -f 1 \
-			| grep -F -f <(grep $host $virusnbr | cut -f 1,2 | tr ',\t' '\n\n' | sort -u | sed 's/$/./' | grep -v "^.$") \
-			| cut -d '|' -f 2 \
+		taxid_args=$(grep -F -f <(grep $host $virusnbr  | cut -f 1,2 | tr '  \n' ,, | tr , "\n" | sort | uniq) $seqidtaxidmap \
+			| cut -f 2 \
+			| sort \
+			| uniq \
 			| sed 's/^/--TAXONOMY_IDS /' \
 			| tr '\n' ' ')
 		taxid_args="--TAXONOMY_IDS null $taxid_args"
