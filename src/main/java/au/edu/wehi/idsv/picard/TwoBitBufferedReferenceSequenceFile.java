@@ -175,7 +175,7 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 			// this synchronized block
 			return seq;
 		}
-		log.info("Caching reference genome contig " + contig);
+		log.debug("Caching reference genome contig " + contig);
 		ReferenceSequence fullContigSequence = underlying.getSequence(contig);
 		seq = new PackedReferenceSequence(fullContigSequence);
 		cache = ImmutableMap.<String, PackedReferenceSequence>builder()
