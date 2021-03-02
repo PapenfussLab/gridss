@@ -181,7 +181,7 @@ public class ExtractBestSequencesBasedOnReportTest extends IntermediateFilesTest
         cmd.doWork();
 
         List<String> summary = Files.readAllLines(cmd.SUMMARY_OUTPUT.toPath());
-        Assert.assertEquals("10405\tOrthohepadnavirus\t858\t10407\tHepatitis B virus\t856\t489466\tHBV genotype C\t277\tkraken:taxid|489466|AB540583", summary.get(1));
+        Assert.assertEquals("10405\tOrthohepadnavirus\t858\t10407\tHepatitis B virus\t856\t489466\tHBV genotype C\t277\t276\tkraken:taxid|489466|AB540583", summary.get(1));
     }
     //@Test
     @Ignore // Underlying issue was that HPV-45 isn't in ReqSeq and the first half of VIRUSBreakend was run against a larger database

@@ -59,8 +59,11 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
     public File SUMMARY_REPORT_OUTPUT;
     @Argument(shortName="SO", doc="Summary csv", optional = true)
     public File SUMMARY_OUTPUT;
-    @Argument(doc="NCBI Taxonomy IDs to extract. All taxonomic entries under these IDs are also extracted. Defaults to all viruses.")
+    @Argument(doc="NCBI Taxonomy IDs to extract. All taxonomic entries under these IDs are also extracted. Defaults to all viruses. " +
+            "Specifying TAXONOMY_ID_LIST will override this value.")
     public List<Integer> TAXONOMY_IDS = Lists.newArrayList(NCBI_VIRUS_TAXID);
+    @Argument(doc="File containing NCBI Taxonomy IDs to extract. One taxonomy ID per line.", optional = true)
+    public File TAXONOMY_ID_LIST;
     @Argument(doc="NCBI taxonomy nodes.dmp. Download and extract from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip")
     public File NCBI_NODES_DMP;
     @Argument(doc="Kraken2 seqid2taxid.map mapping file")
@@ -86,6 +89,11 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
         if (KRAKEN_REFERENCES == null || KRAKEN_REFERENCES.size() == 0) {
             return new String[] {"KRAKEN_REFERENCES required. This file is located under library/viral/library.fna in the kraken2 database directory." };
         }
+        if (TAXONOMY_ID_LIST != null) {
+            if (TAXONOMY_IDS != null && TAXONOMY_IDS.size() == 1 && TAXONOMY_IDS.get(0) != NCBI_VIRUS_TAXID) {
+                return new String[] {"TAXONOMY_ID_LIST and TAXONOMY_IDS are mutually exclusive. Specify one or the other." };
+            }
+        }
         return super.customCommandLineValidation();
     }
 
@@ -95,6 +103,9 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
         IOUtil.assertFileIsReadable(NCBI_NODES_DMP);
         IOUtil.assertFileIsReadable(SEQID2TAXID_MAP);
         IOUtil.assertFileIsWritable(OUTPUT);
+        if (TAXONOMY_ID_LIST != null) {
+            IOUtil.assertFileIsReadable(TAXONOMY_ID_LIST);
+        }
         if (SUMMARY_REPORT_OUTPUT != null) IOUtil.assertFileIsWritable(SUMMARY_REPORT_OUTPUT);
         if (OUTPUT != null) IOUtil.assertFileIsWritable(OUTPUT);
         try {
@@ -103,6 +114,13 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
                 IOUtil.assertFileIsReadable(f);
                 ReferenceCommandLineProgram.ensureSequenceDictionary(f);
                 ref.add(new IndexedFastaSequenceFile(f));
+            }
+            if (TAXONOMY_ID_LIST != null) {
+                log.info("Loading taxonomy IDs of interest from ", TAXONOMY_ID_LIST);
+                TAXONOMY_IDS = Files.readAllLines(TAXONOMY_ID_LIST.toPath()).stream()
+                        .map(Integer::parseInt)
+                        .collect(Collectors.toList());
+                log.info("Loaded " + TAXONOMY_IDS.size() + " taxonomy IDs");
             }
             log.info("Loading seqid2taxid.map from ", SEQID2TAXID_MAP);
             Map<String, Integer> seq2taxLookup = createSeqId2TaxIdMap(SEQID2TAXID_MAP);
@@ -217,7 +235,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
     }
 
     private String createSummaryHeader() {
-        return "taxid_genus\tname_genus\treads_genus\ttaxid_species\tname_species\treads_species\ttaxid\tname\treads\treference";
+        return "taxid_genus\tname_genus\treads_genus_tree\ttaxid_species\tname_species\treads_species_tree\ttaxid_assigned\tname_assigned\treads_assigned_tree\treads_assigned_direct\treference";
     }
 
     private String createSummaryLine(List<KrakenReportLine> fullReport, Map<Integer, MinimalTaxonomyNode> taxa, KrakenReportLine line, String ref) {
@@ -238,10 +256,11 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             if (parent_taxid <= 1) break;
             current = lookup.get(parent_taxid);
         }
-        return String.format("%d\t%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%s",
+        return String.format("%d\t%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%d\t%s",
                 genus.taxonomyId, genus.scientificName.trim(),genus.countAssignedToTree,
                 species.taxonomyId, species.scientificName.trim(),species.countAssignedToTree,
                 line.taxonomyId, line.scientificName.trim(),line.countAssignedToTree,
+                line.countAssignedDirectly,
                 ref);
     }
 

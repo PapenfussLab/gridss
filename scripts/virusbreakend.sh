@@ -395,6 +395,7 @@ prefix_working=$workingdir/$prefix_filename
 prefix_adjusted=$adjusteddir/$prefix_filename
 prefix_unadjusted=$unadjusteddir/$prefix_filename
 file_readname=$prefix_working.readnames.txt
+file_host_taxids=$prefix_working.host_taxids.txt
 file_report=$prefix_working.kraken2.report.all.txt
 file_viral_report=$prefix_working.kraken2.report.viral.txt
 file_extracted_report=$prefix_working.kraken2.report.viral.extracted.txt
@@ -453,20 +454,15 @@ EOF
 	fi
 done
 if [[ ! -f $file_extracted_report ]] ; then
-	taxid_args=""
-	if [[ "$host" != "" ]] ; then
-		# get the taxid for every contig in $virusnbr
-		taxid_args=$(grep -F -f <(grep $host $virusnbr  | cut -f 1,2 | tr '  \n' ,, | tr , "\n" | sort | uniq) $seqidtaxidmap \
-			| cut -f 2 \
-			| sort \
-			| uniq \
-			| sed 's/^/--TAXONOMY_IDS /' \
-			| tr '\n' ' ')
-		taxid_args="--TAXONOMY_IDS null $taxid_args"
-	fi
 	write_status "Identifying viruses in sample based on kraken2 summary report"
 	# The sort is so we will include any library/added before the default RefSeq sequences (in library/viral)
-	kraken_references_arg=$(for fa in $(find $kraken2db -path '**/library/**/*.fna' | sort) ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
+	kraken_references_arg=$(for fa in $(find $kraken2db/library/viral $kraken2db/library/added -name '*.fna') ; do echo -n "--KRAKEN_REFERENCES $fa "; done)
+	taxid_args="$kraken_references_arg"
+	if [[ "$host" != "" ]] ; then
+		# get the taxid for every contig in $virusnbr with a matching host
+		grep -F -f <(grep $host $virusnbr  | cut -f 1,2 | tr '  \n' ,, | tr , "\n") $seqidtaxidmap | cut -f 2 > $file_host_taxids
+		taxid_args="--TAXONOMY_ID_LIST $file_host_taxids $taxid_args"
+	fi
 	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
 	{ $timecmd java -Xmx8g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestSequencesBasedOnReport \
 		--INPUT_KRAKEN2_REPORT $file_report \
@@ -477,7 +473,6 @@ if [[ ! -f $file_extracted_report ]] ; then
 		--SUMMARY_OUTPUT $file_summary_csv \
 		--NCBI_NODES_DMP $nodesdmp \
 		--SEQID2TAXID_MAP $seqidtaxidmap \
-		$kraken_references_arg \
 		--MIN_SUPPORTING_READS $minreads \
 		--TAXONOMIC_DEDUPLICATION_LEVEL Genus \
 		$taxid_args \
@@ -712,14 +707,25 @@ if [[ ! -f $file_summary_annotated_csv ]] ; then
 	samtools coverage $prefix_adjusted.merged.bam > $prefix_adjusted.merged.bam.coverage
 	while read inline; do
 		if [[ $inline = taxid_genus* ]] ; then
-			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations" >> $file_summary_annotated_csv
+			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations	QCStatus" >> $file_summary_annotated_csv
 		else
-			# TODO: add QC column to summary stats and fail it if coverage is too low
-			taxid=$(echo "$inline" | cut -f 7)
-			coverage_stats=$(grep _taxid_${taxid}_ $prefix_adjusted.merged.bam.coverage)
-			contig=$(echo "$coverage_stats" | cut -f 1)
-			hits=$(grep -E ^adj $file_filtered_vcf | grep -F $contig | wc -l || true)
-			echo "$inline	$coverage_stats	$hits"  >> $file_summary_annotated_csv
+			curr_contig_name=$(echo "$inline" | cut -f 11)
+			curr_reads_assigned_direct=$(echo "$inline" | cut -f 10)
+			curr_reads_genus_tree=$(echo "$inline" | cut -f 3)
+			curr_coverage_stats=$(grep "adjusted_$contig_name	" $prefix_adjusted.merged.bam.coverage)
+			curr_hits=$(grep -E "^adjusted" $file_filtered_vcf | grep -F $curr_contig_name | wc -l || true)
+			
+			curr_coverage=$(echo "$inline" | cut -f 6)
+			# QC failures
+			qcstatus="PASS"
+			if [[ $(echo "$curr_coverage > 5" | bc) ) -eq 0 ]] ; then
+				# Viral coverage must be at least 5%
+				qcstatus="FAIL_COVERAGE"
+			else if [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) > 60 " | ec ) -eq 0 ]] ; then
+				# Should have at least 60% of reads directly assigned to our taxid
+				qcstatus="UNCLEAR_TAXID_ASSIGNMENT"
+			fi
+			echo "$inline	$coverage_stats	$hits	$qcstatus"  >> $file_summary_annotated_csv
 		fi
 	done < $file_summary_csv
 fi

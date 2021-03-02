@@ -40,7 +40,7 @@
   0.00	858	0	F	10404	              Hepadnaviridae
   0.00	858	2	G	10405	                Orthohepadnavirus
   0.00	856	271	S	10407	                  Hepatitis B virus
-  0.00	277	277	S1	489466	                    HBV genotype C
+  0.00	277	276	S1	489466	                    HBV genotype C
   0.00	86	0	S1	621278	                    recombinant Hepatitis B virus
   0.00	74	74	S2	621277	                      Hepatitis B virus 146/Thailand
   0.00	12	12	S2	1282342	                      Hepatitis B virus subgenotype A3/genotype E
