@@ -2,9 +2,11 @@ package gridss.kraken;
 
 import au.edu.wehi.idsv.debruijn.ContigKmerCounter;
 import au.edu.wehi.idsv.kraken.KrakenReportLine;
+import au.edu.wehi.idsv.kraken.SeqIdToTaxIdMap;
 import au.edu.wehi.idsv.ncbi.MinimalTaxonomyNode;
 import au.edu.wehi.idsv.ncbi.TaxonomyHelper;
 import au.edu.wehi.idsv.ncbi.TaxonomyLevel;
+import au.edu.wehi.idsv.ncbi.TaxonomyNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Streams;
@@ -41,24 +43,18 @@ import static java.util.stream.Collectors.groupingBy;
         oneLineSummary = "Processes a Kraken2 report and extracts the sequences with the most hits.",
         programGroup=gridss.cmdline.programgroups.DataConversion.class
 )
-public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
+public class IdentifyViralTaxa extends CommandLineProgram {
     private static final int NCBI_VIRUS_TAXID = 10239;
-    private static final Log log = Log.getInstance(ExtractBestSequencesBasedOnReport.class);
+    private static final Log log = Log.getInstance(IdentifyViralTaxa.class);
     private static final Comparator<KrakenReportLine> SORT_ORDER = KrakenReportLine.ByCountAssignedDirectly.reversed().thenComparing(KrakenReportLine.ByCountAssignedToTree.reversed());
     @Argument(shortName= StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Kraken2 report file.")
     public File INPUT_KRAKEN2_REPORT;
-    @Argument(doc="Viral reads. Used to determine which genome for the chosen taxa to return.")
-    public File INPUT_VIRAL_READS;
-    @Argument(doc="Kmer used determining best viral genome match for viral reads.")
-    public int VIRAL_READ_KMER = 31;
-    @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output fasta file")
+    @Argument(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Summary csv")
     public File OUTPUT;
     @Argument(shortName="RO", doc="Kraken2 report filtered to only taxa of interest.", optional = true)
     public File REPORT_OUTPUT;
     @Argument(shortName="SRO", doc="Kraken2 report filtered to only taxa included in the output fasta file.", optional = true)
     public File SUMMARY_REPORT_OUTPUT;
-    @Argument(shortName="SO", doc="Summary csv", optional = true)
-    public File SUMMARY_OUTPUT;
     @Argument(doc="NCBI Taxonomy IDs to extract. All taxonomic entries under these IDs are also extracted. Defaults to all viruses. " +
             "Specifying TAXONOMY_ID_LIST will override this value.")
     public List<Integer> TAXONOMY_IDS = Lists.newArrayList(NCBI_VIRUS_TAXID);
@@ -76,8 +72,6 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
     public List<File> KRAKEN_REFERENCES;
     @Argument(doc="Maximum number of NCBI taxonomic identifiers to extract sequences for.", optional = true)
     public Integer TAXA_TO_RETURN = null;
-    @Argument(doc="Maximum number of contigs to extract per NCBI taxonomic identifiers.", optional = true)
-    public int CONTIGS_PER_TAXID = 1;
     @Argument(doc="Minimum number of supporting reads", optional = true)
     public int MIN_SUPPORTING_READS = 1;
     @Argument(doc="Taxonomic level for which only one sequence will be output. Useful to prevent multiple strains of the same/similar viruses being output.", optional = true)
@@ -108,6 +102,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
         }
         if (SUMMARY_REPORT_OUTPUT != null) IOUtil.assertFileIsWritable(SUMMARY_REPORT_OUTPUT);
         if (OUTPUT != null) IOUtil.assertFileIsWritable(OUTPUT);
+        if (TAXA_TO_RETURN == null) TAXA_TO_RETURN = Integer.MAX_VALUE;
         try {
             List<IndexedFastaSequenceFile> ref = new ArrayList<>(KRAKEN_REFERENCES.size());
             for (File f : KRAKEN_REFERENCES) {
@@ -123,7 +118,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
                 log.info("Loaded " + TAXONOMY_IDS.size() + " taxonomy IDs");
             }
             log.info("Loading seqid2taxid.map from ", SEQID2TAXID_MAP);
-            Map<String, Integer> seq2taxLookup = createSeqId2TaxIdMap(SEQID2TAXID_MAP);
+            Map<String, Integer> seq2taxLookup = SeqIdToTaxIdMap.createLookup(SEQID2TAXID_MAP);
             log.info("Loading NCBI taxonomy from ", NCBI_NODES_DMP);
             Map<Integer, MinimalTaxonomyNode> taxa = TaxonomyHelper.parseMinimal(NCBI_NODES_DMP);
             boolean[] taxIdLookup = TaxonomyHelper.createInclusionLookup(TAXONOMY_IDS, taxa);
@@ -152,81 +147,19 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             List<KrakenReportLine> interestingNodes = interestingGroups.values().stream()
                     .flatMap(list -> list.stream().sorted(SORT_ORDER).limit(TAXA_PER_DEDUPLICATION_LEVEL))
                     .sorted(SORT_ORDER)
-                    .limit(TAXA_TO_RETURN == null ? Integer.MAX_VALUE : TAXA_TO_RETURN)
+                    .limit(TAXA_TO_RETURN)
                     .collect(Collectors.toList());
             if (SUMMARY_REPORT_OUTPUT != null) {
                 log.info("Writing summary kraken report to ", SUMMARY_REPORT_OUTPUT);
                 Files.write(SUMMARY_REPORT_OUTPUT.toPath(), interestingNodes.stream().map(krl -> krl.line).collect(Collectors.toList()));
             }
-            Set<Integer> taxaOfInterest = interestingNodes.stream()
-                    .map(krl -> krl.taxonomyId)
-                    .collect(Collectors.toSet());
-            List<ReferenceSequence> candidateContigs = ref.stream()
-                .flatMap(r -> r.getSequenceDictionary()
-                    .getSequences()
-                    .stream()
-                    .filter(s -> taxaOfInterest.contains(seq2taxLookup.get(s.getSequenceName())))
-                    .map(s -> r.getSequence(s.getSequenceName())))
-                .collect(Collectors.toList());
-            ContigKmerCounter ckc = new ContigKmerCounter(candidateContigs, VIRAL_READ_KMER);
-            if (INPUT_VIRAL_READS != null) {
-                log.info("Identifying best viral reference genomes from ", INPUT_VIRAL_READS);
-                FastqReader fqr = new FastqReader(INPUT_VIRAL_READS);
-                while (fqr.hasNext()) {
-                    FastqRecord fq = fqr.next();
-                    ckc.count(fq.getReadBases());
-                }
-            }
-            Map<Integer, List<Pair<String, Long>>> candidateContigCountsByTaxa = Streams.zip(
-                    ckc.getContigs().stream(),
-                    ckc.getKmerCounts().stream(),
-                    Pair::of)
-                .collect(groupingBy(p -> seq2taxLookup.get(p.getKey())));
-            Set<String> contigsInViralReference = new HashSet<>();
-            for (KrakenReportLine krl : interestingNodes) {
-                List<Pair<String, Long>> candidatesForTaxa = candidateContigCountsByTaxa.get(krl.taxonomyId).stream()
-                        .sorted(Comparator.comparing((Pair<String, Long> p) -> p.getValue()).reversed())
-                        .collect(Collectors.toList());
-                for (Pair<String, Long> p : candidatesForTaxa) {
-                    log.debug("taxid\t" + krl.taxonomyId + "\t" + p.getKey() + "\t" + p.getValue());
-                }
-                contigsInViralReference.addAll(
-                    candidatesForTaxa.stream()
-                    .limit(CONTIGS_PER_TAXID)
-                    .map(p -> p.getKey())
-                    .collect(Collectors.toSet()));
-            }
             List<String> summary = new ArrayList<>();
             summary.add(createSummaryHeader());
-            log.info("Writing " + contigsInViralReference.size() + " viral contigs to ", OUTPUT);
-            if (contigsInViralReference.size() > 0) {
-                try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder()
-                        .setMakeDictOutput(true)
-                        .setMakeFaiOutput(true)
-                        .setFastaFile(OUTPUT.toPath())
-                        .build()) {
-                    for (IndexedFastaSequenceFile fa : ref) {
-                        for (SAMSequenceRecord ssr : fa.getSequenceDictionary().getSequences()) {
-                            if (contigsInViralReference.contains(ssr.getSequenceName())) {
-                                // only export the first contig if we find the same contig name in multiple files
-                                contigsInViralReference.remove(ssr.getSequenceName());
-                                writer.addSequence(cleanSequence(fa.getSequence(ssr.getSequenceName())));
-                                int taxid = seq2taxLookup.get(ssr.getSequenceName());
-                                KrakenReportLine krl = interestingNodes.stream().filter(x -> x.taxonomyId == taxid).findFirst().get();
-                                summary.add(createSummaryLine(fullReport, taxa, krl, ssr.getSequenceName()));
-                            }
-                        }
-                    }
-                }
-            } else {
-                // workaround for https://github.com/samtools/htsjdk/issues/1498
-                Files.write(OUTPUT.toPath(), new byte[0]);
-                log.warn("No sequences written to ", OUTPUT);
-            }
-            if (SUMMARY_OUTPUT != null) {
-                log.info("Writing summary csv report to ", SUMMARY_OUTPUT);
-                Files.write(SUMMARY_OUTPUT.toPath(), summary);
-            }
+            summary.addAll(interestingNodes.stream()
+                    .map(n -> createSummaryLine(fullReport, taxa, n))
+                    .collect(Collectors.toList()));
+            log.info("Found viral presence for " + interestingNodes.size() + " genera. Writing summary to  ", OUTPUT);
+            Files.write(OUTPUT.toPath(), summary);
         } catch (IOException e) {
             log.error(e);
             throw new RuntimeIOException(e);
@@ -235,10 +168,10 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
     }
 
     private String createSummaryHeader() {
-        return "taxid_genus\tname_genus\treads_genus_tree\ttaxid_species\tname_species\treads_species_tree\ttaxid_assigned\tname_assigned\treads_assigned_tree\treads_assigned_direct\treference";
+        return "taxid_genus\tname_genus\treads_genus_tree\ttaxid_species\tname_species\treads_species_tree\ttaxid_assigned\tname_assigned\treads_assigned_tree\treads_assigned_direct";
     }
 
-    private String createSummaryLine(List<KrakenReportLine> fullReport, Map<Integer, MinimalTaxonomyNode> taxa, KrakenReportLine line, String ref) {
+    private String createSummaryLine(List<KrakenReportLine> fullReport, Map<Integer, MinimalTaxonomyNode> taxa, KrakenReportLine line) {
         Map<Integer, KrakenReportLine> lookup = fullReport.stream().collect(Collectors.toMap(x -> x.taxonomyId, x -> x));
         KrakenReportLine genus = line;
         KrakenReportLine species = line;
@@ -256,12 +189,11 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
             if (parent_taxid <= 1) break;
             current = lookup.get(parent_taxid);
         }
-        return String.format("%d\t%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%d\t%s",
+        return String.format("%d\t%s\t%d\t%d\t%s\t%d\t%d\t%s\t%d\t%d",
                 genus.taxonomyId, genus.scientificName.trim(),genus.countAssignedToTree,
                 species.taxonomyId, species.scientificName.trim(),species.countAssignedToTree,
                 line.taxonomyId, line.scientificName.trim(),line.countAssignedToTree,
-                line.countAssignedDirectly,
-                ref);
+                line.countAssignedDirectly);
     }
 
     /**
@@ -270,7 +202,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
      * @param level
      * @return
      */
-    public static Int2IntMap createTaxaGroupLookup(Map<Integer, MinimalTaxonomyNode> taxa, List<KrakenReportLine> fullReport, TaxonomyLevel level) {
+    public static Int2IntMap createTaxaGroupLookup(Map<Integer, ? extends MinimalTaxonomyNode> taxa, List<KrakenReportLine> fullReport, TaxonomyLevel level) {
         Map<Integer, KrakenReportLine> reportLookup = fullReport.stream().collect(Collectors.toMap(krl -> krl.taxonomyId, krl -> krl));
         Int2IntMap taxaGroupLookup = new Int2IntOpenHashMap();
         for (KrakenReportLine krl : fullReport) {
@@ -291,32 +223,7 @@ public class ExtractBestSequencesBasedOnReport extends CommandLineProgram {
         return taxaGroupLookup;
     }
 
-    /**
-     * Some sequences contain invalid/masked bases. These are converted to Ns.
-     * @param rs
-     * @return
-     */
-    private static ReferenceSequence cleanSequence(ReferenceSequence rs) {
-        byte[] seq = rs.getBases();
-        for (int i = 0; i < seq.length; i++) {
-            if (!SequenceUtil.isIUPAC(seq[i])) {
-                seq[i] = 'N';
-            }
-        }
-        return new ReferenceSequence(rs.getName(), rs.getContigIndex(), seq);
-    }
-    private static Map<String, Integer> createSeqId2TaxIdMap(File seqid2taxid_map) {
-        try {
-            List<String> lines = Files.readAllLines(seqid2taxid_map.toPath());
-            return lines.stream()
-                .map(s -> s.split("\t"))
-                .collect(Collectors.toMap(s -> s[0], s -> Integer.parseInt(s[1])));
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
-    }
-
     public static void main(String[] argv) {
-        System.exit(new ExtractBestSequencesBasedOnReport().instanceMain(argv));
+        System.exit(new IdentifyViralTaxa().instanceMain(argv));
     }
 }

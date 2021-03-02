@@ -18,18 +18,18 @@ EX_CANTCREAT=73
 EX_CONFIG=78
 
 dbname=virusbreakenddb
+kraken2buildargs="--source genbank"  # https://github.com/DerrickWood/kraken2/pull/418
 USAGE_MESSAGE="
 VIRUSBreakend database build
 
 Downloads and builds the databases used by VIRUSBreakend
 
-An the 
-
-This program requires kraken2 and samtools to be on PATH
+This program requires kraken2-build and samtools to be on PATH
 
 Usage: virusbreakend-build.sh [--db $dbname]
 	--db: directory to create database in (Default: $dbname)
 	-j/--jar: location of GRIDSS jar
+	--kraken2buildargs: additional kraken2-build arguments (Default: $kraken2buildargs)
 	-h/--help: display this message"
 OPTIONS=hj:
 LONGOPTS=help,db:,jar:
@@ -49,6 +49,10 @@ while true; do
 			;;
 		--db)
 			dbname=$2
+			shift 2
+			;;
+		--kraken2buildargs)
+			kraken2buildargs=$2
 			shift 2
 			;;
 		-j|--jar)
@@ -92,10 +96,10 @@ find_jar() {
 gridss_jar=$(find_jar GRIDSS_JAR gridss)
 write_status "Using GRIDSS jar $gridss_jar"
 
-kraken2-build --download-taxonomy --db $dbname
-kraken2-build --download-library human --db $dbname
-kraken2-build --download-library viral --db $dbname # --source genbank waiting on https://github.com/DerrickWood/kraken2/pull/418
-kraken2-build --download-library UniVec_Core --db $dbname
+kraken2-build $kraken2buildargs --download-taxonomy --db $dbname
+kraken2-build $kraken2buildargs --download-library human --db $dbname
+kraken2-build $kraken2buildargs --download-library viral --db $dbname
+kraken2-build $kraken2buildargs --download-library UniVec_Core --db $dbname
 esearch -db nuccore -query "Viruses[Organism] NOT cellular organisms[ORGN] NOT wgs[PROP] NOT AC_000001:AC_999999[pacc] NOT gbdiv syn[prop] AND (srcdb_refseq[PROP] OR nuccore genome samespecies[Filter])" \
 | efetch -format fasta > $dbname/neighbour.fa
 kraken2-build --add-to-library $dbname/neighbour.fa --db $dbname
@@ -112,7 +116,7 @@ wget --output-document=$dbname/taxid10239.nbr "https://www.ncbi.nlm.nih.gov/geno
 #cut -f 20 assembly_summary.txt | tail -n+3 | sed 's/ftp:\/\/ftp.ncbi.nlm.nih.gov\/genomes//' | sed -E 's/([^/]+)$/\1\/\1_genomic.fna.gz/' | sort > fna_urls.txt
 #rsync -av --files-from=fna_urls.txt rsync://ftp.ncbi.nlm.nih.gov/genomes/ genomes/
 # TODO why does masking result in empty .mask files?
-kraken2-build --build --db $dbname
+kraken2-build $kraken2buildargs --build --db $dbname
 for f in $(find $dbname/ -name '*.fna') ; do
 	samtools faidx $f
 	rm -f $f.dict
