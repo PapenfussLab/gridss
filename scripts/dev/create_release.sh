@@ -12,12 +12,12 @@ cp target/gridss-$version-gridss-jar-with-dependencies.jar target/github_package
 cd src/main/c/gridsstools/htslib
 autoheader
 autoconf
-./configure && make clean && make
+./configure && make clean && make -j $(nproc)
 cd -
 cd src/main/c/gridsstools
 autoheader
 autoconf
-./configure && make clean && make all
+./configure && make clean && make -j $(nproc) all
 cd -
 cp src/main/c/gridsstools/gridsstools target/github_package
 cd src/main/c/gridsstools/htslib
