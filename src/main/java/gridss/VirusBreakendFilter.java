@@ -3,12 +3,10 @@ package gridss;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.vcf.SvType;
+import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
+import com.google.common.collect.*;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -36,6 +34,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @CommandLineProgramProperties(
@@ -54,6 +53,8 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 	public double MINIMUM_REPEAT_OVERLAP = 1;
 	@Argument(doc = "Minimum portion of breakend sequence that aligns to host genome")
 	public double MINIMUM_HOST_OVERLAP = 0.5;
+	@Argument(doc = "Minimum assembly mapping quality for integration site to be considered unambiguous")
+	public int MINIMUM_MAPQ = 10;
 	@Argument(doc = "Kraken taxonomic identifiers associated with host genome")
 	public List<Integer> TAXONOMY_IDS = null;
 
@@ -71,6 +72,9 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 		if (dictionary == null) throw new IllegalArgumentException("Missing .dict file for host genome");
 		try (VCFFileReader vcfReader = new VCFFileReader(INPUT, false)) {
 			VCFHeader header = vcfReader.getFileHeader();
+			if (!header.getFilterLines().stream().anyMatch(h -> h.getID() == VcfFilter.LOW_MAPQ.filter())) {
+				header.addMetaDataLine(VcfFilter.LOW_MAPQ.header());
+			}
 			SAMSequenceDictionary virusDict = header.getSequenceDictionary();
 			for (SAMSequenceRecord seq : virusDict.getSequences()) {
 				dictionary.addSequence(seq);
@@ -81,7 +85,7 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 			List<VariantContext> output = vcfReader.iterator()
 					.stream()
 					.filter(vc -> shouldKeep(vc))
-					.flatMap(vc -> transformToBreakpointNotation(dictionary, vc).stream())
+					.flatMap(vc -> transformToBreakpointNotation(dictionary, vc, MINIMUM_MAPQ).stream())
 					.sorted(new VariantContextComparator(dictionary))
 					.collect(Collectors.toList());
 			try (VariantContextWriter vcfWriter = builder.build()) {
@@ -95,7 +99,7 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 		return 0;
 	}
 
-	public static List<VariantContext> transformToBreakpointNotation(SAMSequenceDictionary dictionary, VariantContext vc) {
+	public static List<VariantContext> transformToBreakpointNotation(SAMSequenceDictionary dictionary, VariantContext vc, int minMapq) {
 		List<ChimericAlignment> bealn = infoToChimeric(vc, VcfInfoAttributes.BREAKEND_ALIGNMENTS.attribute());
 		bealn.sort(ChimericAlignment.ByMapqAlignedLength);
 		ChimericAlignment humanAlignment = bealn.get(0);
@@ -131,7 +135,7 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 				.stop(hostPosition)
 				.id(hostId)
 				.log10PError(vc.getLog10PError())
-				.filters(vc.getFilters())
+				.filters(getFilter(humanAlignment, vc.getFilters(), minMapq))
 				.alleles("N",
 						(hostBreakpointOrientation == Strand.FORWARD ? "N" + hostInsertedSequence : "") +
 						(virusBreakpointOrientation == Strand.FORWARD ? "]" : "[") +
@@ -141,6 +145,7 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 						);
 		VariantContextBuilder virusBuilder = new VariantContextBuilder(vc)
 				.id(virusId)
+				.filters(getFilter(humanAlignment, vc.getFilters(), minMapq))
 				.alleles(String.valueOf(anchorBase),
 						(virusBreakpointOrientation == Strand.FORWARD ? anchorBase + virusInsertedSequence : "") +
 						(hostBreakpointOrientation == Strand.FORWARD ? "]" : "[") +
@@ -168,6 +173,14 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 		hostBuilder.attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
 		virusBuilder.attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
 		return ImmutableList.of(virusBuilder.make(), hostBuilder.make());
+	}
+
+	private static Set<String> getFilter(ChimericAlignment humanAlignment, Set<String> filters, int minMapq) {
+		Set<String> output = Sets.newHashSet(filters);
+		if (humanAlignment == null || humanAlignment.mapq < minMapq) {
+			output.add(VcfFilter.LOW_MAPQ.filter());
+		}
+		return output;
 	}
 
 	private boolean shouldKeep(VariantContext vc) {

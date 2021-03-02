@@ -141,6 +141,21 @@ public class VirusBreakendFilterTest extends IntermediateFilesTest {
         Assert.assertFalse(vcf.stream().anyMatch(vc -> vc.getID().equals("wrong_host_taxid_host")));
     }
     @Test
+    public void should_apply_LOW_MAPQ_filter() {
+        VirusBreakendFilter cmd = new VirusBreakendFilter();
+        File output = new File(testFolder.getRoot(), "out.vcf");
+        cmd.INPUT = new File("src/test/resources/virusbreakend/candidates.vcf");
+        cmd.OUTPUT = output;
+        cmd.TAXONOMY_IDS = ImmutableList.of(9606);
+        cmd.setReference(SMALL_FA_FILE);
+        cmd.doWork();
+        List<VariantContext> vcf = getRawVcf(output);
+        Assert.assertFalse(vcf.stream().filter(vc -> vc.getID().equals("small_contained_repeat_host")).findFirst().get().getFilters().contains("LOW_MAPQ"));
+        Assert.assertFalse(vcf.stream().filter(vc -> vc.getID().equals("small_contained_repeat_virus")).findFirst().get().getFilters().contains("LOW_MAPQ"));
+        Assert.assertTrue(vcf.stream().filter(vc -> vc.getID().equals("correct_host_taxid_host")).findFirst().get().getFilters().contains("LOW_MAPQ"));
+        Assert.assertTrue(vcf.stream().filter(vc -> vc.getID().equals("correct_host_taxid_virus")).findFirst().get().getFilters().contains("LOW_MAPQ"));
+    }
+    @Test
     @Category(Hg19Tests.class)
     public void regression_should_not_crash_when_viral_contig_contains_period() {
         VirusBreakendFilter cmd = new VirusBreakendFilter();

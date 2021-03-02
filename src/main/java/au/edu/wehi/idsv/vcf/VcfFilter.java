@@ -21,7 +21,8 @@ public enum VcfFilter {
 	ASSEMBLY_BIAS ("ASSEMBLY_BIAS", "Mismatch between number of directly supporting reads and reads supporting via assembly."),
 	NO_RP ("NO_RP", "Variant does not have any direct read pair support."),
 	NO_SR ("NO_SR", "Variant does not have any direct split read support."),
-	LOW_QUAL ("LOW_QUAL", "Low quality call as specified by 'variantcalling.lowQuality'");
+	LOW_QUAL ("LOW_QUAL", "Low quality call as specified by 'variantcalling.lowQuality'"),
+	LOW_MAPQ ("LOW_MAPQ", "Mapping location may be ambiguous.");
 
     private final VCFFilterHeaderLine filterheader;
 	VcfFilter(String name, String description) {
