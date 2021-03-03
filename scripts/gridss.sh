@@ -45,6 +45,14 @@ keepTempFiles="false"
 sanityCheck="false"
 externalaligner="false"
 nojni="false"
+includeIndels=true
+includeSR=true
+includeSC=true
+includeOEA=true
+includeDP=true
+includeUnmapped=false
+minClipLength=5
+minIndelSize=$minClipLength
 USAGE_MESSAGE="
 Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> input1.bam [input2.bam [...]]
 
@@ -72,7 +80,7 @@ Usage: gridss.sh [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam
 	"
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,otherjvmheap:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,otherjvmheap:,includeIndels:,includeSR:,includeSC:,includeOEA:,includeDP:,includeUnmapped:,minClipLength:,minIndelSize:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -172,6 +180,41 @@ while true; do
 		--nojni)
 			nojni="true"
 			shift 1
+			;;
+		# ExtractSVReads arguments
+		--includeIndels)
+			includeIndels="$2"
+			shift 2
+			;;
+		--includeSR)
+			includeSR="$2"
+			shift 2
+			;;
+		--includeOEA)
+			includeOEA="$2"
+			shift 2
+			;;
+		--includeSC)
+			includeSC="$2"
+			shift 2
+			;;
+		--includeDP)
+			includeDP="$2"
+			shift 2
+			;;
+		--includeUnmapped)
+			includeUnmapped="$2"
+			shift 2
+			;;
+		--minClipLength)
+			printf -v minClipLength '%d\n' "$2" 2>/dev/null
+			printf -v minClipLength '%d' "$2" 2>/dev/null
+			shift 2
+			;;
+		--minIndelSize)
+			printf -v minIndelSize '%d\n' "$2" 2>/dev/null
+			printf -v minIndelSize '%d' "$2" 2>/dev/null
+			shift 2
 			;;
 		--)
             shift
@@ -645,8 +688,14 @@ if [[ $do_preprocess == true ]] ; then
 						SV_OUTPUT=$prefix.sv.bam \
 						INSERT_SIZE_METRICS=$tmp_prefix.insert_size_metrics \
 						$readpairing_args \
-						UNMAPPED_READS=false \
-						MIN_CLIP_LENGTH=50 \
+						MIN_INDEL_SIZE=$minIndelSize \
+						MIN_CLIP_LENGTH=$minClipLength \
+						CLIPPED=$includeSC \
+						INDELS=$includeIndels \
+						SPLIT=$includeSR \
+						SINGLE_MAPPED_PAIRED=$includeOEA \
+						DISCORDANT_READ_PAIRS=$includeDP \
+						UNMAPPED_READS=$includeUnmapped \
 						INCLUDE_DUPLICATES=true \
 						$picardoptions \
 				; } 1>&2 2>> $logfile
@@ -663,8 +712,14 @@ if [[ $do_preprocess == true ]] ; then
 							COMPRESSION_LEVEL=0 \
 							INSERT_SIZE_METRICS=$prefix.insert_size_metrics \
 							$readpairing_args \
-							UNMAPPED_READS=false \
-							MIN_CLIP_LENGTH=5 \
+							MIN_INDEL_SIZE=$minIndelSize \
+							MIN_CLIP_LENGTH=$minClipLength \
+							CLIPPED=$includeSC \
+							INDELS=$includeIndels \
+							SPLIT=$includeSR \
+							SINGLE_MAPPED_PAIRED=$includeOEA \
+							DISCORDANT_READ_PAIRS=$includeDP \
+							UNMAPPED_READS=$includeUnmapped \
 							INCLUDE_DUPLICATES=true \
 							$picardoptions \
 					| $timecmd samtools sort \
