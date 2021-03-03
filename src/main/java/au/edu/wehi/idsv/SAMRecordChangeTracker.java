@@ -231,9 +231,9 @@ public class SAMRecordChangeTracker {
 		lines.add("addedAlignments,"+ changes.addedAlignments);
 		lines.add("updatedQName,"+ changes.updatedQName);
 		for (int i = 0; i < N_FLAGS; i++) {
-			lines.add("setFlag_"+ i +","+ changes.setFlag[i]);
-			lines.add("clearedFlag_"+ i +","+ changes.clearedFlag[i]);
-			lines.add("updatedFlag_"+ i +","+ changes.updatedFlag[i]);
+			lines.add("setFlag_"+ (1 << i) +","+ changes.setFlag[i]);
+			lines.add("clearedFlag_"+ (1 << i) +","+ changes.clearedFlag[i]);
+			lines.add("updatedFlag_"+ (1 << i) +","+ changes.updatedFlag[i]);
 		}
 		lines.add("updatedRName,"+ changes.updatedRName);
 		lines.add("updatedPos,"+ changes.updatedPos);
