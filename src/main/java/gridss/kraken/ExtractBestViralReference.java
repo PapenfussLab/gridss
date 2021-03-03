@@ -55,8 +55,10 @@ public class ExtractBestViralReference extends CommandLineProgram {
     public File OUTPUT;
     @Argument(doc="TSV annotated with extracted references")
     public File OUTPUT_SUMMARY;
+    @Argument(doc="TSV containing number of matched kmers for each candidate reference sequence.")
+    public File OUTPUT_MATCHING_KMERS;
     @Argument(doc="Kmer used determining best viral genome match for viral reads.")
-    public int KMER = 31;
+    public int KMER = 16;
     @Argument(doc="Distance between kmers in reference lookup. Longer stride reduces memory usage. Should not be more than kmer length")
     public int STRIDE = 16;
     @Argument(doc="NCBI taxonomy nodes.dmp. Download and extract from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip")
@@ -129,6 +131,15 @@ public class ExtractBestViralReference extends CommandLineProgram {
                     ckc.getKmerCounts().stream(),
                     Pair::of)
                 .collect(groupingBy(p -> getParentTaxaOfInterest(taxaOfInterest, taxa, seq2taxLookup.get(p.getKey()))));
+            if (OUTPUT_MATCHING_KMERS != null) {
+                log.info("Writing matching kmer counts to ", OUTPUT_MATCHING_KMERS);
+                Files.write(OUTPUT_MATCHING_KMERS.toPath(), candidateContigCountsByTaxa.keySet()
+                    .stream()
+                    .flatMap(parentTaxId -> candidateContigCountsByTaxa.get(parentTaxId)
+                            .stream()
+                            .map(p -> String.format("%d\t%s\t%d", parentTaxId, p.getKey(), p.getValue())))
+                    .collect(Collectors.toList()));
+            }
             List<List<String>> output = new ArrayList<>();
             List<String> outputReferences = new ArrayList<>();
             for (int i = 0; i < summaryLines.size(); i++) {
