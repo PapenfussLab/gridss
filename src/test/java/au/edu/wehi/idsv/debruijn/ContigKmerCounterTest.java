@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ContigKmerCounterTest  extends TestHelper {
+public class ContigKmerCounterTest extends TestHelper {
     @Test
     public void should_count_at_end_of_read_and_reference() {
         ContigKmerCounter ckc = new ContigKmerCounter(ImmutableList.of("test1", "test2"), ImmutableList.of(B("AACCGGTTT"), B("A")), 4, 1);

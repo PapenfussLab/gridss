@@ -6,8 +6,9 @@ import com.google.common.collect.Lists;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.Log;
-import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 public class ContigKmerCounter {
     private static final Log log = Log.getInstance(ContigKmerCounter.class);
     private final List<String> contigs = new ArrayList<>();
-    private final Long2ObjectOpenHashMap<IntSet> kmerLookup = new Long2ObjectOpenHashMap<>();
+    private final KmerLookup kmerLookup;
     private final LongList counts = new LongArrayList();
     private final int k;
     public ContigKmerCounter(List<String> contigs, List<byte[]> sequences, int k, int stride) {
@@ -55,15 +56,16 @@ public class ContigKmerCounter {
     }
     public ContigKmerCounter(TwoBitBufferedReferenceSequenceFile reference, int k, int stride) {
         this.k = k;
+        this.kmerLookup = k <= 16 ? new KmerLookup32() : new KmerLookup64();
         for (SAMSequenceRecord ssr : reference.getSequenceDictionary().getSequences()) {
             String contig = ssr.getContig();
             TwoBitBufferedReferenceSequenceFile.PackedReferenceSequence prs = reference.getPackedSequence(contig);
             log.debug("Adding:\t" + contig);
-            addToLookup(contig, prs, stride);
+            sequentialAddToLookup(contig, prs, stride);
         }
     }
 
-    private void addToLookup(String contig, TwoBitBufferedReferenceSequenceFile.PackedReferenceSequence prs, int stride) {
+    private void sequentialAddToLookup(String contig, TwoBitBufferedReferenceSequenceFile.PackedReferenceSequence prs, int stride) {
         if (contigs.contains(contig)) return; // prevent double-counting
         contigs.add(contig);
         counts.add(0);
@@ -73,20 +75,21 @@ public class ContigKmerCounter {
             int endRefPos = i + k;
             if (!prs.anyAmbiguous(startRefPos, endRefPos)) {
                 long kmer = prs.getKmer(i, k);
-                addToLookup(contigId, kmer);
-                addToLookup(contigId, KmerEncodingHelper.reverseComplement(k, kmer));
+                sequentialAddToLookup(contigId, kmer);
+                sequentialAddToLookup(contigId, KmerEncodingHelper.reverseComplement(k, kmer));
             }
         }
     }
 
-    private void addToLookup(int contigId, long kmer) {
-        IntSet value = kmerLookup.get(kmer);
+    private void sequentialAddToLookup(int contigId, long kmer) {
+        IntList value = kmerLookup.getKmer(kmer);
         if (value == null) {
-            value = new IntRBTreeSet();
-            kmerLookup.put(kmer, value);
+            value = new IntArrayList(4);
+            value.add(contigId);
+            kmerLookup.putKmer(kmer, value);
+        } else if (value.getInt(value.size() - 1) != contigId) { // repeated kmers in the reference shouldn't count multiple times
+            value.add(contigId);
         }
-        // repeated kmers in the reference shouldn't count multiple times
-        value.add(contigId);
     }
 
     public int count(byte[] seq) {
@@ -101,7 +104,7 @@ public class ContigKmerCounter {
     }
 
     private int count(long kmer) {
-        IntSet hits = kmerLookup.get(kmer);
+        IntList hits = kmerLookup.getKmer(kmer);
         if (hits == null) return 0;
         hits.forEach((int refIndex) -> counts.set(refIndex, counts.getLong(refIndex) + 1));
         return hits.size();
@@ -112,5 +115,32 @@ public class ContigKmerCounter {
     }
     public LongList getKmerCounts() {
         return counts;
+    }
+    private abstract static class KmerLookup {
+        protected abstract void putKmer(long kmer, IntList list);
+
+        protected abstract IntList getKmer(long kmer);
+    }
+    private static class KmerLookup32 extends KmerLookup {
+        private final Int2ObjectOpenHashMap<IntList> kmerLookup = new Int2ObjectOpenHashMap<>();
+        @Override
+        protected void putKmer(long kmer, IntList list) {
+            kmerLookup.put((int)kmer, list);
+        }
+
+        @Override
+        protected IntList getKmer(long kmer) {
+            return kmerLookup.get((int)kmer);
+        }
+    }
+    private static class KmerLookup64 extends KmerLookup {
+        private final Long2ObjectOpenHashMap<IntList> kmerLookup = new Long2ObjectOpenHashMap<>();
+        @Override
+        protected void putKmer(long kmer, IntList list) {
+            kmerLookup.put(kmer, list);
+        }
+
+        @Override
+        protected IntList getKmer(long kmer) { return kmerLookup.get(kmer); }
     }
 }
