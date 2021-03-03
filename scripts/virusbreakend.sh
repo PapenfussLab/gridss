@@ -33,8 +33,8 @@ seqidtaxidmap=""
 virusnbr=""
 minreads="50"
 metricsrecords=10000000
-metricsmaxcoverage=100000
 maxcoverage=1000000
+metricsmaxcoverage=$maxcoverage
 force="false"
 forceunpairedfastq="false"
 USAGE_MESSAGE="
@@ -437,7 +437,7 @@ if [[ ! -f $file_summary_taxa_tsv ]] ; then
 	taxid_args="$kraken_references_arg"
 	if [[ "$host" != "" ]] ; then
 		# get the taxid for every contig in $virusnbr with a matching host
-		grep -F -f <(grep $host $virusnbr  | cut -f 1,2 | tr '  \n' ,, | tr , "\n") $seqidtaxidmap | cut -f 2 > $file_host_taxids
+		grep -F -f <(grep $host $virusnbr  | cut -f 1,2 | tr '\t\n' ,, | tr -s , '\n') $seqidtaxidmap | cut -f 2 | sort | uniq > $file_host_taxids
 		taxid_args="--TAXONOMY_ID_LIST $file_host_taxids $taxid_args"
 	fi
 	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
@@ -504,7 +504,7 @@ if [[ ! -f $prefix_working.kraken2.fa ]] ; then
 		--OUTPUT_SUMMARY $file_summary_references_tsv \
 		--NCBI_NODES_DMP $nodesdmp \
 		--SEQID2TAXID_MAP $seqidtaxidmap \
-		--VERBOSITY DEBUG \
+		--OUTPUT_MATCHING_KMERS $prefix_working.viral.kmercounts.tsv \
 		$kraken_references_arg \
 	; } 1>&2 2>> $logfile
 else
@@ -646,6 +646,9 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		-a $file_assembly \
 		-c $file_gridss_configuration \
 		--maxcoverage $maxcoverage \
+		--includeIndels false \
+		--includeSR false \
+		--includeDP false \
 		$gridssargs \
 		$bam_list_args \
 	; } 1>&2 2>> $logfile
@@ -653,18 +656,6 @@ else
 	write_status "Calling structural variants	Skipped: found	$file_gridss_vcf"
 fi
 if [[ ! -f $file_host_annotated_vcf ]] ; then
-	# Make sure we have the appropriate indexes for the host reference genome
-	{ $timecmd gridss.sh \
-		-w $adjusteddir \
-		-t $threads \
-		-r $reference \
-		-j $gridss_jar \
-		-s setupreference \
-		-a $file_assembly \
-		-o placeholder.vcf \
-		$gridssargs \
-		$bam_list_args \
-	; } 1>&2 2>> $logfile
 	write_status "Annotating host genome integrations"
 	{ $timecmd java -Xmx4g $jvm_args \
 			-Dgridss.output_to_temp_file=true \
@@ -722,34 +713,42 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 fi
 if [[ ! -f $file_summary_coverage_tsv ]] ; then
 	write_status "Writing annotated summary to $output_tsv"
-	rm -f $prefix_adjusted.merged.bam.coverage
+	rm -f $prefix_adjusted.merged.bam.coverage $file_summary_coverage_tsv.tmp
 	samtools coverage $prefix_adjusted.merged.bam > $prefix_adjusted.merged.bam.coverage
 	while read inline; do
 		if [[ $inline = taxid_genus* ]] ; then
-			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations	QCStatus" >> $file_summary_coverage_tsv
+			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations	QCStatus" > $file_summary_coverage_tsv.tmp
 		else
 			curr_contig_name=$(echo "$inline" | cut -f 11)
+			curr_actual_contig_name=$(echo "adjusted_$curr_contig_name" | tr ':|' '__')
 			curr_reads_assigned_direct=$(echo "$inline" | cut -f 10)
 			curr_reads_genus_tree=$(echo "$inline" | cut -f 3)
 			curr_kraken_taxid=$(echo "$inline" | cut -f 7)
 			curr_reference_taxid=$(echo "$inline" | cut -f 12)
-			curr_coverage_stats=$(grep "adjusted_$curr_contig_name	" $prefix_adjusted.merged.bam.coverage)
-			curr_hits=$(grep -E "^adjusted" $file_filtered_vcf | grep -F $curr_contig_name | wc -l || true)
+			curr_coverage_stats=$(grep "$curr_actual_contig_name	" $prefix_adjusted.merged.bam.coverage)
+			curr_hits=$(grep -E "^adjusted" $file_filtered_vcf | grep -F $curr_actual_contig_name | wc -l || true)
 			curr_coverage=$(echo "$inline" | cut -f 6)
 			# QC failures
-			curr_qcstatus="PASS"
+			curr_qcstatus=""
 			if [[ $(echo "$curr_coverage > 5" | bc ) -eq 0 ]] ; then
 				# Viral coverage must be at least 5%
-				curr_qcstatus="FAIL_COVERAGE"
-			elif [[ $curr_kraken_taxid != $curr_reference_taxid ]] ; then
-				curr_qcstatus="CHILD_TAXID_REFERENCE"
+				curr_qcstatus="$curr_qcstatus;LOW_VIRAL_COVERAGE"
+			fi
+			if [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.coverage.blacklist.bed' | wc -l)) -gt 0 ]] ; then
+				curr_qcstatus="$curr_qcstatus;EXCESSIVE_VIRAL_COVERAGE"
+			elif [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.bed.excluded_*.bed' | wc -l)) -gt 0 ]] ; then
+				curr_qcstatus="$curr_qcstatus;ASSEMBLY_ABORTED"
+			fi
+			if [[ $curr_kraken_taxid != $curr_reference_taxid ]] ; then
+				curr_qcstatus="$curr_qcstatus;CHILD_TAXID_REFERENCE"
 			elif [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) > 60 " | bc ) -eq 0 ]] ; then
 				# Should have at least 60% of reads directly assigned to our taxid
-				curr_qcstatus="UNCLEAR_TAXID_ASSIGNMENT"
+				curr_qcstatus="$curr_qcstatus;UNCLEAR_TAXID_ASSIGNMENT"
 			fi
-			echo "$inline	$curr_coverage_stats	$curr_hits	$curr_qcstatus"  >> $file_summary_coverage_tsv
+			echo "$inline	$curr_coverage_stats	$curr_hits	${curr_qcstatus:1}"  >> $file_summary_coverage_tsv.tmp
 		fi
 	done < $file_summary_references_tsv
+	mv $file_summary_coverage_tsv.tmp $file_summary_coverage_tsv
 fi
 cp $file_filtered_vcf $output_vcf
 cp $file_summary_coverage_tsv $output_tsv
