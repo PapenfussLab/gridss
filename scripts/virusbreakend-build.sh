@@ -18,7 +18,8 @@ EX_CANTCREAT=73
 EX_CONFIG=78
 
 dbname=virusbreakenddb
-kraken2buildargs="--source genbank"  # https://github.com/DerrickWood/kraken2/pull/418
+kraken2buildargs=""
+#kraken2buildargs="--source genbank"  # https://github.com/DerrickWood/kraken2/pull/418
 USAGE_MESSAGE="
 VIRUSBreakend database build
 
@@ -100,6 +101,7 @@ kraken2-build $kraken2buildargs --download-taxonomy --db $dbname
 kraken2-build $kraken2buildargs --download-library human --db $dbname
 kraken2-build $kraken2buildargs --download-library viral --db $dbname
 kraken2-build $kraken2buildargs --download-library UniVec_Core --db $dbname
+#  AND ("vhost human"[Filter]) 
 esearch -db nuccore -query "Viruses[Organism] NOT cellular organisms[ORGN] NOT wgs[PROP] NOT AC_000001:AC_999999[pacc] NOT gbdiv syn[prop] AND (srcdb_refseq[PROP] OR nuccore genome samespecies[Filter])" \
 | efetch -format fasta > $dbname/neighbour.fa
 kraken2-build --add-to-library $dbname/neighbour.fa --db $dbname

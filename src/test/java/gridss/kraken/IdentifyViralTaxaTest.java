@@ -1,5 +1,6 @@
 package gridss.kraken;
 
+import au.edu.wehi.VirusbreakenddbTests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ncbi.TaxonomyLevel;
 import com.google.common.collect.ImmutableList;
@@ -166,4 +167,21 @@ public class IdentifyViralTaxaTest extends IntermediateFilesTest {
         List<String> summary = Files.readAllLines(cmd.OUTPUT.toPath());
         Assert.assertEquals("10405\tOrthohepadnavirus\t858\t10407\tHepatitis B virus\t856\t489466\tHBV genotype C\t277\t276", summary.get(1));
     }
+    /* // root cause was blank lines in the host filter in the virusbreakend.sh script
+    @Test
+    @Category(VirusbreakenddbTests.class)
+    public void should_filter_to_human() throws IOException {
+        IdentifyViralTaxa cmd = new IdentifyViralTaxa();
+        cmd.INPUT_KRAKEN2_REPORT = new File("src/test/resources/kraken/");
+        cmd.KRAKEN_REFERENCES = ImmutableList.of(VirusbreakenddbTests.findVirusbreakendFile("library.fna"));
+        cmd.NCBI_NODES_DMP = VirusbreakenddbTests.getFullNodesDmp();
+        cmd.SEQID2TAXID_MAP = VirusbreakenddbTests.getSeqid2taxidMap();
+        cmd.OUTPUT = new File(output.toString() + ".fa");;
+        cmd.REPORT_OUTPUT = new File(output.toString() + ".report.txt");
+        cmd.SUMMARY_REPORT_OUTPUT = new File(output.toString() + ".summary.report.txt");
+        cmd.TAXONOMY_IDS = ImmutableList.of(10239);
+        cmd.MIN_SUPPORTING_READS = 1;
+        cmd.doWork();
+    }
+    */
 }

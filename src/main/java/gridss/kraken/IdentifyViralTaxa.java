@@ -116,6 +116,9 @@ public class IdentifyViralTaxa extends CommandLineProgram {
                         .map(Integer::parseInt)
                         .collect(Collectors.toList());
                 log.info("Loaded " + TAXONOMY_IDS.size() + " taxonomy IDs");
+                if (TAXONOMY_IDS.size() == 0) {
+                    throw new IllegalArgumentException("TAXONOMY_ID_LIST must contain at least one taxonomy ID");
+                }
             }
             log.info("Loading seqid2taxid.map from ", SEQID2TAXID_MAP);
             Map<String, Integer> seq2taxLookup = SeqIdToTaxIdMap.createLookup(SEQID2TAXID_MAP);
