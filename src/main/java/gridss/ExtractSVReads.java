@@ -43,7 +43,7 @@ public class ExtractSVReads extends ProcessStructuralVariantReadsCommandLineProg
     	writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput);
     	
     	IndelReadFilter indelFilter = new IndelReadFilter(INDELS ? MIN_INDEL_SIZE : Integer.MAX_VALUE);
-		ClippedReadFilter softClipFilter = new ClippedReadFilter(CLIPPED ? MIN_CLIP_LENGTH : Integer.MAX_VALUE); 
+		ClippedReadFilter softClipFilter = new ClippedReadFilter(CLIPPED ? MIN_CLIP_LENGTH : Integer.MAX_VALUE, SPLIT);
 		SplitReadFilter splitReadFilter = new SplitReadFilter();
 		AlignedFilter unmappedFilter = new AlignedFilter(false);
 		OneEndAnchoredReadFilter oeaFilter = new OneEndAnchoredReadFilter();

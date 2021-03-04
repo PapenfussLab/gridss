@@ -221,4 +221,46 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		});
 		assertTrue(output.exists());
 	}
+	@Test
+	public void extract_sc_should_not_extract_sr() {
+		createInput();
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.INPUT = input;
+		extract.OUTPUT = output;
+		extract.CLIPPED = true;
+		extract.INDELS = false;
+		extract.SPLIT = false;
+		extract.SINGLE_MAPPED_PAIRED = false;
+		extract.DISCORDANT_READ_PAIRS = false;
+		extract.UNMAPPED_READS = false;
+		extract.setup(getHeader(), extract.INPUT);
+		SAMRecord sc = Read(0, 1, "50M50S");
+		SAMRecord sr = Read(0, 100, "50M50S");
+		sr.setAttribute("SA", new ChimericAlignment(sc).toString());
+		extract.acceptFragment(ImmutableList.of(sc, sr), null);
+		extract.finish();
+		List<SAMRecord> out = getRecords(output);
+		assertEquals(1, out.size());
+	}
+	@Test
+	public void extract_sr_should_not_extract_sc() {
+		createInput();
+		ExtractSVReads extract = new ExtractSVReads();
+		extract.INPUT = input;
+		extract.OUTPUT = output;
+		extract.CLIPPED = false;
+		extract.INDELS = false;
+		extract.SPLIT = true;
+		extract.SINGLE_MAPPED_PAIRED = false;
+		extract.DISCORDANT_READ_PAIRS = false;
+		extract.UNMAPPED_READS = false;
+		extract.setup(getHeader(), extract.INPUT);
+		SAMRecord sc = Read(0, 1, "50M50S");
+		SAMRecord sr = Read(0, 100, "50M50S");
+		sr.setAttribute("SA", new ChimericAlignment(sc).toString());
+		extract.acceptFragment(ImmutableList.of(sc, sr), null);
+		extract.finish();
+		List<SAMRecord> out = getRecords(output);
+		assertEquals(1, out.size());
+	}
 }
