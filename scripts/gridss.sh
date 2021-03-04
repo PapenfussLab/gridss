@@ -328,21 +328,6 @@ if [ ! -f $reference ] ; then
 	exit $EX_USAGE
 fi
 
-##### --assembly
-if [[ $do_assemble == "true" ]] ; then
-	if [[ "$assembly" == "" ]] ; then
-		write_status "$USAGE_MESSAGE"
-		write_status "Specify assembly bam location using the --assembly command line argument. Assembly location must be in a writeable directory."
-		exit $EX_USAGE
-	fi
-	mkdir -p $(dirname $assembly)
-	if [[ ! -d $(dirname $assembly) ]] ; then
-		write_status "Unable to parent create directory for $assembly"
-		exit $EX_CANTCREAT
-	fi
-	write_status "Using assembly bam $assembly"
-fi
-
 ##### --output
 if [[ $do_call == "true" ]] ; then
 	if [[ "$output_vcf" == "" ]] ; then
@@ -357,6 +342,20 @@ if [[ $do_call == "true" ]] ; then
 	fi
 	write_status "Using output VCF $output_vcf"
 fi
+
+##### --assembly
+if [[ "$assembly" == "" ]] ; then
+	assembly=$output_vcf.assembly.bam
+fi
+if [[ $do_assemble == "true" ]] ; then
+	mkdir -p $(dirname $assembly)
+	if [[ ! -d $(dirname $assembly) ]] ; then
+		write_status "Unable to parent create directory for $assembly"
+		exit $EX_CANTCREAT
+	fi
+	write_status "Using assembly bam $assembly"
+fi
+
 ##### --threads
 if [[ "$threads" -lt 1 ]] ; then
 	write_status "$USAGE_MESSAGE"
