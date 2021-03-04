@@ -20,7 +20,7 @@ export PATH=/opt/tools/samtools/1.10:$PATH
 export PATH=/opt/tools/bcftools/1.9:$PATH
 export PATH=/opt/tools/bwa/0.7.17:$PATH
 export PATH=.:$PATH
-export GRIDSS_JAR=/data/gridss-2.10.3-gridss-jar-with-dependencies.jar
+export GRIDSS_JAR=/data/gridss-2.11.0-gridss-jar-with-dependencies.jar
 mkdir -p /data
 cd /data
 gsutil -u $bucket_user -m cp -r gs://virusbreakend/*.jar .

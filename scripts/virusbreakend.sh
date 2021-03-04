@@ -632,16 +632,25 @@ for f in "$@" ; do
 			exec_extract_host_metrics=$prefix_adjusted.extract_host_metrics.sh
 			rm -f $exec_extract_host_metrics
 			echo "#!/bin/bash" > $exec_extract_host_metrics
+			metrics_file="$f"
+			if [[ "$infile_filename_prefix" != "$f" ]] ; then
+				metrics_file=$adjusteddir/$infile_filename_prefix.metrics.bam
+				# Hack to create a local file since picard doesn't actually support streaming metrics
+				# (htsjdk read header opening and closing the file?)
+				echo "samtools view -h $f | head -$metricsrecords | samtools view -b - > $metrics_file" >> $exec_extract_host_metrics
+			fi
 			cat >> $exec_extract_host_metrics << EOF
 java -Xmx4g $jvm_args \
 	-cp $gridss_jar gridss.analysis.CollectGridssMetrics \
-	--INPUT $f \
+	--INPUT $metrics_file \
 	--OUTPUT $gridss_prefix \
 	--REFERENCE_SEQUENCE $reference \
 	--THRESHOLD_COVERAGE $metricsmaxcoverage \
 	--TMP_DIR $workingdir \
 	--FILE_EXTENSION null \
-	--STOP_AFTER $metricsrecords
+	--STOP_AFTER $metricsrecords \
+	--PROGRAM CollectInsertSizeMetrics \
+	
 EOF
 			chmod +x $exec_extract_host_metrics
 			{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
@@ -670,6 +679,26 @@ assembly.positional.safetyModeContigsToCall = 12
 EOF
 if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
+	# backup metrics
+	for f in $(find $adjusteddir -name '*_metrics') ; do cp $f $f.bak ; done
+	{ $timecmd gridss.sh \
+		-w $adjusteddir \
+		-t $threads \
+		-r $prefix_adjusted.viral.fa \
+		-j $gridss_jar \
+		-o $file_gridss_vcf \
+		-a $file_assembly \
+		-c $file_gridss_configuration \
+		-s setupreference,preprocess \
+		--maxcoverage $maxcoverage \
+		--includeIndels false \
+		--includeSR false \
+		--includeDP false \
+		$gridssargs \
+		$bam_list_args \
+	; } 1>&2 2>> $logfile
+	# restore metrics over the computed ones since we want host metrics
+	for f in $(find $adjusteddir -name '*_metrics.bak') ; do cp $f $(basename $f .bak) ; done
 	{ $timecmd gridss.sh \
 		-w $adjusteddir \
 		-t $threads \
@@ -679,9 +708,6 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		-a $file_assembly \
 		-c $file_gridss_configuration \
 		--maxcoverage $maxcoverage \
-		--includeIndels false \
-		--includeSR false \
-		--includeDP false \
 		$gridssargs \
 		$bam_list_args \
 	; } 1>&2 2>> $logfile
@@ -764,7 +790,7 @@ if [[ ! -f $file_summary_coverage_tsv ]] ; then
 				curr_coverage=$(echo "$inline" | cut -f 6)
 				# QC failures
 				curr_qcstatus=""
-				if [[ $(echo "$curr_coverage > $minviralcoverage" | bc ) -eq 0 ]] ; then
+				if [[ $(echo "$curr_coverage < $minviralcoverage" | bc ) -eq 1 ]] ; then
 					curr_qcstatus="$curr_qcstatus;LOW_VIRAL_COVERAGE"
 				fi
 				if [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.coverage.blacklist.bed') | wc -l) -gt 0 ]] ; then
@@ -774,7 +800,7 @@ if [[ ! -f $file_summary_coverage_tsv ]] ; then
 				fi
 				if [[ $curr_kraken_taxid != $curr_reference_taxid ]] ; then
 					curr_qcstatus="$curr_qcstatus;CHILD_TAXID_REFERENCE"
-				elif [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) < $unclear_taxid_direct_read_threshold " | bc ) -eq 0 ]] ; then
+				elif [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) < $unclear_taxid_direct_read_threshold " | bc ) -eq 1 ]] ; then
 					# Should have at least 60% of reads directly assigned to our taxid
 					curr_qcstatus="$curr_qcstatus;UNCLEAR_TAXID_ASSIGNMENT"
 				fi
