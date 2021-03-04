@@ -37,29 +37,39 @@ maxcoverage=1000000
 metricsmaxcoverage=$maxcoverage
 force="false"
 forceunpairedfastq="false"
+minviralcoverage=10
+unclear_taxid_direct_read_threshold=50
 USAGE_MESSAGE="
 VIRUSBreakend: Viral Integration Recognition Using Single Breakends
 
 Usage: virusbreakend.sh [options] input.bam
 
-	-r/--reference: reference genome of host species.
-	-o/--output: output VCF.
-	-j/--jar: location of GRIDSS jar
-	-t/--threads: number of threads to use. (Default: $threads).
-	-w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
-	--host: NBCI host filter. Valid values are algae, archaea, bacteria, eukaryotic algae, fungi, human, invertebrates, land plants, plants, protozoa, vertebrates (Default: $host)
-	--db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build.sh to build.
-	--kraken2args: additional kraken2 arguments
-	--gridssargs: additional GRIDSS arguments
-	--rmargs: additional RepeatMasker arguments (Default: $rmargs)
-	--minreads: minimum number of viral reads perform integration detection (Default: $minreads)
-	"
+    -r/--reference: reference genome of host species.
+    -o/--output: output VCF.
+    -j/--jar: location of GRIDSS jar
+    -t/--threads: number of threads to use. (Default: $threads).
+    -w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
+    --host: NBCI host filter. Valid values are algae, archaea, bacteria, eukaryotic algae,
+        fungi, human, invertebrates, land plants, plants, protozoa, vertebrates (Default: $host)
+    --db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build.sh to build.
+    --kraken2args: additional kraken2 arguments
+    --gridssargs: additional GRIDSS arguments
+    --rmargs: additional RepeatMasker arguments (Default: $rmargs)
+    --minreads: minimum number of viral reads perform integration detection (Default: $minreads)
+    --minviralcoverage: minimum % of virus with at least one mapped read. (Default: $minviralcoverage)
+    --force: force execution even if input file is missing.
+        The input is shell reinterpreted on each read of the input file.
+        This enables direct streaming of the input. For example, an input of
+        \"<(gsutil cat gs://virusbreakend/input.cram)\" would directly stream
+        the input from a GCE cloud storage bucket. Note that the quotes are
+        necessary to prevent the interpretation by the shell invoking virusbreakend
+"
 # handled by virusbreakend-build.sh
 #--kraken2db: kraken2 database
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq,host:
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq,host:,minviralcoverage:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -131,6 +141,11 @@ while true; do
 		--forceunpairedfastq)
 			forceunpairedfastq="true"
 			shift 1
+			;;
+		--minviralcoverage)
+			printf -v minviralcoverage '%d\n' "$2" 2>/dev/null
+			printf -v minviralcoverage '%d' "$2" 2>/dev/null
+			shift 2
 			;;
 		--)
 			shift
@@ -379,6 +394,18 @@ function clean_filename {
 	# handle file descriptor redirection
 	basename "$1" | tr -d ' 	<(:/|$@&%^\\)>'
 }
+function early_exit {
+	rm -f $output_tsv $output_vcf
+	file_header=""
+	for f in "$@" ; do
+		file_header="$file_header	$(clean_filename \"$f\")"
+	done
+	echo "##fileformat=VCFv4.2" > $output_vcf
+	echo "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$file_header" >> $output_vcf
+	touch $output_tsv
+	trap - EXIT
+	exit 0 # success!
+}
 
 jvm_args=" \
 	-Dpicard.useLegacyParser=false \
@@ -457,16 +484,7 @@ else
 fi
 if [[ $(wc -l < $file_summary_taxa_tsv) -eq 1 ]] ; then
 	write_status "No viral sequences supported by at least $minreads reads."
-	rm -f $output_tsv $output_vcf
-	file_header=""
-	for f in "$@" ; do
-		file_header="$file_header	$(clean_filename \"$f\")"
-	done
-	echo "##fileformat=VCFv4.2" > $output_vcf
-	echo "#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	$file_header" >> $output_vcf
-	touch $output_tsv
-	trap - EXIT
-	exit 0 # success!
+	early_exit
 fi
 write_status "Extracting viral reads"
 for f in "$@" ; do
@@ -557,15 +575,27 @@ done
 if [[ ! -f $prefix_unadjusted.merged.bam ]] ; then
 	samtools merge $prefix_unadjusted.merged.bam $unadjusteddir/*.viral.bam
 fi
+if [[ ! -f $prefix_unadjusted.merged.bam.coverage ]] ; then
+	samtools coverage $prefix_unadjusted.merged.bam > $prefix_unadjusted.merged.bam.coverage
+fi
 mkdir -p $adjusteddir
-if [[ ! -f $prefix_adjusted.viral.fa ]] ; then
+if [[ ! -f $prefix_adjusted.unfiltered.viral.fa ]] ; then
 	write_status "Adjusting reference genome"
 	{ $timecmd bcftools mpileup -f $prefix_unadjusted.viral.fa $prefix_unadjusted.merged.bam | bcftools call -c -v --ploidy 1 -V indels -Oz -o $prefix_unadjusted.snps.vcf.gz \
 	&& bcftools index $prefix_unadjusted.snps.vcf.gz \
-	&& bcftools consensus -f $prefix_unadjusted.viral.fa $prefix_unadjusted.snps.vcf.gz | sed 's/^>/>adjusted_/' > $prefix_adjusted.viral.fa \
+	&& bcftools consensus -f $prefix_unadjusted.viral.fa $prefix_unadjusted.snps.vcf.gz | sed 's/^>/>adjusted_/' > $prefix_adjusted.unfiltered.viral.fa \
 	; } 1>&2 2>> $logfile
 else
-	write_status "Skiping adjusting reference genome: found	$$prefix_adjusted.viral.fa"
+	write_status "Skiping adjusting reference genome: found	$prefix_adjusted.viral.fa"
+fi
+if [[ ! -f $prefix_adjusted.viral.fa ]] ; then
+	samtools faidx $prefix_adjusted.unfiltered.viral.fa
+	retained_contigs=$(awk "{ if (\$6 >= $minviralcoverage) print \"adjusted_\" \$1 }" $prefix_unadjusted.merged.bam.coverage | grep -v "#rname" || true)
+	if [[ "$retained_contigs" == "" ]] ; then
+		write_status "No viral sequences with at least ${minviralcoverage}% coverage."
+		early_exit
+	fi
+	samtools faidx $prefix_adjusted.unfiltered.viral.fa $retained_contigs > $prefix_adjusted.viral.fa
 fi
 for f in "$@" ; do
 	align_fasta "$f" $prefix_adjusted
@@ -573,6 +603,9 @@ done
 if [[ ! -f $prefix_adjusted.merged.bam ]] ; then
 	samtools merge $prefix_adjusted.merged.bam $adjusteddir/*.viral.bam
 	samtools index $prefix_adjusted.merged.bam
+fi
+if [[ ! -f $prefix_adjusted.merged.bam.coverage ]] ; then
+	samtools coverage $prefix_adjusted.merged.bam > $prefix_adjusted.merged.bam.coverage
 fi
 bam_list_args=""
 for f in "$@" ; do
@@ -713,39 +746,41 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 fi
 if [[ ! -f $file_summary_coverage_tsv ]] ; then
 	write_status "Writing annotated summary to $output_tsv"
-	rm -f $prefix_adjusted.merged.bam.coverage $file_summary_coverage_tsv.tmp
-	samtools coverage $prefix_adjusted.merged.bam > $prefix_adjusted.merged.bam.coverage
+	rm -f $file_summary_coverage_tsv.tmp
 	while read inline; do
 		if [[ $inline = taxid_genus* ]] ; then
 			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations	QCStatus" > $file_summary_coverage_tsv.tmp
 		else
 			curr_contig_name=$(echo "$inline" | cut -f 11)
 			curr_actual_contig_name=$(echo "adjusted_$curr_contig_name" | tr ':|' '__')
-			curr_reads_assigned_direct=$(echo "$inline" | cut -f 10)
-			curr_reads_genus_tree=$(echo "$inline" | cut -f 3)
-			curr_kraken_taxid=$(echo "$inline" | cut -f 7)
-			curr_reference_taxid=$(echo "$inline" | cut -f 12)
-			curr_coverage_stats=$(grep "$curr_actual_contig_name	" $prefix_adjusted.merged.bam.coverage)
-			curr_hits=$(grep -E "^adjusted" $file_filtered_vcf | grep -F $curr_actual_contig_name | wc -l || true)
-			curr_coverage=$(echo "$inline" | cut -f 6)
-			# QC failures
-			curr_qcstatus=""
-			if [[ $(echo "$curr_coverage > 5" | bc ) -eq 0 ]] ; then
-				# Viral coverage must be at least 5%
-				curr_qcstatus="$curr_qcstatus;LOW_VIRAL_COVERAGE"
+			# check we weren't filtered earlier
+			if grep $curr_actual_contig_name $prefix_adjusted.merged.bam.coverage > /dev/null ; then
+				curr_reads_assigned_direct=$(echo "$inline" | cut -f 10)
+				curr_reads_genus_tree=$(echo "$inline" | cut -f 3)
+				curr_kraken_taxid=$(echo "$inline" | cut -f 7)
+				curr_reference_taxid=$(echo "$inline" | cut -f 12)
+				curr_coverage_stats=$(grep "$curr_actual_contig_name	" $prefix_adjusted.merged.bam.coverage)
+				curr_hits=$(grep -E "^adjusted" $file_filtered_vcf | grep -F $curr_actual_contig_name | wc -l || true)
+				curr_coverage=$(echo "$inline" | cut -f 6)
+				# QC failures
+				curr_qcstatus=""
+				if [[ $(echo "$curr_coverage > $minviralcoverage" | bc ) -eq 0 ]] ; then
+					curr_qcstatus="$curr_qcstatus;LOW_VIRAL_COVERAGE"
+				fi
+				if [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.coverage.blacklist.bed') | wc -l) -gt 0 ]] ; then
+					curr_qcstatus="$curr_qcstatus;EXCESSIVE_VIRAL_COVERAGE"
+				elif [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.bed.excluded_*.bed') | wc -l) -gt 0 ]] ; then
+					curr_qcstatus="$curr_qcstatus;ASSEMBLY_ABORTED"
+				fi
+				if [[ $curr_kraken_taxid != $curr_reference_taxid ]] ; then
+					curr_qcstatus="$curr_qcstatus;CHILD_TAXID_REFERENCE"
+				elif [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) < $unclear_taxid_direct_read_threshold " | bc ) -eq 0 ]] ; then
+					# Should have at least 60% of reads directly assigned to our taxid
+					curr_qcstatus="$curr_qcstatus;UNCLEAR_TAXID_ASSIGNMENT"
+				fi
+				echo "$inline	$curr_coverage_stats	$curr_hits	${curr_qcstatus:1}"  >> $file_summary_coverage_tsv.tmp
 			fi
-			if [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.coverage.blacklist.bed' | wc -l)) -gt 0 ]] ; then
-				curr_qcstatus="$curr_qcstatus;EXCESSIVE_VIRAL_COVERAGE"
-			elif [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.bed.excluded_*.bed' | wc -l)) -gt 0 ]] ; then
-				curr_qcstatus="$curr_qcstatus;ASSEMBLY_ABORTED"
-			fi
-			if [[ $curr_kraken_taxid != $curr_reference_taxid ]] ; then
-				curr_qcstatus="$curr_qcstatus;CHILD_TAXID_REFERENCE"
-			elif [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) > 60 " | bc ) -eq 0 ]] ; then
-				# Should have at least 60% of reads directly assigned to our taxid
-				curr_qcstatus="$curr_qcstatus;UNCLEAR_TAXID_ASSIGNMENT"
-			fi
-			echo "$inline	$curr_coverage_stats	$curr_hits	${curr_qcstatus:1}"  >> $file_summary_coverage_tsv.tmp
+			
 		fi
 	done < $file_summary_references_tsv
 	mv $file_summary_coverage_tsv.tmp $file_summary_coverage_tsv
