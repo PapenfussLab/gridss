@@ -649,8 +649,8 @@ java -Xmx4g $jvm_args \
 	--TMP_DIR $workingdir \
 	--FILE_EXTENSION null \
 	--STOP_AFTER $metricsrecords \
-	--PROGRAM CollectInsertSizeMetrics \
-	
+	--PROGRAM CollectInsertSizeMetrics
+rm -f $adjusteddir/$infile_filename_prefix.metrics.bam # delete if it exists
 EOF
 			chmod +x $exec_extract_host_metrics
 			{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
