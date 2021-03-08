@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.TestHelper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.junit.Assert;
@@ -407,5 +408,18 @@ public class KmerEncodingHelperTest extends TestHelper {
 				.sorted()
 				.collect(Collectors.toList());
 		Assert.assertEquals(expected, result);
+	}
+	@Test
+	public void neighbouringStates_should_return_long_neighbours() {
+		int k = 31;
+		long state = 560617732080L;
+		String kmer = KmerEncodingHelper.toString(k, state);
+		long[] neighbours = KmerEncodingHelper.neighbouringStates(k, state);
+		List<String> strNeighbour = LongStream.of(neighbours).mapToObj(x -> KmerEncodingHelper.toString(k, x)).collect(Collectors.toList());
+		Assert.assertEquals(neighbours.length, LongStream.of(neighbours).distinct().count());
+		for (long neighbour : neighbours) {
+			String s = KmerEncodingHelper.toString(k, neighbour);
+			Assert.assertEquals(1, KmerEncodingHelper.basesDifference(k, state, neighbour));
+		}
 	}
 }

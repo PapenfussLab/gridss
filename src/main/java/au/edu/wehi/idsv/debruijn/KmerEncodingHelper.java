@@ -234,7 +234,7 @@ public class KmerEncodingHelper {
 		long[] neighbours = new long[k * 3];
 		int offset = 0;
 		for (int i = 0; i < k; i++) {
-			for (int j = 1; j < 4; j++) { // XOR 0 = self so we can start at 1
+			for (long j = 1; j < 4; j++) { // XOR 0 = self so we can start at 1
 				long newKmer = encoded ^ (j << (i * 2));
 				neighbours[offset++] = newKmer;
 			}
