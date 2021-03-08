@@ -433,9 +433,14 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		float density = advanceWidth <= 0 ? 0 : count / (float)advanceWidth;
 		boolean filtered = false;
 		if (density > aes.getContext().getAssemblyParameters().positional.maximumNodeDensity) {
-			log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: excluding from assembling.", density, contigName, lastNextPosition, nextPosition()));
-			toFlush.add(Range.closedOpen(lastNextPosition, nextPosition()));
+			log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: error correcting and downsampling.", density, contigName, lastNextPosition, nextPosition()));
+			Range<Integer> range = Range.closedOpen(lastNextPosition, nextPosition());
+			if (excludedRegions != null) {
+				excludedRegions.addInterval(referenceIndex, range.lowerEndpoint(), range.upperEndpoint());
+			}
 			filtered = true;
+			toFlush.add(range);
+			throw new AssemblyThresholdReachedException(range);
 		}
 		if (getTelemetry() != null) {
 			long currentTime = System.nanoTime();

@@ -21,11 +21,11 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	protected final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
-	private final byte[] anchorBases;
-	private final byte[] anchorQuals;
+	private final int anchorStart;
+	private final int anchorEnd;
+	private final int breakendStart;
+	private final int breakendEnd;
 	private final String untemplated;
-	private final byte[] breakendBases;
-	private final byte[] breakendQuals;
 	private final boolean isUnanchored;
 	/**
 	 * Offset in the read alignment of the nominal anchoring base flanking the breakend.
@@ -186,15 +186,10 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		this.source = source;
 		this.record = record;
 		this.untemplated = new String(Arrays.copyOfRange(record.getReadBases(), offsetUnmappedStart, offsetUnmappedEnd), StandardCharsets.US_ASCII);
-		this.anchorBases = Arrays.copyOfRange(record.getReadBases(), offsetLocalStart, offsetLocalEnd);
-		this.breakendBases = Arrays.copyOfRange(record.getReadBases(), Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
-		if (record.getBaseQualities() != SAMRecord.NULL_QUALS && record.getBaseQualities() != null) {
-			this.anchorQuals = Arrays.copyOfRange(record.getBaseQualities(), offsetLocalStart, offsetLocalEnd);
-			this.breakendQuals = Arrays.copyOfRange(record.getBaseQualities(), Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
-		} else {
-			this.anchorQuals = null;
-			this.breakendQuals = null;
-		}
+		this.anchorStart = offsetLocalStart;
+		this.anchorEnd = offsetLocalEnd;
+		this.breakendStart = Math.min(offsetRemoteStart, offsetUnmappedStart);
+		this.breakendEnd = Math.max(offsetRemoteEnd, offsetUnmappedEnd);
 		this.isUnanchored = localInexactMargin > 0 || remoteInexactMargin > 0;
 		location = withExactHomology(location);
 		if (source != null && source.getContext() != null && source.getContext().getReference() != null && source.getContext().getReference().getSequenceDictionary() != null) {
@@ -221,18 +216,18 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				int remoteBasesMatchingLocalReference;
 				if (bp.direction == BreakendDirection.Forward) {
 					// anchor -> breakend
-					remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal + 1, 1, breakendBases, 0, 1);
+					remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal + 1, 1, getBreakendSequence(), 0, 1);
 					if (bp.direction2  == BreakendDirection.Backward) {
-						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, anchorBases.length - 1, -1);
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, getAnchorSequence(), getAnchorSequence().length - 1, -1);
 					} else {
-						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, anchorBases.length - 1, -1);
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, getAnchorSequence(), getAnchorSequence().length - 1, -1);
 					}
 				} else {
-					remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal - 1, -1, breakendBases, breakendBases.length - 1, -1);
+					remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal - 1, -1, getBreakendSequence(), getBreakendSequence().length - 1, -1);
 					if (bp.direction2  == BreakendDirection.Forward) {
-						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, 0, 1);
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, getAnchorSequence(), 0, 1);
 					} else {
-						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, 0, 1);
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, getAnchorSequence(), 0, 1);
 					}
 				}
 				BreakpointSummary adjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference, false);
@@ -287,23 +282,31 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	
 	@Override
 	public byte[] getBreakendSequence() {
-		return breakendBases;
+		return Arrays.copyOfRange(record.getReadBases(), breakendStart, breakendEnd);
 	}
 
 	@Override
-	public byte[] getBreakendQuality() {
-		return breakendQuals;
+	public byte[] getBreakendQuality(){
+		if (record.getBaseQualities() != SAMRecord.NULL_QUALS && record.getBaseQualities() != null) {
+			return Arrays.copyOfRange(record.getBaseQualities(), breakendStart, breakendEnd);
+		} else {
+			return null;
+		}
 	}
 	
 
 	@Override
 	public byte[] getAnchorSequence() {
-		return anchorBases;
+		return Arrays.copyOfRange(record.getReadBases(), anchorStart, anchorEnd);
 	}
 
 	@Override
 	public byte[] getAnchorQuality() {
-		return anchorQuals;
+		if (record.getBaseQualities() != SAMRecord.NULL_QUALS && record.getBaseQualities() != null) {
+			return Arrays.copyOfRange(record.getBaseQualities(), anchorStart, anchorEnd);
+		} else {
+			return null;
+		}
 	}
 
 	@Override
@@ -341,8 +344,8 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		int homlen = location.end - location.start;
 		int locallen = getHomologyAnchoredBaseCount();
 		int remotelen = homlen - locallen;
-		String strAnchor = new String(anchorBases, StandardCharsets.US_ASCII);
-		String strBreakend = new String(breakendBases, StandardCharsets.US_ASCII);
+		String strAnchor = new String(getAnchorSequence(), StandardCharsets.US_ASCII);
+		String strBreakend = new String(getBreakendSequence(), StandardCharsets.US_ASCII);
 		try {
 			if (location.direction == BreakendDirection.Forward) {
 				// end of anchor + start of breakend

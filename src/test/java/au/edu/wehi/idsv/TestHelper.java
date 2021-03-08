@@ -1307,4 +1307,23 @@ public class TestHelper {
 		}
 		return reads;
 	}
+	public List<String> allSequencesWithinEditDistance(String seq, int maxEditDistance) {
+		List<String> sequences = ImmutableList.of(seq);
+		for (int dist = 1; dist <= maxEditDistance; dist++) {
+			List<String> newSequences = Lists.newArrayList();
+			for (String s : sequences) {
+				for (int i = 0; i < s.length(); i++) {
+					for (char c : new char[] {'A', 'C', 'G', 'T'}) {
+						String s2 = s.substring(0, i) + c + s.substring(i + 1);
+						if (!seq.equals(s2)) {
+							newSequences.add(s2);
+						}
+					}
+				}
+			}
+			sequences = newSequences;
+		}
+		sequences.add(seq);
+		return sequences;
+	}
 }

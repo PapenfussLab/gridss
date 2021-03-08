@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -372,5 +374,22 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(SES(10, 10)), input);
 		Assert.assertEquals(ImmutableList.of("Tumour"), aes.getAssemblyCategories());
 		Assert.assertArrayEquals(new int[] { 1 }, aes.getAssemblyCategoryToProcessingContextCategoryLookup());
+	}
+	@Test
+	public void should_error_correct() throws IOException {
+		List<SAMRecord> r = new ArrayList<>();
+		String correctSeq = S(RANDOM).substring(1, 51) + S(RANDOM).substring(100, 150);
+		for (String seq : allSequencesWithinEditDistance(correctSeq, 1)) {
+			r.add(withName(seq, withSequence(seq, Read(2, 1, "50M50S")))[0]);
+		}
+		createInput(r);
+		ProcessingContext pc = getCommandlineContext();
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
+		aes.assembleBreakends(null);
+		List<SAMRecord> asm = getRecords(aes.getFile());
+		Assert.assertEquals(1, asm.size());
+		Assert.assertEquals(correctSeq, asm.get(0).getReadString());
 	}
 }

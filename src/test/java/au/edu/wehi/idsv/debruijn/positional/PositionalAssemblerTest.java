@@ -1,13 +1,18 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.SAMRecord;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
@@ -143,5 +148,30 @@ public class PositionalAssemblerTest extends TestHelper {
 		for (SAMRecord r : output) {
 			assertEquals(BreakendDirection.Forward, new AssemblyAttributes(r).getAssemblyDirection());
 		}
+	}
+	@Test
+	public void should_error_correct_and_downsample_at_complexity_threshold() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().errorCorrection.kmerErrorCorrectionMultiple = 2;
+		pc.getAssemblyParameters().positional.maximumNodeDensity = 0.05f;
+		String seq = S(RANDOM).substring(1, 51) + S(RANDOM).substring(100, 150);
+		List<String> sequences = allSequencesWithinEditDistance(seq, 2);
+		AtomicInteger index = new AtomicInteger();
+		MockSAMEvidenceSource ses = SES();
+		List<DirectedEvidence> e = Lists.newArrayList(sequences.stream()
+				.map(s -> (DirectedEvidence)SCE(FWD, ses, withName(s + index.incrementAndGet(), withSequence(s, Read(2, 1, "50M50S")))[0]))
+				.collect(Collectors.toList()));
+		for (int i = 1; i < 200; i++) {
+			e.add(SCE(FWD, ses, Read(2, i * 100, "50M50S")));
+		}
+		IntervalBed excluded = new IntervalBed(pc.getLinear());
+		AssemblyEvidenceSource aes = AES(pc);
+		ArrayList<SAMRecord> output = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), e.iterator(), BreakendDirection.Forward, excluded, null));
+		Assert.assertNotEquals(0, excluded.size()); // we should have hit the threshold
+		List<Collection<String>> assembledReads = output.stream()
+				.map(a -> new AssemblyAttributes(a).getEvidenceIDs(null, null, null, aes))
+				.distinct()
+				.collect(Collectors.toList());
+		Assert.assertNotEquals(sequences.stream().distinct().count(), assembledReads.size()); // make sure we assembled fewer reads
 	}
 }

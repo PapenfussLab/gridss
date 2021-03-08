@@ -6,6 +6,7 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
 import java.util.ArrayDeque;
+import java.util.Comparator;
 
 public class TraversalNode {
 	public final KmerPathSubnode node;
@@ -199,6 +200,7 @@ public class TraversalNode {
 	public static Ordering<TraversalNode> ByScoreDescPathFirstEndSubnode = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
+
 			return ComparisonChain.start()
 					.compare(right.score, left.score)
 					.compare(left, right, ByPathFirstStartScoreEndSubnode)

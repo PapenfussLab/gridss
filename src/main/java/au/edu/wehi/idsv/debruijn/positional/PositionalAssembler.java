@@ -5,10 +5,12 @@ import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
+import au.edu.wehi.idsv.debruijn.ReadErrorCorrector;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.util.FilenameUtil;
+import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import com.google.common.collect.*;
@@ -102,6 +104,14 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	private void ensureAssembler(boolean attemptRecovery, Set<DirectedEvidence> preload) {
 		try {
 			ensureAssembler(preload);
+		} catch (AssemblyThresholdReachedException atre) {
+			Set<DirectedEvidence> reloadRecoverySet = getEvidenceInCurrentAssembler();
+			// really aggressive error correction of every read might simplify our assembly graph
+			ReadErrorCorrector.errorCorrect(context.getAssemblyParameters().errorCorrection.k, context.getAssemblyParameters().errorCorrection.kmerErrorCorrectionMultiple / 2, reloadRecoverySet);
+			Set<DirectedEvidence> downsampledRecoverySet = downsampleEvidenceInRegion(reloadRecoverySet, atre.getRange());
+			// restart assembly using the downsampled set of reads
+			currentAssembler = null;
+			ensureAssembler(downsampledRecoverySet);
 		} catch (AssertionError|Exception e) {
 			if (contigGeneratedSinceException) {
 				contigGeneratedSinceException = false;
@@ -153,6 +163,38 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			}
 		}
 	}
+
+	private Set<DirectedEvidence> downsampleEvidenceInRegion(Set<DirectedEvidence> preload, Range<Integer> range) {
+		float scRate = context.getAssemblyParameters().downsampling.densityDownsampleRateClippedReads;
+		float rpRate = context.getAssemblyParameters().downsampling.densityDownsampleRateDiscordantReads;
+		Random rng = new Random(range.lowerEndpoint());
+		Set<DirectedEvidence> downsampledPreload = preload.stream().filter(de -> {
+			float downsampleThreshold = scRate;
+			boolean overlapsRanges = IntervalUtil.overlapsClosed(
+					range.lowerEndpoint(), range.upperEndpoint(),
+					de.getUnderlyingSAMRecord().getUnclippedStart(), de.getUnderlyingSAMRecord().getUnclippedEnd());
+			if (de instanceof NonReferenceReadPair) {
+				downsampleThreshold = rpRate;
+				NonReferenceReadPair nrrp = (NonReferenceReadPair) de;
+				KmerEvidence ke = KmerEvidence.create(context.getAssemblyParameters().k, nrrp);
+				overlapsRanges |= IntervalUtil.overlapsClosed(
+						range.lowerEndpoint(), range.upperEndpoint(),
+						ke.startPosition(), ke.endPosition());
+			}
+			return !overlapsRanges | rng.nextFloat() < downsampleThreshold;
+		}).collect(Collectors.toSet());
+		if (downsampledPreload.size() == preload.size()) {
+			log.warn(String.format("Forcing downsampling around %s:%d-%d since probabilistic downsampling failed.", currentContig, range.lowerEndpoint(), range.upperEndpoint()));
+			// force an overall downsampling if we didn't actually remove anything
+			downsampledPreload = downsampledPreload.stream()
+					.skip(1)
+					.filter(de -> rng.nextFloat() < 0.95)
+					.collect(Collectors.toSet());
+		}
+		return downsampledPreload;
+	}
+
+
 	private static AtomicInteger errorPackagesCreated = new AtomicInteger(0);
 	private File packageMinimalAssemblyErrorReproductionData(Set<DirectedEvidence> evidenceInCurrentAssembler) throws IOException {
 		FileSystemContext fsc = context.getFileSystemContext();

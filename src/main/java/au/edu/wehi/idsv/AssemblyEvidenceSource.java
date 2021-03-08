@@ -232,7 +232,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		QueryInterval[] expanded = getExpanded(intervals);
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded, EvidenceSortOrder.SAMRecordStartPosition)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input, downsampledRegions);
-			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction, excludedRegions, safetyRegions);
+			Iterator<DirectedEvidence> errorCorrectedIt = errorCorrected(throttledIt);
+			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, errorCorrectedIt, direction, excludedRegions, safetyRegions);
 			if (telemetry != null) {
 				assembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
 			}
@@ -343,7 +344,21 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			*/
 		}
 		return assembly;
-	} 
+	}
+	private Iterator<DirectedEvidence> errorCorrected(Iterator<DirectedEvidence> in) {
+		AssemblyConfiguration ap = getContext().getAssemblyParameters();
+		DirectedEvidenceErrorCorrectingIterator out = new DirectedEvidenceErrorCorrectingIterator(
+				getContext().getLinear(),
+				in,
+				getMinConcordantFragmentSize(),
+				getMaxConcordantFragmentSize(),
+				getMaxReadLength(),
+				getMaxReadMappedLength(),
+				EvidenceSortOrder.SAMRecordStartPosition,
+				ap.errorCorrection.kmerErrorCorrectionMultiple,
+				ap.errorCorrection.k);
+		return out;
+	}
 	private Iterator<DirectedEvidence> throttled(Iterator<DirectedEvidence> it, IntervalBed downsampledRegions) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
 		DirectedEvidenceDensityThrottlingIterator dit = new DirectedEvidenceDensityThrottlingIterator(

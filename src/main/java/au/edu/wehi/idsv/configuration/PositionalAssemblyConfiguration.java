@@ -4,6 +4,7 @@ import org.apache.commons.configuration.Configuration;
 
 public class PositionalAssemblyConfiguration {
 	public static final String CONFIGURATION_PREFIX = "positional";
+
 	public PositionalAssemblyConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
 		maxPathLengthMultiple = config.getFloat("maxPathLengthMultiple");

@@ -345,7 +345,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<Integer> startPos = output.stream().map(x -> x.getAlignmentStart()).collect(Collectors.toList());
 		assertFalse(Ordering.natural().reverse().isOrdered(startPos));
 	}
-	@Test
+	@Test(expected=AssemblyThresholdReachedException.class)
 	public void should_not_assembly_when_graph_density_exceeds_maximum() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource ses = SES(10, 10);

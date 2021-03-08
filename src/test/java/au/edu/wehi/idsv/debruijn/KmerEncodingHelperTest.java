@@ -3,10 +3,14 @@ package au.edu.wehi.idsv.debruijn;
 import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static org.junit.Assert.*;
 
@@ -373,5 +377,35 @@ public class KmerEncodingHelperTest extends TestHelper {
 		LongArrayList ref = KPN(k,  "AAATAACA", 1, 1, true).pathKmers();
 		LongArrayList seq = KPN(k,   "AATAACCATGC", 1, 1, true).pathKmers();
 		assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, seq, 1, true));
+	}
+	@Test
+	public void neighbouringStates_should_return_neighbours() {
+		String state = "CTG";
+		int k = 3;
+		List<String> expected = Lists.newArrayList(
+				"ATG", "TTG", "GTG",
+				"CAG","CCG","CGG",
+				"CTA","CTC","CTT");
+		Collections.sort(expected);
+		long kmer =
+				KmerEncodingHelper.picardBaseToEncoded((byte)state.charAt(0)) << 0 |
+				KmerEncodingHelper.picardBaseToEncoded((byte)state.charAt(1)) << 2 |
+				KmerEncodingHelper.picardBaseToEncoded((byte)state.charAt(2)) << 4;
+		long[] neighbours = KmerEncodingHelper.neighbouringStates(k, kmer);
+		List<String> result = LongStream.of(neighbours)
+				.mapToObj(l -> {
+					//PackedSequence ps = new PackedSequence(B("CGT"), false, false);
+					//ps.setKmer(l, 0, k);
+					//return S(ps.getBytes(0, 3));
+
+					return S(new byte[]{
+							KmerEncodingHelper.encodedToPicardBase((l >> 0) & 3),
+							KmerEncodingHelper.encodedToPicardBase((l >> 2) & 3),
+							KmerEncodingHelper.encodedToPicardBase((l >> 4) & 3),
+					});
+				})
+				.sorted()
+				.collect(Collectors.toList());
+		Assert.assertEquals(expected, result);
 	}
 }

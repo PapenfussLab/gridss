@@ -9,6 +9,8 @@ public class ErrorCorrectionConfiguration {
 		maxBaseMismatchForCollapse = config.getInt("maxBaseMismatchForCollapse");
 		collapseBubblesOnly = config.getBoolean("collapseBubblesOnly");
 		maxPathCollapseLengthMultiple = config.getFloat("maxPathCollapseLengthMultiple");
+		kmerErrorCorrectionMultiple = config.getFloat("kmerErrorCorrectionMultiple");
+		k = config.getInt("k");
 	}
 	/**
 	 * Maximum of base mismatches for de bruijn kmer paths to be merged   
@@ -23,5 +25,13 @@ public class ErrorCorrectionConfiguration {
 	 * Units are multiples of max support width (ie largest max fragment size)
 	 */
 	public float maxPathCollapseLengthMultiple;
+	/**
+	 * Extent to which an adjacent kmer should be more supported before error correction
+	 */
+	public float kmerErrorCorrectionMultiple;
+	/**
+	 * error correction kmer size
+	 */
+	public int k;
 	public int maxPathCollapseLengthInBases(int readLength) { return (int)(maxPathCollapseLengthMultiple * readLength); }
 }

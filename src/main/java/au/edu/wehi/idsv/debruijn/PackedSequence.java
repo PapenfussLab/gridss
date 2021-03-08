@@ -249,4 +249,16 @@ public class PackedSequence implements Serializable {
 	public long[] asLongArray() {
 		return packed;
 	}
+
+    public void setKmer(long kmer, int offset, int k) {
+		long existingKmer = getKmer(offset, k);
+		for (int i = 0; i < k; i++) {
+			long existingBase = (existingKmer >> (BITS_PER_BASE * i)) & BASE_MASK;
+			long newBase = (kmer >> (BITS_PER_BASE * i)) & BASE_MASK;
+			if (existingBase != newBase) {
+				// first base is in the MSBs of the kmer
+				setBaseEncoded(offset + k - 1 - i, newBase);
+			}
+		}
+    }
 }

@@ -361,4 +361,12 @@ public class SingleReadEvidenceTest extends TestHelper {
 		Assert.assertEquals(1, e1.size());
 		Assert.assertEquals(0, e2.size());
 	}
+	@Test
+	public void should_update_when_underlying_read_sequence_changes() {
+		SAMRecord r = Read(0, 1, "5M5S");
+		SingleReadEvidence e = SingleReadEvidence.createEvidence(SES(), 0, r).get(0);
+		r.setReadBases(B("AAGGTAACTC"));
+		Assert.assertEquals("AAGGT", S(e.getAnchorSequence()));
+		Assert.assertEquals("AACTC", S(e.getBreakendSequence()));
+	}
 }

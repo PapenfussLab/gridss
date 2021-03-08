@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.ImmutableList;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -158,5 +159,28 @@ public class PackedSequenceTest extends TestHelper {
 		assertEquals(99, PackedSequence.overlapMatches(seq1, seq2, 1));
 		assertEquals(70, PackedSequence.overlapLength(seq1, seq3, 30));
 		assertEquals(70, PackedSequence.overlapMatches(seq1, seq3, 30));
+	}
+
+	@Test
+	public void setKmer_should_update_sequence() {
+		String s = "CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT";
+		for (int k = 0; k < 32; k++) {
+			for (int i = 0; i < s.length() - k; i++) {
+				for (int offsetBase = 0; offsetBase < k; offsetBase++) {
+					StringBuilder sb = new StringBuilder(s);
+					byte oldBase = (byte)s.charAt(i + offsetBase);
+					byte newBase = (byte)(oldBase == 'A' ? 'T' : 'A');
+					sb.setCharAt(i + offsetBase, (char)newBase);
+					String s2 = sb.toString();
+					PackedSequence seq = new PackedSequence(B(s), false, false);
+					long existingKmer = seq.getKmer(i, k);
+					PackedSequence seq2 = new PackedSequence(B(s2), false, false);
+					long targetKmer = seq2.getKmer(i, k);
+					Assert.assertNotEquals(existingKmer, targetKmer); // setup failure if we didn't change this kmer
+					seq.setKmer(targetKmer, i, k);
+					Assert.assertEquals(s2, S(seq.getBytes(0, seq.length())));
+				}
+			}
+		}
 	}
 }
