@@ -87,6 +87,7 @@ public class ReadErrorCorrectorTest extends TestHelper {
         sb.setCharAt(50, (char)SequenceUtil.complement((byte)sb.charAt(50)));
         sb.setCharAt(51, (char)SequenceUtil.complement((byte)sb.charAt(51)));
         sb.setCharAt(52, (char)SequenceUtil.complement((byte)sb.charAt(52)));
-        Assert.assertEquals(SEQ, intoSeq(21, sb.toString(), 10, 20));
+        String s2 = sb.toString();
+        Assert.assertEquals(s2, intoSeq(21, s2, 10, 20));
     }
 }

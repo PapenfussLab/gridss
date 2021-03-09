@@ -110,7 +110,7 @@ public class ReadErrorCorrector {
         long transform = collapseLookup.getOrDefault(kmer, SENTINEL_VALUE);
         if (transform != SENTINEL_VALUE) {
             // check we want to change the last base
-            if ((kmer & 3) != (transform & 3)) {
+            if ((kmer & 15) != (transform & 15)) {
                 ps.setKmer(transform, ps.length() - k, k);
                 return true;
             }

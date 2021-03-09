@@ -110,8 +110,8 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			ReadErrorCorrector.errorCorrect(context.getAssemblyParameters().errorCorrection.k, context.getAssemblyParameters().errorCorrection.kmerErrorCorrectionMultiple / 2, reloadRecoverySet);
 			Set<DirectedEvidence> downsampledRecoverySet = downsampleEvidenceInRegion(reloadRecoverySet, atre.getRange());
 			// restart assembly using the downsampled set of reads
-			currentAssembler = null;
-			ensureAssembler(downsampledRecoverySet);
+			closeCurrentAssembler();
+			ensureAssembler(true, downsampledRecoverySet);
 		} catch (AssertionError|Exception e) {
 			if (contigGeneratedSinceException) {
 				contigGeneratedSinceException = false;
@@ -285,7 +285,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 
 	private void ensureAssembler(Set<DirectedEvidence> preload) {
 		flushIfRequired();
-		while ((currentAssembler == null || !currentAssembler.hasNext()) && it.hasNext()) {
+		while ((currentAssembler == null || !currentAssembler.hasNext()) && ((preload != null && !preload.isEmpty()) || it.hasNext())) {
 			// traverse contigs until we find one that has an assembly to call
 			currentAssembler = createAssembler(preload);
 			preload = null;
@@ -301,14 +301,14 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		int maxPathLength = ap.positional.maxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorLength;
-		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
-		int firstPosition = it.peek().getBreakendSummary().start;
 		PeekingIterator<DirectedEvidence> inputIterator = it;
 		if (preload != null && preload.size() > 0) {
 			ArrayList<DirectedEvidence> list = Lists.newArrayList(preload);
 			list.sort(DirectedEvidenceOrder.ByNatural);
 			inputIterator = Iterators.peekingIterator(Iterators.concat(list.iterator(), inputIterator));
 		}
+		int referenceIndex = inputIterator.peek().getBreakendSummary().referenceIndex;
+		int firstPosition = inputIterator.peek().getBreakendSummary().start;
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(inputIterator, referenceIndex);
 		evidenceTracker = new EvidenceTracker();
