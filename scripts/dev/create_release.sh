@@ -1,4 +1,5 @@
 #!/bin/bash
+conda deactivate
 set -o errexit -o pipefail -o noclobber -o nounset
 cd ../../
 version=$(grep "gridss</version>" pom.xml | cut -f 2 -d '>' | cut -f 1 -d '-')
