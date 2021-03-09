@@ -73,7 +73,7 @@ public class ReadErrorCorrector {
         return changes;
     }
     private boolean error_correct_flanking_kmers(SAMRecord r, PackedSequence ps) {
-        for (int i = 1; i < ps.length() - k; i++) {
+        for (int i = 1; i < ps.length() - k + 1; i++) {
             long leftKmer = ps.getKmer(i - 1, k);
             long leftTransform = collapseLookup.getOrDefault(leftKmer, SENTINEL_VALUE);
             if (leftTransform != SENTINEL_VALUE) {
@@ -81,7 +81,7 @@ public class ReadErrorCorrector {
                 long rightTransform = collapseLookup.getOrDefault(rightKmer, SENTINEL_VALUE);
                 if (rightTransform != SENTINEL_VALUE) {
                     // check they both agree on the base change being made
-                    long basesMatching = KmerEncodingHelper.basesMatching(k - 2, leftTransform >> 4, rightTransform);
+                    long basesMatching = KmerEncodingHelper.basesMatching(k - 2, leftTransform, rightTransform >> 4);
                     if (basesMatching == k - 2) {
                         ps.setKmer(leftTransform, i - 1, k);
                         return true;
@@ -95,9 +95,9 @@ public class ReadErrorCorrector {
         long kmer = ps.getKmer(0, k);
         long transform = collapseLookup.getOrDefault(kmer, SENTINEL_VALUE);
         if (transform != SENTINEL_VALUE) {
-            // check we want to change the first or second base
+            // check we want to change the first base
             int basesDifferent = KmerEncodingHelper.basesDifference(k - 2, kmer, transform);
-            boolean lowBytesSame = ((kmer & 15) != (transform & 15));
+            boolean lowBytesSame = ((kmer & 3) != (transform & 3));
             if (basesDifferent == 0) {
                 ps.setKmer(transform, 0, k);
                 return true;
@@ -109,8 +109,8 @@ public class ReadErrorCorrector {
         long kmer = ps.getKmer(ps.length() - k, k);
         long transform = collapseLookup.getOrDefault(kmer, SENTINEL_VALUE);
         if (transform != SENTINEL_VALUE) {
-            // check we want to change the last or second last base
-            if ((kmer & 15) != (transform & 15)) {
+            // check we want to change the last base
+            if ((kmer & 3) != (transform & 3)) {
                 ps.setKmer(transform, ps.length() - k, k);
                 return true;
             }
@@ -120,17 +120,21 @@ public class ReadErrorCorrector {
 
     private void ensureCollapseLookup() {
         if (collapseLookup == null) {
-            collapseLookup = new Long2LongOpenHashMap();
-            for (long kmer : kmerCounts.keySet()) {
-                int count = kmerCounts.get(kmer);
-                long bestNeighbourKmer = bestNeighbour(kmer);
-                int bestNeighbourCount = kmerCounts.get(bestNeighbourKmer);
-                if (count * collapseMultiple <= bestNeighbourCount) {
-                    collapseLookup.put(kmer, bestNeighbourKmer);
-                }
-            }
+            collapseLookup = createCollapseLookup();
             log.debug(String.format("Collapsed %d of %d kmer.", collapseLookup.size(), kmerCounts.size()));
         }
+    }
+    private Long2LongOpenHashMap createCollapseLookup() {
+        Long2LongOpenHashMap lookup = new Long2LongOpenHashMap();
+        for (long kmer : kmerCounts.keySet()) {
+            int count = kmerCounts.get(kmer);
+            long bestNeighbourKmer = bestNeighbour(kmer);
+            int bestNeighbourCount = kmerCounts.get(bestNeighbourKmer);
+            if (count * collapseMultiple <= bestNeighbourCount) {
+                lookup.put(kmer, bestNeighbourKmer);
+            }
+        }
+        return lookup;
     }
 
     /**
@@ -144,7 +148,7 @@ public class ReadErrorCorrector {
         for (long neighbour : KmerEncodingHelper.neighbouringStates(k, kmer)) {
             int count = kmerCounts.get(neighbour);
             if (count > bestCount) {
-                bestKmer = (int)neighbour;
+                bestKmer = neighbour;
                 bestCount = count;
             }
         }

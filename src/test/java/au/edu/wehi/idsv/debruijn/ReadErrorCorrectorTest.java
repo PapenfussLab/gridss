@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,12 +59,18 @@ public class ReadErrorCorrectorTest extends TestHelper {
     }
     @Test
     public void should_correct_third() {
-        String seq = "CAG" + SEQ.substring(3);
+        int offset = 2;
+        String seq = SEQ.substring(0, offset) + "G" + SEQ.substring(offset + 1);
         Assert.assertEquals(SEQ, intoSeq(21, seq, 10, 20));
     }
     @Test
     public void should_correct_end() {
         String seq = SEQ.substring(0, SEQ.length() - 1) + "A";
+        Assert.assertEquals(SEQ, intoSeq(21, seq, 10, 20));
+    }
+    @Test
+    public void should_correct_second_last() {
+        String seq = SEQ.substring(0, 98) + "TT";
         Assert.assertEquals(SEQ, intoSeq(21, seq, 10, 20));
     }
     @Test
@@ -73,5 +80,13 @@ public class ReadErrorCorrectorTest extends TestHelper {
         rec.countKmers(r);
         rec.errorCorrect(r);
         Assert.assertEquals("AACTAAAAAAAAAAAAAAAAAAAACGTAACCGGTT", S(r.getReadBases()));
+    }
+    @Test
+    public void should_not_correct_MNV() {
+        StringBuilder sb = new StringBuilder(SEQ);
+        sb.setCharAt(50, (char)SequenceUtil.complement((byte)sb.charAt(50)));
+        sb.setCharAt(51, (char)SequenceUtil.complement((byte)sb.charAt(51)));
+        sb.setCharAt(52, (char)SequenceUtil.complement((byte)sb.charAt(52)));
+        Assert.assertEquals(SEQ, intoSeq(21, sb.toString(), 10, 20));
     }
 }

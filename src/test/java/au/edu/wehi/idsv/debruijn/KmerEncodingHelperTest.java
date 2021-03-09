@@ -422,4 +422,13 @@ public class KmerEncodingHelperTest extends TestHelper {
 			Assert.assertEquals(1, KmerEncodingHelper.basesDifference(k, state, neighbour));
 		}
 	}
+	@Test
+	public void neighbouringStates_should_return_neighbour_sequence() {
+		String s1 = S(RANDOM).substring(0, 21);
+		String s2 = "T" + S(RANDOM).substring(1, 21);
+		long k1 = new PackedSequence(B(s1), false, false).getKmer(0, 21);
+		long k2 = new PackedSequence(B(s2), false, false).getKmer(0, 21);
+		long[] results = KmerEncodingHelper.neighbouringStates(21, k1);
+		Assert.assertEquals(1, LongStream.of(results).filter(x -> x == k2).count());
+	}
 }
