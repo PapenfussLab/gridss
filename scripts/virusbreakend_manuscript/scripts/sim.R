@@ -297,33 +297,33 @@ ggsave("sim_repeat.pdf", width=8, height=4)
 
 #######
 # HCC
-plot_hcc = data.frame(
+data.frame(
 		caller=c("VIRUSBreakend", "GRIDSS2", "BATVI", "VERSE", "ViFi"),
-		tp=c(15, 15, 16, 14, 16),
-		homtp=c(4,0,0,0,0)) %>%
-	mutate(fp=22-tp-homtp) %>%
+		tp=c(16, 15, 16, 2, 16),
+		homtp=c(4,0,0,0,0),
+		filteredtp=c(0,0,4,12,0)) %>%
 	gather("status", n, 2:4) %>%
 	mutate(
 		classification=factor(
-			ifelse(status=="tp", "True positive", ifelse(status=="homtp", "Homologous call", "False negative")),
-			levels=c("False negative", "Homologous call", "True positive"))) %>%
+			ifelse(status=="tp", "True positive", ifelse(status=="homtp", "Homologous call", "Filtered call")),
+			levels=c("Filtered call", "Homologous call", "True positive"))) %>%
 	mutate(caller=factor(caller, levels=c("VIRUSBreakend", "BATVI", "VERSE", "ViFi", "GRIDSS2"))) %>%
 	ggplot() +
 	aes(x=caller, y=n, fill=classification) +
 	geom_bar(position="stack", stat="identity") +
 	scale_fill_manual(values=c("#BBBBBB", "#7570b3", "#1b9e77")) + 
 	#theme(axis.text.x = element_text(angle = 90)) +
-	scale_y_continuous(expand=c(0,0)) +
+	scale_y_continuous(expand=c(0,0), limits=c(0,22), breaks=c(0, 5, 10, 15, 20, 22)) +
 	theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-	labs(fill="", x="", y="Integrations\n(Sung et al validated)")
-#ggsave("hcc.pdf", width=4.5, height=4)
+	labs(fill="", x="", y="Integration breakpoints\n(Sung et al validated)")
+ggsave("hcc.pdf", width=6, height=3)
 
 #######
 # Timing
 timingdf = read_tsv("../publicdata/sim/timing.tsv", col_names = c("caller", "n", "depth", "day", "time", "checkpoint"), col_types="cncctc") %>%
 	mutate(depth=as.numeric(str_replace(depth, "x", "")))
 hcctiming = read_csv("../runtime.csv", col_names=c("log", "caller", "slurm", "caller2", "sample", "Day", "time", "zone", "year", "checkpoint", "duration"), col_types="ccccccccccd")
-plot_timing = hcctiming %>%
+hcctiming %>%
 	filter(!is.na(duration)) %>%
 	filter(sample %in% c("177T")) %>%
 	mutate(caller=factor(c("virusbreakend"="VIRUSbreakend", "batvi"="BATVI", "verse"="VERSE", "vifi"="ViFi")[caller], levels=c("VIRUSbreakend", "BATVI", "VERSE", "ViFi"))) %>%
@@ -334,7 +334,7 @@ plot_timing = hcctiming %>%
 	scale_y_continuous(expand = c(0,0), limits=c(0,50)) +
 	theme(panel.grid.major.x=element_blank()) +
 	labs(x="", y="Hours")
-ggsave("timing.pdf", width=4, height=3)
+ggsave("timing.pdf", width=3, height=3)
 
 
 plot_grid(plot_sim, plot_hcc, ncol=1, labels=c("a", "b"))
