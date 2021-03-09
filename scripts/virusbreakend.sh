@@ -673,7 +673,7 @@ rm -f $file_gridss_configuration
 cat > $file_gridss_configuration << EOF
 assembly.downsample.acceptDensityPortion = 5
 assembly.downsample.targetEvidenceDensity = 50
-assembly.positional.maximumNodeDensity = 100
+assembly.positional.maximumNodeDensity = 10
 assembly.positional.safetyModePathCountThreshold = 250000
 assembly.positional.safetyModeContigsToCall = 12
 EOF
