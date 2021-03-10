@@ -274,6 +274,7 @@ target_no_slop_file=$working_prefix.target.no_slop.bed
 target_file=$working_prefix.target.bed
 genome_file=$working_prefix.bedtools.genome
 script_vcf_to_bed=$working_prefix.vcf2bed.R
+script_bam_header_to_bed_genome="$working_prefix.bam_header_to_genome.R"
 rm -f $working_prefix*
 if [[ "$targetbed" == "" ]] ; then
 	if which Rscript > /dev/null ; then
@@ -303,27 +304,42 @@ fi
 
 # Create bedtools genome file from samtools header
 # Just the SN and LN attributes in tab-delimited format
+# @SQ\tSN:<seq_name>\tLN:<seq_length> ==> <seq_name>\t<seq_length>
 write_status "Generating bedtools genome file from bam header"
+cat > "$script_bam_header_to_bed_genome" << EOF
+#!/usr/bin/env Rscript
+
+## Get contigs from bam header into bedtools genome file format
+
+# Imports
+suppressPackageStartupMessages(library(Rsamtools))
+suppressPackageStartupMessages(library(tidyverse))
+
+# Create df / render / print
+Rsamtools::scanBamHeader("$input_bam", what="targets")[["$input_bam"]][["targets"]] %>%
+  # Convert to standard data frame
+  as.data.frame() %>%
+  # Convert rowname to column
+  tibble::rownames_to_column(var="chr") %>%
+  # Convert to tibble
+  tibble::as_tibble() %>%
+  # Format
+  readr::format_delim(delim="\t", col_names=FALSE) %>%
+  # And print
+  cat()
+EOF
+
 # Start by pulling out the bam header
-samtools view -H "$input_bam" | {
- # Capture only the lines starting with 'SQ'
- # Example line would be SQ:<tab>SN:chr1<tab>LN:12345678
- grep '^@SQ'
-} | {
- # Run awk over lines to convert to chr1<tab>12345678
- # Then write to $genome_file
- awk '{ FS="\t"; OFS="\t" } { $2=gensub(/SN:/, "", "g", $2); $3=gensub(/LN:/, "", "g", $3) } { print $2,$3 }'
-} > "$genome_file"
+Rscript "$script_bam_header_to_bed_genome" > "$genome_file"
 
 # Use bedtools slop to extend the bed file by margins set by targetmargin variable
-write_status "Extending regions of interest by $targetmargin bp"
 bedtools slop \
   -i "$target_no_slop_file" \
   -g "$genome_file" \
   -b "$targetmargin" > "$target_file"
 
 # Then use gridsstools to extract the reads of interest
-write_status "Extracting reads of interest"
+write_status "Extracting reads of interest by $targetmargin bp"
 gridsstools extractFragmentsToBam -@ $threads -o $output_bam <(samtools view -M -@ $threads -L $target_file $input_bam | cut -f 1) $input_bam
 gridss_dir=$workingdir/$(basename $output_bam).gridss.working
 gridss_prefix=$gridss_dir/$(basename $output_bam)
