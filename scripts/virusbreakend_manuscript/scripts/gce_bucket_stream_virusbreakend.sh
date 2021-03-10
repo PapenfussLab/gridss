@@ -23,9 +23,8 @@ export PATH=.:$PATH
 export GRIDSS_JAR=/data/gridss-2.11.0-gridss-jar-with-dependencies.jar
 mkdir -p /data
 cd /data
-gsutil -u $bucket_user -m cp -r gs://virusbreakend/*.jar .
-gsutil -u $bucket_user -m cp -r gs://virusbreakend/*.sh .
-gsutil -u $bucket_user -m cp -r gs://virusbreakend/
+gsutil -u $bucket_user -m cp -r gs://virusbreakend/bin/*.jar .
+gsutil -u $bucket_user -m cp -r gs://virusbreakend/bin/*.sh .
 gsutil -u $bucket_user -m cp -r gs://virusbreakend/db .
 chmod +x *.sh
 # Nifty hack in which we don't even need to download the file: we can stream directly from the bucket

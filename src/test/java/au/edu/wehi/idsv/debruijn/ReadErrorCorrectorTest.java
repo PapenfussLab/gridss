@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -21,8 +23,8 @@ public class ReadErrorCorrectorTest extends TestHelper {
         reads.add(r);
         r.setReadBases(B(seq));
         ReadErrorCorrector rec = new ReadErrorCorrector(k, threshold);
-        reads.stream().forEach(x -> rec.countKmers(x));
-        reads.stream().forEach(x -> rec.errorCorrect(x));
+        reads.stream().forEach(x -> rec.countKmers(x, false));
+        reads.stream().forEach(x -> rec.errorCorrect(x, false));
         return r.getReadString();
     }
     @Test
@@ -34,8 +36,8 @@ public class ReadErrorCorrectorTest extends TestHelper {
             r.getReadBases()[i] = (byte)(r.getReadBases()[i] == 'T' ? 'A' : 'T');
             reads.add(r);
         }
-        reads.stream().forEach(r -> rec.countKmers(r));
-        reads.stream().forEach(r -> rec.errorCorrect(r));
+        reads.stream().forEach(r -> rec.countKmers(r, false));
+        reads.stream().forEach(r -> rec.errorCorrect(r, false));
         for (SAMRecord r : reads) {
             Assert.assertEquals(SEQ, S(r.getReadBases()));
         }
@@ -77,8 +79,8 @@ public class ReadErrorCorrectorTest extends TestHelper {
     public void should_not_chain_extend_error_correction() {
         ReadErrorCorrector rec = new ReadErrorCorrector(4, 5);
         SAMRecord r = withSequence(B("AACTAAAAAAAAAAAAAAAAAAAACGTAACCGGTT"), Read(0, 1, "13M"))[0];
-        rec.countKmers(r);
-        rec.errorCorrect(r);
+        rec.countKmers(r, false);
+        rec.errorCorrect(r, false);
         Assert.assertEquals("AACTAAAAAAAAAAAAAAAAAAAACGTAACCGGTT", S(r.getReadBases()));
     }
     @Test
@@ -89,5 +91,43 @@ public class ReadErrorCorrectorTest extends TestHelper {
         sb.setCharAt(52, (char)SequenceUtil.complement((byte)sb.charAt(52)));
         String s2 = sb.toString();
         Assert.assertEquals(s2, intoSeq(21, s2, 10, 20));
+    }
+    @Test
+    public void should_correct_mate_evidence_according_to_expected_orientation() {
+        MockSAMEvidenceSource ses = SES();
+        List<DirectedEvidence> evidence = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            SAMRecord r = withName("seq" + i, withSequence(B(SEQ), Read(2, 1, "50M50S")))[0];
+            evidence.add(SCE(FWD, ses, r));
+        }
+        SAMRecord[] dpfp = DP(0, 2, "100M", true, 2, 1, "100M", true);
+        dpfp[0].setReadBases(B("G" + SEQ.substring(1)));
+        dpfp[1].setReadBases(B(SequenceUtil.reverseComplement("T" + SEQ.substring(1))));
+        evidence.add(NRRP(ses, dpfp));
+
+        SAMRecord[] dpfn = DP(0, 3, "100M", true, 2, 1, "100M", false);
+        dpfn[0].setReadBases(B("G" + SEQ.substring(1)));
+        dpfn[1].setReadBases(B("T" + SEQ.substring(1)));
+        evidence.add(NRRP(ses, dpfn));
+
+        SAMRecord[] dprp = DP(0, 4, "100M", false, 2, 1, "100M", false);
+        dprp[0].setReadBases(B("G" + SEQ.substring(1)));
+        dprp[1].setReadBases(B(SequenceUtil.reverseComplement("T" + SEQ.substring(1))));
+        evidence.add(NRRP(ses, dprp));
+
+        SAMRecord[] dprn = DP(0, 5, "100M", false, 2, 1, "100M", true);
+        dprn[0].setReadBases(B("G" + SEQ.substring(1)));
+        dprn[1].setReadBases(B("T" + SEQ.substring(1)));
+        evidence.add(NRRP(ses, dprn));
+
+        ReadErrorCorrector.errorCorrect(21, 5, evidence);
+        Assert.assertEquals(SEQ, dpfp[0].getReadString());
+        Assert.assertEquals(SequenceUtil.reverseComplement(SEQ), dpfp[1].getReadString());
+        Assert.assertEquals(SEQ, dpfn[0].getReadString());
+        Assert.assertEquals(SEQ, dpfn[1].getReadString());
+        Assert.assertEquals(SEQ, dprp[0].getReadString());
+        Assert.assertEquals(SequenceUtil.reverseComplement(SEQ), dprp[1].getReadString());
+        Assert.assertEquals(SEQ, dprn[0].getReadString());
+        Assert.assertEquals(SEQ, dprn[1].getReadString());
     }
 }

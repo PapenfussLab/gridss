@@ -1,9 +1,11 @@
 package au.edu.wehi.idsv.debruijn;
 
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
@@ -32,18 +34,26 @@ public class ReadErrorCorrector {
         // need to deduplicate the underlying reads so we don't double count
         // kmers from reads with multiple evidence (e.g. multiple indels or SC on both ends)
         Set<SAMRecord> reads = new HashSet<>();
+        Set<SAMRecord> rcreads = new HashSet<>();
         for (DirectedEvidence de : evidence) {
             reads.add(de.getUnderlyingSAMRecord());
             if (de instanceof NonReferenceReadPair) {
-                reads.add(((NonReferenceReadPair) de).getNonReferenceRead());
+                SAMRecord mate = ((NonReferenceReadPair) de).getNonReferenceRead();
+                if ((de.getBreakendSummary().direction == BreakendDirection.Forward) ^ mate.getReadNegativeStrandFlag()) {
+                    rcreads.add(mate);
+                } else {
+                    reads.add(mate);
+                }
             }
         }
-        reads.stream().forEach(r -> ec.countKmers(r));
-        reads.stream().forEach(r -> ec.errorCorrect(r));
+        reads.stream().forEach(r -> ec.countKmers(r, false));
+        rcreads.stream().forEach(r -> ec.countKmers(r, true));
+        reads.stream().forEach(r -> ec.errorCorrect(r, false));
+        rcreads.stream().forEach(r -> ec.errorCorrect(r, true));
     }
 
-    public void countKmers(SAMRecord r) {
-        PackedSequence ps = new PackedSequence(r.getReadBases(), false, false);
+    public void countKmers(SAMRecord r, boolean reverseComplement) {
+        PackedSequence ps = new PackedSequence(r.getReadBases(), reverseComplement, reverseComplement);
         for (int i = 0; i < ps.length() - k + 1; i++) {
             long kmer = ps.getKmer(i, k);
             int count = kmerCounts.get(kmer);
@@ -52,13 +62,17 @@ public class ReadErrorCorrector {
         }
         collapseLookup = null;
     }
-    public int errorCorrect(SAMRecord r) {
+    public int errorCorrect(SAMRecord r, boolean reverseComplement) {
         if (r.getReadLength() < k) return 0;
         ensureCollapseLookup();
-        PackedSequence ps = new PackedSequence(r.getReadBases(), false, false);
+        PackedSequence ps = new PackedSequence(r.getReadBases(), reverseComplement, reverseComplement);
         int changes = error_correct(r, ps);
         if (changes > 0) {
-            r.setReadBases(ps.getBytes(0, r.getReadBases().length));
+            byte[] seq = ps.getBytes(0, r.getReadBases().length);
+            if (reverseComplement) {
+                SequenceUtil.reverseComplement(seq);
+            }
+            r.setReadBases(seq);
         }
         return changes;
     }
