@@ -22,11 +22,23 @@ public class ReadErrorCorrector {
     private final int k;
     private final float collapseMultiple;
     private Long2LongMap collapseLookup;
+    /**
+     * Performance optimisation of KmerEncodingHelper.neighbouringStates()
+     * Since we're just XORing with the state to find the neighbours,
+     * we can create a lookup of XOR patterns by precomputing the pattern
+     */
+    private final long[] neighbourXORLookup;
+    /**
+     * Performance optimisation: no need to do neighbour lookups for kmers
+     * that we won't be able to collapse anyway
+     */
+    private int maxCount = 0;
 
     public ReadErrorCorrector(int k, float collapseMultiple) {
         if (k > 31) throw new IllegalArgumentException("k cannot exceed 31");
         this.k = k;
         this.collapseMultiple = collapseMultiple;
+        this.neighbourXORLookup = KmerEncodingHelper.neighbouringStates(k, 0L);
     }
 
     public static void errorCorrect(int k, float collapseMultiple, Iterable<? extends DirectedEvidence> evidence) {
@@ -59,6 +71,9 @@ public class ReadErrorCorrector {
             int count = kmerCounts.get(kmer);
             count++;
             kmerCounts.put(kmer, count);
+            if (count > maxCount) {
+                maxCount = count;
+            }
         }
         collapseLookup = null;
     }
@@ -140,12 +155,15 @@ public class ReadErrorCorrector {
     }
     private Long2LongOpenHashMap createCollapseLookup() {
         Long2LongOpenHashMap lookup = new Long2LongOpenHashMap();
+        int maxCollapseCount = (int)Math.floor(maxCount / collapseMultiple);
         for (long kmer : kmerCounts.keySet()) {
             int count = kmerCounts.get(kmer);
-            long bestNeighbourKmer = bestNeighbour(kmer);
-            int bestNeighbourCount = kmerCounts.get(bestNeighbourKmer);
-            if (count * collapseMultiple <= bestNeighbourCount) {
-                lookup.put(kmer, bestNeighbourKmer);
+            if (count <= maxCollapseCount) { // don't both with kmers we know we can't collapse
+                long bestNeighbourKmer = bestNeighbour(kmer);
+                int bestNeighbourCount = kmerCounts.get(bestNeighbourKmer);
+                if (count * collapseMultiple <= bestNeighbourCount) {
+                    lookup.put(kmer, bestNeighbourKmer);
+                }
             }
         }
         return lookup;
@@ -159,7 +177,8 @@ public class ReadErrorCorrector {
     private long bestNeighbour(long kmer) {
         long bestKmer = kmer;
         int bestCount = 0;
-        for (long neighbour : KmerEncodingHelper.neighbouringStates(k, kmer)) {
+        for (long neighbourXOR : neighbourXORLookup) {
+            long neighbour = kmer ^ neighbourXOR;
             int count = kmerCounts.get(neighbour);
             if (count > bestCount) {
                 bestKmer = neighbour;
