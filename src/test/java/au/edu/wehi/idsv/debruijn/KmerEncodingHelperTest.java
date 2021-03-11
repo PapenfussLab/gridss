@@ -431,4 +431,22 @@ public class KmerEncodingHelperTest extends TestHelper {
 		long[] results = KmerEncodingHelper.neighbouringStates(21, k1);
 		Assert.assertEquals(1, LongStream.of(results).filter(x -> x == k2).count());
 	}
+	@Test
+	public void get_base_should_return_encoded_base() {
+		String seq = S(RANDOM).substring(0, 100);
+		PackedSequence ps = new PackedSequence(B(seq), false, false);
+		for (int k = 30; k <= 32; k++) {
+			for (int i = 0; i <= ps.length() - k; i++) {
+				for (int offset = 0; offset < k; offset++) {
+					long kmer = ps.getKmer(i, k);
+					char expectedBase = seq.charAt(i + offset);
+					long base = KmerEncodingHelper.getBase(k, kmer, offset);
+					String kmerStr = KmerEncodingHelper.toString(k, kmer);
+					String expectedStr = new String(new char[] {expectedBase});
+					String actualStr = new String(new char[] {(char)KmerEncodingHelper.encodedToPicardBase(base)});
+					Assert.assertEquals(expectedStr, actualStr);
+				}
+			}
+		}
+	}
 }

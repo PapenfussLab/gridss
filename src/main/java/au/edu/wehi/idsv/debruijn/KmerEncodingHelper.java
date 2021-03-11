@@ -389,4 +389,8 @@ public class KmerEncodingHelper {
 		}
 		return basesDiff;
 	}
+
+	public static long getBase(int k, long collapseKmer, int offset) {
+		return (collapseKmer >>> (2 * (k - 1 - offset))) & 3;
+	}
 }

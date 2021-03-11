@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -24,7 +23,7 @@ public class ReadErrorCorrectorTest extends TestHelper {
         r.setReadBases(B(seq));
         ReadErrorCorrector rec = new ReadErrorCorrector(k, threshold);
         reads.stream().forEach(x -> rec.countKmers(x, false));
-        reads.stream().forEach(x -> rec.errorCorrect(x, false));
+        rec.errorCorrect(r, false);
         return r.getReadString();
     }
     @Test
@@ -73,6 +72,13 @@ public class ReadErrorCorrectorTest extends TestHelper {
     @Test
     public void should_correct_second_last() {
         String seq = SEQ.substring(0, 98) + "TT";
+        Assert.assertEquals(SEQ, intoSeq(21, seq, 10, 20));
+    }
+    @Test
+    public void should_correct_middle() {
+        StringBuilder sb = new StringBuilder(SEQ);
+        sb.setCharAt(50, (char)SequenceUtil.complement((byte)sb.charAt(50)));
+        String seq = sb.toString();
         Assert.assertEquals(SEQ, intoSeq(21, seq, 10, 20));
     }
     @Test
