@@ -1,12 +1,15 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartPriorityQueue;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByLastEndPriorityQueue;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeNonOverlappingLookup;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.util.*;
@@ -18,28 +21,11 @@ import java.util.*;
  *
  */
 public class PathNodeIterator implements Iterator<KmerPathNode> {
+	private static final Log log = Log.getInstance(PathNodeIterator.class);
 	private final PeekingIterator<? extends KmerNode> underlying;
 	private final int maxNodeLength;
 	private final int k;
-	/**
-	 * Edge lookup. This lookup contains each KmerNode/KmerPathNode at the start/end kmers
-	 * As a KmerPathNode is constructed, the KmerNode lookup entries are replaced
-	 * a KmerPathNode at the current start and end kmers for that KmerPathNode
-	 * 
-	 * Intermediate KmerNode kmers are not required since
-	 * - each KmerNode is processed when all potential edges have been added to the graph
-	 * - KmerPathNodes are extends when there is only a single edge between successive KmerNodes
-	 * - replacing successive KmerNodes with a KmerPathNode representing both edges is a
-	 * local operation involving only those 2 nodes
-	 * - therefore, only the start and end kmers for each KmerPathNode need be stored in this lookup
-	 * 
-	 */
-	private final Long2ObjectOpenHashMap<List<KmerNode>> edgeLookup = new Long2ObjectOpenHashMap<List<KmerNode>>();
-	/**
-	 * Need a separate lookup for path node start kmers. Since we can start and end on the same kmer
-	 * which causes duplicate next/prev paths for those nodes
-	 */
-	private final Long2ObjectOpenHashMap<List<KmerPathNode>> firstKmerEdgeLookup = new Long2ObjectOpenHashMap<List<KmerPathNode>>();
+	private final KmerNodeNonOverlappingLookup<KmerNode> edgeLookup;
 	/**
 	 * Nodes that have not yet had all edges defined.
 	 * 
@@ -61,104 +47,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxNodeLength = maxPathLength;
 		this.k = k;
-	}
-	/**
-	 * Edge lookup
-	 */
-	private List<KmerNode> nextNodes(KmerNode node) {
-		List<KmerNode> adj = new ArrayList<KmerNode>(4);
-		for (long kmer : KmerEncodingHelper.nextStates(k, node.lastKmer())) {
-			List<KmerNode> list = edgeLookup.get(kmer);
-			if (list != null) {
-				for (KmerNode n : list) {
-					if (!(n instanceof KmerPathNode) && IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstStart(), n.firstEnd())) {
-						assert(KmerEncodingHelper.isNext(k, node.lastKmer(), n.firstKmer()));
-						adj.add(n);
-					}
-				}
-			}
-			List<KmerPathNode> pnList = firstKmerEdgeLookup.get(kmer);
-			if (pnList != null) {
-				for (KmerNode n : pnList) {
-					if (IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstStart(), n.firstEnd())) {
-						assert(KmerEncodingHelper.isNext(k, node.lastKmer(), n.firstKmer()));
-						adj.add(n);
-					}
-				}
-			}
-		}
-		return adj;
-	}
-	private List<KmerNode> prevNodes(KmerNode node) {
-		List<KmerNode> adj = new ArrayList<KmerNode>(4);
-		for (long kmer : KmerEncodingHelper.prevStates(k, node.firstKmer())) {
-			List<KmerNode> list = edgeLookup.get(kmer);
-			if (list != null) {
-				for (KmerNode n : list) {
-					if (IntervalUtil.overlapsClosed(n.lastStart() + 1, n.lastEnd() + 1, node.firstStart(), node.firstEnd())) {
-						assert(KmerEncodingHelper.isNext(k, n.lastKmer(), node.firstKmer()));
-						adj.add(n);
-					}
-				}
-			}
-		}
-		return adj;
-	}
-	/**
-	 * Replaces the given lookup node with the equivalent path node
-	 * @param node
-	 * @param pn
-	 */
-	private void lookupReplace(KmerNode node, KmerPathNode pn) {
-		List<KmerNode> list = edgeLookup.get(node.lastKmer());
-		assert(list != null);
-		ListIterator<KmerNode> it = list.listIterator();
-		while (it.hasNext()) {
-			KmerNode n = it.next();
-			if (n == node) {
-				it.set(pn);
-				return;
-			}
-		}
-		throw new IllegalArgumentException(String.format("%s missing from edge lookup", node));
-	}
-	/**
-	 * Adds the end kmer of the give node to the edge lookup
-	 * @param node
-	 */
-	private void lookupAdd(KmerNode node) {
-		List<KmerNode> list = edgeLookup.get(node.lastKmer());
-		if (list == null) {
-			list = new LinkedList<KmerNode>();
-			edgeLookup.put(node.lastKmer(), list);
-		}
-		list.add(node);
-	}
-	private void lookupRemove(KmerNode node) {
-		List<KmerNode> list = edgeLookup.get(node.lastKmer());
-		assert(list != null);
-		boolean found = list.remove(node);
-		assert(found);
-		if (list.isEmpty()) {
-			edgeLookup.remove(node.lastKmer());
-		}
-	}
-	private void firstKmerLookupAdd(KmerPathNode node) {
-		List<KmerPathNode> list = firstKmerEdgeLookup.get(node.firstKmer());
-		if (list == null) {
-			list = new LinkedList<KmerPathNode>();
-			firstKmerEdgeLookup.put(node.firstKmer(), list);
-		}
-		list.add(node);
-	}
-	private void firstKmerLookupRemove(KmerNode node) {
-		List<KmerPathNode> list = firstKmerEdgeLookup.get(node.firstKmer());
-		assert(list != null);
-		boolean found = list.remove(node);
-		assert(found);
-		if (list.isEmpty()) {
-			firstKmerEdgeLookup.remove(node.firstKmer());
-		}
+		this.edgeLookup = new KmerNodeNonOverlappingLookup<>(k);
 	}
 	@Override
 	public boolean hasNext() {
@@ -168,7 +57,6 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			assert(activeNodes.isEmpty());
 			assert(!underlying.hasNext());
 			assert(edgeLookup.isEmpty());
-			assert(firstKmerEdgeLookup.isEmpty());
 		}
 		return hasMore;
 	}
@@ -177,7 +65,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		while (underlying.hasNext() && underlying.peek().lastStart() == inputPosition) {
 			KmerNode node = underlying.next();
 			consumed++;
-			lookupAdd(node);
+			edgeLookup.add(node);
 			activeNodes.add(node);
 			maxNodeWidth = Math.max(maxNodeWidth, node.width());
 		}
@@ -196,31 +84,19 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	}
 	private void merge(KmerNode node) {
 		// can we merge into an earlier KmerNode?
-		List<KmerNode> prev = prevNodes(node);
-		if (prev.size() == 1) {
-			KmerNode toMerge = prev.get(0);
-			if (toMerge.lastStart() == node.firstStart() - 1
-					&& toMerge.lastEnd() == node.firstEnd() - 1
-					&& toMerge.isReference() == node.isReference()
-					&& toMerge.length() < maxNodeLength) {
-				// we can merge
-				assert(KmerEncodingHelper.isNext(k, toMerge.lastKmer(), node.firstKmer()));
-				assert(toMerge instanceof KmerPathNode); // must have already processed our previous node
-				KmerPathNode pn = (KmerPathNode)toMerge;
-				List<KmerNode> pnNext = nextNodes(pn);
-				if (pnNext.size() == 1) {
-					assert(pnNext.get(0) == node);
-					lookupRemove(pn);
-					pn.append(node);
-					lookupReplace(node, pn);
-					return;
-				}
+		KmerNode toMerge = edgeLookup.getUniquePredecessor(node);
+		if (toMerge != null) {
+			assert (toMerge instanceof KmerPathNode); // must have already processed our previous node
+			if (edgeLookup.getUniqueSuccessor(toMerge) == node) {
+				assert (KmerEncodingHelper.isNext(k, toMerge.lastKmer(), node.firstKmer()));
+				KmerPathNode pn = (KmerPathNode) toMerge;
+				edgeLookup.adjustForMerge(toMerge, node);
+				pn.append(node);
+				return;
 			}
 		}
 		// couldn't merge into a previous path = new path
 		KmerPathNode pn = new KmerPathNode(node);
-		lookupReplace(node, pn);
-		firstKmerLookupAdd(pn);
 		pathNodes.add(pn);
 	}
 	@Override
@@ -238,19 +114,17 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		assert(pn != null);
 		assert(edgesCanBeFullyDefined(pn));
 		// populate remaining edges
-		for (KmerNode n : prevNodes(pn)) {
+		for (KmerNode n : edgeLookup.prevNodes(pn)) {
 			assert(n instanceof KmerPathNode);
 			KmerPathNode.addEdge((KmerPathNode)n, pn);
 		}
-		for (KmerNode n : nextNodes(pn)) {
+		for (KmerNode n : edgeLookup.nextNodes(pn)) {
 			assert(n instanceof KmerPathNode);
 			if (n != pn) {
 				KmerPathNode.addEdge(pn, (KmerPathNode)n);
 			}
 		}
-		// then remove node from lookup
-		lookupRemove(pn);
-		firstKmerLookupRemove(pn);
+		edgeLookup.remove(pn);
 		assert(pn.length() <= maxNodeLength);
 		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			sanityCheck();
@@ -269,22 +143,12 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		throw new UnsupportedOperationException();
 	}
 	public boolean sanityCheck() {
+		edgeLookup.sanityCheck();
 		for (KmerNode n : activeNodes) {
 			assert(!pathNodes.contains(n));
-			assert(edgeLookup.get(n.lastKmer()) != null);
-			assert(edgeLookup.get(n.lastKmer()).contains(n));
-			if (n instanceof KmerPathNode) {
-				assert(firstKmerEdgeLookup.get(n.firstKmer()) != null);
-				assert(firstKmerEdgeLookup.get(n.firstKmer()).contains(n));
-				((KmerPathNode)n).sanityCheck();
-			}
 		}
 		for (KmerPathNode n : pathNodes) {
 			assert(!activeNodes.contains(n));
-			assert(edgeLookup.get(n.lastKmer()) != null);
-			assert(edgeLookup.get(n.lastKmer()).contains(n));
-			assert(firstKmerEdgeLookup.get(n.firstKmer()) != null);
-			assert(firstKmerEdgeLookup.get(n.firstKmer()).contains(n));
 			n.sanityCheck();
 		}
 		assert(activeNodes.stream().distinct().count() == activeNodes.size());
@@ -307,12 +171,12 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		return edgeLookup.size();
 	}
 	public int tracking_pathNodeEdgeLookupSize() {
-		return firstKmerEdgeLookup.size();
+		return -1;
 	}
 	public int tracking_edgeLookupMaxKmerNodeCount() {
-		return edgeLookup.values().stream().mapToInt(x -> x.size()).max().orElse(0);
+		return -1;
 	}
 	public int tracking_pathNodeEdgeLookupMaxKmerNodeCount() {
-		return firstKmerEdgeLookup.values().stream().mapToInt(x -> x.size()).max().orElse(0);
+		return -1;
 	}
 }
