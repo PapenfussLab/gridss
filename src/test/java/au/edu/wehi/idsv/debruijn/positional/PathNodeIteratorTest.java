@@ -6,6 +6,7 @@ import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.SAMRecord;
 import org.apache.commons.lang3.ArrayUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -131,6 +132,16 @@ public class PathNodeIteratorTest extends TestHelper {
 	@Test
 	public void should_handle_self_intersection() {
 		assertCount(1, new ImmutableKmerNode(K("AAAA"), 1, 5, true, 1));
+	}
+	@Test
+	public void should_collapse_successive() {
+		List<ImmutableKmerNode> in = new ArrayList<ImmutableKmerNode>();
+		in.add(new ImmutableKmerNode(K("TAAA"), 0, 0, true, 1));
+		in.add(new ImmutableKmerNode(K("AAAA"), 1, 1, true, 1));
+		in.add(new ImmutableKmerNode(K("AAAG"), 2, 2, true, 1));
+		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 4));
+		assertEquals(1, out.size());
+		Assert.assertEquals(3, out.get(0).length());
 	}
 	@Test
 	public void should_split_path_upon_fork() {
@@ -260,5 +271,13 @@ public class PathNodeIteratorTest extends TestHelper {
 		NonReferenceReadPair nrrp = NRRP(SES(1, 100), rp);
 		List<KmerPathNode> result = asCheckedKPN(4, 100, true, nrrp);
 		assertCompleteGraph(result, 4);
+	}
+	@Test
+	public void should_handle_self_intersecting_reads() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(11, 100), withSequence("CAAAAT", DP(0, 1, "6M", true, 1, 1, "6M", false)));
+		List<KmerPathNode> result = asCheckedKPN(4, 100, false, dp);
+		Assert.assertEquals(3, result.size());
 	}
 }

@@ -642,11 +642,18 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	}
 	@Override
 	public String toString() {
+		return toString(null);
+	}
+	public String toString(Integer k) {
 		if (!isValid()) {
 			return String.format("[%d-%d]%s %dw (INVALID) ", firstStart(), firstEnd(), isReference() ? "R" : " ", weight());
 		}
 		StringBuilder sb = new StringBuilder(String.format("[%d-%d]%s %dw ", firstStart(), firstEnd(), isReference() ? "R" : " ", weight()));
-		sb.append(KmerEncodingHelper.toApproximateString(firstKmer()));
+		if (k == null) {
+			sb.append(KmerEncodingHelper.toApproximateString(firstKmer()));
+		} else {
+			sb.append(KmerEncodingHelper.toString(k, firstKmer()));
+		}
 		sb.append(' ');
 		for (int i = 1; i < length(); i++) {
 			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(kmer(i)));

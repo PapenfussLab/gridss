@@ -1,16 +1,13 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByFirstStartPriorityQueue;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByLastEndPriorityQueue;
 import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeNonOverlappingLookup;
-import au.edu.wehi.idsv.util.IntervalUtil;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.util.Log;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.util.*;
 
@@ -82,22 +79,27 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			sanityCheck();
 		}
 	}
-	private void merge(KmerNode node) {
+	private void merge(KmerNode right) {
 		// can we merge into an earlier KmerNode?
-		KmerNode toMerge = edgeLookup.getUniquePredecessor(node);
-		if (toMerge != null) {
-			assert (toMerge instanceof KmerPathNode); // must have already processed our previous node
-			if (edgeLookup.getUniqueSuccessor(toMerge) == node) {
-				assert (KmerEncodingHelper.isNext(k, toMerge.lastKmer(), node.firstKmer()));
-				KmerPathNode pn = (KmerPathNode) toMerge;
-				edgeLookup.adjustForMerge(toMerge, node);
-				pn.append(node);
+		KmerNode left = edgeLookup.getUniqueFullWidthPredecessor(right);
+		if (left != null) {
+			//assert(edgeLookup.prevNodes(right).size() == 1); // TEMP HACK
+			assert (left instanceof KmerPathNode); // must have already processed our previous node
+			if (left.length() < maxNodeLength &&
+					right.isReference() == left.isReference() &&
+					edgeLookup.getUniqueFullWidthSuccessor(left) == right) {
+				//assert(edgeLookup.nextNodes(left).size() == 1); // TEMP HACK
+				assert(KmerEncodingHelper.isNext(k, left.lastKmer(), right.firstKmer()));
+				KmerPathNode pn = (KmerPathNode) left;
+				edgeLookup.adjustForMerge(left, right);
+				pn.append(right);
 				return;
 			}
 		}
 		// couldn't merge into a previous path = new path
-		KmerPathNode pn = new KmerPathNode(node);
+		KmerPathNode pn = new KmerPathNode(right);
 		pathNodes.add(pn);
+		edgeLookup.replace(right, pn);
 	}
 	@Override
 	public KmerPathNode next() {
