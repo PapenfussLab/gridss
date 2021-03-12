@@ -369,4 +369,9 @@ public class SingleReadEvidenceTest extends TestHelper {
 		Assert.assertEquals("AAGGT", S(e.getAnchorSequence()));
 		Assert.assertEquals("AACTC", S(e.getBreakendSequence()));
 	}
+	@Test
+	public void should_ignore_fully_clipped_reads() {
+		SAMRecord r = Read(0, 1, "5H5S5H");
+		Assert.assertEquals(0, SingleReadEvidence.createEvidence(SES(), 0, r).size());
+	}
 }

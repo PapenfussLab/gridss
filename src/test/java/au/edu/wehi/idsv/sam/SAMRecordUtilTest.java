@@ -1529,5 +1529,13 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertTrue(SAMRecordUtil.clipTerminalIndelCigars(r));
 		assertEquals(7, r.getAlignmentStart());
 		assertEquals("4S5M", r.getCigarString());
+		Assert.assertFalse(r.getReadUnmappedFlag());
+	}
+	@Test
+	public void fixTerminalCigar_should_unmap_fully_clipped_reads() {
+		SAMRecord r = Read(2, 1, "1I2D3I4D5S");
+		assertTrue(SAMRecordUtil.clipTerminalIndelCigars(r));
+		Assert.assertEquals("9S", r.getCigarString());
+		assertTrue(r.getReadUnmappedFlag());
 	}
 }

@@ -44,27 +44,30 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		try {
 			List<SplitReadEvidence> srlist = SplitReadEvidence.create(source, record);
 			list.addAll(srlist);
-			// only add soft clip if there isn't a split read
-			boolean hasForwardSR = false;
-			boolean hasBackwardSR = false;
-			for (SplitReadEvidence sre : srlist) {
-				switch (sre.getBreakendSummary().direction) {
-					case Forward:
-						hasForwardSR = true;
-						break;
-					case Backward:
-						hasBackwardSR = true;
-						break;
+			// ignore fully clipped reads
+			if (SAMRecordUtil.getStartClipLength(record) != record.getReadLength()) {
+				// only add soft clip if there isn't a split read
+				boolean hasForwardSR = false;
+				boolean hasBackwardSR = false;
+				for (SplitReadEvidence sre : srlist) {
+					switch (sre.getBreakendSummary().direction) {
+						case Forward:
+							hasForwardSR = true;
+							break;
+						case Backward:
+							hasBackwardSR = true;
+							break;
+					}
 				}
-			}
-			// TODO: min clip length
-			// not dovetailing
-			if (source == null || !SAMRecordUtil.isDovetailing(record, SamPairUtil.PairOrientation.FR, source.getContext().getConfig().dovetailMargin)) {
-				if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-					list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
-				}
-				if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-					list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
+				// TODO: min clip length
+				// not dovetailing
+				if (source == null || !SAMRecordUtil.isDovetailing(record, SamPairUtil.PairOrientation.FR, source.getContext().getConfig().dovetailMargin)) {
+					if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+						list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
+					}
+					if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+						list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
+					}
 				}
 			}
 			list.addAll(IndelEvidence.create(source, minIndelSize, record));

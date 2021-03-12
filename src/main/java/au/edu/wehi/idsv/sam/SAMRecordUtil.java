@@ -1806,6 +1806,8 @@ public class SAMRecordUtil {
 		CigarUtil.clean(cigar, false);
 		r.setCigar(new Cigar(cigar)); // NB: https://github.com/samtools/htsjdk/pull/1538
 		r.setAlignmentStart(r.getAlignmentStart() + alignmentOffset);
+		boolean hasAlignedBase = cigar.stream().anyMatch(ce -> ce.getOperator().consumesReferenceBases());
+		r.setReadUnmappedFlag(!hasAlignedBase);
 		return true;
 	}
 
@@ -1858,5 +1860,18 @@ public class SAMRecordUtil {
 	public static Iterator<List<SAMRecord>> groupedByReadName(Iterator<SAMRecord> it) {
 		return new GroupingIterator(it, Ordering.natural().onResultOf((SAMRecord r) -> r.getReadName()));
 	}
+
+    public static boolean hasAlignment(SAMRecord record) {
+		if (record.getReadUnmappedFlag()) return false;
+		for (CigarElement ce : record.getCigar().getCigarElements()) {
+			switch (ce.getOperator()) {
+				case EQ:
+				case M:
+				case X:
+					return true;
+			}
+		}
+		return false;
+    }
 }
 
