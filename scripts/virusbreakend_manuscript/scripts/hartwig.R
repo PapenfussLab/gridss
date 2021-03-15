@@ -21,25 +21,23 @@ if (!file.exists("../protecteddata/hmf_cancertype.csv")) {
 # 		col_name=c("file", "pct", "treereads", "directreads", "level", "taxid", "name"),
 # 		col_types="cniicic") %>%
 # 	mutate(sample=str_extract(str_replace(file, stringr::fixed("./"), ""), "^[^.]+"))
-sampledf = read_tsv("../protecteddata/hmfv3/samples.csv", col_names="sample", col_types="c")
+sampledf = read_tsv("../protecteddata/hmfv4/samples.tsv", col_names="sample", col_types="c")
 cancertypedf = cancertypedf %>% filter(sampleId %in% sampledf$sample)
 cancertype_summary = cancertypedf %>% group_by(primaryTumorLocation) %>% summarise(n=n())
-summarydf = read_tsv("../protecteddata/hmfv3/merged.vcf.summary.csv") %>%
+summarydf = read_tsv("../protecteddata/hmfv4/merged.tsv") %>%
 	left_join(cancertypedf, by=c("sample"="sampleId")) %>%
 	mutate(hasIntegration=integrations > 0)
-names(summarydf)[6] = "name_species"
-names(summarydf)[7] = "reads_species"
-mergedvcf = readVcf("../protecteddata/hmfv3/merged.vcf")
+colnames(summarydf) = str_replace(colnames(summarydf), "#", "")
+mergedvcf = readVcf("../protecteddata/hmfv4/merged.vcf")
 rownames(mergedvcf) = NULL
-alt = str_match(as.character(rowRanges(mergedvcf)$ALT), "([^\\[\\]]*)([\\[\\]])adjusted_kraken_taxid_([0-9]+)_(.*):([0-9]+)[\\[\\]]([^\\[\\]]*)")
-colnames(alt) = c("ALT", "leftins", "ori", "taxid", "virus_chr", "virus_pos", "rightins")
+alt = str_match(as.character(rowRanges(mergedvcf)$ALT), "([^\\[\\]]*)([\\[\\]])(adjusted_.*):([0-9]+)[\\[\\]]([^\\[\\]]*)")
+colnames(alt) = c("ALT", "leftins", "ori", "virus_chr", "virus_pos", "rightins")
 sitedf = as.data.frame(alt) %>%
 	mutate(
 		host_chr=as.character(seqnames(mergedvcf)),
 		host_pos=start(mergedvcf),
 		QUAL=rowRanges(mergedvcf)$QUAL,
-		FILTER=rowRanges(mergedvcf)$FILTER,
-		taxid=as.integer(taxid)) %>%
+		FILTER=rowRanges(mergedvcf)$FILTER) %>%
 	bind_cols(as.data.frame(info(mergedvcf))) %>%
 	mutate(
 		sample=SAMPLE,
@@ -117,10 +115,11 @@ exclude_from_analysis = c(
 	11764, # Baboon endogenous virus strain M7
 	168238, #	Porcine endogenous retrovirus E
 	11757, # Mouse mammary tumor virus
-	summarydf %>% filter(str_detect(name_species, "Torque teno")) %>% pull(taxid)
+	summarydf %>% filter(str_detect(name_species, "Torque teno")) %>% pull(taxid_assigned)
 )
+sitedf = left_join(sitedf, summarydf, by=c("virus_chr"="reference", "sample"="sample"))
+assertthat::assert_that(!any(is.na(sitedf$name_genus)))
 summarydf = summarydf %>% filter(!(taxid %in% exclude_from_analysis))
-sitedf = sitedf %>% filter(!(taxid %in% exclude_from_analysis))
 	
 sampledf %>%
 	mutate(

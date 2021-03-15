@@ -772,43 +772,47 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 fi
 if [[ ! -f $file_summary_coverage_tsv ]] ; then
 	write_status "Writing annotated summary to $output_tsv"
+	# Write header
 	rm -f $file_summary_coverage_tsv.tmp
-	while read inline; do
-		if [[ $inline = taxid_genus* ]] ; then
-			echo "$inline	$(head -1 $prefix_adjusted.merged.bam.coverage)	integrations	QCStatus" > $file_summary_coverage_tsv.tmp
-		else
-			curr_contig_name=$(echo "$inline" | cut -f 11)
-			curr_actual_contig_name=$(echo "adjusted_$curr_contig_name" | tr ':|' '__')
-			# check we weren't filtered earlier
-			if grep $curr_actual_contig_name $prefix_adjusted.merged.bam.coverage > /dev/null ; then
-				curr_reads_assigned_direct=$(echo "$inline" | cut -f 10)
-				curr_reads_genus_tree=$(echo "$inline" | cut -f 3)
-				curr_kraken_taxid=$(echo "$inline" | cut -f 7)
-				curr_reference_taxid=$(echo "$inline" | cut -f 12)
-				curr_coverage_stats=$(grep "$curr_actual_contig_name	" $prefix_adjusted.merged.bam.coverage)
-				curr_hits=$(grep -E "^adjusted" $file_filtered_vcf | grep -F $curr_actual_contig_name | wc -l || true)
-				curr_coverage=$(echo "$inline" | cut -f 6)
-				# QC failures
-				curr_qcstatus=""
-				if [[ $(echo "$curr_coverage < $minviralcoverage" | bc ) -eq 1 ]] ; then
-					curr_qcstatus="$curr_qcstatus;LOW_VIRAL_COVERAGE"
-				fi
-				if [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.coverage.blacklist.bed') | wc -l) -gt 0 ]] ; then
-					curr_qcstatus="$curr_qcstatus;EXCESSIVE_VIRAL_COVERAGE"
-				elif [[ $(grep $curr_actual_contig_name $(find $adjusteddir -name '*.bed.excluded_*.bed') | wc -l) -gt 0 ]] ; then
-					curr_qcstatus="$curr_qcstatus;ASSEMBLY_ABORTED"
-				fi
-				if [[ $curr_kraken_taxid != $curr_reference_taxid ]] ; then
-					curr_qcstatus="$curr_qcstatus;CHILD_TAXID_REFERENCE"
-				elif [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) < $unclear_taxid_direct_read_threshold " | bc ) -eq 1 ]] ; then
-					# Should have at least 60% of reads directly assigned to our taxid
-					curr_qcstatus="$curr_qcstatus;UNCLEAR_TAXID_ASSIGNMENT"
-				fi
-				echo "$inline	$curr_coverage_stats	$curr_hits	${curr_qcstatus:1}"  >> $file_summary_coverage_tsv.tmp
+	grep taxid_genus $file_summary_references_tsv | tr -d '\n' > $file_summary_coverage_tsv.tmp
+	head -1 $prefix_adjusted.merged.bam.coverage | tr -d '\n' >> $file_summary_coverage_tsv.tmp
+	echo "	integrations	QCStatus" >> $file_summary_coverage_tsv.tmp
+	# process each viral reference
+	grep -v taxid_genus $file_summary_references_tsv | while read inline; do
+		curr_contig_name=$(echo "$inline" | cut -f 11)
+		curr_actual_contig_name=$(echo "adjusted_$curr_contig_name" | tr ':|' '__')
+		# check we weren't filtered earlier
+		if grep $curr_actual_contig_name $prefix_adjusted.merged.bam.coverage > /dev/null ; then
+			curr_reads_assigned_direct=$(echo "$inline" | cut -f 10)
+			curr_reads_genus_tree=$(echo "$inline" | cut -f 3)
+			curr_kraken_taxid=$(echo "$inline" | cut -f 7)
+			curr_reference_taxid=$(echo "$inline" | cut -f 12)
+			curr_coverage_stats=$(grep "$curr_actual_contig_name	" $prefix_adjusted.merged.bam.coverage)
+			curr_hits=$(grep -E "^adjusted" $file_filtered_vcf | grep -F $curr_actual_contig_name | wc -l || true)
+			curr_coverage=$(echo "$inline" | cut -f 6)
+			# QC failures
+			curr_qcstatus=""
+			if [[ $(echo "$curr_coverage < $minviralcoverage" | bc ) -eq 1 ]] ; then
+				curr_qcstatus="$curr_qcstatus;LOW_VIRAL_COVERAGE"
 			fi
-			
+			if grep $curr_actual_contig_name $(find $adjusteddir -name '*.coverage.blacklist.bed') >/dev/null ; then
+				curr_qcstatus="$curr_qcstatus;EXCESSIVE_VIRAL_COVERAGE"
+			fi
+			# check if an exclusion file exists
+			if [[ "" != "$(find $adjusteddir -name '*.bed.excluded_*.bed')" ]] ; then
+				if grep $curr_actual_contig_name $(find $adjusteddir -name '*.bed.excluded_*.bed') >/dev/null ; then
+					curr_qcstatus="$curr_qcstatus;ASSEMBLY_DOWNSAMPLED"
+				fi
+			fi
+			if [[ $curr_kraken_taxid != $curr_reference_taxid ]] ; then
+				curr_qcstatus="$curr_qcstatus;CHILD_TAXID_REFERENCE"
+			elif [[ $(echo " ( 100 * $curr_reads_assigned_direct / $curr_reads_genus_tree ) < $unclear_taxid_direct_read_threshold " | bc ) -eq 1 ]] ; then
+				# Should have at least 60% of reads directly assigned to our taxid
+				curr_qcstatus="$curr_qcstatus;UNCLEAR_TAXID_ASSIGNMENT"
+			fi
+			echo "$inline	$curr_coverage_stats	$curr_hits	${curr_qcstatus:1}"  >> $file_summary_coverage_tsv.tmp
 		fi
-	done < $file_summary_references_tsv
+	done
 	mv $file_summary_coverage_tsv.tmp $file_summary_coverage_tsv
 fi
 cp $file_filtered_vcf $output_vcf
