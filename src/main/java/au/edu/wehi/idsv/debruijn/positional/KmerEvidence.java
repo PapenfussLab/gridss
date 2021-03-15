@@ -45,6 +45,7 @@ public class KmerEvidence extends PackedKmerList {
 	private final int end;
 	private final float score;
 	private final boolean isReadPairAnchorRead;
+	private Integer hashCode = null;
 	public KmerSupportNode node(int offset) {
 		if (ambiguous != null && ambiguous.get(offset)) {
 			return null;
@@ -351,12 +352,16 @@ public class KmerEvidence extends PackedKmerList {
 	}
 	@Override
 	public int hashCode() {
-		return evidence.getEvidenceID().hashCode() + start + (isReadPairAnchorRead ? 1 : 0);
+		if (hashCode == null) {
+			hashCode = evidence.getEvidenceID().hashCode() + start + (isReadPairAnchorRead ? 1 : 0);
+		}
+		return hashCode;
 	}
 	public boolean equals(KmerEvidence other) {
-		return isReadPairAnchorRead == other.isReadPairAnchorRead &&
-				start == other.start &&
-				evidence.getEvidenceID().equals(other.evidence.getEvidenceID());
+		return hashCode() == other.hashCode() &&
+			isReadPairAnchorRead == other.isReadPairAnchorRead &&
+			start == other.start &&
+			evidence.getEvidenceID().equals(other.evidence.getEvidenceID());
 	}
 	@Override
 	public boolean equals(Object obj) {
