@@ -4,6 +4,7 @@ import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.debruijn.positional.optimiseddatastructures.KmerNodeByLastKmerIntervalLookup;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.util.FilenameUtil;
@@ -69,9 +70,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * expensive approach overall
 	 */
 	private static final boolean SIMPLIFY_AFTER_REMOVAL = false;
-	// TODO: OPT: don't use ArrayList<>() as child structure
-	// sort by end position so we can do fast overlap calculations
-	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
+	private KmerNodeByLastKmerIntervalLookup<KmerPathNodeKmerNode> graphByKmerNode = new KmerNodeByLastKmerIntervalLookup<>();
 	private TreeSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer); // TODO: OPT: replace data structure
 	private SortedSet<KmerPathNode> nonReferenceGraphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer); // TODO: OPT: replace data structure
 	private final EvidenceTracker evidenceTracker;
@@ -857,15 +856,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
-		Collection<KmerPathNodeKmerNode> kpnknList = graphByKmerNode.get(support.lastKmer());
-		if (kpnknList != null) {
-			// TODO: secondary sort order on graphByKmerNode so we can subset this iterator to only
-			// the overlapping nodes
-			for (KmerPathNodeKmerNode n : kpnknList) {
-				if (IntervalUtil.overlapsClosed(support.lastStart(), support.lastEnd(), n.lastStart(), n.lastEnd())) {
-					updateRemovalList(toRemove, n, support);
-				}
-			}
+		for (KmerPathNodeKmerNode n : graphByKmerNode.getOverlapping(support.lastKmer(), support.lastStart(), support.lastEnd())) {
+			updateRemovalList(toRemove, n, support);
 		}
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerPathNodeKmerNode node, KmerSupportNode support) {
@@ -934,20 +926,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	private void addToGraph(KmerPathNodeKmerNode node) {
-		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.firstKmer());
-		if (list == null) {
-			list = new ArrayList<>();
-			graphByKmerNode.put(node.firstKmer(), list);
-		}
-		list.add(node);
+		graphByKmerNode.add(node);
 	}
 	private void removeFromGraph(KmerPathNodeKmerNode node) {
-		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.firstKmer());
-		if (list == null) return;
-		list.remove(node);
-		if (list.size() == 0) {
-			graphByKmerNode.remove(node.firstKmer());
-		}
+		graphByKmerNode.remove(node);
 	}
 
 	/**
@@ -1022,7 +1004,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			return bounds;
 		}
 		/**
-		 * Determins where offset in the given evidence is included in the assembly.
+		 * Determines where offset in the given evidence is included in the assembly.
 		 * Read pairs can overlap multiple times if the sequence kmer is repeated.
 		 * Since we don't actually know which position we placed the read in, we'll return them all.
 		 */
@@ -1076,7 +1058,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	public boolean sanityCheck() {
-		graphByKmerNode.long2ObjectEntrySet().stream().flatMap(e -> e.getValue().stream()).forEach(kn -> { 
+		graphByKmerNode.stream().forEach(kn -> {
 			assert(kn.node().isValid());
 			assert(graphByPosition.contains(kn.node()));
 		});
@@ -1219,7 +1201,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		return graphByPosition.size();
 	}
 	public int tracking_maxKmerActiveNodeCount() {
-		return graphByKmerNode.values().stream().mapToInt(x -> x.size()).max().orElse(0);
+		return (int)graphByKmerNode.stream().count();
 	}
 	public long tracking_underlyingConsumed() {
 		return consumed;
