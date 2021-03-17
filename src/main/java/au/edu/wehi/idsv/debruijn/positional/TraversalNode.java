@@ -197,15 +197,17 @@ public class TraversalNode {
 					.result();
 		}
 	};
-	public static Ordering<TraversalNode> ByScoreDescPathFirstEndSubnode = new Ordering<TraversalNode>() {
-		@Override
-		public int compare(TraversalNode left, TraversalNode right) {
-
-			return ComparisonChain.start()
-					.compare(right.score, left.score)
-					.compare(left, right, ByPathFirstStartScoreEndSubnode)
-					.result();
-		}
+	public static Comparator<TraversalNode> ByScoreDescPathFirstEndSubnode = (left, right) -> {
+		int cmp = Integer.compare(right.score, left.score);
+		if (cmp != 0) return cmp;
+		cmp = Integer.compare(left.pathFirstStart(), right.pathFirstStart());
+		if (cmp != 0) return cmp;
+		cmp = Long.compare(left.node.firstKmer(), right.node.firstKmer());
+		if (cmp != 0) return cmp;
+		cmp = Integer.compare(left.node.firstStart(), right.node.firstStart());
+		if (cmp != 0) return cmp;
+		cmp = Integer.compare(left.node.firstEnd(), right.node.firstEnd());
+		return cmp;
 	};
 	public static Ordering<TraversalNode> BySubnode = new Ordering<TraversalNode>() {
 		@Override
