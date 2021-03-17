@@ -30,7 +30,6 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	 * Sanity checking field: total weight of graph should not change
 	 */
 	protected int expectedWeight;
-	//private static Log log = Log.getInstance(DeBruijnPathGraph.class);
 	public PathGraph(WeightedDirectedGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		assert(graph != null);
 		assert(seeds != null);
@@ -43,7 +42,6 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	public PathGraph(WeightedDirectedGraph<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		this(graph, graph.allNodes(), factory, tracker);
 	}
-	public int getMaxNodeId() { return pathList.size() - 1; } 
 	public boolean sanityCheck() {
 		assert(pathNext.size() == pathList.size());
 		assert(pathPrev.size() == pathList.size());
@@ -81,7 +79,6 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	public Iterable<PN> getPaths() { return Iterables.filter(pathList, Predicates.notNull()); }
 	/**
 	 * generates a path graph for the subgraph reachable from the given seed kmer
-	 * @param seed
 	 */
 	private void generatePathGraph(Collection<T> seeds) {
 		int kmersTraversed = 0;
@@ -321,170 +318,6 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 		return true;
 	}
 	/**
-	 * Collapses the given leaf into the given path
-	 * @param toCollapse node to collapse
-	 * @param path path to collapse into
-	 * @param anchoredAtStart if true, path shares starting kmer with leaf, otherwise path shares ending kmer with leaf
-	 */
-	protected void collapseLeafInto(PN toCollapse, List<PN> path, boolean anchoredAtStart) {
-		// Work out which kmers go to which path node
-		int leafKmersRemaining = toCollapse.length();
-		Deque<Integer> lengths = Queues.newArrayDeque();
-		if (anchoredAtStart) {
-			lengths.addLast(0); // no starting overhang
-			for(PN node : path) {
-				int nodeLength = Math.min(leafKmersRemaining, node.length());
-				lengths.addLast(nodeLength);
-				leafKmersRemaining -= nodeLength;
-			}
-			lengths.addLast(leafKmersRemaining);
-		} else {
-			// iterate through the other direction when we're going backwards
-			lengths.addFirst(0);
-			for(PN node : Lists.reverse(path)) {
-				int nodeLength = Math.min(leafKmersRemaining, node.length());
-				lengths.addFirst(nodeLength);
-				leafKmersRemaining -= nodeLength;
-			}
-			lengths.addFirst(leafKmersRemaining);
-		}
-		assert(lengths.size() == path.size() + 2); // path is padded by start and end leaf overhangs
-		int startLength = lengths.pollFirst();
-		assert(startLength >= 0);
-		if (startLength != 0) {
-			assert(!anchoredAtStart);
-			// leaf overhangs the start of the path
-			List<PN> splitLeaf = split(toCollapse, ImmutableList.of(startLength, toCollapse.length() - startLength));
-			toCollapse = splitLeaf.get(1);
-			removeEdge(splitLeaf.get(0), toCollapse);
-			addEdge(splitLeaf.get(0), path.get(0));
-			// TODO correct split leaf kmers so the new path has a valid kmer sequence
-		}
-		int endLength = lengths.pollLast();
-		assert(endLength >= 0);
-		if (endLength != 0) {
-			assert(anchoredAtStart);
-			// leaf overhangs the end of the path
-			List<PN> splitLeaf = split(toCollapse, ImmutableList.of(toCollapse.length() - endLength, endLength));
-			toCollapse = splitLeaf.get(0);
-			removeEdge(toCollapse, splitLeaf.get(1));
-			addEdge(path.get(path.size() - 1), splitLeaf.get(1));
-			// TODO correct split leaf kmers so the new path has a valid kmer sequence
-		}
-		if (anchoredAtStart) {
-			removeEdge(prev(toCollapse).get(0), toCollapse);
-		} else {
-			removeEdge(toCollapse, next(toCollapse).get(0));
-		}
-		int offset = 0;
-		for (int i = 0; i < path.size(); i++) {
-			PN node = path.get(i);
-			int nodeLength = lengths.pollFirst();
-			assert(nodeLength > 0);
-			node.merge(
-					ImmutableList.of(toCollapse),
-					offset,
-					nodeLength,
-					!anchoredAtStart ? node.length() - nodeLength : 0,
-					graph);
-			offset += nodeLength;
-		}
-		assert(lengths.isEmpty());
-		removeNode(toCollapse);
-	}
-	/**
-	 * The two paths share a common successor 
-	 * @param pathA
-	 * @param pathB
-	 * @return true if a common successor exists, false otherwise
-	 */
-	protected boolean shareNextPaths(PN pathA, PN pathB) {
-		// Can't just check if the end up at the same kmer as one of the
-		// paths may have been collasped into another kmer path 
-		// return KmerEncodingHelper.nextState(graph.getK(), pathA.getLast(), (byte)'A') == KmerEncodingHelper.nextState(graph.getK(), pathA.getLast(), (byte)'A');
-		// Check the next states are the same
-		// Since next states are ordered, we can just compare that the two lists are the same 
-		return Iterables.elementsEqual(next(pathA), next(pathB));
-	}
-	private static int inconsistentMergePathRemainingCalls = 8;
-	/**
-	 * Merges the given paths together
-	 * @param pathA first path to merge 
-	 * @param pathB second path to merge
-	 * @return true if a merge could be performed, false otherwise
-	 */
-	public boolean mergePaths(Iterable<PN> pathA, Iterable<PN> pathB) {
-		PN problematicNode = getNodeAtDifferentPosition(pathA, pathB); 
-		if (problematicNode != null) {
-			if (log != null && inconsistentMergePathRemainingCalls > 0) {
-				inconsistentMergePathRemainingCalls--;
-				log.debug(String.format("Near %s: found similar but inconsistent paths \"%s\" and \"%s\". Both contain \"%s\"",
-					problematicNode.toString(getGraph()),
-					toString(pathA),
-					toString(pathB),
-					toString(ImmutableList.of(problematicNode))));
-			}
-			return false;
-		}
-		int weightA = WeightedSequenceGraphNodeUtil.totalWeight(pathA);
-		int weightB = WeightedSequenceGraphNodeUtil.totalWeight(pathB);
-		
-		Iterable<PN> imainPath = weightA >= weightB ? pathA : pathB;
-		Iterable<PN> ialtPath = weightA >= weightB ? pathB : pathA;
-		
-		SortedSet<Integer> breaksAt = Sets.newTreeSet();
-		breaksAt.addAll(getBreaks(pathA));
-		breaksAt.addAll(getBreaks(pathB));
-		List<PN> mainPath = splitPathToEnsureBreaksAt(imainPath, breaksAt);
-		List<PN> altPath = splitPathToEnsureBreaksAt(ialtPath, breaksAt);
-		assert(mainPath.size() == altPath.size());
-		for (int i = 0; i < mainPath.size(); i++) {
-			mergePath(altPath.get(i), mainPath.get(i));
-		}
-		// The collapse could have resulted in paths
-		// which are now branchless but contain
-		// multiple nodes: merge those nodes together
-		// (eg: A-B1 in the example collapsePaths example)
-		shrink();
-		assert(sanityCheck());
-		return true;
-	}
-	/**
-	 * Checks for a common node that cannot be collapsed as it occurs
-	 * on both paths at different positions
-	 * 
-	 * @param pathA
-	 * @param pathB
-	 * @return first inconsistent node, null if all nodes are consistent
-	 */
-	protected PN getNodeAtDifferentPosition(Iterable<PN> pathA, Iterable<PN> pathB) {
-		Map<PN, Integer> offsetMap = Maps.newHashMap();
-		int offset = 0;
-		for (PN n : pathA) {
-			offsetMap.put(n, offset);
-			offset += n.length();
-		}
-		int bOffset = 0;
-		for (PN b : pathB) {
-			if (offsetMap.containsKey(b)) {
-				int aOffset = offsetMap.get(b);
-				if (aOffset != bOffset) return b;
-			}
-			bOffset += b.length();
-		}
-		return null;
-	}
-	private SortedSet<Integer> getBreaks(Iterable<PN> path) {
-		SortedSet<Integer> breaksAt = Sets.newTreeSet();
-		int offset = 0;
-		breaksAt.add(0);
-		for (PN n : path) {
-			offset += n.length();
-			breaksAt.add(offset);
-		}
-		return breaksAt;
-	}
-	/**
 	 * Splits nodes on the given path to ensure breaks exist at
 	 * all the given kmer offsets
 	 * @param path kmer path to break
@@ -507,19 +340,6 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 			offset += n.length();
 		}
 		return result;
-	}
-	/**
-	 * Merges the given paths together
-	 * @param merge path to merge
-	 * @param into path to merge into
-	 */
-	private void mergePath(PN merge, PN into) {
-		if (merge == into) return; // nothing to do
-		assert(merge.length() == into.length());
-		replaceIncomingEdges(merge, into);
-		replaceOutgoingEdges(merge, into);
-		into.merge(ImmutableList.of(merge), getGraph());
-		removeNode(merge);
 	}
 	/**
 	 * Splits a pathnode at the given offset

@@ -94,9 +94,9 @@ public class PositionalExporter {
 			for (KmerPathNode n : nodes) {
 				writer.append('\t');
 				writer.append(id(n, k));
-				writer.append(String.format(" [s=%d,e=%d,wid=%d,w=%d,l=%d,r=%s,alt=%d,seq=\"%s\",contig=%s];\n",
+				writer.append(String.format(" [s=%d,e=%d,wid=%d,w=%d,l=%d,r=%s,seq=\"%s\",contig=%s];\n",
 						n.firstStart(), n.firstEnd(), n.width(), n.weight(), n.length(), n.isReference() ? "true" : "false",
-								n.collapsedKmers().size(), new String(KmerEncodingHelper.baseCalls(n.pathKmers(), k)),
+								new String(KmerEncodingHelper.baseCalls(n.pathKmers(), k)),
 								lookup.contains(n) ? "true" : "false"));
 			}
 			// edges

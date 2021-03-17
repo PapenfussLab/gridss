@@ -21,37 +21,25 @@ public class KmerPathNodeKmerNode implements KmerNode {
 		this.offset = offset;
 		assert(offset < node.length());
 	}
-	public KmerPathNodeKmerNode(int alternateKmerOffset, KmerPathNode node) {
-		this.node = node;
-		this.offset = -alternateKmerOffset - 1;
-		assert(offsetOfPrimaryKmer() < node.length());
-	}
-	private int alternateKmerIndex() {
-		return -offset - 1;
-	}
 	public KmerPathNode node() {
 		return node;
 	}
-	public int offsetOfPrimaryKmer() {
-		if (offset >= 0) return offset;
-		return node.collapsedKmerOffsets().getInt(alternateKmerIndex());
-	}
+	public int offset() { return offset; }
 	@Override
 	public long lastKmer() {
-		if (offset >= 0) return node.kmer(offset);
-		return node.collapsedKmers().getLong(alternateKmerIndex());
+		return node.kmer(offset);
 	}
 	@Override
 	public int lastStart() {
-		return node.startPosition(offsetOfPrimaryKmer());
+		return node.startPosition(offset);
 	}
 	@Override
 	public int lastEnd() {
-		return node.endPosition(offsetOfPrimaryKmer());
+		return node.endPosition(offset);
 	}
 	@Override
 	public int weight() {
-		return node.weight(offsetOfPrimaryKmer());
+		return node.weight(offset);
 	}
 	@Override
 	public boolean isReference() {
@@ -64,9 +52,8 @@ public class KmerPathNodeKmerNode implements KmerNode {
 	@Override
 	public int hashCode() {
 		final int prime = 31;
-		int result = 1;
 		long kmer = node.firstKmer();
-		result = prime * result + (int) (kmer ^ (kmer >>> 32));
+		int result = (int) (kmer ^ (kmer >>> 32));
 		result = prime * result + node.firstStart();
 		result = prime * result + offset;
 		return result;
@@ -80,17 +67,4 @@ public class KmerPathNodeKmerNode implements KmerNode {
 			return false;
 		return offset == other.offset && node == other.node; 
 	}
-	/**
-	 * Order by KmerPathNode, then by offset within the KmerPathNode
-	 */
-	public static Ordering<KmerPathNodeKmerNode> ByKmerPathNodeOffset = new Ordering<KmerPathNodeKmerNode>() {
-		@Override
-		public int compare(KmerPathNodeKmerNode left, KmerPathNodeKmerNode right) {
-			return ComparisonChain.start()
-					.compare(left.node.firstKmer(), right.node.firstKmer())
-					.compare(left.node.firstStart(), right.node.firstStart())
-					.compare(left.offsetOfPrimaryKmer(), right.offsetOfPrimaryKmer())
-					.result();
-		}
-	};
 }

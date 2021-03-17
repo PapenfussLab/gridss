@@ -740,7 +740,7 @@ public class TestHelper {
 			long state = KmerEncodingHelper.picardBaseToEncoded(getGraph()
 					.getK(), B(kmer.substring(0, getGraph().getK())));
 			for (DeBruijnPathNode<DeBruijnNodeBase> pn : getPaths()) {
-				for (DeBruijnNodeBase n: Iterables.concat(pn.getPathAllNodes())) {
+				for (DeBruijnNodeBase n: Iterables.concat(pn.getPath())) {
 					if (state == n.kmer()) {
 						return pn;
 					}
@@ -827,7 +827,7 @@ public class TestHelper {
 		long state = KmerEncodingHelper.picardBaseToEncoded(pg.getGraph()
 				.getK(), B(sequence));
 		for (PN pn : pg.getPaths()) {
-			for (T n : Iterables.concat(pn.getPathAllNodes())) {
+			for (T n : pn.getPath()) {
 				if (state == pg.getGraph().getKmer(n)) {
 					return pn;
 				}

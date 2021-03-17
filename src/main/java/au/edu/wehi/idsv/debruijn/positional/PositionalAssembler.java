@@ -299,7 +299,6 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		int k = ap.k;
 		int maxEvidenceSupportIntervalWidth = maxKmerSupportIntervalWidth + maxReadLength - k + 2;
 		int maxPathLength = ap.positional.maxPathLengthInBases(maxReadLength);
-		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorLength;
 		PeekingIterator<DirectedEvidence> inputIterator = it;
 		if (preload != null && preload.size() > 0) {
@@ -323,25 +322,6 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
 		}
-		CollapseIterator collapseIt = null;
-		PathSimplificationIterator simplifyIt = null;
-		if (ap.errorCorrection.maxBaseMismatchForCollapse > 0) {
-			if (!ap.errorCorrection.collapseBubblesOnly) {
-				log.warn("Collapsing all paths is an exponential time operation. Gridss is likely to hang if your genome contains repetative sequence");
-				collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse, false, 0);
-			} else {
-				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse);
-			}
-			pnIt = collapseIt;
-			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
-				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
-			}
-			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxKmerSupportIntervalWidth);
-			pnIt = simplifyIt;
-			if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
-				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
-			}
-		}
 		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward, excludedRegions, safetyRegions);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
@@ -350,7 +330,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			File file = new File(vis.directory, filename);
 			PositionalDeBruijnGraphTracker exportTracker;
 			try {
-				exportTracker = new PositionalDeBruijnGraphTracker(file, supportIt, agIt, pathNodeIt, collapseIt, simplifyIt, evidenceTracker, currentAssembler);
+				exportTracker = new PositionalDeBruijnGraphTracker(file, supportIt, agIt, pathNodeIt, null, evidenceTracker, currentAssembler);
 				exportTracker.writeHeader();
 				currentAssembler.setExportTracker(exportTracker);
 			} catch (IOException e) {

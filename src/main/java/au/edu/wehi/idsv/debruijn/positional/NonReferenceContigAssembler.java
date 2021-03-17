@@ -18,7 +18,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.*;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import org.apache.commons.lang3.tuple.Pair;
@@ -715,11 +714,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					return true;
 				}
 			}
-			for (long kmer : n.node().collapsedKmers()) {
-				if (!existing.add(kmer)) {
-					return true;
-				}
-			}
 		}
 		return false;
 	}
@@ -752,13 +746,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 					int end = kpn.firstEnd() + i;
 					List<Long> kmers = new ArrayList();
 					kmers.add(kpn.kmer(i));
-					for (int j = 0; i < kpn.collapsedKmers().size(); j++) {
-						int collapseOffset = kpn.collapsedKmerOffsets().getInt(j);
-						long collapseKmer = kpn.collapsedKmers().getLong(j);
-						if (collapseOffset == i) {
-							kmers.add(collapseKmer);
-						}
-					}
 					for (KmerNode kn : toRemoveKmerNodes) {
 						assert(IntervalUtil.overlapsClosed(start, end, kn.lastStart(), kn.lastEnd()));
 						assert(kmers.contains(kn.lastKmer()));
@@ -888,7 +875,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			list = new ArrayList<List<KmerNode>>(pn.length());
 			toRemove.put(pn, list);
 		}
-		int offset = node.offsetOfPrimaryKmer();
+		int offset = node.offset();
 		while (list.size() <= offset) {
 			list.add(null);
 		}
@@ -929,9 +916,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		for (int i = 0; i < node.length(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(node, i));
 		}
-		for (int i = 0; i < node.collapsedKmers().size(); i++) {
-			addToGraph(new KmerPathNodeKmerNode(i, node));
-		}
 		if (bestContigCaller != null) {
 			bestContigCaller.add(node);
 		}
@@ -947,9 +931,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		assert(removed);
 		for (int i = 0; i < node.length(); i++) {
 			removeFromGraph(new KmerPathNodeKmerNode(node, i));
-		}
-		for (int i = 0; i < node.collapsedKmers().size(); i++) {
-			removeFromGraph(new KmerPathNodeKmerNode(i, node));
 		}
 	}
 	private void addToGraph(KmerPathNodeKmerNode node) {
@@ -1080,12 +1061,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				// primary kmers
 				for (int i = 0; i < n.length(); i++) {
 					addToLookup(offset + i, n.kmer(i), n.firstStart() + i, n.firstEnd() + i, lookup);
-				}
-				// error corrected kmers
-				LongArrayList kmers = n.node().collapsedKmers();
-				IntArrayList offsets = n.node().collapsedKmerOffsets();
-				for (int i = 0; i < kmers.size(); i++) {
-					addToLookup(offset + offsets.getInt(i), kmers.getLong(i), n.firstStart() + offsets.getInt(i), n.firstEnd() + offsets.getInt(i), lookup);
 				}
 				offset += n.length();
 			}

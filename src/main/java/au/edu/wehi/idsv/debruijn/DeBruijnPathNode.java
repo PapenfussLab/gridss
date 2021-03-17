@@ -27,12 +27,7 @@ public class DeBruijnPathNode<T> extends PathNode<T> implements DeBruijnSequence
 	}
 	public DeBruijnPathNode(Iterable<? extends DeBruijnPathNode<T>> nodes, int startOffset, int length, DeBruijnGraph<T> graph) {
 		super(nodes, startOffset, length, graph);
-		addRefCounts(allNodes());
-	}
-	@Override
-	protected void merge(int offset, PathNode<T> pn, int pnOffset, WeightedDirectedGraph<T> graph) {
-		super.merge(offset, pn, pnOffset, graph);
-		addRefCounts(pn.getPathAllNodes().get(pnOffset));
+		addRefCounts(getPath());
 	}
 	public boolean isReference() {
 		return refCount > 0;
@@ -43,7 +38,7 @@ public class DeBruijnPathNode<T> extends PathNode<T> implements DeBruijnSequence
 		return getGraph().getKmer(this.getPath().get(offset));
 	}
 	private void sanityCheck() {
-		long actualRefCount = getPathAllNodes().stream().flatMap(l -> l.stream()).filter(n -> getGraph().isReference(n)).count();
+		long actualRefCount = getPath().stream().filter(n -> getGraph().isReference(n)).count();
 		assert(refCount == actualRefCount);
 	}
 }

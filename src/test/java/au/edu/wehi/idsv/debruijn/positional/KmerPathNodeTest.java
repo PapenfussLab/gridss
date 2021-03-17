@@ -4,6 +4,7 @@ import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -108,22 +109,6 @@ public class KmerPathNodeTest extends TestHelper {
 		KmerPathNode.addEdge(pn2, pn3);
 		pn3.prepend(pn2);
 		assertEquals(pn3, pn1.next().get(0));
-	}
-	@Test
-	public void prepend_should_shift_additional_kmer_offsets() {
-		KmerPathNode pn1 = new KmerPathNode(0, 2, 2, true, 1);
-		KmerPathNode pn2 = new KmerPathNode(0, 3, 3, true, 1);
-		KmerPathNode.addEdge(pn1, pn2);
-		pn2.merge(new KmerPathNode(7, 3, 3, true, 1));
-		pn1.merge(new KmerPathNode(5, 2, 2, true, 1));
-		assertEquals(1, pn2.collapsedKmerOffsets().size());
-		assertEquals(0, pn2.collapsedKmerOffsets().getInt(0));
-		pn2.prepend(pn1);
-		assertEquals(2, pn2.collapsedKmerOffsets().size());
-		assertEquals(1, pn2.collapsedKmerOffsets().getInt(0));
-		assertEquals(0, pn2.collapsedKmerOffsets().getInt(1));
-		assertEquals(7, pn2.collapsedKmers().getLong(0));
-		assertEquals(5, pn2.collapsedKmers().getLong(1));
 	}
 	public static void assertIs(KmerPathNode pn, long[] kmers, int start, int end, boolean reference, int[] weights) {
 		assertEquals(start, pn.startPosition(0));
@@ -279,47 +264,6 @@ public class KmerPathNodeTest extends TestHelper {
 		assertTrue(input.get(1).sanityCheckReachableSubgraph());
 	}
 	@Test
-	public void additionalKmers_should_duplicate_on_start_position_split() {
-		KmerPathNode pn = KPN(new long[] { 0, 1 }, 1, 10, true, new int[] { 1, 2 });
-		KmerPathNode toMerge = KPN(new long[] { 2, 3 }, 1, 10, true, new int[] { 3, 4 });
-		pn.merge(toMerge);
-		KmerPathNode split = pn.splitAtStartPosition(5);
-		assertEquals(2, pn.collapsedKmers().size());
-		assertEquals(2, split.collapsedKmerOffsets().size());
-		assertEquals(2, pn.collapsedKmers().getLong(0));
-		assertEquals(3, pn.collapsedKmers().getLong(1));
-		assertEquals(0, pn.collapsedKmerOffsets().getInt(0));
-		assertEquals(1, pn.collapsedKmerOffsets().getInt(1));
-		assertEquals(2, split.collapsedKmers().getLong(0));
-		assertEquals(3, split.collapsedKmers().getLong(1));
-		assertEquals(0, split.collapsedKmerOffsets().getInt(0));
-		assertEquals(1, split.collapsedKmerOffsets().getInt(1));
-	}
-	@Test
-	public void additionalKmers_should_split_on_length_split() {
-		KmerPathNode pn = KPN(new long[] { 0, 1 }, 1, 10, true, new int[] { 1, 2 });
-		KmerPathNode toMerge = KPN(new long[] { 2, 3 }, 1, 10, true, new int[] { 3, 4 });
-		pn.merge(toMerge);
-		KmerPathNode split = pn.splitAtLength(1);
-		assertEquals(1, pn.collapsedKmers().size());
-		assertEquals(1, split.collapsedKmerOffsets().size());
-		assertEquals(3, pn.collapsedKmers().getLong(0));
-		assertEquals(2, split.collapsedKmers().getLong(0));
-		assertEquals(0, split.collapsedKmerOffsets().getInt(0));
-		assertEquals(0, split.collapsedKmerOffsets().getInt(0));
-	}
-	@Test
-	public void merge_should_track_additional_kmers() {
-		KmerPathNode pn = KPN(new long[] { 0, 1 }, 1, 10, true, new int[] { 1, 2 });
-		KmerPathNode toMerge = KPN(new long[] { 2, 3 }, 1, 10, true, new int[] { 3, 4 });
-		pn.merge(toMerge);
-		assertEquals(1+2+3+4, pn.weight());
-		assertEquals(2, pn.collapsedKmers().getLong(0));
-		assertEquals(3, pn.collapsedKmers().getLong(1));
-		assertEquals(0, pn.collapsedKmerOffsets().getInt(0));
-		assertEquals(1, pn.collapsedKmerOffsets().getInt(1));
-	}
-	@Test
 	public void removeWeight_full_remove_should_remove_node() {
 		KmerPathNode prev1 = KPN(new long[] { 0 }, 0, 9, true);
 		KmerPathNode next1 = KPN(new long[] { 0 }, 4, 4, true);
@@ -403,30 +347,6 @@ public class KmerPathNodeTest extends TestHelper {
 		assertEquals(KPN(new long[] { 1 }, 6, 6, true, 1), replacement.get(4));
 		assertEquals(KPN(new long[] { 1 }, 2, 3, true, 3), replacement.get(5));
 		assertEquals(KPN(new long[] { 2 }, 3, 12, true, 3), replacement.get(6));
-	}
-	@Test
-	public void removeWeight_final_kmer_removal_should_remove_corresponding_kmers() {
-		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 1, true);
-		pn.merge(KPN(new long[] { 3, 4, 5 }, 1, 1, true));
-		List<List<KmerNode>> toRemove = new ArrayList<List<KmerNode>>();
-		toRemove.add(null);
-		toRemove.add(null);
-		toRemove.add(new ArrayList<KmerNode>(ImmutableList.of(new ImmutableKmerNode(5, 3, 3, false, 2))));
-		
-		KmerPathNode.removeWeight(pn, toRemove);
-		assertEquals(LongArrayList.wrap(new long[] { 3, 4 }), pn.collapsedKmers());
-		assertEquals(IntArrayList.wrap(new int[] { 0, 1 }), pn.collapsedKmerOffsets());
-	}
-	@Test
-	public void removeWeight_first_kmer_removal_should_remove_corresponding_kmers() {
-		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 1, true);
-		pn.merge(KPN(new long[] { 3, 4, 5 }, 1, 1, true));
-		List<List<KmerNode>> toRemove = new ArrayList<List<KmerNode>>();
-		toRemove.add(new ArrayList<KmerNode>(ImmutableList.of(new ImmutableKmerNode(3, 1, 1, false, 2))));
-		
-		KmerPathNode.removeWeight(pn, toRemove);
-		assertEquals(LongArrayList.wrap(new long[] { 4, 5 }), pn.collapsedKmers());
-		assertEquals(IntArrayList.wrap(new int[] { 0, 1 }), pn.collapsedKmerOffsets());
 	}
 	@Test
 	public void remove_should_handle_cycles() {

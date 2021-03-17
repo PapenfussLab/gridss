@@ -43,21 +43,9 @@ class MisassemblyFixer {
 			KmerPathSubnode sn = contig.get(i);
 			LongArrayList snendkmers = new LongArrayList();
 			snendkmers.add(sn.lastKmer());
-			for (int j = 0; j < sn.node().collapsedKmerOffsets().size(); j++) {
-				int offset = sn.node().collapsedKmerOffsets().getInt(j);
-				if (offset == sn.length() - 1) {
-					snendkmers.add(sn.node().collapsedKmers().getLong(j));
-				}
-			}
 			KmerPathSubnode snext = contig.get(i + 1);
 			LongArrayList snextstartkmers = new LongArrayList();
 			snextstartkmers.add(snext.firstKmer());
-			for (int j = 0; j < snext.node().collapsedKmerOffsets().size(); j++) {
-				int offset = snext.node().collapsedKmerOffsets().getInt(j);
-				if (offset == 0) {
-					snextstartkmers.add(snext.node().collapsedKmers().getLong(j));
-				}
-			}
 			lookup.put(snoffset + sn.length() - 1, new ImmutableTriple<Integer, LongList, LongList>(i, snendkmers, snextstartkmers));
 			snoffset += sn.length();
 		}
@@ -69,10 +57,6 @@ class MisassemblyFixer {
 		for (KmerPathSubnode sn : contig) {
 			for (int i = 0; i < sn.length(); i++) {
 				contigOffsetLookupAdd(contigOffsetLookup, snoffset + i, sn.node().kmer(i), sn.firstStart() + i, sn.firstEnd() + i);
-			}
-			for (int j = 0; j < sn.node().collapsedKmerOffsets().size(); j++) {
-				int i = sn.node().collapsedKmerOffsets().getInt(j);
-				contigOffsetLookupAdd(contigOffsetLookup, snoffset + i, sn.node().collapsedKmers().getLong(j), sn.firstStart() + i, sn.firstEnd() + i);
 			}
 			snoffset += sn.length();
 		}
@@ -88,7 +72,6 @@ class MisassemblyFixer {
 	}
 	/**
 	 * Reassembles the given contig ensuring a valid traversal path
-	 * @param contig
 	 * @param evidence
 	 */
 	public List<KmerPathSubnode> correctMisassignedEvidence(Collection<KmerEvidence> evidence) {
@@ -158,7 +141,7 @@ class MisassemblyFixer {
 	}
 	/**
 	 * Returns the inferred contig offset of the starting read kmer for every kmer match  
-	 * @param e read
+	 * @param evidence read
 	 * @return max and min best read starting kmer offset   
 	 */
 	private int[] matchingOffsets(KmerEvidence evidence) {

@@ -136,12 +136,6 @@ public class EvidenceTracker {
 			for (int i = 0; i < sn.length(); i++) {
 				toCollection(evidence, sn.kmer(i), start + i, end + i, remove);
 			}
-			LongArrayList collapsed = sn.node().collapsedKmers();
-			IntArrayList collapsedOffset = sn.node().collapsedKmerOffsets();
-			for (int i = 0; i < collapsed.size(); i++) {
-				int offset = collapsedOffset.getInt(i);
-				toCollection(evidence, collapsed.getLong(i), start + offset, end + offset, remove);
-			}
 		}
 		if (remove) {
 			// remove any leftover evidence kmers not on the called path
@@ -181,11 +175,6 @@ public class EvidenceTracker {
 		for (int i = 0; i < pn.length(); i++) {
 			LongArrayList kmers = new LongArrayList();
 			kmers.add(pn.kmer(i));
-			for (int j = 0; j < pn.node().collapsedKmerOffsets().size(); j++) {
-				if (pn.node().collapsedKmerOffsets().getInt(j) == i) {
-					kmers.add(pn.node().collapsedKmers().getLong(j));
-				}
-			}
 			if (!matchesExpected(pn.weight(i) * pn.width(), kmers, pn.firstStart() + i, pn.firstEnd() + i)) {
 				return false;
 			}

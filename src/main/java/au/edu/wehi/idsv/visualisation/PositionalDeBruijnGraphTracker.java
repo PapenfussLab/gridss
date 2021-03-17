@@ -47,7 +47,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	private SupportNodeIterator support;
 	private AggregateNodeIterator aggregate;
 	private PathNodeIterator pathNode;
-	private CollapseIterator collapse;
 	private PathSimplificationIterator simplify;
 	private EvidenceTracker tracker;
 	private NonReferenceContigAssembler assembler;
@@ -57,7 +56,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			SupportNodeIterator support,
 			AggregateNodeIterator aggregate,
 			PathNodeIterator pathNode,
-			CollapseIterator collapse,
 			PathSimplificationIterator simplify,
 			EvidenceTracker tracker,
 			NonReferenceContigAssembler assembler) throws IOException {
@@ -65,7 +63,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		this.support = support;
 		this.pathNode = pathNode;
 		this.aggregate = aggregate;
-		this.collapse = collapse;
 		this.simplify = simplify;
 		this.tracker = tracker;
 		this.assembler = assembler;
@@ -106,7 +103,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Integer.toString(pathNode.tracking_inputPosition()));
 			writer.write(',');
-			if (collapse != null) writer.write(Integer.toString(collapse.tracking_inputPosition()));
 			writer.write(',');
 			if (simplify != null) writer.write(Integer.toString(simplify.tracking_inputPosition()));
 			writer.write(',');
@@ -120,7 +116,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Long.toString(pathNode.tracking_underlyingConsumed()));
 			writer.write(',');
-			if (collapse != null) writer.write(Long.toString(collapse.tracking_underlyingConsumed()));
 			writer.write(',');
 			if (simplify != null) writer.write(Long.toString(simplify.tracking_underlyingConsumed()));
 			writer.write(',');
@@ -146,15 +141,10 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Integer.toString(pathNode.tracking_pathNodeEdgeLookupSize()));
 			writer.write(',');
-			if (collapse != null) writer.write(Integer.toString(collapse.tracking_processedSize()));
 			writer.write(',');
-			if (collapse != null) writer.write(Integer.toString(collapse.tracking_unprocessedSize()));
 			writer.write(',');
-			if (collapse != null) writer.write(Long.toString(collapse.tracking_traversalCount()));
 			writer.write(',');
-			if (collapse != null) writer.write(Long.toString(collapse.tracking_branchCollapseCount()));
 			writer.write(',');
-			if (collapse != null) writer.write(Long.toString(collapse.tracking_leafCollapseCount()));
 			writer.write(',');
 			if (simplify != null) writer.write(Integer.toString(simplify.tracking_processedSize()));
 			writer.write(',');

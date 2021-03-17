@@ -23,35 +23,30 @@ import static org.junit.Assert.*;
 public class NonReferenceContigAssemblerTest extends TestHelper {
 	private NonReferenceContigAssembler caller;
 	private EvidenceTracker tracker;
-	public List<SAMRecord> go(ProcessingContext pc, boolean collapse, DirectedEvidence... input) {
-		caller = create(pc, collapse, input);
+	public List<SAMRecord> go(ProcessingContext pc, DirectedEvidence... input) {
+		caller = create(pc, input);
 		List<SAMRecord> assemblies = Lists.newArrayList(caller);
 		return assemblies;
 	}
-	public List<SAMRecord> go(ProcessingContext pc, boolean collapse, BreakendDirection direction, DirectedEvidence... input) {
-		caller = create(pc, collapse, direction, input);
+	public List<SAMRecord> go(ProcessingContext pc, BreakendDirection direction, DirectedEvidence... input) {
+		caller = create(pc, direction, input);
 		List<SAMRecord> assemblies = Lists.newArrayList(caller);
 		return assemblies;
 	}
-	private NonReferenceContigAssembler create(ProcessingContext pc, boolean collapse, DirectedEvidence... input) {
-		return create(pc, collapse, BreakendDirection.Forward, input);
+	private NonReferenceContigAssembler create(ProcessingContext pc, DirectedEvidence... input) {
+		return create(pc, BreakendDirection.Forward, input);
 	}
-	private NonReferenceContigAssembler create(ProcessingContext pc, boolean collapse, BreakendDirection direction, DirectedEvidence... input) {
+	private NonReferenceContigAssembler create(ProcessingContext pc, BreakendDirection direction, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, Arrays.stream(input).map(e -> (SAMEvidenceSource)e.getEvidenceSource()).collect(Collectors.toList()), new File("NonReferenceContigAssemblerTest.bam"));
 		int maxEvidenceWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
 		int maxReadLength = maxReadLength(input);
 		int k = pc.getAssemblyParameters().k;
 		int maxPathLength = pc.getAssemblyParameters().positional.maxPathLengthInBases(maxReadLength);
-		int maxPathCollapseLength = pc.getAssemblyParameters().errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		tracker = new EvidenceTracker();
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker, pc.getAssemblyParameters().includePairAnchors, pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
-		if (collapse) {
-			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
-			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
-		}
 		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test", direction, null, null);
 		return caller;
 	}
@@ -60,7 +55,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")));
-		List<SAMRecord> output = go(pc, true, sce);
+		List<SAMRecord> output = go(pc, sce);
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getReadBases()));
 		assertEquals("6M6S", output.get(0).getCigarString());
@@ -72,7 +67,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")));
-		List<SAMRecord> output = go(pc, true, sce);
+		List<SAMRecord> output = go(pc, sce);
 		AssemblyAttributes attr = new AssemblyAttributes(output.get(0));
 		assertNotNull(attr);
 		assertEquals(1, attr.getSupportingReadCount(5, null, null, null));
@@ -82,7 +77,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(BWD, withSequence("ACGTGGTCGACC", Read(0, 10, "6S6M")));
-		List<SAMRecord> output = go(pc, true, sce);
+		List<SAMRecord> output = go(pc, sce);
 		
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getReadBases()));
@@ -100,7 +95,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence fwd = SCE(BWD, withSequence("ACGTGGCTCGACC", Read(0, 8, "7S6M")));
 		SoftClipEvidence bwd = SCE(FWD, withSequence("ACGTGGCTCGACC", Read(0, 1, "6M7S")));
-		List<SAMRecord> output = go(pc, true, fwd, bwd);
+		List<SAMRecord> output = go(pc, fwd, bwd);
 		assertEquals(1, output.size());
 		assertEquals("6M1I1D6M", output.get(0).getCigarString());
 	}
@@ -110,7 +105,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		SAMEvidenceSource ses = SES(100, 200);
 		DiscordantReadPair e = (DiscordantReadPair)NRRP(ses, withSequence("ACGTGGTCGACC", DP(0, 50, "12M", true, 1, 1, "12M", false)));
-		List<SAMRecord> output = go(pc, true, e);
+		List<SAMRecord> output = go(pc, e);
 		assertEquals(1, output.size());
 		SoftClipEvidence ass = SoftClipEvidence.create(AES(ses), FWD, output.get(0));
 		assertEquals(e.getBreakendSummary().localBreakend(), ass.getBreakendSummary());
@@ -123,7 +118,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		MockSAMEvidenceSource ses = SES(100, 200);
 		DiscordantReadPair e = (DiscordantReadPair)NRRP(ses, withSequence("ACGTGGTCGACC", DP(0, 450, "12M", false, 1, 1, "12M", true)));
-		List<SAMRecord> output = go(pc, true, e);
+		List<SAMRecord> output = go(pc, e);
 		assertEquals(1, output.size());
 		SoftClipEvidence ass = SoftClipEvidence.create(AES(ses), BWD, output.get(0));
 		assertEquals(e.getBreakendSummary().localBreakend(), ass.getBreakendSummary());
@@ -135,7 +130,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(FWD, withSequence("TTTTTTTTTTTT", Read(0, 5, "6M6S")));
-		List<SAMRecord> output = go(pc, true, sce);
+		List<SAMRecord> output = go(pc, sce);
 		assertEquals(1, output.size());
 		assertEquals("TTTTTTTTTTTT", S(output.get(0).getReadBases()));
 	}
@@ -145,7 +140,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")));
 		DiscordantReadPair e = (DiscordantReadPair)NRRP(SES(100, 200), withSequence("GACCTCTACT", DP(0, 25, "10M", true, 1, 1, "10M", false)));
-		List<SAMRecord> output = go(pc, true, sce, e);
+		List<SAMRecord> output = go(pc, sce, e);
 		assertEquals(2, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getReadBases()));
 		assertEquals("NN" + "GACCTCTACT", S(output.get(1).getReadBases()));
@@ -156,7 +151,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
 		DiscordantReadPair e = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("GACCTCTACT", DP(0, 25, "10M", true, 1, 1, "10M", false)));
-		List<SAMRecord> output = go(pc, true, sce, e);
+		List<SAMRecord> output = go(pc, sce, e);
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACCTCTACT", S(output.get(0).getReadBases()));
 	}
@@ -166,7 +161,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce =     SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
 		SoftClipEvidence fullref = SCE(FWD, withSequence("ACGTGG", Read(0, 50, "5M1S")));
-		List<SAMRecord> output = go(pc, true, sce, fullref);
+		List<SAMRecord> output = go(pc, sce, fullref);
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getReadBases()));
 		assertEquals(2, tracker.tracking_evidenceTotal());
@@ -183,7 +178,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			input[2*i] =      SCE(FWD, withSequence( "ACGTGGTCGACC", Read(0, 1000*i, "6M6S")));
 			input[2*i + 1 ] = SCE(FWD, withSequence("AACGTGG", Read(0, 1000*i-1, "6M1S")));
 		}
-		NonReferenceContigAssembler caller = create(pc, true, input);
+		NonReferenceContigAssembler caller = create(pc, input);
 		for (int i = 0; i < n / 2; i++) {
 			caller.next();
 		}
@@ -195,7 +190,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(FWD, withSequence("GTACAAAA", Read(0, 10, "4M4S")));
 		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(11, 100), withSequence("CAAAAT", DP(0, 1, "6M", true, 1, 1, "6M", false)));
-		List<SAMRecord> output = go(pc, true, sce, dp);
+		List<SAMRecord> output = go(pc, sce, dp);
 		assertEquals(1, output.size());
 		assertEquals("GTACAAAA", S(output.get(0).getReadBases()));
 	}
@@ -205,7 +200,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(BWD, withSequence("AAAAGTAC", Read(0, 100, "4S4M")));
 		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(11, 100), withSequence("CAAAAG", DP(0, 110, "6M", false, 1, 1, "6M", true)));
-		List<SAMRecord> output = go(pc, true, sce, dp);
+		List<SAMRecord> output = go(pc, sce, dp);
 		assertEquals(1, output.size());
 		assertEquals("AAAAGTAC", S(output.get(0).getReadBases()));
 	}
@@ -214,7 +209,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		pc.getAssemblyParameters().includePairAnchors = false;
-		List<SAMRecord> output = go(pc, true,
+		List<SAMRecord> output = go(pc,
 				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
 				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
 		assertEquals(1, output.size());
@@ -225,7 +220,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		pc.getAssemblyParameters().includePairAnchors = false;
-		List<SAMRecord> output = go(pc, true,
+		List<SAMRecord> output = go(pc,
 				NRRP(SES(1, 100), withSequence("AATAAGAGT", DP(1, 100, "9M", false, 1, 1, "9M", true))),
 				NRRP(SES(1, 100), withSequence("AATGNGAGTC", DP(1, 101, "10M", false, 1, 1, "10M", true))));
 		assertEquals(1, output.size());
@@ -236,7 +231,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		pc.getAssemblyParameters().includePairAnchors = false;
-		List<SAMRecord> output = go(pc, true,
+		List<SAMRecord> output = go(pc,
 				NRRP(SES(1, 100), withSequence("TAAAAA", DP(1, 100, "6M", false, 0, 1, "6M", true))));
 		assertEquals(1, output.size());
 		assertEquals("TAAAAA" + "NN", S(output.get(0).getReadBases()));
@@ -245,7 +240,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void fwd_anchor_length_calculation_should_not_include_any_nonreference_bases() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 2;
-		List<SAMRecord> output = go(pc, true,
+		List<SAMRecord> output = go(pc,
 				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 1, "9M1S"))),
 				SCE(FWD, withSequence(        "ATTTTTTTTT", Read(0, 9, "1M9S"))));
 		assertEquals(1, output.size());
@@ -255,7 +250,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void bwd_anchor_length_calculation_should_not_include_any_nonreference_bases() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 2;
-		List<SAMRecord> output = go(pc, true,
+		List<SAMRecord> output = go(pc,
 				SCE(BWD, withSequence("AAAAAAAAAT", Read(0, 10, "9S1M"))),
 				SCE(BWD, withSequence(        "ATTTTTTTTT", Read(0, 10, "1S9M"))));
 		assertEquals(1, output.size());
@@ -265,7 +260,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void anchor_should_be_trimmed_at_max_length() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 3;
-		List<SAMRecord> output = go(pc, true,
+		List<SAMRecord> output = go(pc,
 				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 1, "9M1S"))),
 				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 2, "9M1S"))),
 				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 3, "9M1S"))),
@@ -294,7 +289,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		rp[1].setReadBases(B(S(RANDOM).substring(2, 12)));
 		rp[1].setReadNegativeStrandFlag(true);
 		NonReferenceReadPair nrrp = NRRP(SES(1, 100), rp);
-		List<SAMRecord> output = go(pc, false, nrrp);
+		List<SAMRecord> output = go(pc, nrrp);
 		assertEquals(S(RANDOM).substring(0, 12), S(output.get(0).getReadBases()));
 		assertEquals(0, (int)output.get(0).getReferenceIndex());
 		assertEquals(100, output.get(0).getAlignmentStart());
@@ -311,14 +306,14 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		for (int i = 1; i < 1000; i++) {
 			e.add(NRRP(ses, OEA(0, i, "10M", true)));
 		}
-		List<SAMRecord> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		List<SAMRecord> output = go(pc, e.toArray(new DirectedEvidence[0]));
 		assertEquals(1, output.size());
 		SAMRecord r = output.get(0);
 		int sclenFull = SAMRecordUtil.getStartClipLength(r) + SAMRecordUtil.getEndClipLength(r);
 		
 		pc.getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly = true;
 		
-		output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		output = go(pc, e.toArray(new DirectedEvidence[0]));
 		assertEquals(1, output.size());
 		r = output.get(0);
 		int sclenTruncated = SAMRecordUtil.getStartClipLength(r) + SAMRecordUtil.getEndClipLength(r);
@@ -338,7 +333,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 				e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", i, j), withSequence("AACCGGTT", Read(0, i, "4M4S")))[0]));
 			}
 		}
-		List<SAMRecord> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		List<SAMRecord> output = go(pc, e.toArray(new DirectedEvidence[0]));
 		assertEquals(100, output.size());
 		// unbounded execution would call high->low thus call the last contig first
 		// bounded execution will force the early calls to be made first
@@ -357,14 +352,14 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", i, 0), withSequence("AAAATTGG", Read(0, i, "4M4S")))[0]));
 			e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", i, 1), withSequence("AAAACCGG", Read(0, i, "4M4S")))[0]));
 		}
-		List<SAMRecord> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		List<SAMRecord> output = go(pc, e.toArray(new DirectedEvidence[0]));
 		// the final advance doesn't get flushed since the underlying stream
 		// is considered to advance to Integer.MAX_VALUE at end of input
 		assertTrue(output.size() <= 20);
 		
 		// shouldn't get throttled
 		pc.getAssemblyParameters().positional.maximumNodeDensity = 10;
-		output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		output = go(pc, e.toArray(new DirectedEvidence[0]));
 		assertEquals(2 * 100, output.size());
 	}
 	@Test
@@ -377,7 +372,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		for (int i = 1; i < 100; i++) {
 			e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", 0, i), withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAA", Read(0, i*20, "4M25S")))[0]));
 		}
-		List<SAMRecord> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		List<SAMRecord> output = go(pc, e.toArray(new DirectedEvidence[0]));
 		// the rest should have been removed
 		assertEquals(1, output.size());
 	}
@@ -397,7 +392,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			rp[1].setReadBases(B("AA")); // expect reverse comp of read sequence
 			e.add(NRRP(ses, rp));
 		}
-		go(pc, true, e.toArray(new DirectedEvidence[0]));
+		go(pc, e.toArray(new DirectedEvidence[0]));
 	}
 	@Test
 	public void should_generate_support_attributes() {
@@ -408,7 +403,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SoftClipEvidence sce1 = SCE(FWD, ses0, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")));
 		SoftClipEvidence sce2 = SCE(FWD, ses0, withSequence("ACGTGGTCGAC", Read(0, 5, "6M5S")));
 		SoftClipEvidence sce3 = SCE(FWD, ses1, withSequence("ACGTGGTCGT", Read(0, 5, "6M4S")));
-		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3);
+		List<SAMRecord> output = go(pc, sce1, sce2, sce3);
 		assertEquals(1, output.size());
 		assertEquals(3, output.get(0).getSignedByteArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_TYPE).length);
 		assertEquals(3, output.get(0).getSignedIntArrayAttribute(SamTags.ASSEMBLY_EVIDENCE_CATEGORY).length);
@@ -434,7 +429,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		rp[0].setReadBases(B("GGTTGCATAG"));
 		rp[1].setReadBases(B("CGACCTAGTA"));
 		SoftClipEvidence sce = SCE(FWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 6, "5M12S")));
-		List<SAMRecord> output = go(pc, true, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		List<SAMRecord> output = go(pc, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals(27, output.get(0).getReadLength());
 		assertEquals("GGTTGCATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
@@ -457,7 +452,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		rp[0].setReadBases(B("NNNNNNNNNN"));
 		rp[1].setReadBases(B("CGACCTAGTA"));
 		SoftClipEvidence sce = SCE(FWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 6, "5M12S")));
-		List<SAMRecord> output = go(pc, true, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		List<SAMRecord> output = go(pc, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals("CATAGACGTGGTCGACCTAGTA", S(output.get(0).getReadBases()));
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
@@ -479,7 +474,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		rp[0].setReadBases(B("NNNNNNNNNN"));
 		rp[1].setReadBases(B("GGTTGCATAG"));
 		SoftClipEvidence sce = SCE(BWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 100, "12S5M")));
-		List<SAMRecord> output = go(pc, true, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		List<SAMRecord> output = go(pc, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals("GGTTGCATAGACGTGGTCGACC", S(output.get(0).getReadBases()));
 		assertFalse(output.get(0).hasAttribute(SamTags.UNANCHORED));
@@ -507,7 +502,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SoftClipEvidence sce3 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 22, "4M4S")));
 		SoftClipEvidence sce4 = SCE(FWD, ses, withSequence("ACGTAAAA", Read(0, 23, "4M4S")));
 		SoftClipEvidence sce5 = SCE(FWD, ses, withSequence("GCCAAAAA", Read(0, 40, "4M4S")));
-		List<SAMRecord> output = go(pc, true, sce1, sce2, sce3, sce4, sce5, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		List<SAMRecord> output = go(pc, sce1, sce2, sce3, sce4, sce5, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertFalse(output.get(0).getCigarString().contains("I"));
 		assertFalse(output.get(0).getCigarString().contains("D"));
 	}
@@ -521,7 +516,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SAMRecord[] rp = DP(0, 1, "10M", true, 0, 1000, "10M", false);
 		rp[0].setReadBases(B("NNNNNNNNNN"));
 		rp[1].setReadBases(B("CGACCTAGTA"));
-		List<SAMRecord> output = go(pc, true, FWD, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		List<SAMRecord> output = go(pc, FWD, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals(rp[1].getReadLength() + 2, output.get(0).getReadLength());
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
@@ -549,7 +544,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SAMRecord[] rp = DP(0, 100, "10M", false, 0, 1000, "10M", false);
 		rp[0].setReadBases(B("NNNNNNNNNN"));
 		rp[1].setReadBases(B("CGACCTAGTA"));
-		List<SAMRecord> output = go(pc, true, BWD, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		List<SAMRecord> output = go(pc, BWD, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals(rp[1].getReadLength() + 2, output.get(0).getReadLength());
 		AssemblyAttributes aa = new AssemblyAttributes(output.get(0));
@@ -579,7 +574,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		rp[0].setReadBases(B("A"));
 		rp[1].setReadBases(B("GGTTGCATAG"));
 		SoftClipEvidence sce = SCE(BWD, ses, withSequence("CATAGACGTGGTCGACC", Read(0, 100, "12S5M")));
-		List<SAMRecord> output = go(pc, true, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
+		List<SAMRecord> output = go(pc, BWD, sce, NonReferenceReadPair.create(rp[0], rp[1], ses));
 		assertEquals(1, output.size());
 		assertEquals("GGTTGCATAGACGTGGTCGACC", S(output.get(0).getReadBases()));
 		assertFalse(output.get(0).hasAttribute(SamTags.UNANCHORED));
