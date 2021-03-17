@@ -165,6 +165,21 @@ At present, command line valiation is performed independently of which steps are
 
 Just specify multiple BAMs on the command line. GRIDSS will perform joint calling and provide a per-BAM breakdown of support.
 
+### Should I do joint calling or run each sample individually?
+
+**Joint calling should always be used for related samples** (e.g. tumour/normal or trio calling).
+Joint calling will ensure that a common variant near the single-sample threshold of detection will be reliably reported as a shared variant.
+This is not the case if the calling were done individually.
+Note that this particular behaviour is not specific to GRIDSS and is common to all variant callers (hence the joint calling support in many callers).
+
+Joint calling allows for sensivity detection of variants that are present subclonally (or at low coverage) that would not be detected if called individually.
+
+GRIDSS performs joint assembly then reports a per-sample breakdown. Joint calling has higher coverage of shared variants thus resulting in more reliable assembly of that variant.
+
+Determining whether two SV calls in two different VCFs are actually the same call is non-trivial.
+Imprecise calls are especially problematic since the coordinates may differ between the VCF, or a call may be precise in one VCF and not in the other.
+A good example of why reconciling SV calls is so problematic is the case where call A (chrX:1-99->chrY:1-99) overlaps call B (chrX:50-149->chrY:1-99), call B overlaps call C (chrX:100-199->chrY:1-99), but A does not overlap C at all. Joint calling obviates this step.
+
 ### How do I perform tumour/normal somatic variant calling?
 
 Jointly call on all samples from the patient.

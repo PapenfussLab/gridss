@@ -109,6 +109,7 @@ Each viral integration should have 2 integration breakpoints (one for the start,
 The key differentiator of VIRUSBreakend is the ability to detect and classify integration sites in repetative sequences such as centromeres.
 Due to the repetative nature of these region, such integration sites cannot be unambigously placed in the host genome.
 In such cases, the mapq encoded in the `BEALN` field will be 0 and the field may contain multiple candidicate integration sites.
+Integration sites in which the reported position is ambiguous have a `LOW_MAPQ` FILTER applied.
 
 The `INSRM` field contains the repeat sequences identifed in the integration site host sequences.
 These annotations can be used to classify ambigous integration sites.
