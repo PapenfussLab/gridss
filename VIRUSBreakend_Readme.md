@@ -50,8 +50,9 @@ Be aware that the kraken2 build process requires additional memory to build the 
 * samtools
 * Kraken2
   * dustmasker (part of the NCBI BLAST+ package)
+* [EDirect utilities](https://dataguide.nlm.nih.gov/edirect/install.html)
 
-These can be installed manually, or the BioConda samtools and kraken2 packages can be used.
+These can be installed manually, or the BioConda `samtools` `kraken2` and `entrez-direct` packages can be used.
 
 The the generated directory (`virusbreakenddb`) contains the files used in the build process.
 The file `virusbreakend.db.virusbreakenddb.tar.gz` contains the minimal subset of the `virusbreakenddb` data required by VIRUSBreakend.
