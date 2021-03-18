@@ -117,7 +117,7 @@ exclude_from_analysis = c(
 	11757, # Mouse mammary tumor virus
 	summarydf %>% filter(str_detect(name_species, "Torque teno")) %>% pull(taxid_assigned)
 )
-sitedf = left_join(sitedf, summarydf, by=c("virus_chr"="reference", "sample"="sample"))
+sitedf = left_join(sitedf, summarydf, by=c("virus_chr"="rname", "sample"="sample"))
 assertthat::assert_that(!any(is.na(sitedf$name_genus)))
 summarydf = summarydf %>% filter(!(taxid %in% exclude_from_analysis))
 	
