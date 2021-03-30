@@ -967,8 +967,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			RangeSet<Integer> supportedBaseOffsets = TreeRangeSet.create();
 			for (int i = 0; i < e.length(); i++) {
 				for (Integer contigKmerOffset : getContigBaseOffsetFor(lookup, e, i)) {
-					// read kmer support is support for just the base transitions within the kmer
-					supportedBaseOffsets.add(Range.closed(contigKmerOffset + 1, contigKmerOffset + k - 1));
+					if (contigKmerOffset != null) {
+						// read kmer support is support for just the base transitions within the kmer
+						supportedBaseOffsets.add(Range.closed(contigKmerOffset + 1, contigKmerOffset + k - 1));
+					}
 				}
 			}
 			if (supportedBaseOffsets.isEmpty()) {
@@ -1027,8 +1029,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			int max = Integer.MIN_VALUE;
 			for (int i = 0; i < e.length(); i++) {
 				for (Integer contigKmerOffset : getContigBaseOffsetFor(lookup, e, i)) {
-					min = Math.min(contigKmerOffset, min);
-					max = Math.max(contigKmerOffset, max);
+					if (contigKmerOffset != null) {
+						min = Math.min(contigKmerOffset, min);
+						max = Math.max(contigKmerOffset, max);
+					}
 				}
 			}
 			if (min == Integer.MAX_VALUE) {
