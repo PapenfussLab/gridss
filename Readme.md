@@ -763,6 +763,21 @@ Just like Picard tools and htsjdk libraries that GRIDSS uses, intermediate files
 
 It's also possible that you've just run out of space.
 
+# Contributing to GRIDSS
+
+Bug fix pull requests are always welcome.
+
+If you have a feature you would like to implement, please first raise an issue outlining the problem and proposed solution so as to avoid any wasted or duplicated effort.
+To build GRIDSS, the development environment requires maven and all GRIDSS and VIRUSBreakend dependencies (see GRIDSS Dockerfile and VIRUSBreakend readme).
+To run all test cases, a `../ref/` directory is also required containing the following genomes (with all associated GRIDSS `--setupreference` files created):
+
+ - hg19.fa
+ - Homo_sapiens_assembly38.fasta
+ - hg38.fa
+ - Escherichia_coli_bl21_de3_.ASM956v1.dna.toplevel.fa
+
+`scripts/dev/` contains helpful utilities for GRIDSS development work.
+
 
 # Acknowledgement
 
