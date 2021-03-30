@@ -1,5 +1,6 @@
 library(tidyverse)
 library(ggExtra)
+library(cowplot)
 library(VariantAnnotation)
 theme_set(theme_bw())
 setwd("../virusbreakend_manuscript/scripts")
@@ -112,14 +113,18 @@ friendly_summary_species_name = c(
 # Filter:
 exclude_from_analysis = c(
 	44561, # Murine type C retrovirus
+	75986, # Mus dunni endogenous virus
 	11764, # Baboon endogenous virus strain M7
 	168238, #	Porcine endogenous retrovirus E
+	61673, # Porcine type-C oncovirus
 	11757, # Mouse mammary tumor virus
+	11786, #urine leuke
+	10798, # Primate erythroparvovirus 1
 	summarydf %>% filter(str_detect(name_species, "Torque teno")) %>% pull(taxid_assigned)
 )
 sitedf = left_join(sitedf, summarydf, by=c("virus_chr"="rname", "sample"="sample"))
 assertthat::assert_that(!any(is.na(sitedf$name_genus)))
-summarydf = summarydf %>% filter(!(taxid %in% exclude_from_analysis))
+summarydf = summarydf %>% filter(!(taxid_assigned %in% exclude_from_analysis))
 	
 sampledf %>%
 	mutate(
@@ -142,6 +147,12 @@ summarydf %>%
 	View()
 
 summarydf %>% filter(meandepth > 10) %>% summarise(n=n(), withIntegration=sum(hasIntegration))
+summarydf %>%
+	group_by(sample) %>%
+	summarise(sample, hasAnyIntegration=sum(integrations) > 0, hasDepth10=any(meandepth > 10)) %>%
+	ungroup() %>%
+	filter(hasDepth10) %>%
+	summarise(n=n(), hasAnyIntegration=sum(hasAnyIntegration))
 summarydf %>% filter(!hasIntegration) %>% View()
 
 # What's up with Baboon endogenous virus?
@@ -171,7 +182,7 @@ plot_hmf_depth = ggplot(summarydf) +
 	aes(x=meandepth, fill=integrations > 0) +
 	geom_histogram(bins=50) +
 	scale_x_log10(expand=c(0,0), breaks=10^(-1:5), labels=as.character(10^(-1:5))) +
-	scale_y_continuous(expand=c(0,0), limits=c(0, 50)) +
+	scale_y_continuous(expand=c(0,0), limits=c(0, 35)) +
 	coord_cartesian(xlim=c(0.1, 50000)) +
 	theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
 	labs(x="Viral genome coverage", y="samples", fill="Viral\nIntegration\nDetected")
@@ -347,7 +358,8 @@ ggplot(sitedf %>% inner_join(summarydf, by=c("sample", "taxid"))) +
 	labs(title="Insertion site assembly mapping quality", y="Sites", x="mapq", fill="Repeat Class")
 
 plot_rmmap = sitedf %>%
-	inner_join(summarydf, by=c("sample", "taxid")) %>%
+	inner_join(summarydf, by=c("sample", "virus_chr"="rname"), suffix=c(".x", "")) %>%
+	filter(!is.na(friendly_summary_species_name[name_species])) %>%
 	mutate(mappable=ifelse(mapq>10, "Mappable", "Unmappable")) %>%
 	ggplot() +
 	aes(x=friendly_summary_species_name[name_species], fill=friendlyRepeatClass(INSRMRC)) +
@@ -360,8 +372,8 @@ plot_rmmap = sitedf %>%
 	labs(x="", y="Viral integrations", fill="Repeat")
 
 plot_grid(plot_hmf_depth, plot_rmmap, labels=c("a", "b"))
-ggsave("figure3.pdf", height=4, width=10)
-ggsave("figure3.png", height=4, width=10)
+ggsave("hartwig_results.pdf", height=4, width=10)
+ggsave("hartwig_results.png", height=4, width=10)
 
 # Telomeric insertions
 sitedf %>% filter(INSRMRT=="(TAACCC)n") %>%

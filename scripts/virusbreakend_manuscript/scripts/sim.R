@@ -21,7 +21,7 @@ import.repeatmasker.fa.out <- function(repeatmasker.fa.out) {
   return(grrm)
 }
 # gunzip -c chm13.draft_v1.0_plus38Y_repeatmasker.out.gz | grep "chr1 " > chm13.draft_v1.0_chr1_repeatmasker.out
-chm13_repeats_gr = import.repeatmasker.fa.out("../publicdata/chm13.draft_v1.0_plus38Y_repeatmasker.out.gz")
+chm13_repeats_gr = import.repeatmasker.fa.out("../publicdata/chm13.draft_v1.0_chr1_repeatmasker.out.gz")
 liftover_chm13_to_hg38 = import.chain("../publicdata/t2t-chm13-v1.0.hg38.over.chain")
 liftover_hg38_to_hg19 = import.chain(system.file(package="liftOver", "extdata", "hg38ToHg19.over.chain"))
 lift_positions = function(chain, positions, chr="chr1") {
@@ -326,7 +326,7 @@ hcctiming = read_csv("../runtime.csv", col_names=c("log", "caller", "slurm", "ca
 hcctiming %>%
 	filter(!is.na(duration)) %>%
 	filter(sample %in% c("177T")) %>%
-	mutate(caller=factor(c("virusbreakend"="VIRUSbreakend", "batvi"="BATVI", "verse"="VERSE", "vifi"="ViFi")[caller], levels=c("VIRUSbreakend", "BATVI", "VERSE", "ViFi"))) %>%
+	mutate(caller=factor(c("virusbreakend"="VIRUSbreakend", "batvi"="BATVI", "verse"="VERSE", "vifi"="ViFi", "gridss"="GRIDSS2")[caller], levels=c("VIRUSbreakend", "BATVI", "VERSE", "ViFi", "GRIDSS2"))) %>%
 	ggplot() +
 	aes(x=caller, y=duration*24) +
 	geom_bar(stat="identity", position="dodge") +

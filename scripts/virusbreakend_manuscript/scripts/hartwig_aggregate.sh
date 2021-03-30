@@ -9,6 +9,7 @@ cat *.virusbreakend.vcf.summary.tsv | grep taxid_genus | head -1 >> merged.tsv
 grep -v taxid_genus *.virusbreakend.vcf.summary.tsv | sed -r 's/^([^.]+).virusbreakend.vcf.summary.tsv:/\1\t/' >> merged.tsv
 ls -1 *.vcf | cut -f 1 -d . > samples.tsv
 
+exit 0
 gs=gs://virusbreakend/genbank_neighbours
 grep -v bam\$ filelists.txt \
 | grep -v .viral.fa \
