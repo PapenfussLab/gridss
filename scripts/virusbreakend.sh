@@ -331,8 +331,9 @@ if which gridsstools > /dev/null ; then
 	if gridsstools --version > /dev/null ; then
 		write_status "gridsstools version: $(gridsstools --version)"
 	else
-		write_status "gridsstools failure. You will likely need to compile gridsstools from source."
+		write_status "gridsstools failure. You will need to recompile gridsstools from source."
 		write_status "Instructions are available at http://github.com/PapenfussLab/gridss/"
+		exit $EX_CONFIG
 	fi
 else 
 	write_status "MISSING gridsstools."
