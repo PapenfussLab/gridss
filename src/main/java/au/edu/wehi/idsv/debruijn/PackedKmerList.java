@@ -1,17 +1,15 @@
 package au.edu.wehi.idsv.debruijn;
 
 
-public class PackedKmerList extends PackedSequence {
+public class PackedKmerList {
 	private final byte[] weights;
 	protected final byte k;
+	protected PackedSequence seq;
 	public PackedKmerList(int k, byte[] bases, byte[] qual, boolean reverse, boolean complement) {
-		super(bases, reverse, complement);
-		int kmers = bases.length - k + 1;
+		this.seq = new PackedSequence(bases, reverse, complement);
 		this.k = (byte)k;
-		if (kmers <= 0) {
-			this.weights = new byte[0];
-		} else if (qual == null) {
-			this.weights = new byte[kmers];
+		if (length() <= 0 || qual == null) {
+			this.weights = null;
 		} else {
 			this.weights = calcWeight(k, qual, reverse);
 		}
@@ -35,13 +33,15 @@ public class PackedKmerList extends PackedSequence {
 		return weights;
 	}
 	public long kmer(int offset) {
-		return getKmer(offset, k); 
+		return seq.getKmer(offset, k);
 	}
 	public int weight(int offset) {
+		assert(offset < length());
+		if (weights == null) return 0;
 		return weights[offset];
 	}
 	public int length() {
-		return weights.length;
+		return seq.kmers(k);
 	}
 	public int kmerSize() {
 		return k;
