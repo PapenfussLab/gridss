@@ -335,7 +335,7 @@ if which gridsstools > /dev/null ; then
 		write_status "Instructions are available at http://github.com/PapenfussLab/gridss/"
 	fi
 else 
-	write_status "MISSING gridsstools. Execution will take 2-3x time longer than when using gridsstools."
+	write_status "MISSING gridsstools."
 	#if [[ "$force" != "true" ]] ; then
 	#	write_status "If you really want to continue without gridsstools use --force"
 		exit $EX_CONFIG
