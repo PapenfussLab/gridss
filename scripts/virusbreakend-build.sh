@@ -101,6 +101,8 @@ kraken2-build $kraken2buildargs --download-taxonomy --db $dbname
 kraken2-build $kraken2buildargs --download-library human --db $dbname
 kraken2-build $kraken2buildargs --download-library viral --db $dbname
 kraken2-build $kraken2buildargs --download-library UniVec_Core --db $dbname
+kraken2-build $kraken2buildargs --download-library bacteria --db $dbname
+kraken2-build $kraken2buildargs --download-library archaea --db $dbname
 #  AND ("vhost human"[Filter]) 
 esearch -db nuccore -query "Viruses[Organism] NOT cellular organisms[ORGN] NOT wgs[PROP] NOT AC_000001:AC_999999[pacc] NOT gbdiv syn[prop] AND (srcdb_refseq[PROP] OR nuccore genome samespecies[Filter])" \
 | efetch -format fasta > $dbname/neighbour.fa
