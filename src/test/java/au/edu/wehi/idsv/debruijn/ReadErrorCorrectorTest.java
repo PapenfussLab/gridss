@@ -136,4 +136,16 @@ public class ReadErrorCorrectorTest extends TestHelper {
         Assert.assertEquals(SEQ, dprn[0].getReadString());
         Assert.assertEquals(SEQ, dprn[1].getReadString());
     }
+    @Test
+    public void should_handle_any_read_length() {
+        MockSAMEvidenceSource ses = SES();
+        List<DirectedEvidence> evidence = new ArrayList<>();
+        for (int i = 1; i < 150; i++) {
+            evidence.add(SCE(FWD, ses, Read(2, 1, "1M" + i + "S")));
+            for (int j = 1; j < 150; j++) {
+                evidence.add(NRRP(ses, DP(0, 1, i + "M", false, 1, 1, j + "M", true)));
+            }
+        }
+        ReadErrorCorrector.errorCorrect(21, 5, evidence);
+    }
 }

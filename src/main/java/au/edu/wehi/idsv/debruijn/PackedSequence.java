@@ -137,15 +137,17 @@ public class PackedSequence implements Serializable {
 		}
 		return seq;
 	}
-	public long getKmer(final int offset, final int length) {
-		assert(offset + length <= packed.length * BASES_PER_WORD);
+	public long getKmer(final int offset, final int k) {
+		if (offset + k > length()) {
+			throw new IndexOutOfBoundsException("kmer out of bounds");
+		}
 		int wordIndex = offset >> ARRAY_SHIFT;
 		int basesToSkipInWord = offset & ARRAY_OFFSET_MASK;
 		int basesRemaining = BASES_PER_WORD - basesToSkipInWord;
-		if (length <= BASES_PER_WORD - basesToSkipInWord) {
-			return getWordBases(wordIndex, basesToSkipInWord, BASES_PER_WORD - basesToSkipInWord - length);
+		if (k <= BASES_PER_WORD - basesToSkipInWord) {
+			return getWordBases(wordIndex, basesToSkipInWord, BASES_PER_WORD - basesToSkipInWord - k);
 		} else {
-			int lengthInNextWord = length - basesRemaining;
+			int lengthInNextWord = k - basesRemaining;
 			long kmer = getWordBases(wordIndex, basesToSkipInWord, 0);
 			kmer <<= lengthInNextWord * BITS_PER_BASE;
 			kmer |= getWordBases(wordIndex + 1, 0, BASES_PER_WORD - lengthInNextWord);
@@ -261,4 +263,13 @@ public class PackedSequence implements Serializable {
 			}
 		}
     }
+
+	/**
+	 * Number of kmers in this sequence
+	 * @param k
+	 * @return
+	 */
+	public int kmers(int k) {
+		return Math.max(0, length() - k + 1);
+	}
 }

@@ -91,7 +91,7 @@ public class ReadErrorCorrector {
         //List<Integer> zzcounts = IntStream.range(0, ps.length() - k + 1).mapToObj(offset -> kmerCounts.get(ps.getKmer(offset, k))).collect(Collectors.toList());
         int i = k - 1;
         int basesChanged = 0;
-        while (i <= ps.length() - (k - 1)) {
+        while (i + k < ps.length()) {
             long rightKmer = ps.getKmer(i, k);
             int rightCount = kmerCounts.get(rightKmer);
             if (rightCount > maxCollapseCount) {

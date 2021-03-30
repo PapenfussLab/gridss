@@ -183,4 +183,42 @@ public class PackedSequenceTest extends TestHelper {
 			}
 		}
 	}
+	@Test
+	public void getKmer_should_match_sequence() {
+		for (int length = 1; length < 256; length++) {
+			String seq = S(RANDOM).substring(0, length);
+			PackedSequence ps = new PackedSequence(B(seq), false, false);
+			for (int k = 1; k < 32; k++) {
+				for (int i = 0; i < length; i++) {
+					if (i + k <= seq.length()) {
+						String expected = seq.substring(i, i + k);
+						long kmer = ps.getKmer(i, k);
+						String actual = KmerEncodingHelper.toString(k, kmer);
+						Assert.assertEquals(expected, actual);
+					}
+				}
+			}
+		}
+	}
+	@Test(expected=IndexOutOfBoundsException.class)
+	public void getKmer_should_throw_exception_if_out_of_bounds() {
+		PackedSequence ps = new PackedSequence(B(S(RANDOM).substring(0, 7)), false, false);
+		Assert.assertEquals(7, ps.length());
+		try {
+			ps.getKmer(3, 4);
+		} catch (Exception e) {
+			Assert.fail("Shouldn't have thrown");
+		}
+		// 0123456
+		//     ****
+		ps.getKmer(4, 4);
+	}
+	@Test
+	public void kmers_should_match_number_of_kmers_in_sequence() {
+		PackedSequence ps = new PackedSequence(B("AA"), false, false);
+		Assert.assertEquals(2, ps.kmers(1));
+		Assert.assertEquals(1, ps.kmers(2));
+		Assert.assertEquals(0, ps.kmers(3));
+		Assert.assertEquals(0, ps.kmers(4));
+	}
 }

@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
+import au.edu.wehi.idsv.debruijn.PackedSequence;
 import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -27,6 +28,9 @@ public class AdapterHelper {
 			k = adapterSequences.get(0).length();
 			kmers = new long[adapterSequences.size() * 2];
 			for (int i = 0; i < adapterSequences.size(); i++) {
+				if (adapterSequences.get(i).length() != k) {
+					throw new RuntimeException("Configuration error: adapter sequences to exclude must all be the same length");
+				}
 				kmers[2 * i] = KmerEncodingHelper.picardBaseToEncoded(k, adapterSequences.get(i).getBytes(StandardCharsets.US_ASCII));
 				kmers[2 * i + 1] = KmerEncodingHelper.reverseComplement(k, kmers[2 * i]);
 			}
@@ -39,9 +43,9 @@ public class AdapterHelper {
 	public boolean containsAdapter(SAMRecord record) {
 		if (!hasAdapters()) return false;
 		if (record.getReadLength() < k) return false;
-		PackedKmerList list = new PackedKmerList(k, record.getReadBases(), null, false, false);
-		for (int i = 0; i < list.length(); i++) {
-			long kmer = list.kmer(i);
+		PackedSequence ps = new PackedSequence(record.getReadBases(), false, false);
+		for (int i = 0; i < ps.kmers(k); i++) {
+			long kmer = ps.getKmer(i, k);
 			for (int j = 0; j < kmers.length; j++) {
 				if (kmer == kmers[j]) {
 					return true;
