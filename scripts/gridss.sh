@@ -260,7 +260,7 @@ write_status() {
 write_status "Full log file is: $logfile"
 trap 'echo "\"${last_command}\" command completed with exit code $?.
 *****
-The underlying error message can be found in $logfile.
+The underlying error message can be found in $logfile
 *****"' EXIT
 # Timing instrumentation
 timinglogfile=$workingdir/gridss.timing.$timestamp.$HOSTNAME.$$.log
@@ -526,44 +526,44 @@ if [[ "$nojni" == "true" ]] ; then
 	externalaligner="true"
 fi
 
-aligner_args_bwa='
-	--ALIGNER_COMMAND_LINE null
-	--ALIGNER_COMMAND_LINE bwa
-	--ALIGNER_COMMAND_LINE mem
-	--ALIGNER_COMMAND_LINE -K
-	--ALIGNER_COMMAND_LINE 10000000
-	--ALIGNER_COMMAND_LINE -L
-	--ALIGNER_COMMAND_LINE 0,0
-	--ALIGNER_COMMAND_LINE -t
-	--ALIGNER_COMMAND_LINE %3$d
-	--ALIGNER_COMMAND_LINE %2$s
-	--ALIGNER_COMMAND_LINE %1$s
-	'
-aligner_args_bowtie2='
-	--ALIGNER_COMMAND_LINE null
-	--ALIGNER_COMMAND_LINE bowtie2
-	--ALIGNER_COMMAND_LINE --threads
-	--ALIGNER_COMMAND_LINE %3$d
-	--ALIGNER_COMMAND_LINE --local
-	--ALIGNER_COMMAND_LINE --mm
-	--ALIGNER_COMMAND_LINE --reorder
-	--ALIGNER_COMMAND_LINE -x
-	--ALIGNER_COMMAND_LINE %2$s
-	--ALIGNER_COMMAND_LINE -U
-	--ALIGNER_COMMAND_LINE %1$s
-	'
-aligner_args_minimap2='
-	--ALIGNER_COMMAND_LINE null
-	--ALIGNER_COMMAND_LINE minimap2
-	--ALIGNER_COMMAND_LINE %2$s.idx
-	--ALIGNER_COMMAND_LINE -x
-	--ALIGNER_COMMAND_LINE sr
-	--ALIGNER_COMMAND_LINE -Y
-	--ALIGNER_COMMAND_LINE -a
-	--ALIGNER_COMMAND_LINE -t
-	--ALIGNER_COMMAND_LINE %3$d
-	--ALIGNER_COMMAND_LINE %1$s
-	'
+aligner_args_bwa=' 
+ ALIGNER_COMMAND_LINE=null 
+ ALIGNER_COMMAND_LINE=bwa 
+ ALIGNER_COMMAND_LINE=mem 
+ ALIGNER_COMMAND_LINE=-K 
+ ALIGNER_COMMAND_LINE=10000000 
+ ALIGNER_COMMAND_LINE=-L 
+ ALIGNER_COMMAND_LINE=0,0 
+ ALIGNER_COMMAND_LINE=-t 
+ ALIGNER_COMMAND_LINE=%3$d 
+ ALIGNER_COMMAND_LINE=%2$s 
+ ALIGNER_COMMAND_LINE=%1$s 
+ '
+aligner_args_bowtie2=' 
+ ALIGNER_COMMAND_LINE=null 
+ ALIGNER_COMMAND_LINE=bowtie2 
+ ALIGNER_COMMAND_LINE=--threads 
+ ALIGNER_COMMAND_LINE=%3$d 
+ ALIGNER_COMMAND_LINE=--local 
+ ALIGNER_COMMAND_LINE=--mm 
+ ALIGNER_COMMAND_LINE=--reorder 
+ ALIGNER_COMMAND_LINE=-x 
+ ALIGNER_COMMAND_LINE=%2$s 
+ ALIGNER_COMMAND_LINE=-U 
+ ALIGNER_COMMAND_LINE=%1$s 
+ '
+aligner_args_minimap2=' 
+ ALIGNER_COMMAND_LINE=null 
+ ALIGNER_COMMAND_LINE=minimap2 
+ ALIGNER_COMMAND_LINE=%2$s.idx 
+ ALIGNER_COMMAND_LINE=-x 
+ ALIGNER_COMMAND_LINE=sr 
+ ALIGNER_COMMAND_LINE=-Y 
+ ALIGNER_COMMAND_LINE=-a 
+ ALIGNER_COMMAND_LINE=-t 
+ ALIGNER_COMMAND_LINE=%3$d 
+ ALIGNER_COMMAND_LINE=%1$s 
+ '
 
 if [[ "$useproperpair" == "true" ]] ; then
 	readpairing_args="READ_PAIR_CONCORDANT_PERCENT=null"
@@ -799,6 +799,7 @@ if [[ $do_preprocess == true ]] ; then
 							O=$tmp_prefix.sc2sr.primary.sv.bam \
 							OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 							WORKER_THREADS=$threads \
+							$aligner_args_bwa \
 							$picardoptions \
 					&& $rmcmd $tmp_prefix.coordinate.bam \
 					&& $timecmd samtools sort \
