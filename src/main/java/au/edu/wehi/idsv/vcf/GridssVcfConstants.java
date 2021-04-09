@@ -34,13 +34,13 @@ public class GridssVcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_SEQUENCE);
 		//header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
 		// Simple SV headers
-		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_LENGTH);
-		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.END_KEY));
-		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_END_POSITION);
-		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "INV", "Inversion"));
-		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "DUP", "Duplication"));
-		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "DEL", "Deletion"));
-		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "INS", "Insertion"));
+		//header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_LENGTH);
+		//header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.END_KEY));
+		//header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_END_POSITION);
+		//header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "INV", "Inversion"));
+		//header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "DUP", "Duplication"));
+		//header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "DEL", "Deletion"));
+		//header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "INS", "Insertion"));
 		// GRIDSS headers
 		for (VcfInfoAttributes attr : VcfInfoAttributes.values()) {
 			if (attr.infoHeader() != null) {
