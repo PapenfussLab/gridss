@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=8g
-#SBATCH --time=2:00:00
+#SBATCH --time=1:00:00
 #SBATCH -p regular
 #SBATCH --output=bench.%J.out.%x.log
 #SBATCH --error=bench.%J.err.%x.log
@@ -18,9 +18,8 @@ full_ref=~/dev/ref/hg19.fa
 base_dir=$(readlink -f publicdata/sim/)
 gen_dir=$base_dir/gen
 mkdir -p $gen_dir
-if [[ -f ~/dev/gridss/target/github_package/gridss-2.11.1-gridss-jar-with-dependencies.jar ]] ; then
-	export GRIDSS_JAR=~/dev/gridss/target/github_package/gridss-2.11.1-gridss-jar-with-dependencies.jar
-fi
+gridss_dir=$base_dir/gridss
+export GRIDSS_JAR=$gridss_dir/gridss-2.11.1-gridss-jar-with-dependencies.jar
 if [[ ! -f "$GRIDSS_JAR" ]] ; then
 	echo "Missing GRIDSS_JAR"
 	exit 1
@@ -36,7 +35,7 @@ if [[ ! -f $t_all_sim_fasta.fai ]] ; then
 	samtools faidx $t_all_sim_fasta
 fi
 if [[ ! -f $n_all_sim_fasta.fai ]] ; then 
-	samtools faidx $n_all_sim_fasta --rcount
+	samtools faidx $n_all_sim_fasta
 fi
 if [[ ! -d $base_dir/nb_distribution ]] ; then
 	git clone https://github.com/czc/nb_distribution.git $base_dir/nb_distribution
@@ -46,7 +45,7 @@ ref=$base_dir/$(basename $full_ref).chr8.fa
 if [[ ! -f $ref.gridsscache ]] ; then
 	samtools faidx $full_ref chr8 > $ref
 	samtools faidx $ref
-	gridss.sh -j $GRIDSS_JAR -s setupreference -r $ref -o ignored.vcf $ref
+	$gridss_dir/gridss.sh -j $GRIDSS_JAR -s setupreference -r $ref -o ignored.vcf $ref
 fi
 ref_reads_bam=$gen_dir/refreads.bam
 ref_reads_fasta=$gen_dir/refreads.fa
@@ -102,8 +101,8 @@ process_run() {
 			cd $caller_dir
 			if [[ $caller == "gridss" ]] ; then
 				echo "chunkSize=1000000000" > gridss.config
-				gridss.sh -c gridss.config -t $threads --jvmheap 2g -o $(basename $vcf) -r $ref -j $GRIDSS_JAR ../$(basename $nbam_merged) ../$(basename $tbam_merged)
-				gridss_somatic_filter.R -i $(basename $vcf) -o $(basename $vcf).somatic.vcf --fulloutput $(basename $vcf).full.vcf -s ~/dev/gridss/scripts -c ~/dev/gridss/scripts -t 2 -n 1
+				$gridss_dir/gridss.sh -c gridss.config -t $threads --jvmheap 2g -o $(basename $vcf) -r $ref -j $GRIDSS_JAR ../$(basename $nbam_merged) ../$(basename $tbam_merged)
+				$gridss_dir/gridss_somatic_filter.R -i $(basename $vcf) -o $(basename $vcf).somatic.vcf --fulloutput $(basename $vcf).full.vcf -s $gridss_dir -c $gridss_dir -t 2 -n 1
 				gunzip -c $(basename $vcf).somatic.vcf.bgz > $vcf
 			elif [[ $caller == "manta" ]] ; then
 				configManta.py --normalBam=../$(basename $nbam_merged) --tumourBam=../$(basename $tbam_merged) --runDir=. --referenceFasta=$ref

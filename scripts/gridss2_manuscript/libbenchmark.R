@@ -328,48 +328,110 @@ hg19_cytobands =  with(read_tsv(
 seqlevelsStyle(hg19_cytobands) = "NCBI"
 hg19_centromeres = hg19_cytobands[hg19_cytobands$type == "acen"]
 
+#### Load PCAWG data ####
+if (!exists(".gr_sv_gridss")) {
+	.gr_sv_gridss = list()
+	.gr_cn_purple = list()
+	.gr_sv_pcawg = list()
+	.gr_cn_pcawg = list()
+}
+load_gr_sv_pcawg = function(sampleId, donorId) {
+	if (is.null(.gr_sv_pcawg$sampleId)) {
+		svfile=paste0(pcawg_dir, "/", sampleId, ".pcawg_consensus_1.6.161116.somatic.sv.bedpe")
+		if (!file.exists(svfile)) {
+			write(paste("Missing ", svfile), stderr())
+			return(NULL)
+		}
+		sv_bedpe = read_delim(svfile, delim="\t", col_names=TRUE, col_types="cnncnncncccc")
+		svgr = with(sv_bedpe, GRanges(
+			seqnames=c(chrom1, chrom2),
+			ranges=IRanges(start=c(start1 + 1, start2 + 1), end=c(end1, end2)),
+			strand=c(strand1, strand2)
+		))
+		if (length(svgr) == 0) {
+			svgr$sampleId=character(0)
+			svgr$sourceId=character(0)
+			svgr$partner=character(0)
+		} else {
+			svgr$sampleId=sampleId
+			svgr$sourceId=c(paste0(sampleId, sv_bedpe$sv_id, "_o"), paste0(sampleId, sv_bedpe$sv_id, "_h"))
+			svgr$partner=c(paste0(sampleId, sv_bedpe$sv_id, "_h"), paste0(sampleId, sv_bedpe$sv_id, "_o"))
+		}
+		names(svgr) = svgr$sourceId
+		.gr_sv_pcawg$sampleId = svgr
+	}
+	return(.gr_sv_pcawg$sampleId)
+}
+load_gr_cn_pcawg = function(sampleId, donorId) {
+	if (is.null(.gr_cn_pcawg$sampleId)) {
+		cnfile=paste0(pcawg_dir, "/", sampleId, ".consensus.20170119.somatic.cna.txt")
+		if (!file.exists(cnfile)) {
+			write(paste("Missing ", cnfile), stderr())
+			return(NULL)
+		}
+		cndf = read_delim(cnfile, delim="\t", col_names=TRUE, col_types="cnnnnnn", na="NA")
+		cngr = with(cndf, GRanges(
+			seqnames=chromosome,
+			ranges=IRanges(start=start, end=end),
+			sampleId=sampleId,
+			cn=total_cn,
+			cn_major=major_cn,
+			cn_minor=minor_cn,
+			star=star))
+		.gr_cn_pcawg$sampleId = cngr
+	}
+	return(.gr_cn_pcawg$sampleId)
+}
+load_gr_sv_gridss = function(sampleId, donorId) {
+	if (is.null(.gr_sv_gridss$sampleId)) {
+		gridss_vcf = readVcf(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.sv.vcf.gz"))
+		gridss_vcf = gridss_vcf[rowRanges(gridss_vcf)$FILTER == "PASS",]
+		gridss_gr = c(
+			breakpointRanges(gridss_vcf, nominalPosition=TRUE),
+			breakendRanges(gridss_vcf, nominalPosition=TRUE))
+		if (length(gridss_gr) > 0) {
+			names(gridss_gr) = paste0(sampleId, "_", names(gridss_gr))
+			gridss_gr$partner = ifelse(is.na(gridss_gr$partner), NA, paste0(sampleId, "_", gridss_gr$partner))
+		}
+		.gr_sv_gridss$sampleId = gridss_gr
+	}
+	return(.gr_sv_gridss$sampleId)
+}
+load_gr_cn_purple = function(sampleId, donorId) {
+	if (is.null(.gr_cn_purple$sampleId)) {
+		purple_df = read_table2(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.cnv.somatic.tsv"), col_types="ciiddddcccidiidd")
+		purple_gr = with(purple_df, GRanges(
+			seqnames=chromosome,
+			ranges=IRanges(start=start, end=end),
+			cn=minorAlleleCopyNumber + majorAlleleCopyNumber,
+			cn_major=minorAlleleCopyNumber,
+			cn_minor=majorAlleleCopyNumber,
+			sampleId=sampleId))
+		.gr_cn_purple$sampleId = purple_gr
+	}
+	return(.gr_cn_purple$sampleId)
+}
 #### PCAWG ####
 pcawg_dir=paste0(datadir, "pcawgcnsv/")
 pcawg_evaluate_cn_transitions = function(sampleId) {
 	write(paste("Processing ", sampleId), stderr())
-	cnfile=paste0(pcawg_dir, "/", sampleId, ".consensus.20170119.somatic.cna.txt")
-	svfile=paste0(pcawg_dir, "/", sampleId, ".pcawg_consensus_1.6.161116.somatic.sv.bedpe")
-	if (!file.exists(cnfile)) {
-		write(paste("Missing ", cnfile), stderr())
-		return(NULL)
-	}
-	if (!file.exists(svfile)) {
-		write(paste("Missing ", svfile), stderr())
-		return(NULL)
-	}
-	sv_bedpe = read_delim(svfile, delim="\t", col_names=TRUE, col_types="cnncnncncccc")
-	cndf = read_delim(cnfile, delim="\t", col_names=TRUE, col_types="cnnnnnn", na="NA")
-	svgr = with(sv_bedpe, GRanges(
-		seqnames=c(chrom1, chrom2),
-		ranges=IRanges(start=c(start1 + 1, start2 + 1), end=c(end1, end2)),
-		strand=c(strand1, strand2)
-	))
-	if (length(svgr) == 0) {
-		svgr$sampleId=character(0)
-		svgr$sourceId=character(0)
-		svgr$partner=character(0)
-	} else {
-		svgr$sampleId=sampleId
-		svgr$sourceId=c(paste0(sampleId, sv_bedpe$sv_id, "_o"), paste0(sampleId, sv_bedpe$sv_id, "_h"))
-		svgr$partner=c(paste0(sampleId, sv_bedpe$sv_id, "_h"), paste0(sampleId, sv_bedpe$sv_id, "_o"))
-	}
-	names(svgr) = svgr$sourceId
-	cngr = with(cndf, GRanges(
-		seqnames=chromosome,
-		ranges=IRanges(start=start, end=end),
-		sampleId=sampleId,
-		cn=total_cn,
-		cn_major=major_cn,
-		cn_minor=minor_cn,
-		star=star))
+	cngr = load_gr_cn_pcawg(sampleId, NULL)
+	svgr = load_gr_sv_pcawg(sampleId, NULL)
 	# TODO: find sample pairing
 	result = evaluate_cn_transitions(cngr, svgr, expectConsistent=FALSE)
 	result$sv$sampleId=rep(sampleId, length(result$sv))
 	result$cn_transition$sampleId=rep(sampleId, length(result$cn_transition))
 	return(result)
+}
+
+# from http://github.com/PapenfussLab/sv_benchmark
+import.repeatmasker.fa.out <- function(repeatmasker.fa.out) {
+	rmdt <- read_table2(repeatmasker.fa.out, col_names=FALSE, skip=3)
+	grrm <- GRanges(
+		seqnames=rmdt$X5,
+		ranges=IRanges(start=rmdt$X6 + 1, end=rmdt$X7),
+		strand=ifelse(rmdt$X9=="C", "-", "+"),
+		repeatType=rmdt$X10,
+		repeatClass=rmdt$X11)
+	return(grrm)
 }

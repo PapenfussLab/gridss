@@ -2,9 +2,9 @@ source("libbenchmark.R")
 library(openxlsx)
 library(ggExtra)
 
-#gsutil -m cp gs://patient-report-bucket-umc/**/*.purple.qc .
-#gsutil -m cp gs://patient-report-bucket-umc/**/*.purple.sv.vcf.gz .
-#gsutil -m cp gs://patient-report-bucket-umc/**/*.purple.cnv.somatic.tsv .
+#gsutil -m cp gs://pcawg/**/*.purple.qc .
+#gsutil -m cp gs://pcawg/**/*.purple.sv.vcf.gz .
+#gsutil -m cp gs://pcawg/**/*.purple.cnv.somatic.tsv .
 #grep QCStatus *.qc | sed -e 's/T.purple.qc:QCStatus//' > qcstatus.txt
 purple_qc_status = read_tsv(paste0(privatedatadir, "/pcawg/qcstatus.txt"), col_types="cc", col_names=c("donor_ID", "QCStatus"))
 
@@ -13,39 +13,42 @@ fullmddf = read.xlsx(paste0(privatedatadir, "/pcawg/PCAWG_meta.xlsx"))
 #raw_metadata_df = read.xlsx(paste0(privatedatadir, "/pcawg/PCAWG_meta.xlsx"), sheet="GPL")
 metadata_df = fullmddf %>%
 	inner_join(purple_qc_status, by="donor_ID") %>%
-	filter(
-		!(SAMPLE %in% SAMPLE[duplicated(SAMPLE)]),
-		!(donor_ID %in% donor_ID[duplicated(donor_ID)]),
-		file.exists(paste0(pcawg_dir, "/", SAMPLE, ".consensus.20170119.somatic.cna.txt")),
-		file.exists(paste0(pcawg_dir, "/", SAMPLE, ".pcawg_consensus_1.6.161116.somatic.sv.bedpe")),
-		file.exists(paste0(privatedatadir, "/pcawg/", donor_ID, "T.purple.sv.vcf.gz")),
-		file.exists(paste0(privatedatadir, "/pcawg/", donor_ID, "T.purple.cnv.somatic.tsv")),
-		)
-write(paste("Found files and unique donor_ID<->SAMPLE mapping for", nrow(metadata_df), "of", "PCAWG samples."), stderr())
-metadata_df = metadata_df %>% filter(QCStatus == "PASS")
-write(paste(nrow(metadata_df), "passing PURPLE QC"), stderr())
+	mutate(
+		purple_qc_pass=QCStatus == "PASS",
+		purple_qc_ok=
+			!str_detect(QCStatus, "FAIL_NO_TUMOR") &
+			!str_detect(QCStatus, "WARN_HIGH_COPY_NUMBER_NOISE")& 
+			!str_detect(QCStatus, "WARN_GENDER_MISMATCH")&
+			!str_detect(QCStatus, "WARN_DELETED_GENES"),
+		has_sv_consensus=file.exists(paste0(pcawg_dir, "/", SAMPLE, ".pcawg_consensus_1.6.161116.somatic.sv.bedpe")),
+		has_cnv_consensus=file.exists(paste0(pcawg_dir, "/", SAMPLE, ".consensus.20170119.somatic.cna.txt")),
+		has_purple_sv=file.exists(paste0(privatedatadir, "/pcawg/", donor_ID, "T.purple.sv.vcf.gz")),
+		has_purple_cnv=file.exists(paste0(privatedatadir, "/pcawg/", donor_ID, "T.purple.cnv.somatic.tsv")),
+		sample_multi=SAMPLE %in% SAMPLE[duplicated(SAMPLE)],
+		donor_multi=donor_ID %in% donor_ID[duplicated(donor_ID)])
+#metadata_df %>%
+#	group_by(purple_qc_pass, purple_qc_ok, has_sv_consensus, has_cnv_consensus, has_purple_sv, has_purple_cnv, sample_multi, donor_multi) %>%
+#	summarise(n=n()) %>%
+#	View()
+write(paste(nrow(purple_qc_status), "PURPLE results"), stderr())
+write(paste(nrow(metadata_df), "with PURPLE results"), stderr())
+metadata_df = metadata_df %>% filter(!donor_multi)
+write(paste(nrow(metadata_df), "after removing donors with multiple specimens sequenced"), stderr())
+metadata_df = metadata_df %>% filter(has_sv_consensus & has_cnv_consensus)
+write(paste(nrow(metadata_df), "after removing missing PCAWG consensus"), stderr())
+metadata_df = metadata_df %>% filter(has_purple_sv & has_purple_cnv)
+write(paste(nrow(metadata_df), "after removing missing PURPLE results"), stderr())
+metadata_df = metadata_df %>% filter(purple_qc_ok)
+write(paste(nrow(metadata_df), "after removing PURPLE QC not ok"), stderr())
+metadata_df = metadata_df %>% filter(purple_qc_pass)
+write(paste(nrow(metadata_df), "after removing PURPLE QC not PASS"), stderr())
 
 #### Hartwig Pipeline on PCAWG data ####
 pcawg_gpl_evaluate_cn_transitions = function(sampleId) {
 	donorId = metadata_df$donor_ID[metadata_df$SAMPLE==sampleId]
 	write(paste("Processing ", sampleId, donorId), stderr())
-	gridss_vcf = readVcf(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.sv.vcf.gz"))
-	purple_df = read_table2(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.cnv.somatic.tsv"), col_types="ciiddddcccidiidd")
-	gridss_vcf = gridss_vcf[rowRanges(gridss_vcf)$FILTER == "PASS",]
-	purple_gr = with(purple_df, GRanges(
-		seqnames=chromosome,
-		ranges=IRanges(start=start, end=end),
-		cn=minorAllelePloidy + majorAllelePloidy,
-		cn_major=minorAllelePloidy,
-		cn_minor=majorAllelePloidy,
-		sampleId=sampleId))
-	gridss_gr = c(
-		breakpointRanges(gridss_vcf, nominalPosition=TRUE),
-		breakendRanges(gridss_vcf, nominalPosition=TRUE))
-	if (length(gridss_gr) > 0) {
-		names(gridss_gr) = paste0(sampleId, "_", names(gridss_gr))
-		gridss_gr$partner = ifelse(is.na(gridss_gr$partner), NA, paste0(sampleId, "_", gridss_gr$partner))
-	}
+	gridss_gr = load_gr_sv_gridss(sampleId, donorId)
+	purple_gr = gr_cn_purple[[sampleId]]
 	result = evaluate_cn_transitions(purple_gr, gridss_gr)
 	result$sv$sampleId=rep(sampleId, length(result$sv))
 	result$cn_transition$sampleId=rep(sampleId, length(result$cn_transition))
@@ -59,7 +62,12 @@ consensus_pcawg_sv_cn_transitions_list = lapply(metadata_df$SAMPLE, pcawg_evalua
 consensus_pcawg_cn_transitions_gr = unlist(GRangesList(lapply(consensus_pcawg_sv_cn_transitions_list, function(x) { x$cn_transition } )))
 consensus_pcawg_sv_transitions_gr = unlist(GRangesList(lapply(consensus_pcawg_sv_cn_transitions_list, function(x) { x$sv } )))
 
-save.image(paste0(privatedatadir, "pcawg1528_svcn_consistency.RData"))
+gridss_consensus_sv_cn_transitions_list = lapply(metadata_df$SAMPLE, function(sampleId) {
+	donorId = metadata_df$donor_ID[metadata_df$SAMPLE==sampleId]
+	write(paste("Processing ", sampleId, donorId), stderr())
+	})
+
+save.image(paste0(privatedatadir, "pcawg", nrow(metadata_df), "_svcn_consistency.RData"))
 #load(paste0(privatedatadir, "pcawg1528_svcn_consistency.RData"))
 
 
