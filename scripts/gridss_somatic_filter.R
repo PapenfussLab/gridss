@@ -14,6 +14,7 @@ argp = add_argument(argp, "--configdir", default=".", help="Path to gridss.confi
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 # argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
 # argv = parse_args(argp, argv=c("--input", "C:/dev/colo829hg38/out.vcf", "--output", "C:/temp/tmp.vcf", "-f", "C:/temp/tmp-full.vcf", "-p", "S:/hartwig/pon", "--scriptdir", "C:/dev/gridss/scripts", "--gc", "--tumourordinal", "2"))
+# argv = parse_args(argp, argv=c("--input", "C:/dev/gridss/scripts/gridss2_manuscript/publicdata/sim/gen/run1_/gridss/run1_.gridss.vcf", "--output", "C:/temp/tmp.vcf", "--scriptdir", "C:/dev/gridss/scripts", "--gc", "--tumourordinal", "2"))
 argv = parse_args(argp)
 
 for (argname in c("input")) {
@@ -319,7 +320,7 @@ event_link_df = bind_rows(
 	filter(sourceId %in% row.names(vcf)) %>%
   mutate(
     QUAL=rowRanges(vcf)[sourceId]$QUAL,
-    hasPolyA=str_detect(rowRanges(vcf[sourceId])$ALT, "A{16}")) %>%
+    hasPolyA=str_detect(as.character(unlist(rowRanges(vcf[sourceId])$ALT)), "A{16}")) %>%
   group_by(linked_by) %>%
   # filter events where supporting fragment counts differ by too much
   mutate(
