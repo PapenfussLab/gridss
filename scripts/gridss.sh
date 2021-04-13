@@ -2,7 +2,7 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
+# Example ../scripts/gridss.sh  -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -a out/gridss.full.chr12.1527326.DEL1024.assembly.bam -j ../target/gridss-2.11.1-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -112,7 +112,11 @@ while true; do
             shift 2
             ;;
 		-a|--assembly)
-            assembly="$assembly $2"
+            if [[ "$assembly" == "" ]] ; then
+				assembly="$2"
+			else
+				assembly="$assembly $2"
+			fi
 			# TODO: support multiple assembly files
             shift 2
             ;;
