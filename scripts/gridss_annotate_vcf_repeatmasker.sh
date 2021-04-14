@@ -36,7 +36,7 @@ Usage: gridss_annotate_vcf_repeatmasker.sh [options] input.vcf
 	"
 #--fields: INFO fields to populate. (Default: $fields)
 OPTIONS=o:t:j:w:
-LONGOPTS=output:,threads:,jar:,rm:,rmargs:,minlength:
+LONGOPTS=output:,workingdir:,threads:,jar:,rm:,rmargs:,minlength:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
