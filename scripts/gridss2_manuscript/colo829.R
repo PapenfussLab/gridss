@@ -1,6 +1,10 @@
 source("libbenchmark.R")
-
-colo829truth = readVcf(paste0(datadir, "COLO829.somatic.overlapped.vcf"))
+source("../libgridss.R")
+#for f in $(find . -name '*.bgz') ; do gunzip -c $f > $(dirname $f)/$(basename $f .bgz) ; done
+#zip colo829_benchmark_results.zip $(find . -name '*.gridss.vcf.somatic.vcf') $(find . -name 'somaticSV.0000.vcf') $(find . -name '*.svaba.somatic.sv.vcf') $(find . -name 'novoBreak.pass.flt.vcf') $(find . -name 'somatic.vcf.bgz')
+#colo829truth = readVcf(paste0(datadir, "COLO829.somatic.overlapped.vcf"))
+#git clone https://github.com/UMCUGenetics/COLO829_somaticSV
+colo829truth = VariantAnnotation::readVcf(paste0(datadir, "COLO829_somaticSV/truthset_somaticSVs_COLO829.vcf"))
 colo829truthgr = breakpointRanges(colo829truth, inferMissingBreakends=TRUE)
 colo829truthgr$FILTER = "PASS"
 colo829truthgr$QUAL = 20
@@ -93,6 +97,18 @@ load_somatic = function(caller, sample_name) {
     gr$caller = caller
     gr$sample_name = sample_name
     roc = calc_roc_pass_all(colo829truthgr, gr, sample_name=sample_name, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=TRUE)
+    rocpon = calc_roc_pass_all(colo829truthgr, gr, sample_name=sample_name, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=TRUE, additional_filter=pon_filter)
+    roc$roc$ponfiltered = FALSE
+    roc$gr$ponfiltered = FALSE
+    roc$roc_by_type$ponfiltered = FALSE
+    rocpon$roc$ponfiltered = TRUE
+    rocpon$gr$ponfiltered = TRUE
+    rocpon$roc_by_type$ponfiltered = TRUE
+    roc = list(
+      roc=bind_rows(roc$roc, rocpon$roc),
+      roc=c(roc$gr, rocpon$gr),
+      roc=bind_rows(roc$roc_by_type, rocpon$roc_by_type)
+    )
   } else {
     warning(paste("Missing", filename))
     return(NULL)
@@ -112,13 +128,13 @@ load_all_somatics = function(caller_list = callers, sample_list = samples) {
 somatics = load_all_somatics(c(callers, regression_callers, pipeline_regression_callers))
 #somatics = load_all_somatics(c(regression_callers, pipeline_regression_callers))
 rocdf = bind_rows(lapply(names(somatics), function(c) { bind_rows(lapply(samples, function(s) {somatics[[c]][[s]]$roc })) }))
-summarydf = rocdf %>% group_by(caller, sample_name, subset) %>%
+summarydf = rocdf %>% group_by(caller, sample_name, subset, ponfiltered) %>%
   filter(cumncalls==max(cumncalls)) %>%
   mutate(f1score=2*((precision*recall)/(precision+recall)))
 gr = unlist(GRangesList(unlist(lapply(names(somatics), function(c) { unlist(lapply(samples, function(s) {somatics[[c]][[s]]$gr })) }))))
 
 ggplot(summarydf %>% filter(!str_detect(sample_name, "purity") & subset == "PASS only" & caller %in% callers)) + 
-  aes(x=recall, y=precision, colour=caller, label=sample_purity[sample_name]*sample_depth[sample_name]) +
+  aes(x=recall, y=precision, colour=caller, label=sample_purity[sample_name]*sample_depth[sample_name], shape=ponfiltered) +
   geom_text_repel() +
   #geom_text(vjust="inward",hjust="inward") +
   geom_point() +
@@ -133,7 +149,7 @@ ggplot(summarydf %>% filter(!str_detect(sample_name, "purity") & subset == "PASS
         panel.background = element_blank())
 
 ggplot(summarydf %>% filter(str_detect(sample_name, "purity")) %>% filter(subset == "PASS only")) + 
-  aes(x=recall, y=precision, colour=caller, label=paste0(sample_purity[sample_name]*sample_depth[sample_name], "x")) +
+  aes(x=recall, y=precision, colour=caller, label=paste0(sample_purity[sample_name]*sample_depth[sample_name], "x"), shape=ponfiltered) +
   geom_text_repel() +
   #geom_text(vjust="inward",hjust="inward") +
   geom_point() +
@@ -154,7 +170,7 @@ mergeddf = bind_rows(
   summarydf %>% filter(!str_detect(sample_name, "purity") & subset == "PASS only" & caller %in% callers) %>% mutate(dataset="40x/100x replicate")) %>%
   mutate(purity=sample_purity[sample_name])
 ggplot(mergeddf) + 
-  aes(x=recall, y=precision, colour=caller, shape=dataset) +
+  aes(x=recall, y=precision, colour=caller, shape=dataset, linetype=ponfiltered) +
   #geom_text_repel() +
   geom_point(aes(size=purity)) +
   geom_line(data=mergeddf %>% filter(dataset=="40x/60x purity downsample")) +
@@ -175,6 +191,7 @@ ggplot(bind_rows(
   summarydf %>% filter(str_detect(sample_name, "purity")),
   summarydf %>% filter(!str_detect(sample_name, "purity") & caller %in% callers))) + 
   aes(x=recall, y=precision, shape=subset, colour=caller, label=paste0(sample_purity[sample_name]*sample_depth[sample_name], "x")) +
+  facet_wrap(~ ponfiltered) +
   geom_text_repel() +
   #geom_text(vjust="inward",hjust="inward") +
   geom_point() +

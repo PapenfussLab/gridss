@@ -8,6 +8,7 @@ options(stringsAsFactors = FALSE)
 datadir = "./publicdata/"
 privatedatadir = "./protecteddata/"
 figdir = "./figures/"
+pon_dir = paste0(datadir, "pon3792v1/")
 
 gridss_fig_tp_colours = c("#6baed6", "#3182bd", "#08519c")
 gridss_fig_fp_colours = c("#fb6a4a", "#de2d26", "#a50f15")
@@ -75,6 +76,13 @@ testthat::test_that("lastTrueOrdinal", {
 
 })
 
+if (!exists("pon_bedpe_gr")) {
+	pon_bedpe_gr=cached_read_file(paste0(pon_dir, "gridss_pon_breakpoint.bedpe"), read_gridss_breakpoint_pon)
+}
+#pon_bed_gr=cached_read_file(paste(pon_dir, "gridss_pon_single_breakend.bed", sep="/"), import), # not needed - GRIDSS2 has PON FILTER and nobody else calls single breakends
+pon_filter = function(gr) {
+	return (gr[!gridss_overlaps_breakpoint_pon(gr, pongr=pon_bedpe_gr)])
+}
 calc_roc_pass_all = function(truth_gr, caller_gr, sample_name, ...) {
 	all_calls=calc_roc(truth_gr, caller_gr, ...)
 	all_calls$roc$subset = "All calls"
