@@ -1,3 +1,6 @@
+setwd("../")
+source("libgridss.R")
+setwd("gridss2_manuscript")
 source("libbenchmark.R")
 library(rtracklayer)
 library(assertthat)
@@ -12,6 +15,7 @@ chm13_centro_gr = resize(chm13_actual_centro_gr, width=width(chm13_actual_centro
 #samtools faidx chm13.draft_v1.0.fasta chr8 > ../../gridss2_manuscript/chm13.draft_v1.0.chr8.fasta
 #gunzip -c chm13.draft_v1.0_plus38Y_repeatmasker.out.gz | grep "chr8 " | gzip -c > chm13.draft_v1.0_chr8_repeatmasker.out.gz
 chm13_repeats_gr = import.repeatmasker.fa.out("publicdata/chm13.draft_v1.0_chr8_repeatmasker.out.gz")
+hg19_repeats_gr = import.repeatmasker.fa.out("publicdata/hg19.fa.out.gz")
 liftover_chm13_to_hg38 = import.chain("publicdata/t2t-chm13-v1.0.hg38.over.chain")
 liftover_hg38_to_hg19 = import.chain(system.file(package="liftOver", "extdata", "hg38ToHg19.over.chain"))
 
@@ -73,8 +77,8 @@ truthdf = data.frame(
 		in_centro            = overlapsAny(chm13_centro_position_gr, chm13_actual_centro_gr)
 			) %>%
 	mutate(
-		id=row_number(),
-		id=paste0("run_", id, "_"))
+		runid=row_number(),
+		id=paste0("run_", runid, "_"))
 if (!file.exists("publicdata/sim/all_runs.n.fa")) {
 	simfa = DNAStringSet(paste0(as.character(chm13_ref[chm13_anchor_position_gr]), as.character(chm13_ref[chm13_centro_position_gr])))
 	names(simfa) = truthdf$id
@@ -88,6 +92,126 @@ if (!file.exists("publicdata/sim/all_runs.n.fa")) {
 	writeXStringSet(simfa, "publicdata/sim/all_runs.n.fa")
 }
 # Now run sim.sh to generate all the results
+# Then run sim_aggregate_results.sh
+process_caller = function(caller) {
+	vcf = VariantAnnotation::readVcf(paste0("publicdata/sim/merged_", caller, "_sim.vcf"))
+	info(vcf)$RUNID = as.integer(str_extract(info(vcf)$RUNID, "[0-9]+"))
+	row.names(vcf) = paste0("run", info(vcf)$RUNID, "_", row.names(vcf))
+	if ("MATEID" %in% colnames(info(vcf))) {
+		info(vcf)$MATEID = elementExtract(info(vcf)$MATEID)
+		info(vcf)$MATEID[!is.na(info(vcf)$MATEID)] = paste0("run", info(vcf)$RUNID[!is.na(info(vcf)$MATEID)], "_", info(vcf)$MATEID[!is.na(info(vcf)$MATEID)])
+	}
+	if (caller == "novobreak") {
+		# Columns aren't even in the correct order
+		VariantAnnotation::fixed(vcf)$REF = DNAStringSet(rep("N", length(vcf)))
+		names(vcf) = paste0("placeholder", seq(length(vcf)))
+	}
+	write(paste(caller, "filters:", unique(rowRanges(vcf)$FILTER)), stderr())
+	bpgr = breakpointRanges(vcf) #, inferMissingBreakends=TRUE)
+	begr = breakendRanges(vcf)
+	gr = c(bpgr, begr) 
+	mcols(gr) = as.data.frame(mcols(gr)) %>%
+		mutate(runid=info(vcf[gr$sourceId])$RUNID) %>%
+		inner_join(truthdf, by="runid")
+	# TODO: add hg19 repeat annotation
+	gr$distance_to_anchor_break = abs(start(gr) - gr$hg19_anchor_break_pos)
+	gr$distance_to_centro_break = abs(start(gr) - gr$hg19_centro_break_pos)
+	#& strand(gr) == "+" no strand matching requirement as the DNA segment could be inverted in chm13
+	gr$is_anchor_hit = as.logical(seqnames(gr) == "chr8") & gr$distance_to_anchor_break < 100
+	gr$is_centro_hit = as.logical(seqnames(gr) == "chr8") & gr$distance_to_centro_break < 100
+	begr = gr[is.na(gr$partner)]
+	bpgr = gr[!is.na(gr$partner)]
+	bpgr$treat_as_anchor = ifelse(bpgr$is_anchor_hit == partner(bpgr)$is_anchor_hit, bpgr$distance_to_anchor_break < partner(bpgr)$distance_to_anchor_break, bpgr$is_anchor_hit)
+	bpanchorgr = bpgr[bpgr$treat_as_anchor]
+	bpcentrogr = partner(bpgr)[bpgr$treat_as_anchor]
+	# bealn repeatmasker lookup assumes all single breakends have a bealn value
+	assert_that(all(elementNROWS(info(vcf[begr$sourceId])$BEALN) > 0))
+	bebealn = str_match(elementExtract(info(vcf[begr$sourceId])$BEALN, 1), "^([^:]+):([0-9]+)[|]([-+])[|]([^|]+)[|]([0-9]+)")
+	bebealngr = GRanges(seqnames=bebealn[,2], ranges=IRanges(start=as.integer(bebealn[,3]), width=GenomicAlignments::cigarWidthAlongReferenceSpace(bebealn[,5])))
+	callerdf = bind_rows(
+		data.frame(
+			grid=names(bpanchorgr),
+			caller_centro_chr=as.character(seqnames(bpcentrogr)),
+			caller_centro_pos=start(bpcentrogr),
+			caller_centro_strand=as.character(strand(bpcentrogr)),
+			caller_centro_repeat_type =hg19_repeats_gr$repeatType [findOverlaps(bpcentrogr, hg19_repeats_gr, select="first")],
+			caller_centro_repeat_class=hg19_repeats_gr$repeatClass[findOverlaps(bpcentrogr, hg19_repeats_gr, select="first")],
+			is_centro_hit=bpcentrogr$is_centro_hit),
+		data.frame(
+			grid=names(begr),
+			caller_centro_repeat_type =hg19_repeats_gr$repeatType [findOverlaps(bebealngr, hg19_repeats_gr, select="first")],
+			caller_centro_repeat_class=hg19_repeats_gr$repeatClass[findOverlaps(bebealngr, hg19_repeats_gr, select="first")]))
+	fgr = gr[callerdf$grid]
+	callerdf = callerdf	%>%
+		mutate(
+			caller=caller,
+			sourceid=fgr$sourceId,
+			runid=info(vcf[fgr$sourceId])$RUNID,
+			caller_anchor_chr=as.character(seqnames(fgr)),
+			caller_anchor_pos=start(fgr),
+			caller_anchor_strand=as.character(strand(fgr)),
+			caller_anchor_repeat_type =hg19_repeats_gr$repeatType [findOverlaps(fgr, hg19_repeats_gr, select="first")],
+			caller_anchor_repeat_class=hg19_repeats_gr$repeatClass[findOverlaps(fgr, hg19_repeats_gr, select="first")],
+			is_breakend_call=is.na(fgr$partner)) %>%
+		inner_join(truthdf, by="runid") %>%
+		replace_na(list(
+			is_breakpoint_match=FALSE,
+			is_breakend_match=FALSE,
+			is_centro_hit=FALSE,
+			centro_repeat_type="",
+			centro_repeat_class="",
+			nchor_repeat_type="",
+			anchor_repeat_class="",
+			caller_centro_repeat_type="",
+			caller_centro_repeat_class="",
+			caller_anchor_repeat_type="",
+			caller_anchor_repeat_class="")) %>%
+		mutate(
+			centro_repeat_type_match=caller_centro_repeat_type == centro_repeat_type,
+			centro_repeat_class_match=caller_centro_repeat_class == centro_repeat_class,
+			is_anchor_hit=fgr$is_anchor_hit,
+			is_breakpoint_match=is_anchor_hit & is_centro_hit,
+			is_breakend_match=is_anchor_hit) %>%
+		group_by(runid) %>%
+		arrange(is_breakpoint_match, is_breakend_match, is_breakend_call, centro_repeat_type_match, centro_repeat_class_match) %>%
+		mutate(tp=(is_breakpoint_match | is_breakend_match) & cumsum(is_breakpoint_match | is_breakend_match) == 1) %>%
+		ungroup() %>%
+		mutate(
+			status=
+				ifelse(!tp, paste0("False Positive"),#, ifelse(is_breakpoint_match | is_breakend_match, " (duplicate call)", "")),
+					ifelse(is_breakpoint_match, "Matching breakpoint call",
+						ifelse(is_breakend_call, "Matching breakend call",
+							"Breakpoint call (one side correct)"))))
+}
+callsdf = bind_rows(lapply(c("gridss", "manta", "svaba", "novobreak"), process_caller))
+resultsdf = bind_rows(
+	callsdf,
+	# fill in false negatives
+	data.frame(runid=unique(truthdf$runid), caller=unique(callsdf$caller)) %>%
+		expand(runid, caller) %>%
+		anti_join(callsdf %>% filter(tp), by=c("runid", "caller")) %>%
+		inner_join(truthdf, by="runid") %>%
+		mutate(status="False Negative")) %>%
+	mutate(status=factor(status, levels=c(
+		"False Positive",
+		"False Negative",
+		"Breakpoint call (one side correct)",
+		"Matching breakend call",
+		"Matching breakpoint call")))
+		
+# Plotting time!
+ggplot(resultsdf) +
+	aes(x=caller, fill=status) +
+	geom_bar() +
+	scale_fill_manual(values=c(
+		"#99000d",
+		"#e41a1c",
+		"#a6cee3",
+		"#1f78b4",
+		"#4daf4a")) +
+	facet_grid(~ summaryRepeatClass(centro_repeat_class)) +
+	theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+figsave("sim_centromere", width=7, height=4)
 
 
 

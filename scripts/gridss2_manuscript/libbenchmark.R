@@ -443,3 +443,18 @@ import.repeatmasker.fa.out <- function(repeatmasker.fa.out) {
 		repeatClass=rmdt$X11)
 	return(grrm)
 }
+summaryRepeatClass = function(x) sapply(x, function(xx) factor(ifelse(is.na(xx), "No repeat", switch(str_extract(xx, "^[^/]+"),
+		"Low_complexity"="Other",
+		"LINE"="SINE/LINE",
+		"Simple_repeat"="Other",
+		"Satellite"="Satellite",
+		"SINE"="SINE/LINE",
+		"DNA"="Other",
+		"LTR"="Other",
+		"rRNA"="Other",
+		"Retroposon"="Other",
+		"srpRNA"="Other",
+		"Unknown"="Other",
+		"No repeat"="No repeat",
+		"No repeat")),
+	levels=c("SINE/LINE", "Satellite", "Other", "No repeat")))
