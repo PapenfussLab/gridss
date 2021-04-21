@@ -394,6 +394,7 @@ write_status  "Using JVM maximum heap size of $jvmheap for assembly and variant 
 if [[ "$@" == "" ]] ; then
 	write_status  "$USAGE_MESSAGE"
 	write_status  "At least one input bam must be specified."
+	exit $EX_NOINPUT
 fi
 for f in $@ ; do
 	if [[ ! -f $f ]] ; then
