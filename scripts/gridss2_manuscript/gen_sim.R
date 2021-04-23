@@ -107,6 +107,7 @@ process_caller = function(caller) {
 		names(vcf) = paste0("placeholder", seq(length(vcf)))
 	}
 	write(paste(caller, "filters:", unique(rowRanges(vcf)$FILTER)), stderr())
+	vcf = vcf[VariantAnnotation::fixed(vcf)$FILTER %in% c("PASS", "minRead")]
 	bpgr = breakpointRanges(vcf) #, inferMissingBreakends=TRUE)
 	begr = breakendRanges(vcf)
 	gr = c(bpgr, begr) 
@@ -147,6 +148,7 @@ process_caller = function(caller) {
 			caller=caller,
 			sourceid=fgr$sourceId,
 			runid=info(vcf[fgr$sourceId])$RUNID,
+			filters=VariantAnnotation::fixed(vcf[fgr$sourceId])$FILTER,
 			caller_anchor_chr=as.character(seqnames(fgr)),
 			caller_anchor_pos=start(fgr),
 			caller_anchor_strand=as.character(strand(fgr)),
@@ -200,19 +202,26 @@ resultsdf = bind_rows(
 		"Matching breakpoint call")))
 		
 # Plotting time!
-ggplot(resultsdf) +
-	aes(x=caller, fill=status) +
-	geom_bar() +
+result_by_rc = resultsdf %>%
+	mutate(print_centro_repeat_class = summaryRepeatClass(centro_repeat_class)) %>%
+	group_by(caller, print_centro_repeat_class) %>%
+	mutate(total_tp=sum(status!="False Positive")) %>%
+	group_by(caller, print_centro_repeat_class, status) %>%
+	summarise(portion=n()/total_tp) %>%
+	distinct()
+ggplot(result_by_rc) +
+	aes(x=caller, y=portion, fill=status) +
+	geom_col() +
 	scale_fill_manual(values=c(
 		"#99000d",
 		"#e41a1c",
 		"#a6cee3",
 		"#1f78b4",
 		"#4daf4a")) +
-	facet_grid(~ summaryRepeatClass(centro_repeat_class)) +
+	facet_grid(status!="False Positive" ~ print_centro_repeat_class) +
+	scale_y_continuous(expand=c(0,0,0,0), labels = scales::percent) + 
 	theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 figsave("sim_centromere", width=7, height=4)
-
 
 
 
