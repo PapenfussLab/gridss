@@ -1,5 +1,4 @@
 [![Release](https://img.shields.io/github/v/release/PapenfussLab/gridss)](https://github.com/PapenfussLab/gridss/releases)
-[![Build Status](https://travis-ci.org/PapenfussLab/gridss.svg?branch=master)](https://travis-ci.org/PapenfussLab/gridss)
 [![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
 [![Language](http://img.shields.io/badge/language-c-brightgreen.svg)]
 [![License](https://img.shields.io/badge/license-GPL-blue)]
@@ -8,7 +7,7 @@
 # VIRUSBreakend - Viral Integration Recognition Using Single Breakends
 
 VIRUSBreakend is a high-speed viral integration detection tool designed to be incorporated in the whole genome sequence piplines with minimal additional cost.
-VIRUSBreakend takes on average 1 hour to run on a 100x coverage human sample (4 core c2-standard-4 google compute instance) at a cost of USD$0.21 per sample (USD$0.06 using preemptible instances).
+VIRUSBreakend takes on average 1 hour to run on a 100x coverage human sample. Recommended job/VM size is 4 core / 64Gb memory.
 
 This tool is part of GRIDSS - the Genomic Rearrangement IDentification Software Suite.
 
@@ -40,8 +39,8 @@ Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
 
 Run `virusbreakend-build.sh --db virusbreakenddb` to download and generate the reference data.
 This download the NCBI taxonomic information, sequences, virushostdb, the `kraken2-build` build process, and generates indexes.
-The index is around 7GB in size.
-Be aware that the kraken2 build process requires additional memory to build the index.
+The index is around 54GB in size.
+Be aware that the kraken2 build process requires around 150GB of intermediate disk space to download from NCBI and build the index.
 
 `virusbreakend-build.sh` requires:
 
