@@ -1490,7 +1490,8 @@ pairwiseLCPrefix <- function(s1, s2, ignore.case=FALSE) {
 }
 
 fix_parid = function(vcf) {
-  if ("PARID" %in% row.names(info(header(vcf))) & !("MATEID" %in% row.names(info(header(vcf))))) {
+  if (("PARID" %in% row.names(info(header(vcf))) & !("MATEID" %in% row.names(info(header(vcf))))) |
+  		(!is.null(info(vcf)$PARID) & any(elementNROWS(info(vcf)$PARID) > 0) & (is.null(info(vcf)$MATEID) | all(elementNROWS(info(vcf)$MATEID) == 0)))) {
     parid = info(vcf)$PARID
     info(vcf)$PARID = NULL
     parid_header_ordinal = which(row.names(info(header(vcf))) == "PARID")

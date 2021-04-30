@@ -1,16 +1,19 @@
+setwd("../")
+source("libgridss.R")
+setwd("gridss2_manuscript")
 source("libbenchmark.R")
-source("../libgridss.R")
 #for f in $(find . -name '*.bgz') ; do gunzip -c $f > $(dirname $f)/$(basename $f .bgz) ; done
 #zip colo829_benchmark_results.zip $(find . -name '*.gridss.vcf.somatic.vcf') $(find . -name 'somaticSV.0000.vcf') $(find . -name '*.svaba.somatic.sv.vcf') $(find . -name 'novoBreak.pass.flt.vcf') $(find . -name 'somatic.vcf.bgz')
 #colo829truth = readVcf(paste0(datadir, "COLO829.somatic.overlapped.vcf"))
 #git clone https://github.com/UMCUGenetics/COLO829_somaticSV
 colo829truth = VariantAnnotation::readVcf(paste0(datadir, "COLO829_somaticSV/truthset_somaticSVs_COLO829.vcf"))
-colo829truthgr = breakpointRanges(colo829truth, inferMissingBreakends=TRUE)
+info(colo829truth)$SVTYPE[!str_detect(as.character(rowRanges(colo829truth)$ALT), stringr::fixed("<"))] = "BND"
+colo829truthgr = breakpointRanges(colo829truth)
 colo829truthgr$FILTER = "PASS"
 colo829truthgr$QUAL = 20
 regression_callers = list.files(paste0(datadir, "regressiontest"), pattern="^v.*")
 pipeline_regression_callers = list.files(paste0(datadir, "regressiontest"), pattern="^[0-9]{6}_.*")
-callers = c("gridss", "manta", "novobreak", "svaba")
+callers = c("gridss", "manta", "novobreak", "svaba", "gridss1")
 samples = c(
   "colo829_1",
   "colo829_2",
@@ -51,10 +54,12 @@ sample_purity=c(
   "colo829_purity_50x_of_60x"=50/60,
   "colo829_purity_60x_of_60x"=60/60)
 load_somatic = function(caller, sample_name) {
+  write(paste("Processing", caller, sample_name), stderr())
   if (caller %in% callers) {
     filename = paste0(datadir, caller, "/", sample_name, "/", switch(caller,
-      "gridss"=paste0(sample_name, ".gridss.vcf.somatic.vcf"),
-      "manta"="workspace/svHyGen/somaticSV.0000.vcf",
+      "gridss"=paste0(sample_name, ".gridss.somatic.vcf.bgz"),
+      "gridss1"=paste0(sample_name, ".gridss.vcf.somatic.vcf"),
+      "manta"="results/variants/somaticSV.vcf.gz",
       "svaba"=paste0(sample_name,".svaba.somatic.sv.vcf"),
       "novobreak"="novoBreak.pass.flt.vcf",
       "somatic.vcf.bgz" # GRIDSS regression
@@ -87,6 +92,10 @@ load_somatic = function(caller, sample_name) {
       # https://github.com/KChen-lab/novoBreak/issues/1
       names(vcf) = paste0("id", seq_along(names(vcf)), "_", seqnames(rowRanges(vcf)), "_", start(rowRanges(vcf)))
     }
+    if (caller == "gridss") {
+      # Remove the PON filter field since we explicitly handle that in this analysis
+      VariantAnnotation::fixed(vcf)$FILTER = ifelse(VariantAnnotation::fixed(vcf)$FILTER == "PON", "PASS", VariantAnnotation::fixed(vcf)$FILTER)
+    }
     gr = c(
       breakpointRanges(vcf),
       breakendRanges(vcf))
@@ -97,7 +106,8 @@ load_somatic = function(caller, sample_name) {
     gr$caller = caller
     gr$sample_name = sample_name
     roc = calc_roc_pass_all(colo829truthgr, gr, sample_name=sample_name, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=TRUE)
-    rocpon = calc_roc_pass_all(colo829truthgr, gr, sample_name=sample_name, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=TRUE, additional_filter=pon_filter)
+    pongr = pon_filter(gr)
+    rocpon = calc_roc_pass_all(colo829truthgr, pongr, sample_name=sample_name, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=TRUE)
     roc$roc$ponfiltered = FALSE
     roc$gr$ponfiltered = FALSE
     roc$roc_by_type$ponfiltered = FALSE
@@ -106,8 +116,8 @@ load_somatic = function(caller, sample_name) {
     rocpon$roc_by_type$ponfiltered = TRUE
     roc = list(
       roc=bind_rows(roc$roc, rocpon$roc),
-      roc=c(roc$gr, rocpon$gr),
-      roc=bind_rows(roc$roc_by_type, rocpon$roc_by_type)
+      gr=c(roc$gr, rocpon$gr),
+      roc_by_type=bind_rows(roc$roc_by_type, rocpon$roc_by_type)
     )
   } else {
     warning(paste("Missing", filename))
@@ -125,7 +135,8 @@ load_all_somatics = function(caller_list = callers, sample_list = samples) {
   }
   return(out)
 }
-somatics = load_all_somatics(c(callers, regression_callers, pipeline_regression_callers))
+somatics = load_all_somatics(c(callers))
+#somatics = load_all_somatics(c(callers, regression_callers, pipeline_regression_callers))
 #somatics = load_all_somatics(c(regression_callers, pipeline_regression_callers))
 rocdf = bind_rows(lapply(names(somatics), function(c) { bind_rows(lapply(samples, function(s) {somatics[[c]][[s]]$roc })) }))
 summarydf = rocdf %>% group_by(caller, sample_name, subset, ponfiltered) %>%
@@ -153,7 +164,7 @@ ggplot(summarydf %>% filter(str_detect(sample_name, "purity")) %>% filter(subset
   geom_text_repel() +
   #geom_text(vjust="inward",hjust="inward") +
   geom_point() +
-  scale_color_manual(values = c("#000000", "#0072B2", "#d95f02", "#1b9e77")) +
+  scale_color_manual(values = c("#000000", "#0072B2", "#d95f02", "#1b9e77", "#e7298a")) +
   #scale_color_brewer(palette="Dark2") +
   scale_x_continuous(limits = c(0,1), expand=c(0, 0), labels = scales::percent) +
   scale_y_continuous(limits = c(0,1.01), expand=c(0, 0), labels = scales::percent) +
@@ -166,19 +177,25 @@ ggplot(summarydf %>% filter(str_detect(sample_name, "purity")) %>% filter(subset
 figsave("colo829_purity_downsampling", width=6, height=5)
 
 mergeddf = bind_rows(
-  summarydf %>% filter(str_detect(sample_name, "purity") & subset == "PASS only") %>% mutate(dataset="40x/60x purity downsample"),
-  summarydf %>% filter(!str_detect(sample_name, "purity") & subset == "PASS only" & caller %in% callers) %>% mutate(dataset="40x/100x replicate")) %>%
-  mutate(purity=sample_purity[sample_name])
-ggplot(mergeddf) + 
-  aes(x=recall, y=precision, colour=caller, shape=dataset, linetype=ponfiltered) +
+  summarydf %>%
+    filter(str_detect(sample_name, "purity") & subset == "PASS only") %>%
+    mutate(dataset="40x/60x purity downsample"),
+  summarydf %>%
+    filter(!str_detect(sample_name, "purity") & subset == "PASS only" & caller %in% callers) %>%
+    mutate(dataset="40x/100x replicate")) %>%
+  mutate(purity=sample_purity[sample_name]) %>%
+  mutate(PON=ifelse(ponfiltered, "With Panel of Normals", "Without Panel of Normals"))
+ggplot(mergeddf ) + 
+  aes(x=recall, y=precision, colour=caller, shape=dataset, linetype=PON, alpha=ponfiltered) +
   #geom_text_repel() +
   geom_point(aes(size=purity)) +
   geom_line(data=mergeddf %>% filter(dataset=="40x/60x purity downsample")) +
   #scale_color_brewer(palette="Dark2") +
-  scale_color_manual(values = c("#000000", "#0072B2", "#d95f02", "#1b9e77")) +
+  scale_color_manual(values = c("#000000", "#0072B2", "#d95f02", "#1b9e77", "#e7298a")) +
   scale_x_continuous(limits = c(0,1), expand=c(0, 0), labels = scales::percent) +
-  scale_y_continuous(limits = c(0,1.01), expand=c(0, 0), labels = scales::percent) +
-  scale_shape_manual(values=c(4,0)) +
+  scale_y_continuous(limits = c(0,1.02), expand=c(0, 0), labels = scales::percent) +
+  scale_shape_manual(values=c(1,16)) +
+  scale_alpha_manual(values=c(0.5, 1)) +
   theme(plot.margin = margin(0,0,0,0),
         axis.line = element_line(colour = "black"),
         panel.grid.major = element_blank(),
@@ -186,6 +203,17 @@ ggplot(mergeddf) +
         panel.border = element_blank(),
         panel.background = element_blank())
 figsave("colo829_combined_roc", width=7, height=4)
+
+load_all_somatics = function(caller_list = callers, sample_list = samples) {
+  out = list()
+  for (caller in caller_list) {
+    out[[caller]] = list()
+    for (s in sample_list) {
+      out[[caller]][[s]] = load_somatic(caller, s)
+    }
+  }
+  return(out)
+}
 
 ggplot(bind_rows(
   summarydf %>% filter(str_detect(sample_name, "purity")),

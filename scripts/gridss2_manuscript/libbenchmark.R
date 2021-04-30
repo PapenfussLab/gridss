@@ -78,10 +78,17 @@ testthat::test_that("lastTrueOrdinal", {
 
 if (!exists("pon_bedpe_gr")) {
 	pon_bedpe_gr=cached_read_file(paste0(pon_dir, "gridss_pon_breakpoint.bedpe"), read_gridss_breakpoint_pon)
+	pon_bed_gr=cached_read_file(paste(pon_dir, "gridss_pon_single_breakend.bed", sep="/"), import)
 }
-#pon_bed_gr=cached_read_file(paste(pon_dir, "gridss_pon_single_breakend.bed", sep="/"), import), # not needed - GRIDSS2 has PON FILTER and nobody else calls single breakends
+
 pon_filter = function(gr) {
-	return (gr[!gridss_overlaps_breakpoint_pon(gr, pongr=pon_bedpe_gr)])
+	bpgr = gr[!is.na(gr$partner)]
+	begr = gr[is.na(gr$partner)]
+	bpgr = bpgr[!gridss_overlaps_breakpoint_pon(bpgr, pongr=pon_bedpe_gr)]
+	if (length(begr) > 0) {
+		begr = begr[!gridss_overlaps_breakend_pon(begr, pongr=pon_bed_gr)]
+	}
+	return(c(bpgr, begr))
 }
 calc_roc_pass_all = function(truth_gr, caller_gr, sample_name, ...) {
 	all_calls=calc_roc(truth_gr, caller_gr, ...)
@@ -103,7 +110,7 @@ calc_roc_pass_all = function(truth_gr, caller_gr, sample_name, ...) {
 calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100, bemaxgap=100, minsize=50, maxsizedifference=25, keepInterchromosomal=FALSE, additional_filter=function(gr) { gr } ) {
 	caller_gr$QUAL = caller_gr$QUAL %na% 0
 	caller_name=unique(caller_gr$caller)
-	write(paste("Processing", caller_name), stderr())
+	write(paste("calc_roc ", caller_name, length(caller_gr), "calls"), stderr())
 	caller_gr = caller_gr[is.na(caller_gr$partner) | caller_gr$partner %in% names(caller_gr)]
 	if (!is.null(filter_to_region_gr)) {
 		truth_gr = truth_gr[overlapsAny(truth_gr, filter_to_region_gr, ignore.strand=TRUE)]
@@ -181,6 +188,7 @@ calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100,
 	} else {
 		truth_gr = truth_gr[is.na(truth_gr$svLen) | abs(truth_gr$svLen) >= minsize]
 		caller_bpgr = caller_bpgr[is.na(caller_bpgr$svLen) | abs(caller_bpgr$svLen) >= minsize]
+		caller_bpgr = caller_bpgr = caller_bpgr[is.na(caller_bpgr$partner) | caller_bpgr$partner %in% names(caller_bpgr)]
 	}
 	
 	truth_gr$fn = !truth_gr$tp
@@ -223,25 +231,30 @@ calc_roc = function(truth_gr, caller_gr, filter_to_region_gr=NULL, bpmaxgap=100,
 # segments
 # segments supported by SV
 # distance to SV
-evaluate_cn_transitions = function (cngr, svgr, margin=100000, expectConsistent=TRUE) {
+evaluate_cn_transitions = function (cngr, svgr, margin=100000) {
 	cn_transitions = with(cngr %>% as.data.frame(), IRanges::reduce(c(
 		GRanges(seqnames=seqnames, ranges=IRanges(start=start, width=1)),
 		GRanges(seqnames=seqnames, ranges=IRanges(start=end + 1, width=1)))))
 	cn_transitions$caller = unique(cngr$caller)
 	cn_transitions$cn_left = NA
+	cn_transitions$cn_left_length = NA
 	cn_transitions$cn_right = NA
+	cn_transitions$cn_right_length = NA
 	hits = findOverlaps(cn_transitions, with(cngr %>% as.data.frame(), GRanges(seqnames=seqnames, ranges=IRanges(start=start, width=1))))
 	cn_transitions$cn_right[queryHits(hits)] = cngr[subjectHits(hits)]$cn
+	cn_transitions$cn_right_length[queryHits(hits)] = width(cngr[subjectHits(hits)])
 	hits = findOverlaps(cn_transitions, with(cngr %>% as.data.frame(), GRanges(seqnames=seqnames, ranges=IRanges(start=end + 1, width=1))))
 	cn_transitions$cn_left[queryHits(hits)] = cngr[subjectHits(hits)]$cn
+	cn_transitions$cn_left_length[queryHits(hits)] = width(cngr[subjectHits(hits)])
 	cn_transitions$cn_delta = cn_transitions$cn_right - cn_transitions$cn_left
 	
 	hits = findOverlaps(svgr, cn_transitions, maxgap=margin, ignore.strand=TRUE) %>% as.data.frame() %>%
-		mutate(distance=pmax(1, abs(start(svgr)[queryHits] - start(cn_transitions)[subjectHits])))
+		mutate(distance=abs(start(svgr)[queryHits] + ifelse(as.logical(strand(svgr) == "+")[queryHits], 1, 0) - start(cn_transitions)[subjectHits]))
 	best_sv_hit = hits %>% group_by(queryHits) %>% filter(distance==min(distance)) %>% ungroup()
 	best_cn_hit = hits %>% group_by(subjectHits) %>% filter(distance==min(distance)) %>% ungroup()
 	cn_transitions$distance = NA
 	cn_transitions[best_cn_hit$subjectHits]$distance = best_cn_hit$distance
+
 	svgr$distance = rep(NA, length(svgr))
 	svgr[best_sv_hit$queryHits]$distance = best_sv_hit$distance
 	
@@ -249,7 +262,6 @@ evaluate_cn_transitions = function (cngr, svgr, margin=100000, expectConsistent=
 		mutate(queryHits.p=match(svgr[queryHits]$partner, names(svgr))) %>%
 		filter(!is.na(queryHits.p)) %>%
 		inner_join(best_sv_hit, by=c("queryHits.p"="queryHits"), suffix=c("", ".p")) %>%
-		filter(distance == 1 & distance.p == 1) %>%
 		mutate(
 			ori_local = as.character(strand(svgr))[queryHits],
 			ori_remote = as.character(strand(svgr))[queryHits.p],
@@ -264,6 +276,14 @@ evaluate_cn_transitions = function (cngr, svgr, margin=100000, expectConsistent=
 	cn_transitions$sv_match_classification[best_sv_hit %>% filter(is.na(svgr$partner[queryHits])) %>% pull(subjectHits)] = "Single Breakend"
 	cn_transitions$sv_match_classification[best_sv_hit %>% filter(!is.na(svgr$partner[queryHits])) %>% pull(subjectHits)] = "Breakpoint"
 	cn_transitions$sv_match_rescued = FALSE
+	
+	sv_hit_count_100k = hits %>% group_by(subjectHits) %>% summarise(n=n())
+	cn_transitions$sv_matches_100k = 0
+	cn_transitions$sv_matches_100k[sv_hit_count_100k$subjectHits] = sv_hit_count_100k$n
+	cn_transitions$sv_match_classification_100k = "Missing SV"
+	cn_transitions$sv_match_classification_100k[hits %>% filter(is.na(svgr$partner[queryHits])) %>% pull(subjectHits)] = "Single Breakend"
+	cn_transitions$sv_match_classification_100k[hits %>% filter(!is.na(svgr$partner[queryHits])) %>% pull(subjectHits)] = "Breakpoint"
+	
 	if (!is.null(svgr$Recovered)) {
 		cn_transitions$sv_match_rescued[best_sv_hit %>% filter(svgr$Recovered[queryHits]) %>% pull(subjectHits)] = TRUE
 	}
@@ -274,24 +294,15 @@ evaluate_cn_transitions = function (cngr, svgr, margin=100000, expectConsistent=
 	cn_transitions$cn_error[exact_bp_hit$subjectHits] = exact_bp_hit$cn_error
 	cn_transitions$cn_error[!cn_transitions$can_evaluate_cn_error] = NA
 	
-	exact_sv_hit = findOverlaps(svgr, cn_transitions, maxgap=1, ignore.strand=TRUE) %>%
-		as.data.frame() %>%
-		mutate(distance=abs(start(svgr)[queryHits] + ifelse(as.character(strand(svgr)[queryHits]=="-"), -1, 0)) - start(cn_transitions)[subjectHits]) %>%
-		group_by(queryHits) %>%
-		filter(distance==min(distance))
 	svgr$cn_left = rep(NA, length(svgr))
 	svgr$cn_right = rep(NA, length(svgr))
 	svgr$orphaned = rep(FALSE, length(svgr))
-	svgr$cn_left[exact_sv_hit$queryHits] = cn_transitions$cn_left[exact_sv_hit$subjectHits]
-	svgr$cn_right[exact_sv_hit$queryHits] = cn_transitions$cn_right[exact_sv_hit$subjectHits]
-	svgr$orphaned[exact_sv_hit$queryHits] = FALSE
-	if (expectConsistent & any(svgr$orphaned)) {
-		browser()
-	} else {
-		orphan_sv_hits = findOverlaps(svgr, cngr, ignore.strand=TRUE) %>% as.data.frame()
-		svgr$cn_left[orphan_sv_hits$queryHits] = ifelse(!svgr$orphaned, svgr$cn_left[orphan_sv_hits$queryHits], cngr$cn[orphan_sv_hits$subjectHits])
-		svgr$cn_right = ifelse(!svgr$orphaned, svgr$cn_right, svgr$cn_left)
-	}
+	svgr$cn_left[best_sv_hit$queryHits] = cn_transitions$cn_left[best_sv_hit$subjectHits]
+	svgr$cn_right[best_sv_hit$queryHits] = cn_transitions$cn_right[best_sv_hit$subjectHits]
+	svgr$orphaned[best_sv_hit$queryHits] = FALSE
+	orphan_sv_hits = findOverlaps(svgr, cngr, ignore.strand=TRUE) %>% as.data.frame()
+	svgr$cn_left[orphan_sv_hits$queryHits] = ifelse(!svgr$orphaned[orphan_sv_hits$queryHits], svgr$cn_left[orphan_sv_hits$queryHits], cngr$cn[orphan_sv_hits$subjectHits])
+	svgr$cn_right = ifelse(!svgr$orphaned, svgr$cn_right, svgr$cn_left)
 	return(list(cn_transitions=cn_transitions, sv=svgr))
 }
 lnx_to_gr <- function(lnx_svs) {
@@ -390,7 +401,7 @@ load_gr_cn_pcawg = function(sampleId, donorId) {
 	}
 	return(.gr_cn_pcawg$sampleId)
 }
-load_gr_sv_gridss = function(sampleId, donorId) {
+load_gr_sv_gridss = function(sampleId, donorId=metadata_df$donor_ID[metadata_df$SAMPLE==sampleId]) {
 	if (is.null(.gr_sv_gridss$sampleId)) {
 		gridss_vcf = readVcf(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.sv.vcf.gz"))
 		gridss_vcf = gridss_vcf[rowRanges(gridss_vcf)$FILTER == "PASS",]
@@ -405,7 +416,7 @@ load_gr_sv_gridss = function(sampleId, donorId) {
 	}
 	return(.gr_sv_gridss$sampleId)
 }
-load_gr_cn_purple = function(sampleId, donorId) {
+load_gr_cn_purple = function(sampleId, donorId=metadata_df$donor_ID[metadata_df$SAMPLE==sampleId]) {
 	if (is.null(.gr_cn_purple$sampleId)) {
 		purple_df = read_table2(paste0(privatedatadir, "/pcawg/", donorId, "T.purple.cnv.somatic.tsv"), col_types="ciiddddcccidiidd")
 		purple_gr = with(purple_df, GRanges(
