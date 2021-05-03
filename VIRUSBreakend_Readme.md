@@ -100,9 +100,44 @@ meandepth|Mean alignment depth
 meanbaseq|Mean base quality of bases mapped to adjusted viral reference
 meanmapq|Mean mapping quality of reads mapped to adjusted viral reference
 integrations|Number of integration breakpoints found.
+QCStatus|QC status of viral integration
 
 Each viral integration should have 2 integration breakpoints (one for the start, one for the end) although there may be more if the integration site is rearranged or less if one side of the  integration site was missed.
 
+## QCStatus
+
+QCStatus can be one of the following:
+
+- ""
+The empty string indicates no warning or errors associated with this virus
+
+- LOW_VIRAL_COVERAGE
+
+Less than 10% of the virus has any coverage.
+This typically occurs when the viral sequence has a short sequence homology with non-viral sequence.
+This record is likely a false positive and should be ignored.
+
+- EXCESSIVE_VIRAL_COVERAGE
+
+Regions of the virus have depth of coverage so high, that GRIDSS was unable to call integrations in these regions.
+The exact bounds of excluded regions can be found in the `*.coverage.blacklist.bed` files in the `virusbreakend.working` directory
+
+- ASSEMBLY_DOWNSAMPLED
+
+Viral coverage was sufficiently high that some regions were downsampled in the GRIDSS assembly process.
+With the assembly downsampling changes in GRIDSS 2.11.1, viral integration have in these region have probably been correctly called but the QUAL score is lower than it should be.
+The exact bounds of excluded regions can be found in the `*.bed.excluded_*.bed` files in the `virusbreakend.working` directory
+
+- CHILD_TAXID_REFERENCE
+
+The viral genome chosen by VIRUSBreakend does not match the NCBI taxonomic classification assigned by Kraken2.
+This typically occurs in scenarios such as HPV-45 where Kraken2 assigns reads to the parent taxon due to sequence commonality between HPV-45 and HPV-18.
+This is expected behavour for these viral taxa. The taxon assigned `reference_taxid`
+
+- UNCLEAR_TAXID_ASSIGNMENT
+
+Less than 60% of reads assigned to nominal kraken2 assigned taxon were directly assigned (the rest were assigned to child taxa).
+The taxonomic assignment may be unclear - possibly due to co-infection by multiple viruses within the genus.
 
 ## Ambiguous insertions
 
