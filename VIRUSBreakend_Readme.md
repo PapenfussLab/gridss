@@ -76,20 +76,24 @@ VIRUSBreakend outputs:
 * The kraken2 report of the virus(es) for which viral integration was run upon
 * Coverage statistics of the virus(es) for which viral integration was run upon
 
-## summary.csv files
+## summary.tsv files
 
 |field | meaning|
 |----|----|
 taxid_genus|NCBI taxonomy ID of genus of viral reference
 name_genus|NCBI taxonomy genus name
-reads_genus|Number of reads assigned to any virus in that genus by kraken2
+reads_genus_tree|Number of reads assigned to any virus in that genus by kraken2
 taxid_species|NCBI taxonomy ID of species of viral reference
-reads_species|Number of reads assigned to that species (and any sub-species) by kraken2
+reads_species_tree|Number of reads assigned to that species (and any sub-species) by kraken2
 name_species| NCBI taxonomy species name
-taxid|NCBI taxonomy ID of viral reference
-name| NCBI taxonomy name of viral reference
-reads|Number of reads assigned to the viral reference by kraken2
-reference|kraken2 name of viral reference contig
+taxid_assigned|NCBI taxonomy ID of viral reference
+name_assigned| NCBI taxonomy name of viral reference
+reads_assigned_tree|Number of reads assigned to the viral reference or taxonomic descendents by kraken2
+reads_assigned_direct|Number of reads assigned to the viral reference taxid by kraken2
+reference|name of viral reference used.
+reference_taxid|NCBI taxonomy ID of viral reference used. This can be a child taxid of taxid_assigned.
+reference_kmer_count|count of read kmers matching reference used
+alternate_kmer_count|count of read kmers matching next best reference candidate
 #rname|name of adjusted viral reference
 startpos|start position of adjusted viral reference. Always 1
 endpos|end position of adjusted viral reference. Always equal to the viral contig length
