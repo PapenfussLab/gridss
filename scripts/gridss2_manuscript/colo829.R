@@ -184,15 +184,16 @@ mergeddf = bind_rows(
     filter(!str_detect(sample_name, "purity") & subset == "PASS only" & caller %in% callers) %>%
     mutate(dataset="40x/100x replicate")) %>%
   mutate(purity=sample_purity[sample_name]) %>%
-  mutate(PON=ifelse(ponfiltered, "With Panel of Normals", "Without Panel of Normals"))
-ggplot(mergeddf ) + 
-  aes(x=recall, y=precision, colour=caller, shape=dataset, linetype=PON, alpha=ponfiltered) +
+  mutate(PON=ifelse(ponfiltered, "With Panel of Normals", "Without Panel of Normals")) %>%
+  filter(sample_name != "colo829_3")
+roc_plot = ggplot(mergeddf ) + 
+  aes(x=recall, y=precision, colour=caller, shape=dataset, alpha=ponfiltered) +
   #geom_text_repel() +
   geom_point(aes(size=purity)) +
   geom_line(data=mergeddf %>% filter(dataset=="40x/60x purity downsample")) +
   #scale_color_brewer(palette="Dark2") +
   scale_color_manual(values = c("#000000", "#0072B2", "#d95f02", "#1b9e77", "#e7298a")) +
-  scale_x_continuous(limits = c(0,1), expand=c(0, 0), labels = scales::percent) +
+  scale_x_continuous(limits = c(0,1.02), expand=c(0, 0), labels = scales::percent) +
   scale_y_continuous(limits = c(0,1.02), expand=c(0, 0), labels = scales::percent) +
   scale_shape_manual(values=c(1,16)) +
   scale_alpha_manual(values=c(0.5, 1)) +
@@ -202,18 +203,10 @@ ggplot(mergeddf ) +
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank())
-figsave("colo829_combined_roc", width=7, height=4)
-
-load_all_somatics = function(caller_list = callers, sample_list = samples) {
-  out = list()
-  for (caller in caller_list) {
-    out[[caller]] = list()
-    for (s in sample_list) {
-      out[[caller]][[s]] = load_somatic(caller, s)
-    }
-  }
-  return(out)
-}
+roc_plot
+figsave("colo829_combined_roc_overlay", width=7, height=4)
+roc_plot + facet_grid(PON ~ . )
+figsave("colo829_combined_roc", width=7, height=8)
 
 ggplot(bind_rows(
   summarydf %>% filter(str_detect(sample_name, "purity")),
@@ -234,13 +227,11 @@ ggplot(bind_rows(
         panel.background = element_blank()) +
   labs(title="Effect of GRIDSS PON")
 
-
-
 # Paper numbers
 mergeddf %>% filter(dataset=="40x/100x replicate") %>%
-  group_by(caller, subset, sample_name) %>%
+  group_by(ponfiltered, caller, subset, sample_name) %>%
   filter(cumtp == max(cumtp)) %>%
-  group_by(caller, subset) %>%
+  group_by(ponfiltered, caller, subset) %>%
   summarise(
     precision=mean(precision),
     recall=mean(recall))

@@ -19,9 +19,9 @@ truth$na12878$filter_function = NULL
 seqlevelsStyle(truth$na12878$gr) = "UCSC"
 
 regression_caller_files = list(hg002 = list(
-  gridss2.9.4_2x250=paste0(datadir, "gridss/v2.9.4/HG002_2x250/HG002_2x250.gridss.vcf"),
-  gridss2.9.4_60x=paste0(datadir, "gridss/v2.9.4/HG002_60x/HG002_60x.gridss.vcf"),
-  gridss2.9.4_300x=paste0(datadir, "gridss/v2.9.4//HG002_300x/HG002_300x.gridss.vcf"),
+  gridss2.9.4_2x250=paste0(datadir, "gridss294/HG002_2x250/HG002_2x250.gridss.vcf"),
+  gridss2.9.4_60x=paste0(datadir, "gridss294/HG002_60x/HG002_60x.gridss.vcf"),
+  gridss2.9.4_300x=paste0(datadir, "gridss294/HG002_300x/HG002_300x.gridss.vcf"),
   gridss2.9.3_60x=paste0(datadir, "hg002/gridss_2.9.3.vcf"),
   gridss2.9.1_60x=paste0(datadir, "hg002/gridss_2.9.1.vcf.gz"),
   gridss1.6.1_60x=paste0(datadir, "hg002/gridss_1.6.1.vcf")
@@ -30,7 +30,7 @@ regression_caller_files = list(hg002 = list(
 caller_files = list(
   hg002 = list(
   	gridss=paste0(datadir, "hg002/gridss_2.9.3.vcf"),
-    #gridss=paste0(datadir, "hg002/gridss_2.9.1_mapq10.vcf"),
+    gridss_mapq10=paste0(datadir, "hg002/gridss_2.9.1_mapq10.vcf"),
     svaba=paste0(datadir, "svaba/HG002_60x/HG002_60x.svaba.unfiltered.germline.sv.vcf"),
     breakdancer=paste0(datadir, "hg002/breakdancer_1.4.5.vcf"),
     crest=paste0(datadir, "hg002/crest.vcf"),
@@ -102,8 +102,7 @@ rocdf %>% group_by(sample_name, caller) %>%
   summarise(recall=max(recall))
 
 require("viridis")
-ggplot(rocdf %>% 
-    mutate(caller=factor(caller, levels=c("gridss", "gridss1", "breakdancer", "crest", "delly", "hydra", "manta", "pindel", "svaba")))) +
+ggplot(rocdf %>% mutate(caller=factor(caller, levels=c("gridss", "gridss1", "breakdancer", "crest", "delly", "hydra", "manta", "pindel", "svaba")))) +
   aes(x=recall, y=precision, colour=caller, linetype=subset) +
   #scale_shape_manual(values=c(3,4)) +
   geom_line() +

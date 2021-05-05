@@ -205,9 +205,11 @@ resultsdf = bind_rows(
 result_by_rc = resultsdf %>%
 	mutate(print_centro_repeat_class = summaryRepeatClass(centro_repeat_class)) %>%
 	group_by(caller, print_centro_repeat_class) %>%
-	mutate(total_tp=sum(status!="False Positive")) %>%
-	group_by(caller, print_centro_repeat_class, status) %>%
-	summarise(portion=n()/total_tp) %>%
+	mutate(
+		total_events=sum(status!="False Positive"),
+		total_tp=sum(!str_detect(status, "False"))) %>%
+	group_by(caller, print_centro_repeat_class, status, total_tp, total_events) %>%
+	summarise(events=n(), portion=n()/ifelse(status=="False Positive", total_tp, total_events)) %>%
 	distinct()
 ggplot(result_by_rc) +
 	aes(x=caller, y=portion, fill=status) +
@@ -223,6 +225,6 @@ ggplot(result_by_rc) +
 	theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 figsave("sim_centromere", width=7, height=4)
 
-
-
-
+# Figures in manuscript main text
+result_by_rc %>% filter(print_centro_repeat_class =="Satellite") %>% arrange(status)
+save.image("sim.RData")

@@ -811,41 +811,43 @@ align_breakpoints <- function(vcf, align=c("centre"), is_higher_breakend=names(v
 }
 
 readVcf = function(file, ...) {
-  raw_vcf = VariantAnnotation::readVcf(file=file, ...)
-  #id = read_tsv(file, comment="#", col_names=c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", seq_len(ncol(geno(raw_vcf)[[1]]))), cols_only(ID=col_character()))$ID
-  #assertthat::assert_that(all(alt(raw_vcf) != ""), "VariantAnnotation 1.29.11 or later is required")
-  if (!all(unlist(alt(raw_vcf)) != "")) {
-    write("Performing work-around for https://github.com/Bioconductor/VariantAnnotation/issues/8", stderr())
-    alt = read_tsv(file, comment="#", col_names=c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", seq_len(ncol(geno(raw_vcf)[[1]]))), cols_only(ALT=col_character()))$ALT
-    VariantAnnotation::fixed(raw_vcf)$ALT = CharacterList(lapply(as.character(alt), function(x) x))
-  }
-  # Work-around for https://github.com/PapenfussLab/gridss/issues/156
-  # since we don't have all the info, we'll just pro-rata
-  # is.nanan = function(x) is.na(x) | is.nan(x)
-  # bp_pro_rata = (geno(raw_vcf)$ASSR + geno(raw_vcf)$ASRP) / rowSums(geno(raw_vcf)$ASSR + geno(raw_vcf)$ASRP)
-  # be_pro_rata = (geno(raw_vcf)$BASSR + geno(raw_vcf)$BASRP) / rowSums(geno(raw_vcf)$BASSR + geno(raw_vcf)$BASRP)
-  # bp_pro_rata[is.nanan(bp_pro_rata)] = 0
-  # be_pro_rata[is.nanan(be_pro_rata)] = 0
-  # geno(raw_vcf)$ASQ[is.nanan(geno(raw_vcf)$ASQ)] = (info(raw_vcf)$ASQ * bp_pro_rata)[is.nanan(geno(raw_vcf)$ASQ)]
-  # geno(raw_vcf)$RASQ[is.nanan(geno(raw_vcf)$RASQ)] = (info(raw_vcf)$RASQ * bp_pro_rata)[is.nanan(geno(raw_vcf)$RASQ)]
-  # geno(raw_vcf)$CASQ[is.nanan(geno(raw_vcf)$CASQ)] = (info(raw_vcf)$CASQ * bp_pro_rata)[is.nanan(geno(raw_vcf)$CASQ)]
-  # geno(raw_vcf)$BAQ[is.nanan(geno(raw_vcf)$BAQ)] = (info(raw_vcf)$BAQ * be_pro_rata)[is.nanan(geno(raw_vcf)$BAQ)]
-  # geno(raw_vcf)$QUAL[is.nanan(geno(raw_vcf)$QUAL)] = (
-  #   geno(raw_vcf)$ASQ +
-  #   geno(raw_vcf)$RASQ +
-  #   geno(raw_vcf)$CASQ +
-  #   geno(raw_vcf)$RPQ +
-  #   geno(raw_vcf)$SRQ +
-  #   geno(raw_vcf)$IQ
-  # )[is.nanan(geno(raw_vcf)$QUAL)]
-  # geno(raw_vcf)$BQ[is.nanan(geno(raw_vcf)$BQ)] = (
-  #   geno(raw_vcf)$BAQ +
-  #   geno(raw_vcf)$BUMQ +
-  #   geno(raw_vcf)$BSCQ
-  # )[is.nanan(geno(raw_vcf)$BQ)]
-  raw_vcf = fix_parid(raw_vcf)
-  raw_vcf = flatten_mateid(raw_vcf)
-  return(raw_vcf)
+	raw_vcf = VariantAnnotation::readVcf(file=file, ...)
+	#id = read_tsv(file, comment="#", col_names=c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", seq_len(ncol(geno(raw_vcf)[[1]]))), cols_only(ID=col_character()))$ID
+	#assertthat::assert_that(all(alt(raw_vcf) != ""), "VariantAnnotation 1.29.11 or later is required")
+	if (!all(unlist(alt(raw_vcf)) != "")) {
+		write("Performing work-around for https://github.com/Bioconductor/VariantAnnotation/issues/8", stderr())
+		alt = read_tsv(file, comment="#", col_names=c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", seq_len(ncol(geno(raw_vcf)[[1]]))), cols_only(ALT=col_character()))$ALT
+		VariantAnnotation::fixed(raw_vcf)$ALT = CharacterList(lapply(as.character(alt), function(x) x))
+	}
+	# Work-around for https://github.com/PapenfussLab/gridss/issues/156
+	# since we don't have all the info, we'll just pro-rata
+	# is.nanan = function(x) is.na(x) | is.nan(x)
+	# bp_pro_rata = (geno(raw_vcf)$ASSR + geno(raw_vcf)$ASRP) / rowSums(geno(raw_vcf)$ASSR + geno(raw_vcf)$ASRP)
+	# be_pro_rata = (geno(raw_vcf)$BASSR + geno(raw_vcf)$BASRP) / rowSums(geno(raw_vcf)$BASSR + geno(raw_vcf)$BASRP)
+	# bp_pro_rata[is.nanan(bp_pro_rata)] = 0
+	# be_pro_rata[is.nanan(be_pro_rata)] = 0
+	# geno(raw_vcf)$ASQ[is.nanan(geno(raw_vcf)$ASQ)] = (info(raw_vcf)$ASQ * bp_pro_rata)[is.nanan(geno(raw_vcf)$ASQ)]
+	# geno(raw_vcf)$RASQ[is.nanan(geno(raw_vcf)$RASQ)] = (info(raw_vcf)$RASQ * bp_pro_rata)[is.nanan(geno(raw_vcf)$RASQ)]
+	# geno(raw_vcf)$CASQ[is.nanan(geno(raw_vcf)$CASQ)] = (info(raw_vcf)$CASQ * bp_pro_rata)[is.nanan(geno(raw_vcf)$CASQ)]
+	# geno(raw_vcf)$BAQ[is.nanan(geno(raw_vcf)$BAQ)] = (info(raw_vcf)$BAQ * be_pro_rata)[is.nanan(geno(raw_vcf)$BAQ)]
+	# geno(raw_vcf)$QUAL[is.nanan(geno(raw_vcf)$QUAL)] = (
+	#   geno(raw_vcf)$ASQ +
+	#   geno(raw_vcf)$RASQ +
+	#   geno(raw_vcf)$CASQ +
+	#   geno(raw_vcf)$RPQ +
+	#   geno(raw_vcf)$SRQ +
+	#   geno(raw_vcf)$IQ
+	# )[is.nanan(geno(raw_vcf)$QUAL)]
+	# geno(raw_vcf)$BQ[is.nanan(geno(raw_vcf)$BQ)] = (
+	#   geno(raw_vcf)$BAQ +
+	#   geno(raw_vcf)$BUMQ +
+	#   geno(raw_vcf)$BSCQ
+	# )[is.nanan(geno(raw_vcf)$BQ)]
+	raw_vcf = fix_parid(raw_vcf)
+	if ("MATEID" %in% names(info(raw_vcf)) & !is.null(info(raw_vcf)$MATEID)) {
+		raw_vcf = flatten_mateid(raw_vcf)
+	}
+	return(raw_vcf)
 }
 cached_read_file = function(file, read_function) {
   cache_filename = paste0(file, ".cached.parsed.rds")

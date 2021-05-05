@@ -139,6 +139,12 @@ rbind(
 	theme(axis.text.x = element_text(angle = 90))
 figsave("probe_results_32-100bp_DUP", width=5, height=4)
 
+# Single breakend probe support
+probeResult %>%
+	filter(is.na(endChromosome)) %>%
+	ggplot() +
+	aes(x=scope, fill=supported) +
+	geom_bar()
 
 ###
 if (!exists("db")) db = dbConnect(MySQL(), dbname='hmfpatients', groups="RAnalysis")

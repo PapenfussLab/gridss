@@ -838,7 +838,7 @@ if [[ $do_preprocess == true ]] ; then
 							O=/dev/stdout \
 							WORKER_THREADS=$threads \
 							ALIGNER=BWAMEM \
-							ALIGNER_BATCH_SIZE=10000 \
+							ALIGNER_BATCH_SIZE=1000000 \
 							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd samtools sort \
