@@ -146,6 +146,14 @@ probeResult %>%
 	aes(x=scope, fill=supported) +
 	geom_bar()
 
+probeResult %>%
+	filter(is.na(endChromosome)) %>%
+	ungroup() %>%
+	summarise(
+		total=n(),
+		supported=sum(supported),
+		pct=supported/total * 100)
+
 ###
 if (!exists("db")) db = dbConnect(MySQL(), dbname='hmfpatients', groups="RAnalysis")
 samplelookup = DBI::dbGetQuery(db, "Select hmfSampleId, SampleId from clinical WHERE hmfSampleId IN ('HMF000214A','HMF001434A','HMF000566A','HMF000823A','HMF000952A','HMF003333A','HMF001559A','HMF002624A','HMF002224A','HMF000379A','HMF002760A','HMF003228A','HMF001184A')")
