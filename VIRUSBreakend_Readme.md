@@ -1,5 +1,4 @@
 [![Release](https://img.shields.io/github/v/release/PapenfussLab/gridss)](https://github.com/PapenfussLab/gridss/releases)
-[![Build Status](https://travis-ci.org/PapenfussLab/gridss.svg?branch=master)](https://travis-ci.org/PapenfussLab/gridss)
 [![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
 [![Language](http://img.shields.io/badge/language-c-brightgreen.svg)]
 [![License](https://img.shields.io/badge/license-GPL-blue)]
@@ -8,7 +7,7 @@
 # VIRUSBreakend - Viral Integration Recognition Using Single Breakends
 
 VIRUSBreakend is a high-speed viral integration detection tool designed to be incorporated in the whole genome sequence piplines with minimal additional cost.
-VIRUSBreakend takes on average 1 hour to run on a 100x coverage human sample (4 core c2-standard-4 google compute instance) at a cost of USD$0.21 per sample (USD$0.06 using preemptible instances).
+VIRUSBreakend takes on average 1 hour to run on a 100x coverage human sample. Recommended job/VM size is 4 core / 64Gb memory.
 
 This tool is part of GRIDSS - the Genomic Rearrangement IDentification Software Suite.
 
@@ -40,8 +39,8 @@ Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
 
 Run `virusbreakend-build.sh --db virusbreakenddb` to download and generate the reference data.
 This download the NCBI taxonomic information, sequences, virushostdb, the `kraken2-build` build process, and generates indexes.
-The index is around 7GB in size.
-Be aware that the kraken2 build process requires additional memory to build the index.
+The index is around 54GB in size.
+Be aware that the kraken2 build process requires around 150GB of intermediate disk space to download from NCBI and build the index.
 
 `virusbreakend-build.sh` requires:
 
@@ -77,20 +76,24 @@ VIRUSBreakend outputs:
 * The kraken2 report of the virus(es) for which viral integration was run upon
 * Coverage statistics of the virus(es) for which viral integration was run upon
 
-## summary.csv files
+## summary.tsv files
 
 |field | meaning|
 |----|----|
 taxid_genus|NCBI taxonomy ID of genus of viral reference
 name_genus|NCBI taxonomy genus name
-reads_genus|Number of reads assigned to any virus in that genus by kraken2
+reads_genus_tree|Number of reads assigned to any virus in that genus by kraken2
 taxid_species|NCBI taxonomy ID of species of viral reference
-reads_species|Number of reads assigned to that species (and any sub-species) by kraken2
+reads_species_tree|Number of reads assigned to that species (and any sub-species) by kraken2
 name_species| NCBI taxonomy species name
-taxid|NCBI taxonomy ID of viral reference
-name| NCBI taxonomy name of viral reference
-reads|Number of reads assigned to the viral reference by kraken2
-reference|kraken2 name of viral reference contig
+taxid_assigned|NCBI taxonomy ID of viral reference
+name_assigned| NCBI taxonomy name of viral reference
+reads_assigned_tree|Number of reads assigned to the viral reference or taxonomic descendents by kraken2
+reads_assigned_direct|Number of reads assigned to the viral reference taxid by kraken2
+reference|name of viral reference used.
+reference_taxid|NCBI taxonomy ID of viral reference used. This can be a child taxid of taxid_assigned.
+reference_kmer_count|count of read kmers matching reference used
+alternate_kmer_count|count of read kmers matching next best reference candidate
 #rname|name of adjusted viral reference
 startpos|start position of adjusted viral reference. Always 1
 endpos|end position of adjusted viral reference. Always equal to the viral contig length
@@ -101,9 +104,44 @@ meandepth|Mean alignment depth
 meanbaseq|Mean base quality of bases mapped to adjusted viral reference
 meanmapq|Mean mapping quality of reads mapped to adjusted viral reference
 integrations|Number of integration breakpoints found.
+QCStatus|QC status of viral integration
 
 Each viral integration should have 2 integration breakpoints (one for the start, one for the end) although there may be more if the integration site is rearranged or less if one side of the  integration site was missed.
 
+## QCStatus
+
+QCStatus can be one of the following:
+
+- ""
+The empty string indicates no warning or errors associated with this virus
+
+- LOW_VIRAL_COVERAGE
+
+Less than 10% of the virus has any coverage.
+This typically occurs when the viral sequence has a short sequence homology with non-viral sequence.
+This record is likely a false positive and should be ignored.
+
+- EXCESSIVE_VIRAL_COVERAGE
+
+Regions of the virus have depth of coverage so high, that GRIDSS was unable to call integrations in these regions.
+The exact bounds of excluded regions can be found in the `*.coverage.blacklist.bed` files in the `virusbreakend.working` directory
+
+- ASSEMBLY_DOWNSAMPLED
+
+Viral coverage was sufficiently high that some regions were downsampled in the GRIDSS assembly process.
+With the assembly downsampling changes in GRIDSS 2.11.1, viral integration have in these region have probably been correctly called but the QUAL score is lower than it should be.
+The exact bounds of excluded regions can be found in the `*.bed.excluded_*.bed` files in the `virusbreakend.working` directory
+
+- CHILD_TAXID_REFERENCE
+
+The viral genome chosen by VIRUSBreakend does not match the NCBI taxonomic classification assigned by Kraken2.
+This typically occurs in scenarios such as HPV-45 where Kraken2 assigns reads to the parent taxon due to sequence commonality between HPV-45 and HPV-18.
+This is expected behavour for these viral taxa. The taxon assigned `reference_taxid`
+
+- UNCLEAR_TAXID_ASSIGNMENT
+
+Less than 60% of reads assigned to nominal kraken2 assigned taxon were directly assigned (the rest were assigned to child taxa).
+The taxonomic assignment may be unclear - possibly due to co-infection by multiple viruses within the genus.
 
 ## Ambiguous insertions
 
