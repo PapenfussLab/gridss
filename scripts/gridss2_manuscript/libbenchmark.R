@@ -1,3 +1,6 @@
+setwd("../")
+source("libgridss.R")
+setwd("gridss2_manuscript")
 library(StructuralVariantAnnotation)
 library(rtracklayer)
 library(tidyverse)

@@ -246,7 +246,10 @@ lnx_disruptions = read_csv(paste0(privatedatadir, "/hartwig/LNX_DISRUPTIONS.csv"
 lnx_svs_small_dups = lnx_svs %>% filter(ResolvedType=="DUP" & abs(PosEnd-PosStart) < 100)
 disruptions = lnx_disruptions %>% inner_join(lnx_svs_small_dups %>% dplyr::select(SvId=Id, SampleId=SampleId))
 disruptions %>% filter(Reportable) %>% nrow() / 2
-
+public_sampleid_lookup = DBI::dbGetQuery(db, "Select hmfSampleId, sampleId from clinical")
+public_disruptions = inner_join(disruptions, public_sampleid_lookup, by=c("SampleId"="sampleId")) %>%
+	dplyr::select(-SampleId, -SvId, -ClusterId, -ExcludedReason, -ExtraInfo)
+write_tsv(public_disruptions, "SuppTable2_driver_small_duplications.tsv")
 
 cohortsmalldupstatus %>% filter(SampleId %in% disruptions$SampleId) %>% View()
 

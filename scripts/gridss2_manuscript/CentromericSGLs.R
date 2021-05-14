@@ -126,6 +126,13 @@ sgl_centro_sv_data %>%
    summarise(n=n()) %>%
    ungroup() %>%
    mutate(pct=n/sum(n)*100)
+sgl_centro_sv_data %>%
+   ungroup() %>%
+   filter(!hasCNChange) %>%
+   summarise(
+      is13_14_15_21_22=sum(ifelse(CentroChr %in% c(13, 14, 15, 21, 22), 1, 0)),
+      total=n())
+
 sgl_centro_sv_data %>% 
    filter(CentroChr ==1, ChrStart != 1) %>%
    group_by(CentroChr, centroArm) %>%
@@ -171,6 +178,9 @@ ggplot(sgl_centro_sv_data) +
    theme(plot.margin = margin(0,0,0,0)) +
    scale_y_continuous(expand=c(0,0, 0.05, 0))
 figsave("fig3b_single_breakend_chr_summary", width=8, height=4)
+#
+sgl_centro_sv_data
+
 
 ggplot(sgl_centro_sv_data %>%
     mutate(

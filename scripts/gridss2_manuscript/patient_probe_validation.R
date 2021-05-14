@@ -26,7 +26,7 @@ figsave("probe_results_by_sample", width=5, height=6)
 
 
 # GRIDSS vs manta
-probe_results_vs_manta_over_50bp = rbind(
+gridss_manta_over50_df = rbind(
 	probeResult %>% filter(scope!="SharedBoth"),
 	probeResult %>% filter(scope=="SharedBoth") %>% mutate(scope="SharedManta"),
 	probeResult %>% filter(scope=="SharedStrelka") %>% mutate(callset="Gridss", scope="Private")) %>%
@@ -34,7 +34,15 @@ probe_results_vs_manta_over_50bp = rbind(
 												 levels=c("Gridss Private", "Gridss SharedManta", "Manta Private"),
 												 labels=c("gridss", "shared", "manta"))) %>%
 	mutate(under50bp=!is.na(length) & abs(length) <= 50) %>%
-	filter(!under50bp & !is.na(category)) %>%
+	filter(!under50bp & !is.na(category))
+ggplot(gridss_manta_over50_df %>% replace_na(list(length=1))) +
+	aes(x=abs(length), fill=supported) +
+	geom_histogram() +
+	scale_x_log10() +
+	facet_grid(category ~ type) +
+	labs(title="Breakdown of SVs over 50bp") +
+	theme(axis.text.x = element_text(angle = 90))
+probe_results_vs_manta_over_50bp = gridss_manta_over50_df %>%
 	group_by(category, supported) %>%
 	summarise(n=n()) %>%
 	ggplot() +
@@ -132,10 +140,11 @@ rbind(
 												 levels=c("Manta Private", "Gridss SharedManta", "Gridss Private", "Gridss SharedStrelka", "Strelka Private"),
 												 labels=c("manta", "gridss+manta", "gridss", "gridss+strelka", "strelka"))) %>%
 	ggplot() +
+	scale_y_continuous(expand=expand_scale(mult=c(0, 0.02))) +
 	aes(x=category, fill=supported, y=n) +
 	geom_bar(stat="identity") +
 	scale_fill_manual(values=c(gridss_fig_fp_colours[2], gridss_fig_tp_colours[1])) +
-	labs(fill="Validated", x="", y="32-100bp DUP") +
+	labs(fill="Validated", x="", y="Duplications (32-100bp)") +
 	theme(axis.text.x = element_text(angle = 90))
 figsave("probe_results_32-100bp_DUP", width=5, height=4)
 
@@ -153,6 +162,14 @@ probeResult %>%
 		total=n(),
 		supported=sum(supported),
 		pct=supported/total * 100)
+
+# export to fasta so we can run RM to identify single breakend repeat type
+sglprobes = probeResult %>%
+	filter(is.na(endChromosome))
+sglfasta = DNAStringSet(x=sglprobes$insertSequence)
+names(sglfasta) = paste0(sglprobes$uniqueId, "_", sglprobes$supported)
+export(sglfasta, "breakend_probe_sequences.fasta")	
+#RepeatMasker -species human -dir probe_repeat_masker breakend_probe_sequences.fasta
 
 ###
 if (!exists("db")) db = dbConnect(MySQL(), dbname='hmfpatients', groups="RAnalysis")
@@ -201,9 +218,6 @@ driver_sv_links %>%
 	View()
 
 driver_sv_links %>% filter(callset=="Manta" & scope =="Private") %>% View()
-
-driver_sv_links %>% filter(
-
 
 
 

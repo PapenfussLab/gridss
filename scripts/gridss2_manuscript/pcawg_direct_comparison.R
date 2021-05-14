@@ -73,8 +73,8 @@ pcawg_compare_sample = function(sampleId) {
 	return(result)
 }
 icgc_sv_cn_transitions_list = lapply(metadata_df$SAMPLE, pcawg_compare_sample)
-save.image(paste0(privatedatadir, "pcawg", nrow(metadata_df), "_svcn_consistency.RData"))
-#load(paste0(privatedatadir, "pcawg", nrow(metadata_df), "_svcn_consistency.RData"))
+save.image(paste0(privatedatadir, "pcawg3_100purple3_", nrow(metadata_df), "_svcn_consistency.RData"))
+#load(paste0(privatedatadir, "pcawg3_100purple3_", nrow(metadata_df), "_svcn_consistency.RData"))
 
 
 cn_transitions = unlist(GRangesList(lapply(icgc_sv_cn_transitions_list, function(x) x$cn_transitions))) %>%
@@ -301,12 +301,11 @@ crossmatchdf %>%
 		rn=row_number(),
 		csum=cumsum(total)) %>%
 	View()
+cnsvmatchdf %>% filter(classification_100k=="Missing SV" & caller == "gridss purple" & donor_ID=="DO52686") %>% View()
 
 crossmatchdf = cnsvmatchdf %>% filter(cohort %in% c("gridss pcawg", "pcawg pcawg"))
 crossmatchdf %>% dplyr::select(sampleId, donor_ID, seqnames, start, end, cn_left, cn_right, cn_delta, nearGapOrCentromere, caller) %>%
-	mutate(cn_caller=
 	distinct() %>%
-	
 	left_join(crossmatchdf %>% dplyr::select(sampleId, seqnames, start, cohort, classification, distance) %>% filter(cohort=="gridss pcawg"), by=c("sampleId", "seqnames", "start")) %>%
 	left_join(crossmatchdf %>% dplyr::select(sampleId, seqnames, start, cohort, classification, distance) %>% filter(cohort=="pcawg pcawg"), by=c("sampleId", "seqnames", "start"), suffix=c("",".pcawg")) %>%
 	filter(classification != classification.pcawg) %>%
