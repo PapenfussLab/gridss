@@ -37,12 +37,12 @@ Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
 
 ## Reference data setup
 
-Run `virusbreakend-build.sh --db virusbreakenddb` to download and generate the reference data.
+Run `virusbreakend-build --db virusbreakenddb` to download and generate the reference data.
 This download the NCBI taxonomic information, sequences, virushostdb, the `kraken2-build` build process, and generates indexes.
 The index is around 54GB in size.
 Be aware that the kraken2 build process requires around 150GB of intermediate disk space to download from NCBI and build the index.
 
-`virusbreakend-build.sh` requires:
+`virusbreakend-build` requires:
 
 * An internet connection
 * GRIDSS
@@ -62,7 +62,7 @@ The file `virusbreakend.db.virusbreakenddb.tar.gz` contains the minimal subset o
 To run VIRUSbreakend, ensure that the database has been build and run the following command:
 
 ```
-virusbreakend.sh \
+virusbreakend \
 	--kraken2db virusbreakenddb \
 	--output sample.virusbreakend.vcf \
 	--reference host_reference.fa \

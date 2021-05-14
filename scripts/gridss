@@ -438,6 +438,7 @@ for f1 in $@ ; do
 		write_status "assembly and input files must have different filenames."
 		exit $EX_USAGE
 	fi
+	# TODO: make this not n^2 performance
 	for f2 in $@ ; do
 		if [[ "$f1" != "$f2" ]] ; then
 			if [[ "$(basename $f1)" == "$(basename $f2)" ]] ; then

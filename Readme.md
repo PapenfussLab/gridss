@@ -35,7 +35,7 @@ To run GRIDSS the following must be installed:
 
 * java 1.8 or later
 * R 4.0 or later
-  * `gridss_somatic_filter.R` and `gridss_extract_overlapping_fragments.sh` require the following R libraries:
+  * `gridss_somatic_filter` and `gridss_extract_overlapping_fragments` require the following R libraries:
     * argparser
     * tidyverse
     * stringdist
@@ -101,18 +101,18 @@ The following scripts are included in GRIDSS releases:
 
 |script|description
 |---|---|
-gridss.sh|Driver script for running GRIDSS. Use this to run GRIDSS
-gridss_somatic_filter.R|Somatic filtering script. Depreciated as it has been reimplemented in [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
-gridss_extract_overlapping_fragments.sh|Extracts all alignments for read pairs with at least one aligment overlapping set of regions of interest. Correctly handles supplementary alignments. Use this script to extract reads of interest for targeted GRIDSS variant calling.
-gridss_annotate_vcf_repeatmasker.sh|Annotates breakpoint and single breakend inserted sequences with the RepeatMasker classification of the sequence.
-gridss_annotate_vcf_kraken2.sh|Annotates breakpoint and single breakend inserted sequences with the Kraken2 classification of the sequence.
-virusbreakend.sh|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
-virusbreakend-build.sh|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
+gridss|Driver script for running GRIDSS. Use this to run GRIDSS
+gridss_extract_overlapping_fragments|Extracts all alignments for read pairs with at least one aligment overlapping set of regions of interest. Correctly handles supplementary alignments. Use this script to extract reads of interest for targeted GRIDSS variant calling.
+gridss_annotate_vcf_repeatmasker|Annotates breakpoint and single breakend inserted sequences with the RepeatMasker classification of the sequence.
+gridss_annotate_vcf_kraken2|Annotates breakpoint and single breakend inserted sequences with the Kraken2 classification of the sequence.
+virusbreakend|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
+virusbreakend-build|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
+gridss_somatic_filter|Somatic filtering script. Note that this has an equivalent java implementation in [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
 
-## gridss.sh command-line arguments
+## gridss command-line arguments
 
 ```
-Usage: gridss.sh --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 30g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
+Usage: gridss --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 30g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 ```
 
 argument|description
@@ -144,7 +144,7 @@ argument|description
 	
 _Warning_: all somatic R scripts treat the first bam file to be the matched normal, and any subsequent as tumour sample. If you are doing somatic calling, make sure you follow this convention.
 
-### gridss.sh steps
+### gridss steps
 
 The following GRIDSS steps can be specified:
 step|description
@@ -184,8 +184,8 @@ A good example of why reconciling SV calls is so problematic is the case where c
 
 Jointly call on all samples from the patient.
 It is strongly recommended that the normal be the first argument as that is what downstream steps expect.
-For example,  `gridss.sh ... patientX_normal.bam patientX_primary.bam patientX_met.bam`.
-To filter to somatic calls, use the `gridss_somatic_filter.R` script included in the GRIDSS release.
+For example,  `gridss ... patientX_normal.bam patientX_primary.bam patientX_met.bam`.
+To filter to somatic calls, use the `gridss_somatic_filter` script included in the GRIDSS release.
 
 ### What aligner should I use?
 
@@ -212,20 +212,20 @@ Run the [integrated GRIDSS PURPLE LINX pipeline script](https://github.com/hartw
 
 ### How do I do RepeatMasker annotation of breakend sequences?
 
-Run `gridss_annotate_vcf_repeatmasker.sh` on the GRIDSS output.
+Run `gridss_annotate_vcf_repeatmasker` on the GRIDSS output.
 
 ### How do I do viral annotation?
 
 Use VIRUSBreakend for viral annotations. See the [VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md) for more details.
 
-### What does `gridss_somatic_filter.R` actually do?
+### What does `gridss_somatic_filter` actually do?
 
 See documentation at https://github.com/PapenfussLab/gridss/wiki/Somatic-Filtering
 
-The Hartwig Medical Foundation has reimplemented `gridss_somatic_filter.R` in Java as [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
+The Hartwig Medical Foundation has reimplemented `gridss_somatic_filter` in Java as [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
 GRIPSS is much faster, has additional features, and is the recommended tool for somatic filtering of GRIDSS output.
 
-### How do I create the panel of normals required by `gridss_somatic_filter.R`?
+### How do I create the panel of normals required by `gridss_somatic_filter`?
 
 If you are using hg19 or hg38, then a PON based on Dutch samples is available from https://resources.hartwigmedicalfoundation.nl/.
 Make sure the reference you are using and the PON both use the same chromosome notation or nothing will get filtered (e.g. `1` vs `chr1`).
@@ -247,7 +247,7 @@ java -Xmx8g \
 The score fields of the bedpe/bed files is the count of the number of samples that variant was found in.
 I recommended filtering these output files to only variants found in 3+ samples.
 
-Note that `gridss_somatic_filter.R` requires the files to be named `gridss_pon_breakpoint.bedpe` and `gridss_pon_single_breakend.bed`.
+Note that `gridss_somatic_filter` requires the files to be named `gridss_pon_breakpoint.bedpe` and `gridss_pon_single_breakend.bed`.
 
 ### How do I merge PONs?
 
@@ -272,22 +272,22 @@ To reduce wall times, regions can be distributed across multiple nodes using the
 
 Here is an example:
 ```
-gridss.sh -s setupreference # once-off-setup
+gridss -s setupreference # once-off-setup
 # in parallel:
-gridss.sh -s preprocess input1.bam
-gridss.sh -s preprocess input2.bam
-gridss.sh -s preprocess input3.bam
-gridss.sh -s preprocess input4.bam
+gridss -s preprocess input1.bam
+gridss -s preprocess input2.bam
+gridss -s preprocess input3.bam
+gridss -s preprocess input4.bam
 # wait for all preprocessing jobs to complete
 # Perform assembly parallel (across three nodes in this example)
-gridss.sh -s assemble --jobindex 0 --jobnodes 3 -a assembly.bam  input1.bam input2.bam input3.bam input4.bam
-gridss.sh -s assemble --jobindex 1 --jobnodes 3 -a assembly.bam input1.bam input2.bam input3.bam input4.bam
-gridss.sh -s assemble --jobindex 2 --jobnodes 3 -a assembly.bam input1.bam input2.bam input3.bam input4.bam
+gridss -s assemble --jobindex 0 --jobnodes 3 -a assembly.bam  input1.bam input2.bam input3.bam input4.bam
+gridss -s assemble --jobindex 1 --jobnodes 3 -a assembly.bam input1.bam input2.bam input3.bam input4.bam
+gridss -s assemble --jobindex 2 --jobnodes 3 -a assembly.bam input1.bam input2.bam input3.bam input4.bam
 # wait for all assembly jobs to complete
 # Gather the assembly results togther. This job is essentially a file copy and completes very quicky
-gridss.sh -s assemble -a assembly.bam input1.bam input2.bam input3.bam input4.bam
+gridss -s assemble -a assembly.bam input1.bam input2.bam input3.bam input4.bam
 # perform variant calling
-gridss.sh -s call  -a assembly.bam input1.bam input1.bam input2.bam input3.bam input4.bam
+gridss -s call  -a assembly.bam input1.bam input1.bam input2.bam input3.bam input4.bam
 ```
 
 ####  How do I perform batched assembly?
@@ -301,14 +301,14 @@ If you use input labels, all inputs with the same label must be in the same batc
 
 Here is an example:
 ```
-gridss.sh -s setupreference # once-off-setup
-gridss.sh -s preprocess input1.bam
-gridss.sh -s preprocess input2.bam
-gridss.sh -s preprocess input3.bam
-gridss.sh -s preprocess input4.bam
-gridss.sh -s assemble -a assembly12.bam input1.bam input2.bam
-gridss.sh -s assemble -a assembly34.bam input3.bam input4.bam
-gridss.sh -s call -a assembly12.bam -a assembly34.bam input1.bam input2.bam input3.bam input4.bam
+gridss -s setupreference # once-off-setup
+gridss -s preprocess input1.bam
+gridss -s preprocess input2.bam
+gridss -s preprocess input3.bam
+gridss -s preprocess input4.bam
+gridss -s assemble -a assembly12.bam input1.bam input2.bam
+gridss -s assemble -a assembly34.bam input3.bam input4.bam
+gridss -s call -a assembly12.bam -a assembly34.bam input1.bam input2.bam input3.bam input4.bam
 ```
 
 Related samples should always be assembled together in the same batch.
@@ -336,7 +336,7 @@ GRIDSS has been optimised to run on a 8core/32gb cloud compute node.
 
 `--threads` specifies the size of the worker thread pool. IO, BAM decompression, and parsing are in their own thread pool which is not part of the worker thread pool. The pre-processing, variant calling, and annotation steps also perform some work that is executed in dedicated threads independent of the worker thread pool. Combined, this approach means that max CPU utilisation can exceed the thread count specified.
 
-Asynchronous IO defaults can be changed by editing the `jvm_args` argument in `gridss.sh`.
+Asynchronous IO defaults can be changed by editing the `jvm_args` argument in `gridss`.
 
 ### Should I include alt contigs in the reference?
 
@@ -344,8 +344,8 @@ GRIDSS relies on the aligner to determine the mapping location and quality of as
 
 ### How do I process only my region of interest?
 
-Extract all fragments overlapping your region of interest, using `gridss_extract_overlapping_fragments.sh` then run `gridss.sh` on the subset bam.
-`gridss_extract_overlapping_fragments.sh` is almost identical to filtering using `samtools view` except that it extracts alignment records for any fragment overlapping a region of interest (ie mate reads and supplementary alignments).
+Extract all fragments overlapping your region of interest, using `gridss_extract_overlapping_fragments` then run `gridss` on the subset bam.
+`gridss_extract_overlapping_fragments` is almost identical to filtering using `samtools view` except that it extracts alignment records for any fragment overlapping a region of interest (ie mate reads and supplementary alignments).
 That is, all records with read names matching the read name of an alignment overlapping any region of interest.
 
 ### How do I use GRIDSS to validate the calls from another caller?
@@ -364,20 +364,20 @@ For ++ or -- breakpoints, left-aligning the lower breakend will force right-alig
 
 Secondly, using left or right alignment for imprecise call will result in the nominal call being at the edge of the confidence interval bounds. Centre-aligning imprecise calls makes sense as it is (usually) the centre position that is the most likely to be correct.
 
-### What does `gridss_annotate_kraken2.sh` output?
+### What does `gridss_annotate_kraken2` output?
 
-`gridss_annotate_kraken2.sh` adds Kraken2 classifications to single breakend and breakpoint inserted sequences.
+`gridss_annotate_kraken2` adds Kraken2 classifications to single breakend and breakpoint inserted sequences.
 The [NCBI taxonomy ID](https://www.ncbi.nlm.nih.gov/taxonomy) for the inserted sequences is in the `INSTAXID` INFO field.
 
 ## GRIDSS JAR
 
-GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss.sh`.
+GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss`.
 
 ![GRIDSS data flow diagram](https://docs.google.com/drawings/d/1aXFBH0E9zmW4qztHIEliZfsLCHJa6_-l624Frq1X-Ms/pub?w=973&h=760)
 
 #### CallVariants
 
-This tool runs every step in the variant calling pipeline. This entry point has been superceeded by `gridss.sh` but is retained for backward compatibility with existing pipeline. `gridss.sh` is preferred as it has lower peak memory usage and is slightly faster due to the use of samtools for sorting instead of htsjdk.
+This tool runs every step in the variant calling pipeline. This entry point has been superceeded by `gridss` but is retained for backward compatibility with existing pipeline. `gridss` is preferred as it has lower peak memory usage and is slightly faster due to the use of samtools for sorting instead of htsjdk.
 
 #### CollectGridssMetrics
 
@@ -482,7 +482,7 @@ Finds potential mapping locations for single breakends and breakpoint insert seq
 
 #### GeneratePonBedpe
 
-This tool aggregates variants across multiple VCFs and counts the number of samples supporting each variant. Only the first sample per VCF is processed which is useful for generating a panel of normals (PON) from a cohort of cancer samples with matched normals. Output is a bedpe (breakpoint) and bed (single breakend) file suitable for use by `gridss_somatic_filter.R`.
+This tool aggregates variants across multiple VCFs and counts the number of samples supporting each variant. Only the first sample per VCF is processed which is useful for generating a panel of normals (PON) from a cohort of cancer samples with matched normals. Output is a bedpe (breakpoint) and bed (single breakend) file suitable for use by `gridss_somatic_filter`.
 
 ## Common Parameters
 
