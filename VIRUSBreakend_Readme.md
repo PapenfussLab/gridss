@@ -15,7 +15,7 @@ This tool is part of GRIDSS - the Genomic Rearrangement IDentification Software 
 
 Please cite:
 
- - VIRUSBreakend: https://www.biorxiv.org/content/10.1101/2020.12.09.418731v1
+ - VIRUSBreakend: https://doi.org/10.1093/bioinformatics/btab343
 
  - GRIDSS2: harnessing the power of phasing and single breakends in somatic structural variant detection
 https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
