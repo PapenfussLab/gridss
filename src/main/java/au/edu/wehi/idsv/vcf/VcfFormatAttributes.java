@@ -7,7 +7,7 @@ import htsjdk.variant.vcf.VCFHeaderLineType;
 public enum VcfFormatAttributes {
 	REFERENCE_READ_COUNT ("REF", 1, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend"),
 	REFERENCE_READPAIR_COUNT ("REFPAIR", 1, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakend supporting the reference allele"),
-	REFERENCE_FRAGMENTS ("RF", 1, VCFHeaderLineType.Integer, "Reference fragments. Count of fragments supporting the reference allele and not the variant allele."),
+	//REFERENCE_FRAGMENTS ("RF", 1, VCFHeaderLineType.Integer, "Reference fragments. Count of fragments supporting the reference allele and not the variant allele."),
 	BREAKEND_QUAL ("BQ", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
 	BREAKPOINT_QUAL ("QUAL", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
 	
