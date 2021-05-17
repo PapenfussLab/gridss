@@ -134,6 +134,7 @@ done
 tar -czvf virusbreakend.db.$(basename $dbname).tar.gz \
 	$(basename $dbname)/*.k2d \
 	$(basename $dbname)/taxonomy/nodes.dmp \
+	$(basename $dbname)/taxonomy/names.dmp \
 	$(basename $dbname)/library/viral/*.fna* \
 	$(basename $dbname)/library/added/*.fna* \
 	$(basename $dbname)/taxid10239.nbr \
