@@ -2,7 +2,7 @@
 #
 # Performs targeted extract of fragments overlapping a region of interest
 #
-# ../scripts/gridss_extract_overlapping_fragments.sh -t $(nproc) --targetvcf COLO829v003T.purple.sv.vcf -o out.example.targeted.bam ~/colo829/COLO829R_dedup.realigned.bam
+# ../scripts/gridss_extract_overlapping_fragments -t $(nproc) --targetvcf COLO829v003T.purple.sv.vcf -o out.example.targeted.bam ~/colo829/COLO829R_dedup.realigned.bam
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
 	echo 'WARNING: "getopt --test"` failed in this environment.' 1>&2
@@ -30,7 +30,7 @@ targetmargin=5000
 metricsrecords=10000000
 metricsmaxcoverage=100000
 USAGE_MESSAGE="
-Usage: gridss_extract_overlapping_fragments.sh [options] --targetbed <target.bed> --targetvcf <target.vcf> [--targetmargin $targetmargin] input.bam
+Usage: gridss_extract_overlapping_fragments [options] --targetbed <target.bed> --targetvcf <target.vcf> [--targetmargin $targetmargin] input.bam
 
 	Extract all alignments of reads overlapping any of the target regions.
 	

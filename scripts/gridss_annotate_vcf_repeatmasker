@@ -25,7 +25,7 @@ rmargs="--species human"
 minlength="20"
 #fields="INSRM INSRMRT INSRMRC INSRMRO INSRMP"
 USAGE_MESSAGE="
-Usage: gridss_annotate_vcf_repeatmasker.sh [options] input.vcf
+Usage: gridss_annotate_vcf_repeatmasker [options] input.vcf
 	-o,--output: output vcf file. Defaults to stdout.
 	-j/--jar: location of GRIDSS jar
 	-t/--threads: number of threads to use. Defaults to the number of cores available ($threads)
