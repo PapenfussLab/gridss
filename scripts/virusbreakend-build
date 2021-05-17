@@ -27,7 +27,7 @@ Downloads and builds the databases used by VIRUSBreakend
 
 This program requires kraken2-build and samtools to be on PATH
 
-Usage: virusbreakend-build.sh [--db $dbname]
+Usage: virusbreakend-build [--db $dbname]
 	--db: directory to create database in (Default: $dbname)
 	-j/--jar: location of GRIDSS jar
 	--kraken2buildargs: additional kraken2-build arguments (Default: $kraken2buildargs)

@@ -69,6 +69,18 @@ virusbreakend \
 	sample.bam
 ```
 
+## Reference genomes with viral sequences
+
+Some reference genomes include viral sequence.
+hs37d5, hs38DH, and GRCh38_full_analysis_set_plus_decoy_hla all include EBV.
+For VIRUSBreakend to report EBV infection, reads aligned to the EBV sequence ( or chrEBV)
+
+By default, VIRUSBreakend considered any read mapped if it maps to `chrEBV` or any viral reference sequence in the VIRUSBreakend database (`library/viral/*.fna.fai` or `library/added/*.fna.fai`).
+When checking for matches, VIRUSBreakend uses the exact name, the kraken stripped name, and also the version stripped named.
+For example, the kraken2 database contains `kraken:taxid|10376|NC_007605.1` so VIRUSBreakend will exclude `kraken:taxid|10376|NC_007605.1`, `NC_007605.1`, and `NC_007605` (thus picking up the `NC_007605` EBV reference in `hs37d5.fa`)
+
+A custom list can be supplied with the `--viralreferences` command line parameter.
+
 # Output
 
 VIRUSBreakend outputs:

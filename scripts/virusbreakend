@@ -1,6 +1,6 @@
 #!/bin/bash
-# ../scripts/virusbreakend.sh -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar -o vbe_out.vcf -r ../../ref/hg19.fa --db ../../virusbreakend/virusbreakenddb ERR093636_virusbreakend_minimal_example.bam
-# ../scripts/virusbreakend.sh -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar -o vbe_out.vcf -r ../../ref/hg19.fa --db ../../virusbreakend/virusbreakenddb ERR093636_virusbreakend_minimal_example_slower_fastq_input_R1.fq ERR093636_virusbreakend_minimal_example_slower_fastq_input_R2.fq
+# ../scripts/virusbreakend -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar -o vbe_out.vcf -r ../../ref/hg19.fa --db ../../virusbreakend/virusbreakenddb ERR093636_virusbreakend_minimal_example.bam
+# ../scripts/virusbreakend -j ../target/gridss-2.10.0-gridss-jar-with-dependencies.jar -o vbe_out.vcf -r ../../ref/hg19.fa --db ../../virusbreakend/virusbreakenddb ERR093636_virusbreakend_minimal_example_slower_fastq_input_R1.fq ERR093636_virusbreakend_minimal_example_slower_fastq_input_R2.fq
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
 	echo 'WARNING: "getopt --test"` failed in this environment.' 1>&2
@@ -10,7 +10,7 @@ set -o errexit -o pipefail -o noclobber -o nounset
 last_command=""
 current_command=""
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
-trap 'echo "\"${last_command}\" command completed with exit code $?."' EXIT
+trap 'echo -e "$(date): Exit status $? for ${current_command}\n*****\n*****\nSee log file $logfile for underlying error\n*****\n*****" 1>&2' EXIT
 #253 forcing C locale for everything
 export LC_ALL=C
 
@@ -23,6 +23,7 @@ kraken2db=""
 workingdir="."
 reference=""
 output_vcf=""
+viralreferences=""
 threads=8
 kraken2args=""
 gridssargs=""
@@ -42,16 +43,21 @@ unclear_taxid_direct_read_threshold=50
 USAGE_MESSAGE="
 VIRUSBreakend: Viral Integration Recognition Using Single Breakends
 
-Usage: virusbreakend.sh [options] input.bam
+Usage: virusbreakend [options] input.bam
 
     -r/--reference: reference genome of host species.
     -o/--output: output VCF.
     -j/--jar: location of GRIDSS jar
     -t/--threads: number of threads to use. (Default: $threads).
+    --viralreferences : file containing names of reference sequences to consider unmapped.
+        Reference genomes such as hs37d5 or the hg38 Broad reference genome include viral
+        sequences in the reference genome. For viral detection, reads aligned to these
+        viral sequences should be consider unmapped so they are considered by VIRUSBreakend.
+        Defaults to chrEBV, and all viral sequence in the VIRUSBreakend database.
     -w/--workingdir: directory to place intermediate and temporary files. (Default: $workingdir).
     --host: NBCI host filter. Valid values are algae, archaea, bacteria, eukaryotic algae,
         fungi, human, invertebrates, land plants, plants, protozoa, vertebrates (Default: $host)
-    --db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build.sh to build.
+    --db: path to virusbreakenddb database directory. Use the supplied virusbreakend-build to build.
     --kraken2args: additional kraken2 arguments
     --gridssargs: additional GRIDSS arguments
     --rmargs: additional RepeatMasker arguments (Default: $rmargs)
@@ -64,12 +70,12 @@ Usage: virusbreakend.sh [options] input.bam
         the input from a GCE cloud storage bucket. Note that the quotes are
         necessary to prevent the interpretation by the shell invoking virusbreakend
 "
-# handled by virusbreakend-build.sh
+# handled by virusbreakend-build
 #--kraken2db: kraken2 database
 #--virushostdb: location of virushostdb.tsv. Available from ftp://ftp.genome.jp/pub/db/virushostdb/virushostdb.tsv (Default: {kraken2db}/virushostdb.tsv)
 #--nodesdmp: location of NCBI nodes.dmp. Can be downloaded from https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip. (Default: {kraken2db}/taxonomy/nodes.dmp)
 OPTIONS=ho:t:j:w:r:f
-LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq,host:,minviralcoverage:
+LONGOPTS=help,output:,jar:,threads:,reference:,workingdir:,db:,kraken2db:,kraken2args:,gridssargs:,rmargs:,nodesdmp:,minreads:,force,forceunpairedfastq,host:,minviralcoverage:,viralreferences:
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -147,6 +153,10 @@ while true; do
 			printf -v minviralcoverage '%d' "$2" 2>/dev/null
 			shift 2
 			;;
+		--viralreferences)
+			viralreferences="$2"
+			shift 2
+			;;
 		--)
 			shift
 			break
@@ -190,6 +200,10 @@ logfile=$workingdir/virusbreakend.$timestamp.$HOSTNAME.$$.log
 # $1 is message to write
 write_status() { # After logging initialised
 	echo "$(date): $1" | tee -a $logfile 1>&2
+}
+print_failure() {
+	echo "$(date): Failure running $1" | tee -a $logfile 1>&2
+	exit 1
 }
 write_status "Full log file is: $logfile"
 # Timing instrumentation
@@ -236,6 +250,11 @@ if [ ! -f $reference ] ; then
 	write_status "$USAGE_MESSAGE"
 	write_status "Missing reference genome $reference. Specify reference location using the --reference command line argument"
 	exit $EX_USAGE
+fi
+if [[ "$viralreferences" != "" ]] && [[ ! -f "$viralreferences" ]] ; then
+	write_status "$USAGE_MESSAGE"
+	write_status "Missing file for viralreferences reads $f"
+	exit $EX_NOINPUT
 fi
 mkdir -p $(dirname $output_vcf)
 if [[ ! -d $(dirname $output_vcf) ]] ; then
@@ -285,7 +304,7 @@ fi
 if [[ ! -f "$virusnbr" ]] ; then
 	echo "$USAGE_MESSAGE"
 	write_status "Unable to find $virusnbr."
-	write_status "Use virusbreakend-build.sh to generate or download from"
+	write_status "Use virusbreakend-build to generate or download from"
 	write_status "https://www.ncbi.nlm.nih.gov/genomes/GenomesGroup.cgi?taxid=10239&cmd=download2"
 	exit $EX_NOINPUT
 fi
@@ -319,7 +338,7 @@ if [[ $force != "true" ]] ; then
 	done
 fi
 # Validate required dependencies exist on PATH
-for tool in kraken2 gridss.sh gridss_annotate_vcf_kraken2.sh gridss_annotate_vcf_repeatmasker.sh samtools bcftools java bwa Rscript RepeatMasker ; do
+for tool in kraken2 gridss gridss_annotate_vcf_kraken2 gridss_annotate_vcf_repeatmasker samtools bcftools java bwa Rscript RepeatMasker ; do
 	if ! which $tool >/dev/null; then
 		write_status "Error: unable to find $tool on \$PATH"
 		exit $EX_CONFIG
@@ -430,17 +449,41 @@ file_extracted_report=$prefix_working.kraken2.report.viral.extracted.txt
 file_summary_taxa_tsv=$prefix_working.summary.taxa.tsv
 file_summary_references_tsv=$prefix_working.summary.references.tsv
 file_summary_coverage_tsv=$prefix_working.summary.coverage.tsv
+file_viralreference_contigs=$prefix_working.viralreferencescontigs.txt
 output_tsv=$output_vcf.summary.tsv
 exec_concat_fastq=$prefix_working.cat_input_as_fastq.sh
 if [[ ! -f $file_readname ]] ; then
 	write_status "Identifying viral sequences"
-	rm -f $exec_concat_fastq $prefix_working.readnames.txt.tmp
+	rm -f $exec_concat_fastq $prefix_working.readnames.txt.tmp $file_viralreference_contigs $file_viralreference_contigs.full.txt.tmp
+	if [[ -f "$viralreferences" ]] ; then
+		cp $viralreferences $file_viralreference_contigs.full.txt.tmp
+	else
+		# hs38DH/GRCh38_full_analysis_set_plus_decoy_hla
+		echo "chrEBV" >> $file_viralreference_contigs.full.txt.tmp
+		# viral sequences in our database
+		cut -f 1 $kraken2db/library/viral/*.fna.fai $kraken2db/library/added/*.fna.fai >> $file_viralreference_contigs.full.txt.tmp
+		# without kraken2 prefix
+		cut -f 1 $kraken2db/library/viral/*.fna.fai $kraken2db/library/added/*.fna.fai | \
+			sed 's/^[^|][|]//' >> $file_viralreference_contigs.full.txt.tmp
+		# without .1 suffix (this covers hs37d5)
+		cut -f 1 $kraken2db/library/viral/*.fna.fai $kraken2db/library/added/*.fna.fai | \
+			sed 's/^[^|][|]//' | \
+			sed 's/[.][1-9]$//' >> $file_viralreference_contigs.full.txt.tmp
+	fi
+	if [[ ! -f $reference.fai ]] ; then
+		write_status "Creating missing reference genome index file $reference.fai"
+		samtools faidx $reference
+	fi
+	grep -xFf <(cut -f 1 $reference.fai) $file_viralreference_contigs.full.txt.tmp > $file_viralreference_contigs || true # zero matches is fine
+	write_status "Treating $(cat $file_viralreference_contigs | wc -l) reference sequences as viral sequences."
 	echo "#!/bin/bash" > $exec_concat_fastq
+	echo "gridsstools unmappedSequencesToFastq -c $file_viralreference_contigs -@ $threads \\" >> $exec_concat_fastq
 	for f in "$@" ; do
-		cleanf=$(clean_filename "$f")
-		echo "gridsstools unmappedSequencesToFastq -@ $threads $f" >> $exec_concat_fastq
+		echo "    $f \\" >> $exec_concat_fastq
 	done
+	echo >> $exec_concat_fastq
 	chmod +x $exec_concat_fastq
+	# TODO: abort on error in subshell
 	{ $timecmd $exec_concat_fastq \
 	| kraken2 \
 		--threads $threads \
@@ -454,7 +497,7 @@ if [[ ! -f $file_readname ]] ; then
 		--FORMAT READ_NAME \
 		--NCBI_NODES_DMP $nodesdmp \
 	&& mv $file_readname.tmp $file_readname \
-	; } 1>&2 2>> $logfile
+	; } 1>&2 2>> $logfile || print_failure "identifying viral sequences"
 else
 	write_status "Identifying viral sequences	Skipped: found	$file_readname"
 fi
@@ -469,7 +512,7 @@ if [[ ! -f $file_summary_taxa_tsv ]] ; then
 		taxid_args="--TAXONOMY_ID_LIST $file_host_taxids $taxid_args"
 	fi
 	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
-	{ $timecmd java -Xmx8g $jvm_args -cp $gridss_jar gridss.kraken.IdentifyViralTaxa \
+	$timecmd java -Xmx8g $jvm_args -cp $gridss_jar gridss.kraken.IdentifyViralTaxa \
 		--INPUT_KRAKEN2_REPORT $file_report \
 		--OUTPUT $file_summary_taxa_tsv \
 		--REPORT_OUTPUT $file_viral_report \
@@ -479,7 +522,7 @@ if [[ ! -f $file_summary_taxa_tsv ]] ; then
 		--MIN_SUPPORTING_READS $minreads \
 		--TAXONOMIC_DEDUPLICATION_LEVEL Genus \
 		$taxid_args \
-	; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile
 else
 	write_status "Identifying viral taxa	Skipped: found	$file_summary_taxa_tsv"
 fi
@@ -487,7 +530,6 @@ if [[ $(wc -l < $file_summary_taxa_tsv) -eq 1 ]] ; then
 	write_status "No viral sequences supported by at least $minreads reads."
 	early_exit
 fi
-write_status "Extracting viral reads"
 for f in "$@" ; do
 	infile_filename_prefix=$(clean_filename "$f")
 	infile_fq=$workingdir/$infile_filename_prefix.viral.unpaired.fq
@@ -508,7 +550,7 @@ gridsstools extractFragmentsToFastq \
 	$f
 EOF
 		chmod +x $exec_extract_reads
-		{ $timecmd $exec_extract_reads ; } 1>&2 2>> $logfile
+		$timecmd $exec_extract_reads 1>&2 2>> $logfile
 	else
 		write_status "Extracting viral reads	Skipped: found	$infile_fq"
 	fi
@@ -516,7 +558,7 @@ done
 if [[ ! -f $prefix_working.kraken2.fa ]] ; then
 	write_status "Determining viral references to use"
 	# The OUTPUT redirect is so bcftools doesn't choke on kraken's contig naming convention
-	{ $timecmd java -Xmx8g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestViralReference \
+	$timecmd java -Xmx8g $jvm_args -cp $gridss_jar gridss.kraken.ExtractBestViralReference \
 		--INPUT_SUMMARY $file_summary_taxa_tsv \
 		--INPUT_VIRAL_READS <(cat $workingdir/$infile_filename_prefix.viral.*.fq) \
 		--OUTPUT $prefix_working.kraken2.fa \
@@ -525,7 +567,7 @@ if [[ ! -f $prefix_working.kraken2.fa ]] ; then
 		--SEQID2TAXID_MAP $seqidtaxidmap \
 		--OUTPUT_MATCHING_KMERS $prefix_working.viral.kmercounts.tsv \
 		$kraken_references_arg \
-	; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile
 else
 	write_status "Determining viral references	Skipped: found	$prefix_working.kraken2.fa"
 fi
@@ -547,7 +589,8 @@ function align_fasta() {
 	if [[ ! -f $bam ]] ; then
 		if [[ ! -f $viral_ref.bwt ]] ; then
 			write_status "Creating index of viral sequences"
-			{ $timecmd samtools faidx $viral_ref && bwa index $viral_ref ; } 1>&2 2>> $logfile
+			$timecmd samtools faidx $viral_ref 1>&2 2>> $logfile
+			$timecmd bwa index $viral_ref 1>&2 2>> $logfile
 		#else
 		#	write_status "Creating index of viral sequences	Skipped: found	$viral_ref.bwt"
 		fi
@@ -559,7 +602,7 @@ function align_fasta() {
 		| samtools sort -@ $threads -T $bam.sorting -o $bam.tmp.bam - \
 		&& mv $bam.tmp.bam $bam \
 		&& samtools index $bam \
-		; } 1>&2 2>> $logfile
+		; } 1>&2 2>> $logfile || print_failure "aligning viral reads"
 		# duplicates are not marked since fragmented insertion sites
 		# with a second breakpoint closer than the read length will
 		# call all supporting soft-clipped reads
@@ -585,7 +628,7 @@ if [[ ! -f $prefix_adjusted.unfiltered.viral.fa ]] ; then
 	{ $timecmd bcftools mpileup -f $prefix_unadjusted.viral.fa $prefix_unadjusted.merged.bam | bcftools call -c -v --ploidy 1 -V indels -Oz -o $prefix_unadjusted.snps.vcf.gz \
 	&& bcftools index $prefix_unadjusted.snps.vcf.gz \
 	&& bcftools consensus -f $prefix_unadjusted.viral.fa $prefix_unadjusted.snps.vcf.gz | sed 's/^>/>adjusted_/' > $prefix_adjusted.unfiltered.viral.fa \
-	; } 1>&2 2>> $logfile
+	; } 1>&2 2>> $logfile || print_failure "adjusting reference genome"
 else
 	write_status "Skiping adjusting reference genome: found	$prefix_adjusted.viral.fa"
 fi
@@ -654,7 +697,7 @@ java -Xmx4g $jvm_args \
 rm -f $adjusteddir/$infile_filename_prefix.metrics.bam # delete if it exists
 EOF
 			chmod +x $exec_extract_host_metrics
-			{ $timecmd $exec_extract_host_metrics; } 1>&2 2>> $logfile
+			$timecmd $exec_extract_host_metrics 1>&2 2>> $logfile
 		fi
 	else
 		write_status "Gathering metrics from host alignment	Skipped: found	$gridss_prefix.insert_size_metrics"
@@ -682,7 +725,7 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
 	# backup metrics
 	for f in $(find $adjusteddir -name '*_metrics') ; do cp $f $f.bak ; done
-	{ $timecmd gridss.sh \
+	$timecmd gridss \
 		-w $adjusteddir \
 		-t $threads \
 		-r $prefix_adjusted.viral.fa \
@@ -697,55 +740,55 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		--includeDP false \
 		$gridssargs \
 		$bam_list_args \
-	; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile
 	# restore metrics over the computed ones since we want host metrics
 	for f in $(find $adjusteddir -name '*_metrics.bak') ; do cp $f $(basename $f .bak) ; done
-	{ $timecmd gridss.sh \
-		-w $adjusteddir \
-		-t $threads \
-		-r $prefix_adjusted.viral.fa \
-		-j $gridss_jar \
-		-o $file_gridss_vcf \
-		-a $file_assembly \
-		-c $file_gridss_configuration \
-		--maxcoverage $maxcoverage \
-		$gridssargs \
-		$bam_list_args \
-	; } 1>&2 2>> $logfile
+		$timecmd gridss \
+			-w $adjusteddir \
+			-t $threads \
+			-r $prefix_adjusted.viral.fa \
+			-j $gridss_jar \
+			-o $file_gridss_vcf \
+			-a $file_assembly \
+			-c $file_gridss_configuration \
+			--maxcoverage $maxcoverage \
+			$gridssargs \
+			$bam_list_args \
+			1>&2 2>> $logfile
 else
 	write_status "Calling structural variants	Skipped: found	$file_gridss_vcf"
 fi
 if [[ ! -f $file_host_annotated_vcf ]] ; then
 	write_status "Annotating host genome integrations"
-	{ $timecmd java -Xmx4g $jvm_args \
-			-Dgridss.output_to_temp_file=true \
-			-cp $gridss_jar gridss.AnnotateInsertedSequence \
-			--TMP_DIR $workingdir \
-			--WORKING_DIR $workingdir \
-			--REFERENCE_SEQUENCE $reference \
-			--WORKER_THREADS $threads \
-			--INPUT $file_gridss_vcf \
-			--OUTPUT $file_host_annotated_vcf \
-	; } 1>&2 2>> $logfile
+	$timecmd java -Xmx4g $jvm_args \
+		-Dgridss.output_to_temp_file=true \
+		-cp $gridss_jar gridss.AnnotateInsertedSequence \
+		--TMP_DIR $workingdir \
+		--WORKING_DIR $workingdir \
+		--REFERENCE_SEQUENCE $reference \
+		--WORKER_THREADS $threads \
+		--INPUT $file_gridss_vcf \
+		--OUTPUT $file_host_annotated_vcf \
+		1>&2 2>> $logfile
 else
 	write_status "Annotating host genome integrations	Skipped: found	$file_host_annotated_vcf"
 fi
 if [[ ! -f $file_kraken_annotated_vcf ]] ; then
 	write_status "Annotating kraken2"
-	{ $timecmd gridss_annotate_vcf_kraken2.sh \
+	$timecmd gridss_annotate_vcf_kraken2 \
 		-o $file_kraken_annotated_vcf \
 		-j $gridss_jar \
 		--kraken2db $kraken2db \
 		--threads $threads \
 		$kraken2args \
 		$file_host_annotated_vcf  \
-	; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile
 else
 	write_status "Annotating kraken2	Skipped: found	$file_kraken_annotated_vcf"
 fi
 if [[ ! -f $file_rm_annotated_vcf ]] ; then
 	write_status "Annotating RepeatMasker"
-	{ $timecmd gridss_annotate_vcf_repeatmasker.sh \
+	$timecmd gridss_annotate_vcf_repeatmasker \
 		-w $workingdir \
 		-o $file_rm_annotated_vcf \
 		-j $gridss_jar \
@@ -753,7 +796,7 @@ if [[ ! -f $file_rm_annotated_vcf ]] ; then
 		--rmargs "$rmargs" \
 		$kraken2args \
 		$file_kraken_annotated_vcf \
-	; } 1>&2 2>> $logfile
+		1>&2 2>> $logfile
 else
 	write_status "Annotating RepeatMasker	Skipped: found	$file_rm_annotated_vcf"
 fi
@@ -764,12 +807,12 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 		hosttaxid_arg="--TAXONOMY_IDS 9606"
 	fi
 	# TODO: filter to anything in the taxonomic tree
-	{ $timecmd java -Xmx64m $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
+	$timecmd java -Xmx64m $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
 		--INPUT $file_rm_annotated_vcf \
 		--OUTPUT $file_filtered_vcf \
 		--REFERENCE_SEQUENCE $reference \
 		$hosttaxid_arg \
-	; } 1>&2 2>> $logfile
+		>&2 2>> $logfile
 fi
 if [[ ! -f $file_summary_coverage_tsv ]] ; then
 	write_status "Writing annotated summary to $output_tsv"

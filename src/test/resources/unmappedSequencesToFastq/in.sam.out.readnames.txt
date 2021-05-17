@@ -4,3 +4,6 @@ reversestrand
 reversestrandend
 externallysplitread
 pairedonemapped
+contigunmapped
+splittoviralsequence
+contigunmappedwithsplit

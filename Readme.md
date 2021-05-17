@@ -29,6 +29,8 @@ For single breakend, structural variant phasing, and somatic variant calling, re
 GRIDSS2: harnessing the power of phasing and single breakends in somatic structural variant detection
 https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
 
+VIRUSBreakend usage should cite "VIRUSBreakend: Viral Integration Recognition Using Single Breakends" https://doi.org/10.1093/bioinformatics/btab343
+
 # Pre-requisites
 
 To run GRIDSS the following must be installed:
@@ -95,19 +97,20 @@ Run either `conda install htslib` or `conda deactivate` if you have problems com
 
 # Running
 
-Scripts and pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases. GRIDSS invokes external tools at multiple points during processing. By default this is bwa mem, but can be configured to use bowtie2 or another aligner.
+Pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases. GRIDSS invokes external tools at multiple points during processing. By default this is bwa mem, but can be configured to use bowtie2 or another aligner.
 
-The following scripts are included in GRIDSS releases:
+The following programs are included in GRIDSS releases:
 
-|script|description
+|program|description
 |---|---|
-gridss|Driver script for running GRIDSS. Use this to run GRIDSS
+gridss|GRIDSS assembler and structural variant caller. Use this to generate a GRIDSS SV VCF.
 gridss_extract_overlapping_fragments|Extracts all alignments for read pairs with at least one aligment overlapping set of regions of interest. Correctly handles supplementary alignments. Use this script to extract reads of interest for targeted GRIDSS variant calling.
 gridss_annotate_vcf_repeatmasker|Annotates breakpoint and single breakend inserted sequences with the RepeatMasker classification of the sequence.
 gridss_annotate_vcf_kraken2|Annotates breakpoint and single breakend inserted sequences with the Kraken2 classification of the sequence.
 virusbreakend|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
 virusbreakend-build|[See VIRUSBreakend README](https://github.com/PapenfussLab/gridss/blob/master/VIRUSBreakend_Readme.md)
 gridss_somatic_filter|Somatic filtering script. Note that this has an equivalent java implementation in [GRIPSS](https://github.com/hartwigmedical/hmftools/tree/master/gripss).
+gridsstools|C/htslib implementation of performance-critical steps. Currently used by `virusbreakend` and `gridss_extract_overlapping_fragments`
 
 ## gridss command-line arguments
 

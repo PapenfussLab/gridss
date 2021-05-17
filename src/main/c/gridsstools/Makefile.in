@@ -32,6 +32,7 @@ test: \
 testUnmappedSequencesToFastq: gridsstools
 	./gridsstools unmappedSequencesToFastq \
 		-n testUnmappedSequencesToFastq.out.readnames.txt \
+		-c $(TEST_DIR)/unmappedSequencesToFastq/in.unmapped.txt \
 		$(TEST_DIR)/unmappedSequencesToFastq/in.sam \
 		> testUnmappedSequencesToFastq.out.fq
 	diff $(TEST_DIR)/unmappedSequencesToFastq/in.sam.out.fq testUnmappedSequencesToFastq.out.fq > testUnmappedSequencesToFastq.fq.diff
