@@ -216,7 +216,7 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 	public void should_extract_sam_flag_without_insert_size_metrics() {
 		ExtractSVReads extract = new ExtractSVReads();
 		extract.instanceMain(new String[] {
-			"INPUT=example/chr12.1527326.DEL1024.bam",
+			"INPUT=src/test/resources/chr12.1527326.DEL1024.bam",
 			"OUTPUT=" + output.toString(),
 		});
 		assertTrue(output.exists());

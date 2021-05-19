@@ -35,8 +35,8 @@ public class SimulatedChromosome {
 		return new Fragment(referenceIndex, genomicStart, Arrays.copyOfRange(seq, genomicStart - 1,  genomicStart - 1 + length), reversed);
 	}
 	/**
-	 * @param reference reference genome
-	 * @param breakCleanMargin number of unambiguous bases around the breakpoint
+	 * @param context reference genome
+	 * @param margin number of unambiguous bases around the breakpoint
 	 */
 	public SimulatedChromosome(GenomicProcessingContext context, String chr, int margin, int seed) {
 		this.context = context;

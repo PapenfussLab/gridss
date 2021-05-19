@@ -22,7 +22,7 @@ public class OlcExporterTest extends IntermediateFilesTest {
     @Test
     public void should_export_gridss_example_graph() {
         File f = new File(testFolder.getRoot(),"test.OlcExporterTest.should_export_gridss_example_graph.gexf");
-        List<SAMRecord> reads = getRecords(new File("example/chr12.1527326.DEL1024.bam"));
+        List<SAMRecord> reads = getRecords(new File("src/test/resources/chr12.1527326.DEL1024.bam"));
         OlcExporter.exportOverlapGraph(reads, 20, 30, 2, f);
         assertTrue(f.exists());
     }

@@ -69,7 +69,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 				.chr(getChr())
 				.start(e.start)
 				.stop(e.start)
-				.attribute(VcfSvConstants.SV_LENGTH_KEY, e.type == SvType.DEL ? -e.size : e.size)
+				//.attribute(VcfSvConstants.SV_LENGTH_KEY, e.type == SvType.DEL ? -e.size : e.size)
 				//.attribute(VcfSvConstants.END_KEY, genomicPosition)
 				.attribute(VcfSvConstants.SV_TYPE_KEY, e.type)
 				//.attribute("ALT", altSeq)
