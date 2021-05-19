@@ -382,6 +382,8 @@ For users only interested the analysis of simple events and for which the incorr
 
 Our approach of explicitly seperating the detection of the rearrangement building blocks (copy number, breakpoint, and single breakends) from the rearrangement events will be codified in the upcoming version 4.4 of the VCF specifications through the incorporation of a `SVCLAIM` field (to remove the ambiguity of `DEL` and `DUP` calls), and `EVENT`/`EVENTTYPE` fields (for linking of related variant calls into higher-order events such as chromothripsis.
 
+For an example of why an event-based model that seperates detection from intepretation, see the [LINX readme](https://github.com/hartwigmedical/hmftools/blob/master/sv-linx/README.md) and [preprint]( https://www.biorxiv.org/content/10.1101/2020.12.03.410860v1), and [complex event visualisation examples](https://github.com/hartwigmedical/hmftools/blob/master/sv-linx/README_VIS.md).
+
 ## GRIDSS JAR
 
 GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss.sh`.
