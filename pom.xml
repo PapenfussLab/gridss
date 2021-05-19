@@ -4,11 +4,12 @@
 	<groupId>au.edu.wehi</groupId>
 	<artifactId>gridss</artifactId>
 	<packaging>jar</packaging>
-	<version>2.11.2-gridss</version>
+	<version>${revision}-gridss</version>
 	<name>gridss</name>
 	<url>https://github.com/PapenfussLab/gridss</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<revision>0.0.1-SNAPSHOT</revision>
 	</properties>
 	<licenses>
 		<license>

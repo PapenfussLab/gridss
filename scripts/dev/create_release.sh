@@ -1,32 +1,24 @@
 #!/bin/bash
-conda deactivate
 set -o errexit -o pipefail -o noclobber -o nounset
-cd ../../
-version=$(grep "gridss</version>" pom.xml | cut -f 2 -d '>' | cut -f 1 -d '-')
-echo Packaging GRIDSS $version
-rm -rf target
-mvn clean package
-mkdir target/github_package
-cp scripts/*.sh target/github_package/
-cp scripts/*.R target/github_package/
-cp target/gridss-$version-gridss-jar-with-dependencies.jar target/github_package/
-cd src/main/c/gridsstools/htslib
-autoheader
-autoconf
-./configure && make clean && make -j $(nproc)
-cd -
-cd src/main/c/gridsstools
-autoheader
-autoconf
-./configure && make clean && make -j $(nproc) all
-cd -
-cp src/main/c/gridsstools/gridsstools target/github_package
-cd src/main/c/gridsstools/htslib
-make clean
-cd -
-cd src/main/c/gridsstools
-make clean
-cd - 
-tar -czvf target/github_package/gridsstools.src.tar.gz src/main/c/*
-cd target/github_package
+cd ../..
+version=$(git tag --points-at HEAD | cut -b 2-)
+if [[ "${1-missing}" == "-f" ]] ; then
+	version=$(git describe --tags --abbrev=0 --match "v[0-9]*" | cut -b 2-)
+fi
+if [[ "$version" == "" ]] ; then
+	echo "current commit is not a tagged GRIDSS release" 2>&1
+	exit 1
+fi
+echo Building GRIDSS $version 2>&1
+rm -rf release/
+mkdir release
+docker build --build-arg GRIDSS_VERSION=$version --target gridss_export_build_artefacts --output type=local,dest=release --progress=plain . && \
+docker build --build-arg GRIDSS_VERSION=$version --target gridss -t gridss:$version -t gridss:latest . && \
+docker build --build-arg GRIDSS_VERSION=$version --target gridss_minimal -t gridss_minimal:$version -t gridss_minimal:latest .
+cd release
 tar -czvf gridss-$version.tar.gz *
+# TODO: update conda?
+echo docker push gridss/gridss:$version gridss/gridss:latest gridss/gridss_minimal:$version gridss/gridss_minimal:latest 
+
+
+

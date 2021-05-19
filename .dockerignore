@@ -1,2 +1,7 @@
-*
-!/target/github_package/*
+/.git*
+/.idea
+/example
+/release
+/target
+/scripts/gridss2_manuscript
+/scripts/virusbreakend_manuscript
