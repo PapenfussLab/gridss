@@ -369,6 +369,19 @@ Secondly, using left or right alignment for imprecise call will result in the no
 `gridss_annotate_kraken2.sh` adds Kraken2 classifications to single breakend and breakpoint inserted sequences.
 The [NCBI taxonomy ID](https://www.ncbi.nlm.nih.gov/taxonomy) for the inserted sequences is in the `INSTAXID` INFO field.
 
+### Why are all calls BND?
+
+In VCF version 4.3 and earlier, the meaning of `DEL`, and `DUP` is ambiguous as it is unclear if the claim being made is a breakpoint claim, a copy number claim, or both.
+A `DUP` reported by a copy number caller has a very different meaning than a `DUP` reported by a breakpoint caller.
+A copy number `DUP` indicates there is at least one additional copy of the duplication region but makes no claim regarding where that extra copy is location.
+A breakpoint `DUP` indicates that the start and end of the 'duplicated' region are connected but makes no claim regarding the actual copy number of the duplicated region.
+A true `DUP` or `DEL` requires both a copy number change, a breakpoint of the correct orientation, and to not form part of a larger rearrangement.
+
+Since GRIDSS is fundamentally a breakpoint (and single breakend) caller, we have made the choice to report all variants in `BND` notation to make it explicit exactly what it is that GRIDSS is detecting.
+For users only interested the analysis of simple events and for which the incorrect interpretation of complex rearrangements is acceptable, the `example/simple-event-annotation.R` will annotate GRIDSS calls with `SIMPLE_TYPE` and `SVLEN` fields.
+
+Our approach of explicitly seperating the detection of the rearrangement building blocks (copy number, breakpoint, and single breakends) from the rearrangement events will be codified in the upcoming version 4.4 of the VCF specifications through the incorporation of a `SVCLAIM` field (to remove the ambiguity of `DEL` and `DUP` calls), and `EVENT`/`EVENTTYPE` fields (for linking of related variant calls into higher-order events such as chromothripsis.
+
 ## GRIDSS JAR
 
 GRIDSS takes a modular approach and the GRIDSS jar consists of a collection of separate tools. Each tool in the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline used when running `gridss.sh`.
