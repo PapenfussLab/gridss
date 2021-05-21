@@ -579,8 +579,11 @@ fi
 
 if [[ $do_setupreference == true ]] ; then
 	lock_file=$reference.tmp.gridsslock
-	if [[ ! -f ${reference}.fai ]] && [[ ! -f $(basename $reference .fa).fai ]] && [[ ! -f $(basename $reference .fasta).fai ]]  ; then
+	if [[ ! -s ${reference}.fai ]] && [[ ! -s $(basename $reference .fa).fai ]] && [[ ! -s $(basename $reference .fasta).fai ]]  ; then
 		if mkdir $lock_file ; then
+			if [[ -f ${reference}.fai ]] ; then
+				write_status "WARNING: found empty index file. Deleting ${reference}.fai"
+			fi
 			write_status "Running	samtools faidx	(once-off setup for reference genome)"
 			$timecmd samtools faidx $reference 1>&2 2>> $logfile
 			rmdir $lock_file
@@ -589,7 +592,7 @@ if [[ $do_setupreference == true ]] ; then
 			exit $EX_CANTCREAT
 		fi
 	fi
-	if [[ ! -f ${reference}.bwt  ]] ; then
+	if [[ ! -s ${reference}.bwt  ]] ; then
 		if mkdir $lock_file ; then
 			write_status "Running	bwa index	(once-off setup for reference genome)"
 			$timecmd bwa index $reference 1>&2 2>> $logfile
@@ -603,8 +606,14 @@ if [[ $do_setupreference == true ]] ; then
 	#	write_status "Running	minimap2 index	(once-off setup for reference genome)"
 	#	$timecmd minimap2 -d ${reference}.idx ${reference} 1>&2 2>> $logfile
 	#fi
-	if [[ ! -f ${reference}.gridsscache ]] || [[ ! -f ${reference}.img ]] || [[ ! -f ${reference}.dict ]] ; then
+	if [[ ! -s ${reference}.gridsscache ]] || [[ ! -s ${reference}.img ]] || [[ ! -s ${reference}.dict ]] ; then
 		if mkdir $lock_file ; then
+			for suffix in gridsscache img dict ; do
+				if [[ -f ${reference}.$suffix ]] && [[ ! -s ${reference}.$suffix ]] ; then
+					write_status "WARNING: found empty $suffix file. Deleting ${reference}.$suffix"
+					rm ${reference}.$suffix
+				fi
+			done
 			write_status "Running	PrepareReference	(once-off setup for reference genome)"
 			$timecmd java -Xmx$otherjvmheap $jvm_args \
 				-cp $gridss_jar gridss.PrepareReference \
