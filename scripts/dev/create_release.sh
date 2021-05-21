@@ -16,7 +16,7 @@ docker build --build-arg GRIDSS_VERSION=$version --target gridss_export_build_ar
 docker build --build-arg GRIDSS_VERSION=$version --target gridss -t gridss:$version -t gridss:latest . && \
 docker build --build-arg GRIDSS_VERSION=$version --target gridss_minimal -t gridss_minimal:$version -t gridss_minimal:latest .
 cd release
-tar -czvf gridss-$version.tar.gz *
+tar czvf gridss-$version.tar.gz *
 # TODO: update conda?
 echo docker push gridss/gridss:$version gridss/gridss:latest gridss/gridss_minimal:$version gridss/gridss_minimal:latest 
 

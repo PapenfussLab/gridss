@@ -42,7 +42,8 @@ RUN mvn -Dmaven.artifact.threads=8 verify && rm -rf target
 # Build GRIDSS jar
 ARG GRIDSS_VERSION
 COPY src /opt/gridss/src
-RUN mvn -T 1C -Drevision=${GRIDSS_VERSION} package
+RUN mvn -T 1C -Drevision=${GRIDSS_VERSION} package && \
+	cp target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
 
 FROM gridss_base_closest_mirror AS gridss_minimal
 # Setup CRAN ubuntu package repository
@@ -138,7 +139,13 @@ RUN mkdir /opt/kraken2 && \
 	./install_kraken2.sh /opt/kraken2 && \
 	cd .. && \
 	rm -r kraken2-$KRAKEN_VERSION v*.tar.gz
-ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:$PATH"
+RUN mkdir /opt/edirect && \
+	cd /opt/ && \
+	wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz && \
+	tar zxf edirect.tar.gz && \
+	rm edirect.tar.gz
+
+ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:$PATH"
 # configure repeatmasker
 RUN cd /opt/RepeatMasker && \
 	perl configure \
@@ -156,8 +163,8 @@ LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
 LABEL about.home="https://github.com/PapenfussLab/gridss"
 LABEL about.tags="Genomics"
 RUN mkdir /opt/gridss/ /data
-COPY --from=gridss_builder_c /opt/gridss/gridsstools /
-COPY --from=gridss_builder_java /opt/gridss/target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /
+COPY --from=gridss_builder_c /opt/gridss/gridsstools /opt/gridss/
+COPY --from=gridss_builder_java /opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
 COPY scripts/gridss \
 	scripts/gridss_annotate_vcf_kraken2 \
 	scripts/gridss_annotate_vcf_repeatmasker \
