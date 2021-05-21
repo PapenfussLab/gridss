@@ -18,6 +18,7 @@ import java.util.BitSet;
  *
  */
 public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFile, ReferenceLookup {
+	private static final long serialVersionUID = -8769790295923840212L;
 	private static final Log log = Log.getInstance(TwoBitBufferedReferenceSequenceFile.class);
 	private final ReferenceSequenceFile underlying;
 	private final PackedReferenceSequence[] referenceIndexLookup;
@@ -47,19 +48,24 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 		}
 		return seq.get(position - 1);
 	}
-	public synchronized void load(File file) {
+	public synchronized boolean load(File file) {
 		ImmutableMap.Builder<String, PackedReferenceSequence> builder = ImmutableMap.<String, PackedReferenceSequence>builder();
 		try(FileInputStream fis = new FileInputStream(file)) {
-			try(ObjectInputStream ois = new ObjectInputStream(fis)) {
-				for (int i =  0; i < referenceIndexLookup.length; i++) {
-					referenceIndexLookup[i] = (PackedReferenceSequence)ois.readObject();
+			try (ObjectInputStream ois = new ObjectInputStream(fis)) {
+				for (int i = 0; i < referenceIndexLookup.length; i++) {
+					referenceIndexLookup[i] = (PackedReferenceSequence) ois.readObject();
 					builder.put(referenceIndexLookup[i].name, referenceIndexLookup[i]);
 				}
 			}
 			cache = builder.build();
+			return true;
+		} catch (java.io.InvalidClassException e) {
+			log.info("Deleting out of date cache file " + file);
+			file.delete();
 		} catch (Exception e) {
 			log.error("Error loading reference genome from cache " + file, e);
 		}
+		return false;
 	}
 	public synchronized void save(File file) {
 		if (file.exists()) {
@@ -152,8 +158,12 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 		if (cacheFile != null) {
 			if (cacheFile.exists()) {
 				log.info("Loading reference genome from cache " + cacheFile);
-				load(cacheFile);
-				log.info("Loading reference genome complete");
+				boolean loadStatus = load(cacheFile);
+				if (loadStatus) {
+					log.info("Loading reference genome complete");
+				} else {
+					log.info("Failed to load reference genome from cache file.");
+				}
 			} else {
 				if (!cacheFile.getParentFile().canWrite()) {
 					log.warn("Cannot write to " + cacheFile + " not persisting 2bit compressed reference genome cache");
