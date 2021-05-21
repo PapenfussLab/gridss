@@ -86,7 +86,7 @@ public class AnnotateRepeatMasker /*implements Iterator<VariantContext>*/ { // c
             sb.append('|');
             sb.append(f.getRepeatAlignmentInformation(true).getCigar().toString());
             sb.append('|');
-            sb.append((int)f.getSwScore());
+            sb.append((int)f.getScore());
             sb.append('|');
             if (f.getRepeatAlignmentInformation(false) != null) {
                 sb.append(CigarUtil.editDistance(f.getRepeatAlignmentInformation(false).getCigar(), false, false));

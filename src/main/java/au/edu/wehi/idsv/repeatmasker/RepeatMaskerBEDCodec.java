@@ -21,7 +21,7 @@ public class RepeatMaskerBEDCodec extends BEDCodec {
         f.setStart(first6.getStart());
         f.setEnd(first6.getEnd());
         f.setStrand(first6.getStrand());
-        f.setSwScore(first6.getScore());
+        f.setScore(first6.getScore());
         f.setRepeatType(first6.getName());
         if (tokens.length > 10) {
             f.setRepeatClass(tokens[10]);

@@ -91,7 +91,7 @@ public class RepeatMaskerCodec extends AsciiFeatureCodec<RepeatMaskerFeature> {
         int i = 0;
         boolean isSummary;
         f.setRepeatAlignmentSummaryInformation(new RepeatAlignmentSummaryInformation());
-        f.setSwScore(Integer.parseInt(fields[i++]));
+        f.setScore(Integer.parseInt(fields[i++]));
         f.getRepeatAlignmentSummaryInformation().setPercentageSubstituted(Float.parseFloat(fields[i++]));
         f.getRepeatAlignmentSummaryInformation().setPercentageDeleted(Float.parseFloat(fields[i++]));
         f.getRepeatAlignmentSummaryInformation().setPercentageInserted(Float.parseFloat(fields[i++]));
@@ -208,8 +208,10 @@ public class RepeatMaskerCodec extends AsciiFeatureCodec<RepeatMaskerFeature> {
         if (s.startsWith("There were no repetitive sequences detected")) return true;
         if (!couldBeHeader(s)) return false;
         s = s.replaceAll("\\s","");
-        boolean firstHeaderLine = s.equals("SWpercpercpercquerypositioninquerymatchingrepeatpositioninrepeat");
-        boolean secondHeaderLine = s.equals("scorediv.del.ins.sequencebeginend(left)repeatclass/familybeginend(left)ID");
+        // Header name for first field changes depending on whether RepeatMasker is using
+        // rmblast or hmmer
+        boolean firstHeaderLine = s.contains("percpercpercquerypositioninquerymatchingrepeatpositioninrepeat");
+        boolean secondHeaderLine = s.contains("div.del.ins.sequencebeginend(left)repeatclass/familybeginend(left)ID");
         return firstHeaderLine || secondHeaderLine;
     }
 
@@ -221,8 +223,12 @@ public class RepeatMaskerCodec extends AsciiFeatureCodec<RepeatMaskerFeature> {
             switch (s.charAt(i)) {
                 case ' ':
                     continue;
+                // SW
                 case 'S':
                 case 's':
+                // bit score
+                case 'b':
+                case 'B':
                     return true;
                 default:
                     return false;

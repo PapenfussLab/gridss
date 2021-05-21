@@ -18,7 +18,7 @@ public class RepeatMaskerFeature implements BEDFeature {
     private int start;
     private int end;
     private String repeatType;
-    private float swScore;
+    private float score;
     private Strand strand;
     private String repeatClass;
     private RepeatAlignmentSummaryInformation repeatAlignmentSummaryInformation;
@@ -59,10 +59,6 @@ public class RepeatMaskerFeature implements BEDFeature {
         return repeatType;
     }
 
-    public int getSmithWatermanScore() {
-        return (int) getSwScore();
-    }
-
     public String getRepeatClass() {
         return repeatClass;
     }
@@ -92,9 +88,7 @@ public class RepeatMaskerFeature implements BEDFeature {
     }
 
     @Override
-    public float getScore() {
-        return getSmithWatermanScore();
-    }
+    public float getScore() { return score; }
 
     @Override
     public String getLink() { return null; }
@@ -130,12 +124,8 @@ public class RepeatMaskerFeature implements BEDFeature {
         this.repeatType = repeatType;
     }
 
-    public float getSwScore() {
-        return swScore;
-    }
-
-    public void setSwScore(float swScore) {
-        this.swScore = swScore;
+    public void setScore(float score) {
+        this.score = score;
     }
 
     public void setStrand(Strand strand) {

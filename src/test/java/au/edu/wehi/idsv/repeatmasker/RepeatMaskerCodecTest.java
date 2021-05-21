@@ -21,7 +21,7 @@ public class RepeatMaskerCodecTest extends TestHelper {
             List<RepeatMaskerFeature> features = Lists.newArrayList((Iterable<? extends RepeatMaskerFeature>) reader.iterator());
             Assert.assertEquals(2, features.size());
             RepeatMaskerFeature f = features.get(0);
-            Assert.assertEquals(327, f.getSmithWatermanScore());
+            Assert.assertEquals(327, f.getScore(), 0);
             Assert.assertEquals(0.25, f.getRepeatAlignmentSummaryInformation().getPercentageSubstituted(), 0);
             Assert.assertEquals(0.5, f.getRepeatAlignmentSummaryInformation().getPercentageDeleted(), 0);
             Assert.assertEquals(0.75, f.getRepeatAlignmentSummaryInformation().getPercentageInserted(), 0);
@@ -46,6 +46,29 @@ public class RepeatMaskerCodecTest extends TestHelper {
             Assert.assertEquals(208, f.getRepeatAlignmentSummaryInformation().getMatchStart());
             Assert.assertEquals(537, f.getRepeatAlignmentSummaryInformation().getMatchEnd());
             Assert.assertEquals(12, f.getRepeatAlignmentSummaryInformation().getBasesInRepeatPastMatch());
+        }
+    }
+    @Test
+    public void should_parse_output_from_hmmer() throws IOException {
+        File file = new File("src/test/resources/repeatmasker/hmmer_test.fa.out");
+        try (AbstractFeatureReader<RepeatMaskerFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(file.getPath(), new RepeatMaskerCodec(), false)) {
+            Assert.assertNull(reader.getHeader());
+            List<RepeatMaskerFeature> features = Lists.newArrayList((Iterable<? extends RepeatMaskerFeature>) reader.iterator());
+            Assert.assertEquals(232, features.size());
+            RepeatMaskerFeature f = features.get(0);
+            Assert.assertEquals(26, f.getScore(), 0);
+            Assert.assertEquals(27.0, f.getRepeatAlignmentSummaryInformation().getPercentageSubstituted(), 0.005);
+            Assert.assertEquals(5.4, f.getRepeatAlignmentSummaryInformation().getPercentageDeleted(), 0.005);
+            Assert.assertEquals(7.3, f.getRepeatAlignmentSummaryInformation().getPercentageInserted(), 0.005);
+            Assert.assertEquals("gridss101_45512_11829397_TRUE", f.getContig());
+            Assert.assertEquals(23, f.getStart());
+            Assert.assertEquals(134, f.getEnd());
+            Assert.assertEquals(375, f.getRepeatAlignmentSummaryInformation().getBasesInQueryPastMatch());
+            Assert.assertEquals(Strand.NEGATIVE, f.getStrand());
+            Assert.assertEquals("HSATII", f.getRepeatType());
+            Assert.assertEquals("Satellite", f.getRepeatClass());
+            Assert.assertEquals("1", f.getUniqueID());
+            Assert.assertNull(f.getRepeatAlignmentInformation(false));
         }
     }
     @Test
