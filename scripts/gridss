@@ -865,7 +865,11 @@ if [[ $do_preprocess == true ]] ; then
 				fi
 			fi
 			if [[ -f $tmp_prefix.insert_size_metrics ]] ; then
-				$rmcmd $tmp_prefix.insert_size_metrics $tmp_prefix.idsv_metrics $tmp_prefix.insert_size_histogram.pdf
+				$rmcmd $tmp_prefix.insert_size_metrics $tmp_prefix.idsv_metrics
+			fi
+			if [[ -f $tmp_prefix.insert_size_histogram.pdf ]] ; then
+				# pdf does not exist when using gridss_minimal docker image
+				$rmcmd $tmp_prefix.insert_size_histogram.pdf
 			fi
 			if [[ ! -f $prefix.sv.bam ]] ; then
 				write_status "pre-processing failed for $f"

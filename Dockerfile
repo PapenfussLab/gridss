@@ -65,13 +65,23 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	&& rm -rf /var/lib/apt/lists/*
 # Hack a fake Rscript so that insert size metrics dont break when creating the histogram
 RUN echo "!/bin/sh" > /usr/local/bin/Rscript && chmod +x /usr/local/bin/Rscript
-RUN mkdir /opt/gridss/
-# grab the GRIDSS artefacts from the builders
-COPY --from=gridss_builder_c /opt/gridss/gridsstools /opt/gridss/gridsstools
-COPY --from=gridss_builder_java /opt/gridss/*.jar /opt/gridss/
-# just GRIDSS itself
-COPY scripts/gridss /opt/gridss/
 ENV PATH="/opt/gridss/:$PATH"
+# Install GRIDSS
+ARG GRIDSS_VERSION
+ENV GRIDSS_VERSION=${GRIDSS_VERSION}
+ENV GRIDSS_JAR=/opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar
+LABEL software="GRIDSS"
+LABEL software.version="$GRIDSS_VERSION"
+LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
+LABEL about.home="https://github.com/PapenfussLab/gridss"
+LABEL about.tags="Genomics"
+RUN mkdir /opt/gridss/ /data
+COPY --from=gridss_builder_c /opt/gridss/gridsstools /opt/gridss/
+COPY --from=gridss_builder_java /opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
+COPY scripts/gridss /opt/gridss/
+RUN chmod +x /opt/gridss/*
+WORKDIR /data/
+
 
 FROM gridss_c_build_environment AS gridss
 # Setup CRAN ubuntu package repository
@@ -144,7 +154,6 @@ RUN mkdir /opt/edirect && \
 	wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz && \
 	tar zxf edirect.tar.gz && \
 	rm edirect.tar.gz
-
 ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:$PATH"
 # configure repeatmasker
 RUN cd /opt/RepeatMasker && \
@@ -175,6 +184,8 @@ COPY scripts/gridss \
 	scripts/gridss.config.R \
 	scripts/libgridss.R \
 	/opt/gridss/
+RUN chmod +x /opt/gridss/* && \
+	chmod -x /opt/gridss/*.R
 WORKDIR /data/
 
 # Copy build artifact locally
