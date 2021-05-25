@@ -12,13 +12,24 @@ fi
 echo Building GRIDSS $version 2>&1
 rm -rf release/
 mkdir release
+(cd src/main/c/gridsstools && make clean)
+(cd src/main/c/gridsstools/htslib && make clean)
+(cd src/main/c/ && tar czf gridsstools-src-$version.tar.gz gridsstools)
+mv src/main/c/gridsstools-src-$version.tar.gz release/
+cp LICENSE release/ # https://bioconda.github.io/contributor/linting.html#gpl-requires-license-distributed
 docker build --build-arg GRIDSS_VERSION=$version --target gridss_export_build_artefacts --output type=local,dest=release . # --progress=plain
-docker build --build-arg GRIDSS_VERSION=$version --target gridss -t gridss:$version -t gridss:latest .
-docker build --build-arg GRIDSS_VERSION=$version --target gridss_minimal -t gridss_minimal:$version -t gridss_minimal:latest .
+docker build --build-arg GRIDSS_VERSION=$version --target gridss -t gridss/gridss:$version -t gridss/gridss:latest .
+docker build --build-arg GRIDSS_VERSION=$version --target gridss_minimal -t gridss/gridss_minimal:$version -t gridss/gridss_minimal:latest .
+docker build --build-arg GRIDSS_VERSION=$version --target gridss -t gridss/virusbreakend:$version -t gridss/virusbreakend:latest .
 cd release
+chmod +x *
+chmod -x *.R *.jar
 tar czf gridss-$version.tar.gz *
-# TODO: update conda?
-echo docker push gridss/gridss:$version gridss/gridss:latest gridss/gridss_minimal:$version gridss/gridss_minimal:latest 
-
+echo docker push gridss/gridss:$version 
+echo docker push gridss/gridss:latest
+echo docker push gridss/gridss_minimal:$version
+echo docker push gridss/gridss_minimal:latest 
+echo docker push gridss/virusbreakend:$version
+echo docker push gridss/virusbreakend:latest 
 
 
