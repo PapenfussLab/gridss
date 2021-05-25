@@ -234,7 +234,11 @@ do_setupreference=false
 do_preprocess=false
 do_assemble=false
 do_call=false
-
+if [[ "$@" == "" ]] ; then
+	echo "$USAGE_MESSAGE"  1>&2
+	echo "At least one input bam must be specified." 1>&2
+	exit $EX_NOINPUT
+fi
 ##### --workingdir
 echo "Using working directory \"$workingdir\"" 1>&2
 if [[ "$workingdir" == "" ]] ; then
@@ -391,11 +395,6 @@ if [[ "$jvmheap" == "" ]] ; then
 	fi
 fi
 write_status  "Using JVM maximum heap size of $jvmheap for assembly and variant calling."
-if [[ "$@" == "" ]] ; then
-	write_status  "$USAGE_MESSAGE"
-	write_status  "At least one input bam must be specified."
-	exit $EX_NOINPUT
-fi
 for f in $@ ; do
 	if [[ ! -f $f ]] ; then
 		write_status "Input file $f does not exist"
