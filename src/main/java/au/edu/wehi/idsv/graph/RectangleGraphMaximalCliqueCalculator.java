@@ -36,14 +36,14 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 	 */
 	private final PriorityQueue<RectangleGraphNode> activeScanlineEndingY = new PriorityQueue<RectangleGraphNode>(11, RectangleGraphNode.ByEndY); // sorted by endX
 	private final ScanlineInterval activeScanlineStart;
-	private ScanlineInterval activeScanlineCurrentPosition = null;
+	private ScanlineInterval activeScanlineCurrentPosition;
 	private long activeScanlineActiveWeight = 0;
+	private long activeScanlineActiveExactWeight = 0;
 	private long scanlineX = Long.MIN_VALUE;
 	public RectangleGraphMaximalCliqueCalculator() {
-		activeScanlineStart = new ScanlineInterval();
-		activeScanlineStart.next = new ScanlineInterval();
-		activeScanlineStart.next.startY = Long.MAX_VALUE - 1;
-		activeScanlineCurrentPosition = activeScanlineStart;
+		this.activeScanlineStart = new ScanlineInterval(Long.MIN_VALUE, Long.MAX_VALUE, 0, 0, 0, 0,
+				new ScanlineInterval(Long.MAX_VALUE - 1, Long.MAX_VALUE, 0, 0, 0, 0, null));
+		this.activeScanlineCurrentPosition = activeScanlineStart;
 		assert(sanityCheckScanlineComplete());
 	}
 
@@ -57,20 +57,19 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 	private class ScanlineInterval implements Cloneable {
 		private ScanlineInterval(
 				long startY,
-				long startx,
+				long startX,
 				long weight,
+				long exactWeight,
 				int startHere,
 				int endHere,
 				ScanlineInterval next) {
 			this.startY = startY;
-			this.startX = startx;
+			this.startX = startX;
 			this.weight = weight;
+			this.exactWeight = exactWeight;
 			this.startHere = startHere;
 			this.endHere = endHere;
 			this.next = next;
-		}
-		public ScanlineInterval() {
-			this(Long.MIN_VALUE, Long.MAX_VALUE, 0, 0, 0, null);
 		}
 		/**
 		 * Splits the given node containing the given y value
@@ -85,6 +84,7 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 					y,
 					Long.MAX_VALUE,
 					this.weight,
+					this.exactWeight,
 					0,
 					this.endHere,
 					this.next);
@@ -92,14 +92,15 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 			this.next = newNode;
 			this.startX = Long.MAX_VALUE;
 		}
-		private long startY = Long.MIN_VALUE;
+		private final long startY;
 		/**
 		 * Long.MIN_VALUE indicates this interval is not maximal
 		 */
-		private long startX = Long.MAX_VALUE;
-		private long weight = 0;
-		private int startHere = 0;
-		private int endHere = 0;
+		private long startX;
+		private long weight;
+		private long exactWeight;
+		private int startHere;
+		private int endHere;
 		private ScanlineInterval next;
 		/**
 		 * Start coordinate of the half-open interval
@@ -126,6 +127,7 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 			assert(next != null);
 			assert(next.next != null); // can't merge with the end sentinal
 			assert(weight == next.weight);
+			assert(exactWeight == next.exactWeight);
 			assert(startX == Long.MAX_VALUE);
 			assert(next.startX == Long.MAX_VALUE);
 			endHere = next.endHere;
@@ -152,6 +154,8 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 		assert(node.startX <= node.endX);
 		assert(node.startY <= node.endY);
 		assert(node.weight > 0);
+		assert(node.exactWeight >= 0);
+		assert(node.weight >= node.exactWeight);
 		assert(node.startX >= scanlineX);
 		assert(lastNode == null || RectangleGraphNode.ByStartXY.compare(lastNode, node) <= 0);
 		lastNode = node;
@@ -167,11 +171,11 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 	}
 	private void mergeIntervals() {
 		assert(activeScanlineEndingY.isEmpty()); // can't merge in the middle of processing
-		// (make sure we don't merge our end sentinal
+		// (make sure we don't merge our end sentinel
 		for (ScanlineInterval si = activeScanlineStart; si != null && si.next != null && si.next.next != null; si = si.next) {
 			// merge consecutive nodes
 			while (si.endHere == 0 && si.next.startHere == 0 && si.next.next != null) {
-				assert(si.weight == si.next.weight);
+				assert(si.weight == si.next.weight && si.exactWeight == si.next.exactWeight);
 				// we can merge these together since the separating node is no longer around
 				si.mergeWithNext();
 			}
@@ -253,6 +257,7 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 			scanlineProcessYEndBefore(y, multiplier);
 		}
 		activeScanlineActiveWeight += node.weight;
+		activeScanlineActiveExactWeight += node.exactWeight;
 		activeScanlineCurrentPosition.startHere += multiplier;
 		activeScanlineEndingY.add(node);
 		assert(activeScanlineCurrentPosition.getStartY() == y);
@@ -272,10 +277,12 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 			long endYexclusive = node.endY + 1;
 			int yendCount = 1;
 			long yendWeight = node.weight;
+			long yendExactWeight = node.exactWeight;
 			while (!activeScanlineEndingY.isEmpty() && activeScanlineEndingY.peek().endY + 1 == endYexclusive) {
 				node = activeScanlineEndingY.poll();
 				yendCount++;
 				yendWeight += node.weight;
+				yendExactWeight += node.exactWeight;
 			}
 			advanceScanlineToIntervalContaining(endYexclusive - 1, multiplier);
 			if (activeScanlineCurrentPosition.getEndY() > endYexclusive) {
@@ -285,6 +292,7 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 			activeScanlineCurrentPosition.endHere += yendCount * multiplier;
 			advanceScanlineToIntervalContaining(endYexclusive, multiplier); // move on past our closing position
 			activeScanlineActiveWeight -= yendWeight;
+			activeScanlineActiveExactWeight -= yendExactWeight;
 		}
 		// advance position to node containing endYBefore
 		advanceScanlineToIntervalContaining(endYBefore, multiplier);
@@ -299,6 +307,7 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 		assert(activeScanlineCurrentPosition.getStartY() <= y); // can't advance backwards
 		while (activeScanlineCurrentPosition.getEndY() <= y) {
 			activeScanlineCurrentPosition.weight += activeScanlineActiveWeight * multiplier;
+			activeScanlineCurrentPosition.exactWeight += activeScanlineActiveExactWeight * multiplier;
 			if (activeScanlineActiveWeight != 0) {
 				// could be maximal if we're adding new evidence
 				// if we're removing evidence then we're now definitely not maximal
@@ -341,7 +350,8 @@ public class RectangleGraphMaximalCliqueCalculator implements TrackedState {
 					outBuffer.add(new RectangleGraphNode(
 							interval.startX, scanlineX,
 							interval.getStartY(), interval.getEndY() - 1, // convert back from half-open to close interval
-							interval.weight));
+							interval.weight,
+							interval.exactWeight));
 				}
 				interval = interval.next;
 			}

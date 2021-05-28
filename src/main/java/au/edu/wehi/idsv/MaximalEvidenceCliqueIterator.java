@@ -87,8 +87,9 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		BreakendDirection highDir = bp.direction2;
 		float weight = ((DirectedBreakpoint)e).getBreakpointQual();
 		long scaledWeight = ScalingHelper.toScaledWeight(weight);
+		boolean isExact = e.isBreakendExact();
 		if (scaledWeight <= 0) return null;
-		RectangleGraphNode node = new RectangleGraphNode(startX, endX, startY, endY, scaledWeight);
+		RectangleGraphNode node = new RectangleGraphNode(startX, endX, startY, endY, scaledWeight, isExact ? scaledWeight : 0);
 		// Must have positive phred score  
 		if (startX > startY) {
 			// only take the lower half of the evidence since both sides of all breakpoints
@@ -117,6 +118,9 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		double weight = ScalingHelper.toUnscaledWeight(scaledWeight);
 		builder.phredScore(weight);
 		builder.attribute(VcfInfoAttributes.CALLED_QUAL, weight);
+		if (node.exactWeight == 0) {
+			builder.attribute(VcfSvConstants.IMPRECISE_KEY, true);
+		}
 		VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)builder.make();
 		assert(v != null);
 		return v;

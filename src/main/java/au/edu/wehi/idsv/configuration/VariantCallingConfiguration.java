@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.configuration;
 
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import com.google.common.collect.Lists;
 import org.apache.commons.configuration.Configuration;
 
@@ -30,6 +31,7 @@ public class VariantCallingConfiguration {
 		breakendMaxAssemblySupportBias = config.getDouble("breakendMaxAssemblySupportBias");
 		callFullyAnchoredAssemblyVariants = config.getBoolean("callFullyAnchoredAssemblyVariants");
 		ignoreMissingAssemblyFile = config.getBoolean("ignoreMissingAssemblyFile");
+		minimumImpreciseDeletion = config.getInt("minimumImpreciseDeletion");
 	}
 	/**
 	 * Ignore missing assembly file
@@ -99,6 +101,12 @@ public class VariantCallingConfiguration {
 	 * a different haplotype to the reads assembled into the breakend potion of the contig
 	 */
 	public boolean callFullyAnchoredAssemblyVariants;
+	/**
+	 * Minimum size to call an imprecise deletion
+	 * This filters out false positives caused by the reference-supporting reads at the
+	 * edge of the library fragment size distribution.
+	 */
+	public int minimumImpreciseDeletion;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));
@@ -205,4 +213,25 @@ public class VariantCallingConfiguration {
 		VariantContextDirectedEvidence filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, variant).filters(filters.toArray(new String[0])).make();
 		return filteredVariant;
 	}
+
+	/**
+	 * Determines whether to filter this putative variant before
+	 * evidence allocation or
+	 * Note that the variant call is minimally annotated at this point.
+	 * Only the position, quality score (CQ), IMPRECISE flag is populated at this point.
+	 * @param minimalVariant minimally annotated variant
+	 * @return true if the variant should be ignored. False otherwise
+	 */
+    public boolean isHardFilteredBeforeAnnotation(final VariantContextDirectedEvidence minimalVariant) {
+		// If we're under min score with all possible evidence allocated, we're definitely going to fail
+		// when we restrict evidence to single breakpoint support
+		if (minimalVariant.getBreakendQual() < minScore) return true;
+		if (minimalVariant.getBreakendSummary() instanceof BreakpointSummary) {
+			boolean isImprecise = minimalVariant.hasAttribute(VcfSvConstants.IMPRECISE_KEY);
+			BreakpointSummary bp = ((BreakpointSummary)minimalVariant.getBreakendSummary());
+			// Drop FP calls from fragments just outside the expected library fragment size bounds
+			if (isImprecise && bp.couldBeDeletionOfSize(0, minimumImpreciseDeletion)) return true;
+		}
+		return false;
+    }
 }

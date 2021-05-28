@@ -24,7 +24,8 @@ public class RectangleGraphNodeMergingIterator extends AbstractIterator<Rectangl
 		if (it.hasNext()) {
 			RectangleGraphNode node = it.next();
 			while (it.hasNext() && it.peek().isSameCoordinate(node)) {
-				node = new RectangleGraphNode(node.startX, node.endX, node.startY, node.endY, node.weight + it.next().weight);
+				RectangleGraphNode nextNode = it.next();
+				node = new RectangleGraphNode(node.startX, node.endX, node.startY, node.endY, node.weight + nextNode.weight, node.exactWeight + nextNode.exactWeight);
 			}
 			if (expectedOrder != null) {
 				if (it.hasNext() && expectedOrder.compare(node, it.peek()) > 0) {

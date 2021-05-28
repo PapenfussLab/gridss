@@ -101,9 +101,8 @@ public class VariantCaller {
 					try (AsyncBufferedIterator<VariantContextDirectedEvidence> it = new AsyncBufferedIterator<>(rawit, "VariantCaller " + chunkMsg)) {
 						while (it.hasNext()) {
 							VariantContextDirectedEvidence loc = it.next();
-							if (loc.getBreakendQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
-								// If we're under min score with all possible evidence allocated, we're definitely going to fail
-								// when we restrict evidence to single breakpoint support
+							boolean hardFiltered = processContext.getVariantCallingParameters().isHardFilteredBeforeAnnotation(loc);
+							if (!hardFiltered || processContext.getVariantCallingParameters().writeFiltered) {
 								vcfWriter.add(loc);
 							}
 						}

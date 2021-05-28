@@ -15,13 +15,17 @@ public class RectangleGraphNode {
 	public final long startY;
 	public final long endY;
 	public long weight;
-	public RectangleGraphNode(long startX, long endX, long startY, long endY, long weight) {
+	public long exactWeight;
+	public RectangleGraphNode(long startX, long endX, long startY, long endY, long weight, long exactWeight) {
 		assert(weight > 0);
+		assert(weight >= exactWeight);
+		assert(exactWeight >= 0);
 		this.startX = startX;
 		this.endX = endX;
 		this.startY = startY;
 		this.endY = endY;
 		this.weight = weight;
+		this.exactWeight = exactWeight;
 	}
 	public boolean isSameCoordinate(RectangleGraphNode node) {
 		return startX == node.startX &&
@@ -34,11 +38,11 @@ public class RectangleGraphNode {
 	 * @return
 	 */
 	public RectangleGraphNode flipAxis() {
-		return new RectangleGraphNode(startY, endY, startX, endX, weight);
+		return new RectangleGraphNode(startY, endY, startX, endX, weight, exactWeight);
 	}
 	@Override
 	public String toString() {
-		return String.format("(x=[%d, %d], y=[%d, %d], %d)", startX, endX, startY, endY, weight);
+		return String.format("(x=[%d, %d], y=[%d, %d], %d, exact=%d)", startX, endX, startY, endY, weight, exactWeight);
 	}
 	public static Ordering<RectangleGraphNode> ByEndXYStartXY = new Ordering<RectangleGraphNode>() {
 		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {

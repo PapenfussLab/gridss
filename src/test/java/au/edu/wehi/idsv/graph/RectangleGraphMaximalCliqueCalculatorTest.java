@@ -11,10 +11,13 @@ import static org.junit.Assert.assertEquals;
 
 public class RectangleGraphMaximalCliqueCalculatorTest {
 	private RectangleGraphNode N(long startX, long endX, long startY, long endY) {
-		return new RectangleGraphNode(startX, endX, startY, endY, 1);
+		return new RectangleGraphNode(startX, endX, startY, endY, 1, 1);
+	}
+	private RectangleGraphNode N(long startX, long endX, long startY, long endY, int weight, int exactWeight) {
+		return new RectangleGraphNode(startX, endX, startY, endY, weight, exactWeight);
 	}
 	private RectangleGraphNode N(long startX, long endX, long startY, long endY, int weight) {
-		return new RectangleGraphNode(startX, endX, startY, endY, weight);
+		return new RectangleGraphNode(startX, endX, startY, endY, weight, weight);
 	}
 	RectangleGraphMaximalCliqueCalculator graph; 
 	private RectangleGraphNode[] getCliques(RectangleGraphNode[] nodes) {
@@ -30,7 +33,7 @@ public class RectangleGraphMaximalCliqueCalculatorTest {
 	private RectangleGraphNode[] flipXY(RectangleGraphNode[] a) {
 		RectangleGraphNode[] r = new RectangleGraphNode[a.length];
 		for (int i = 0; i < a.length; i++) {
-			r[i] = new RectangleGraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, a[i].weight);
+			r[i] = new RectangleGraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, a[i].weight, a[i].exactWeight);
 		}
 		return r;
 	}
@@ -248,7 +251,7 @@ public class RectangleGraphMaximalCliqueCalculatorTest {
 			for (int endx = startx; endx < size; endx++) {
 				for (int starty = 0; starty < size; starty++) {
 					for (int endy = starty; endy < size; endy++) {
-						nodes.add(new RectangleGraphNode(startx, endx, starty, endy, 1));
+						nodes.add(new RectangleGraphNode(startx, endx, starty, endy, 1, 0));
 					}
 				}
 			}
@@ -264,12 +267,22 @@ public class RectangleGraphMaximalCliqueCalculatorTest {
 			for (int endx = startx; endx < size; endx++) {
 				for (int starty = 0; starty < size; starty++) {
 					for (int endy = starty; endy < size; endy++) {
-						nodes.add(new RectangleGraphNode(startx, endx, starty, endy, Integer.MAX_VALUE - 10));
+						nodes.add(new RectangleGraphNode(startx, endx, starty, endy, Integer.MAX_VALUE - 10, 0));
 					}
 				}
 			}
 		}
 		RectangleGraphNode[] cliques = getCliques(nodes.toArray(new RectangleGraphNode[nodes.size()]));
 		assertEquals(size * size, cliques.length); // clique at every grid position
+	}
+	@Test
+	public void should_treat_weight_and_exactWeight_as_two_separate_weightings() {
+		go(new RectangleGraphNode[]{
+						N(1, 4, 1, 1, 10, 5),
+						N(2, 3, 1, 1, 5, 2),
+						N(4, 4, 1, 1, 1, 1)
+				},
+				N(2, 3, 1, 1, 15, 7),
+				N(4, 4, 1, 1, 11, 6));
 	}
 }

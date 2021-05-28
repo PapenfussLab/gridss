@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.MoreExecutors;
 import htsjdk.samtools.SAMRecord;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -65,6 +66,15 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		pc.getVariantCallingParameters().writeFiltered = true;
 		pc.getVariantCallingParameters().breakendMargin = 0;
 		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(pc, input, 0, 0, fragSize);
+		List<IdsvVariantContext> calls = go_call_simple_cliques(fragSize, in, pc, ses);
+		// start/end ramps are not max cliques but the rest are
+		assertEquals(2 * 3, calls.size());
+		for (IdsvVariantContext variant : calls) {
+			assertEquals(3 * ((DirectedBreakpoint)ses.evidence.get(0)).getBreakpointQual(), variant.getPhredScaledQual(), 0.01);
+		}
+	}
+
+	private List<IdsvVariantContext> go_call_simple_cliques(int fragSize, List<SAMRecord> in, ProcessingContext pc, StubSAMEvidenceSource ses) throws IOException {
 		for (int i = 1; i <= 5; i++) {
 			SAMRecord[] dp = DP(0, i, "1M", true, 1, i, "1M", true);
 			ses.evidence.add(NonReferenceReadPair.create(dp[0], dp[1], ses));
@@ -80,11 +90,59 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		vc.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		//vc.annotateBreakpoints(MoreExecutors.newDirectExecutorService());
 		//List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
-		List<IdsvVariantContext> calls = getVcf(output, null);
-		// start/end ramps are not max cliques but the rest are
-		assertEquals(2 * 3, calls.size());
-		for (IdsvVariantContext variant : calls) {
-			assertEquals(3 * ((DirectedBreakpoint)ses.evidence.get(0)).getBreakpointQual(), variant.getPhredScaledQual(), 0.01);
+		return getVcf(output, null);
+	}
+
+	@Test
+	public void should_drop_low_qual() throws IOException {
+		final int fragSize = 4;
+		final List<SAMRecord> in = new ArrayList<SAMRecord>();
+		final ProcessingContext pc = getCommandlineContext();
+		pc.getVariantCallingParameters().writeFiltered = false;
+		pc.getVariantCallingParameters().minScore = 1000;
+		pc.getVariantCallingParameters().breakendMargin = 0;
+		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(pc, input, 0, 0, fragSize);
+		List<IdsvVariantContext> calls = go_call_simple_cliques(fragSize, in, pc, ses);
+		// same as should_call_cliques test
+		assertEquals(0, calls.size());
+	}
+
+	/**
+	 * These are likely to be false positives caused by the reads slightly outside of the
+	 * 99% fragment size distribution
+	 */
+	@Test
+	public void should_drop_imprecise_small_deletions() throws IOException {
+		for (boolean writeFiltered : new boolean[] { false, true}) {
+			ProcessingContext pc = getCommandlineContext();
+			pc.getVariantCallingParameters().writeFiltered = writeFiltered;
+			pc.getVariantCallingParameters().minScore = 1;
+			int fragSize = 500;
+			StubSAMEvidenceSource ses = new StubSAMEvidenceSource(pc, input, 0, 0, 500);
+			for (int i = fragSize + 1; i < fragSize + 200; i++) {
+				SAMRecord[] dp = DP(0, 1, "100M", true, 0, i + 100, "100M", false);
+				ses.evidence.add(NonReferenceReadPair.create(dp[0], dp[1], ses));
+				ses.evidence.add(NonReferenceReadPair.create(dp[1], dp[0], ses));
+			}
+			// Single breakend
+			ses.evidence.add(SCE(FWD, ses, Read(1, 1, "50M50S")));
+			ses.evidence.add(SCE(FWD, ses, Read(1, 2, "49M50S")));
+			ses.evidence.add(SCE(FWD, ses, Read(1, 3, "48M50S")));
+			// exact small deletion
+			ses.evidence.add(SR(ses, Read(2, 110, "50S50M"), Read(2, 200, "50M")));
+			SAMRecord[] dp = DP(2, 100, "100M", true, 2, 100+500+200-100, "100M", false);
+			ses.evidence.add(NonReferenceReadPair.create(dp[0], dp[1], ses));
+			ses.evidence.add(NonReferenceReadPair.create(dp[1], dp[0], ses));
+			Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
+			VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of());
+			vc.callBreakends(output, MoreExecutors.newDirectExecutorService());
+			List<IdsvVariantContext> result = getVcf(output, null);
+			if (writeFiltered) {
+				Assert.assertTrue(result.size() > 3);
+			} else {
+				Assert.assertTrue(result.size() == 3);
+			}
+			output.delete();
 		}
 	}
 }
