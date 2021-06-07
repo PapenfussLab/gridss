@@ -103,6 +103,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		bwa \
 		hmmer \
 		bedtools \
+		bcftools \
 		r-base \
 		time \
 		libomp-dev \
