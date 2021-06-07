@@ -153,7 +153,10 @@ RUN mkdir /opt/edirect && \
 	cd /opt/ && \
 	wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz && \
 	tar zxf edirect.tar.gz && \
-	rm edirect.tar.gz
+	rm edirect.tar.gz &&
+	cd /opt/edirect/ &&
+	sed -i 's/if \[ -z "$prfx" ]/if false/' setup.sh &&
+	./setup.sh
 ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:$PATH"
 # configure repeatmasker
 RUN cd /opt/RepeatMasker && \
