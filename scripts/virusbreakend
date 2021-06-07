@@ -760,6 +760,15 @@ else
 fi
 if [[ ! -f $file_host_annotated_vcf ]] ; then
 	write_status "Annotating host genome integrations"
+	$timecmd gridss \
+		-w $adjusteddir \
+		-t $threads \
+		-r $prefix_adjusted.viral.fa \
+		-j $gridss_jar \
+		-o $adjusteddir/placeholder.out.vcf \
+		-s setupreference \
+		$bam_list_args \
+		1>&2 2>> $logfile
 	$timecmd java -Xmx4g $jvm_args \
 		-Dgridss.output_to_temp_file=true \
 		-cp $gridss_jar gridss.AnnotateInsertedSequence \
