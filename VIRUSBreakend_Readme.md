@@ -56,6 +56,27 @@ These can be installed manually, or the BioConda `samtools` `kraken2` and `entre
 The the generated directory (`virusbreakenddb`) contains the files used in the build process.
 The file `virusbreakend.db.virusbreakenddb.tar.gz` contains the minimal subset of the `virusbreakenddb` data required by VIRUSBreakend.
 
+### Reference data contents
+
+VIRUSBreakend uses a standard Kraken2 database augmented with NCBI viral neighbour genomes and associated metadata files.
+
+The reference file database contains the following files:
+
+|file|description|
+|----|----|
+|library/viral/library.fna|NCBI RefSeq viral genomes|
+|library/added/\*.fna|NCBI viral neighbour genomes|
+|\*.fai|samtools index of associated .fna file|
+|\*.fna.dict|Picard tools sequence dictionary  of associated .fna file|
+|opts.k2d|Kraken2 database file|
+|taxo.k2d|Kraken2 database file|
+|opts.k2d|Kraken2 database file|
+|taxonomy/nodes.dmp|Snapshot of NCBI taxonomy nodes at time of database creation|
+|taxonomy/names.dmp|Snapshot of NCBI taxonomy names at time of database creation. Not technically required by VIRUSBreakend but useful for looking up the name of the assigned taxid|
+|seqid2taxid.map|Kraken2 mapping of sequences to NCBI taxonomy IDs|
+|taxid10239.nbr|Table of viral neighbour genomes and their associated RefSeq genome|
+
+The exact sources for these files can be determined from the paths and queries in `virusbreakend-build`.
 
 # Running VIRUSBreakend
 
