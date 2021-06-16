@@ -35,26 +35,9 @@ All tools used by VIRUSBreakend must be on `PATH` including:
 
 Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
 
-## Reference data setup
+## Reference data
 
-Run `virusbreakend-build --db virusbreakenddb` to download and generate the reference data.
-This download the NCBI taxonomic information, sequences, virushostdb, the `kraken2-build` build process, and generates indexes.
-The index is around 54GB in size.
-Be aware that the kraken2 build process requires around 150GB of intermediate disk space to download from NCBI and build the index.
-
-`virusbreakend-build` requires:
-
-* An internet connection
-* GRIDSS
-* samtools
-* Kraken2
-  * dustmasker (part of the NCBI BLAST+ package)
-* [EDirect utilities](https://dataguide.nlm.nih.gov/edirect/install.html)
-
-These can be installed manually, or the BioConda `samtools` `kraken2` and `entrez-direct` packages can be used.
-
-The the generated directory (`virusbreakenddb`) contains the files used in the build process.
-The file `virusbreakend.db.virusbreakenddb.tar.gz` contains the minimal subset of the `virusbreakenddb` data required by VIRUSBreakend.
+The VIRUSBreakend reference data can be downloaded from https://melbourne.figshare.com/articles/dataset/virusbreakenddb_20210401_tar_gz/14782299
 
 ### Reference data contents
 
@@ -77,6 +60,26 @@ The reference file database contains the following files:
 |taxid10239.nbr|Table of viral neighbour genomes and their associated RefSeq genome|
 
 The exact sources for these files can be determined from the paths and queries in `virusbreakend-build`.
+
+### Regenerating the VIRUSBreakend database
+Run `virusbreakend-build --db virusbreakenddb` to download and generate the reference data.
+This download the NCBI taxonomic information, sequences, virushostdb, the `kraken2-build` build process, and generates indexes.
+The index is around 54GB in size.
+Be aware that the kraken2 build process requires around 150GB of intermediate disk space to download from NCBI and build the index.
+
+`virusbreakend-build` requires:
+
+* An internet connection
+* GRIDSS
+* samtools
+* Kraken2
+  * dustmasker (part of the NCBI BLAST+ package)
+* [EDirect utilities](https://dataguide.nlm.nih.gov/edirect/install.html)
+
+These can be installed manually, or the BioConda `samtools` `kraken2` and `entrez-direct` packages can be used.
+
+The the generated directory (`virusbreakenddb`) contains the files used in the build process.
+The file `virusbreakend.db.virusbreakenddb.tar.gz` contains the minimal subset of the `virusbreakenddb` data required by VIRUSBreakend.
 
 # Running VIRUSBreakend
 
