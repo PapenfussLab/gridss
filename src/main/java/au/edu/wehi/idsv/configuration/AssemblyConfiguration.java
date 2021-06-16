@@ -4,7 +4,8 @@ import org.apache.commons.configuration.Configuration;
 
 public class AssemblyConfiguration {
 	public static final String CONFIGURATION_PREFIX = "assembly";
-	public AssemblyConfiguration(Configuration config) {
+
+    public AssemblyConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
 		errorCorrection = new ErrorCorrectionConfiguration(config);
 		downsampling = new DownsamplingConfiguration(config);
@@ -21,6 +22,7 @@ public class AssemblyConfiguration {
 		contigNamePrefix = config.getString("contigNamePrefix");
 		recoverAfterError = config.getBoolean("recoverAfterError");
 		longReadReadLengthThreshold = config.getInt("longReadReadLengthThreshold");
+		maximumReproductionExportPackages = config.getInt("maximumReproductionExportPackages");
 	}
 	public ErrorCorrectionConfiguration errorCorrection;
 	public DownsamplingConfiguration downsampling;
@@ -88,4 +90,8 @@ public class AssemblyConfiguration {
 	 * Input files with any reads longer than this are not assembled.
 	 */
 	public int longReadReadLengthThreshold;
+	/**
+	 * Only make this many export packages
+	 */
+	public int maximumReproductionExportPackages;
 }
