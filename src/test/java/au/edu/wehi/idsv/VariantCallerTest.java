@@ -140,7 +140,8 @@ public class VariantCallerTest extends IntermediateFilesTest {
 			if (writeFiltered) {
 				Assert.assertTrue(result.size() > 3);
 			} else {
-				Assert.assertTrue(result.size() == 3);
+				Assert.assertEquals(3, result.size());
+				Assert.assertTrue(result.stream().allMatch(v -> !v.hasAttribute("IMPRECISE")));
 			}
 			output.delete();
 		}
