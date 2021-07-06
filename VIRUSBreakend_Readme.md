@@ -35,8 +35,33 @@ All tools used by VIRUSBreakend must be on `PATH` including:
 
 Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
 
-## Reference data setup
+## Reference data
 
+The VIRUSBreakend reference data can be downloaded from https://melbourne.figshare.com/articles/dataset/virusbreakenddb_20210401_tar_gz/14782299
+
+### Reference data contents
+
+VIRUSBreakend uses a standard Kraken2 database augmented with NCBI viral neighbour genomes and associated metadata files.
+
+The reference file database contains the following files:
+
+|file|description|
+|----|----|
+|library/viral/library.fna|NCBI RefSeq viral genomes|
+|library/added/\*.fna|NCBI viral neighbour genomes|
+|\*.fai|samtools index of associated .fna file|
+|\*.fna.dict|Picard tools sequence dictionary  of associated .fna file|
+|opts.k2d|Kraken2 database file|
+|taxo.k2d|Kraken2 database file|
+|opts.k2d|Kraken2 database file|
+|taxonomy/nodes.dmp|Snapshot of NCBI taxonomy nodes at time of database creation|
+|taxonomy/names.dmp|Snapshot of NCBI taxonomy names at time of database creation. Not technically required by VIRUSBreakend but useful for looking up the name of the assigned taxid|
+|seqid2taxid.map|Kraken2 mapping of sequences to NCBI taxonomy IDs|
+|taxid10239.nbr|Table of viral neighbour genomes and their associated RefSeq genome|
+
+The exact sources for these files can be determined from the paths and queries in `virusbreakend-build`.
+
+### Regenerating the VIRUSBreakend database
 Run `virusbreakend-build --db virusbreakenddb` to download and generate the reference data.
 This download the NCBI taxonomic information, sequences, virushostdb, the `kraken2-build` build process, and generates indexes.
 The index is around 54GB in size.
@@ -55,7 +80,6 @@ These can be installed manually, or the BioConda `samtools` `kraken2` and `entre
 
 The the generated directory (`virusbreakenddb`) contains the files used in the build process.
 The file `virusbreakend.db.virusbreakenddb.tar.gz` contains the minimal subset of the `virusbreakenddb` data required by VIRUSBreakend.
-
 
 # Running VIRUSBreakend
 
