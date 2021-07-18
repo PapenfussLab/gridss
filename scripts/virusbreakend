@@ -827,7 +827,7 @@ if [[ ! -f $file_summary_coverage_tsv ]] ; then
 	# Write header
 	rm -f $file_summary_coverage_tsv.tmp
 	grep taxid_genus $file_summary_references_tsv | tr -d '\n' > $file_summary_coverage_tsv.tmp
-	head -1 $prefix_adjusted.merged.bam.coverage | tr -d '\n' >> $file_summary_coverage_tsv.tmp
+	head -1 $prefix_adjusted.merged.bam.coverage |tr '#' '	' | tr -d '\n' >> $file_summary_coverage_tsv.tmp
 	echo "	integrations	QCStatus" >> $file_summary_coverage_tsv.tmp
 	# process each viral reference
 	grep -v taxid_genus $file_summary_references_tsv | while read inline; do
