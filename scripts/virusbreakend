@@ -789,7 +789,7 @@ if [[ ! -f $file_kraken_annotated_vcf ]] ; then
 		-j $gridss_jar \
 		--kraken2db $kraken2db \
 		--threads $threads \
-		$kraken2args \
+		--kraken2args "$kraken2args" \
 		$file_host_annotated_vcf  \
 		1>&2 2>> $logfile
 else
@@ -803,7 +803,6 @@ if [[ ! -f $file_rm_annotated_vcf ]] ; then
 		-j $gridss_jar \
 		--threads $threads \
 		--rmargs "$rmargs" \
-		$kraken2args \
 		$file_kraken_annotated_vcf \
 		1>&2 2>> $logfile
 else
