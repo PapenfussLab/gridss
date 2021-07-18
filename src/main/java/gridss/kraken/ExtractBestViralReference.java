@@ -9,6 +9,7 @@ import au.edu.wehi.idsv.ncbi.TaxonomyLevel;
 import au.edu.wehi.idsv.ncbi.TaxonomyNode;
 import com.google.common.collect.Streams;
 import gridss.cmdline.ReferenceCommandLineProgram;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
@@ -73,6 +75,8 @@ public class ExtractBestViralReference extends CommandLineProgram {
     public List<File> KRAKEN_REFERENCES;
     @Argument(doc="Maximum number of contigs to extract per NCBI taxonomic identifiers.", optional = true)
     public int CONTIGS_PER_TAXID = 1;
+    @Argument(doc="Use the viral references that occur in earlier KRAKEN_REFERENCES files whenever possible.", optional = true)
+    public boolean FAVOUR_EARLY_KRAKEN_REFERENCES = true;
 
     @Override
     protected String[] customCommandLineValidation() {
@@ -110,13 +114,13 @@ public class ExtractBestViralReference extends CommandLineProgram {
                     .collect(Collectors.toSet());
             boolean[] taxidInTreeOfInterest = TaxonomyHelper.createInclusionLookup(taxaOfInterest, taxa);
 
-            List<ReferenceSequence> candidateContigs = ref.stream()
+            Stream<ReferenceSequence> candidateContigs = ref.stream()
                 .flatMap(r -> r.getSequenceDictionary()
                     .getSequences()
                     .stream()
                     .filter(s -> taxidInTreeOfInterest[seq2taxLookup.get(s.getSequenceName())])
-                    .map(s -> r.getSequence(s.getSequenceName())))
-                .collect(Collectors.toList());
+                    .map(s -> r.getSequence(s.getSequenceName())));
+
             ContigKmerCounter ckc = new ContigKmerCounter(candidateContigs, KMER, STRIDE);
             if (INPUT_VIRAL_READS != null) {
                 log.info("Identifying best viral reference genomes from ", INPUT_VIRAL_READS);
@@ -154,8 +158,17 @@ public class ExtractBestViralReference extends CommandLineProgram {
                     output.add(outputLine);
                 } else {
                     int kraken2taxid = Integer.parseInt(line.get(6));
+                    Map<String, Integer> krakenReferenceFileIndex = new HashMap<>();
+                    for (int krOffset = 0; krOffset < ref.size(); krOffset++) {
+                        IndexedFastaSequenceFile r = ref.get(krOffset);
+                        for (SAMSequenceRecord sr : r.getSequenceDictionary().getSequences()) {
+
+                        }
+                    }
                     List<Pair<String, Long>> candidatesForTaxa = candidateContigCountsByTaxa.get(kraken2taxid).stream()
-                            .sorted(Comparator.comparing((Pair<String, Long> p) -> p.getValue()).reversed())
+                            .sorted(
+                                    Comparator.comparingInt((Pair<String, Long> p) -> FAVOUR_EARLY_KRAKEN_REFERENCES ? offsetInList(ref, p.getKey()) : 0)
+                                    .thenComparing(Comparator.comparingLong((Pair<String, Long> p) -> p.getValue()).reversed()))
                             .collect(Collectors.toList());
                     List<Pair<String, Long>> outputRef = candidatesForTaxa.stream().limit(CONTIGS_PER_TAXID).collect(Collectors.toList());
                     List<Pair<String, Long>> missingRef = candidatesForTaxa.stream().skip(CONTIGS_PER_TAXID).collect(Collectors.toList());
@@ -220,6 +233,15 @@ public class ExtractBestViralReference extends CommandLineProgram {
             taxId = parentTaxId;
         }
         return taxId;
+    }
+
+    private static int offsetInList(List<IndexedFastaSequenceFile> ref, String contigName) {
+        for (int i = 0; i < ref.size(); i++) {
+            if (ref.get(i).getSequenceDictionary().getSequence(contigName) != null) {
+                return i;
+            }
+        }
+        return ref.size();
     }
 
     /**

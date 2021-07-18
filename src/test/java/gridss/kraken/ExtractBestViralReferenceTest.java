@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,8 @@ public class ExtractBestViralReferenceTest extends IntermediateFilesTest {
             File nodesdmp,
             File seqidmap,
             List<Integer> taxids,
-            int minSupportingReads) {
+            int minSupportingReads,
+            boolean favourRefSeq) {
         IdentifyViralTaxa cmd1 = new IdentifyViralTaxa();
         ExtractBestViralReference cmd2 = new ExtractBestViralReference();
         cmd1.INPUT_KRAKEN2_REPORT = krakenReport;
@@ -58,6 +60,7 @@ public class ExtractBestViralReferenceTest extends IntermediateFilesTest {
         cmd2.OUTPUT = fasta;
         cmd2.OUTPUT_SUMMARY = finalTsv;
         cmd2.INPUT_VIRAL_READS = viralReads;
+        cmd2.FAVOUR_EARLY_KRAKEN_REFERENCES = favourRefSeq;
         cmd1.doWork();
         cmd2.doWork();
         return cmd2;
@@ -66,35 +69,43 @@ public class ExtractBestViralReferenceTest extends IntermediateFilesTest {
     public void should_extract_from_multiple_fasta() throws IOException {
         String datadir = "src/test/resources/kraken/multiple_dictionaries/";
         viralReads.createNewFile();
-        ExtractBestViralReference cmd = setup(
-            new File(datadir + "all_subspecies.txt"),
-            ImmutableList.of(
-                    new File(datadir + "kraken.fa"),
-                    new File(datadir + "virushostdb.fa")
-            ),
-            new File(datadir + "matching.nodes.dmp"),
-            new File(datadir + "seqid2taxid.map"),
-            ImmutableList.of(10239),
-            50);
+        Files.write(viralReads.toPath(), "@read1\nAATACTTTTAACAATTATACTACATAAAAAAGGGTGTAACCGAAAACG\n+\nAATACTTTTAACAATTATACTACATAAAAAAGGGTGTAACCGAAAACG\n".getBytes(StandardCharsets.UTF_8));
+        for (boolean prefer_refseq : new boolean[] { true, false}) {
+            ExtractBestViralReference cmd = setup(
+                    new File(datadir + "all_subspecies.txt"),
+                    ImmutableList.of(
+                            new File(datadir + "kraken.fa"),
+                            new File(datadir + "virushostdb.fa")
+                    ),
+                    new File(datadir + "matching.nodes.dmp"),
+                    new File(datadir + "seqid2taxid.map"),
+                    ImmutableList.of(10239),
+                    50,
+                    prefer_refseq);
 
-        List<String> out = Files.readAllLines(cmd.OUTPUT.toPath());
-        Assert.assertTrue(out.get(0).startsWith(">"));
-        List<String> output = Files.readAllLines(cmd.OUTPUT.toPath());
-        List<String> summary = Files.readAllLines(cmd.OUTPUT_SUMMARY.toPath());
-        Assert.assertTrue(out.get(0).startsWith(">kraken:taxid|10593|X74479"));
-        Assert.assertTrue(summary.get(1).contains("kraken:taxid|10593|X74479"));
+            List<String> out = Files.readAllLines(cmd.OUTPUT.toPath());
+            Assert.assertTrue(out.get(0).startsWith(">"));
+            List<String> output = Files.readAllLines(cmd.OUTPUT.toPath());
+            List<String> summary = Files.readAllLines(cmd.OUTPUT_SUMMARY.toPath());
+            cmd.OUTPUT.delete();
+            cmd.OUTPUT_SUMMARY.delete();
+            String expectedSeq = prefer_refseq ? "kraken:taxid|10593|test_in_refseq" : "kraken:taxid|10593|X74479";
+            Assert.assertTrue(out.get(0).startsWith(">" + expectedSeq));
+            Assert.assertTrue(summary.get(1).contains(expectedSeq));
+        }
     }
     @Test
     public void should_not_extract_all_strains() throws IOException {
         String datadir = "src/test/resources/kraken/multistrain/";
         viralReads.createNewFile();
         ExtractBestViralReference cmd = setup(
-            new File(datadir + "26T.virusbreakend.vcf.kraken2.report.all.txt"),
-            ImmutableList.of(new File(datadir + "26T.virusbreakend.vcf.viral.fa")),
-            new File(datadir + "relevant_nodes.dmp"),
-            new File(datadir + "seqid2taxid.map"),
-            ImmutableList.of(10239),
-            1);
+                new File(datadir + "26T.virusbreakend.vcf.kraken2.report.all.txt"),
+                ImmutableList.of(new File(datadir + "26T.virusbreakend.vcf.viral.fa")),
+                new File(datadir + "relevant_nodes.dmp"),
+                new File(datadir + "seqid2taxid.map"),
+                ImmutableList.of(10239),
+                1,
+                false);
 
         Assert.assertTrue(cmd.OUTPUT.exists());
         ReferenceSequenceFile ref = new FastaSequenceFile(cmd.OUTPUT, true);
@@ -116,7 +127,8 @@ public class ExtractBestViralReferenceTest extends IntermediateFilesTest {
                 new File(datadir + "relevant_nodes.dmp"),
                 new File(datadir + "seqid2taxid.map"),
                 ImmutableList.of(10239),
-                50);
+                50,
+                false);
         Assert.assertTrue(cmd.OUTPUT.exists());
         ReferenceSequenceFile ref = new FastaSequenceFile(cmd.OUTPUT, true);
         List<ReferenceSequence> refList = new ArrayList<>();

@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -18,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Counts matching kmers
@@ -63,6 +65,13 @@ public class ContigKmerCounter {
             log.debug("Adding:\t" + contig);
             sequentialAddToLookup(contig, prs, stride);
         }
+    }
+    public ContigKmerCounter(Stream<ReferenceSequence> ref, int k, int stride) {
+        this.k = k;
+        this.kmerLookup = k <= 16 ? new KmerLookup32() : new KmerLookup64();
+        ref.forEachOrdered(rs -> {
+            sequentialAddToLookup(rs.getName(), new TwoBitBufferedReferenceSequenceFile.PackedReferenceSequence(rs), stride);
+        });
     }
 
     private void sequentialAddToLookup(String contig, TwoBitBufferedReferenceSequenceFile.PackedReferenceSequence prs, int stride) {
