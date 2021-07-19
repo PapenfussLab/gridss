@@ -1,13 +1,12 @@
 package gridss;
 
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.SAMRecordChangeTracker;
-import au.edu.wehi.idsv.StreamingSplitReadRealigner;
+import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
@@ -21,6 +20,7 @@ import picard.cmdline.StandardOptionDefinitions;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
@@ -113,6 +113,7 @@ public class PreprocessForBreakendAssembly extends ReferenceCommandLineProgram {
 		tags.setReference(this.getReference());
 		tags.WORKER_THREADS = -1; // don't use ComputeSamTags workers - we're handling this ourselves
 		tags.MODIFICATION_SUMMARY_FILE = MODIFICATION_SUMMARY_FILE;
+		tags.REMOVE_TAGS = ImmutableList.of(SamTags.IS_ASSEMBLY);
 		String threadPrefix = INPUT.getName() + "-";
 		try {
 			SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);

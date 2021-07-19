@@ -83,6 +83,8 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			//SAMTag.Q2.name(), // dropping Q2 to improve runtime performance and file size
 			SAMTag.MC.name(),
 			SAMTag.MQ.name());
+	@Argument(doc="Tags to remove.")
+	public List<String> REMOVE_TAGS = null;
 	@Argument(doc = "Number of worker threads to spawn. Defaults to number of cores available."
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
 			shortName = "THREADS")
@@ -95,6 +97,9 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     	validateParameters();
     	SamReaderFactory readerFactory = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE);
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
+    	if (REMOVE_TAGS == null) {
+    		REMOVE_TAGS = Collections.emptyList();
+		}
     	try {
 			ensureDictionaryMatches(INPUT);
     		try (SamReader reader = readerFactory.open(INPUT)) {
@@ -123,6 +128,9 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
 						while (asyncIt.hasNext()) {
 							SAMRecord r = asyncIt.next();
+							for (String tag : REMOVE_TAGS) {
+								r.setAttribute(tag, null);
+							}
 							writer.addAlignment(r);
 							progress.record(r);
 						}

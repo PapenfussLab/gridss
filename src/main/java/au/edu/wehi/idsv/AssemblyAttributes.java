@@ -20,7 +20,7 @@ public class AssemblyAttributes {
 	private final SAMRecord record;
 	private Collection<AssemblyEvidenceSupport> support = null;
 	public static boolean isAssembly(SAMRecord record) {
-		return record.hasAttribute(SamTags.IS_ASSEMBLY);
+		return record.hasAttribute(SamTags.IS_ASSEMBLY) && ((Integer)1).equals(record.getIntegerAttribute(SamTags.IS_ASSEMBLY));
 	}
 	public static boolean isUnanchored(SAMRecord record) {
 		return record.hasAttribute(SamTags.UNANCHORED);

@@ -792,6 +792,7 @@ if [[ $do_preprocess == true ]] ; then
 							O=/dev/stdout \
 							WORKER_THREADS=$threads \
 							ASSUME_SORTED=true \
+							REMOVE_TAGS=SA \
 							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd samtools sort \
