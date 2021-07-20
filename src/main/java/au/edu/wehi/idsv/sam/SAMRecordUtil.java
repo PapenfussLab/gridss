@@ -827,7 +827,7 @@ public class SAMRecordUtil {
 					Math.max(SAMRecordUtil.getStartClipLength(arg1), SAMRecordUtil.getEndClipLength(arg1)),
 					Math.max(SAMRecordUtil.getStartClipLength(arg2), SAMRecordUtil.getEndClipLength(arg2)))
 				// in proper pair is better
-				.compareTrueFirst(arg1.getReadPairedFlag() && arg1.getProperPairFlag(), arg1.getReadPairedFlag() && arg2.getProperPairFlag())
+				.compareTrueFirst(arg1.getReadPairedFlag() && arg1.getProperPairFlag(), arg2.getReadPairedFlag() && arg2.getProperPairFlag())
 				// lower edit distance is better
 				.compare(getNM(arg1, 0), getNM(arg2, 0))
 				// Other options are:
