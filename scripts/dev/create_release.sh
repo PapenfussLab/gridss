@@ -1,4 +1,5 @@
 #!/bin/bash
+conda deactivate
 set -o errexit -o pipefail -o noclobber -o nounset
 cd ../..
 version=$(git tag --points-at HEAD | cut -b 2-)
@@ -6,9 +7,9 @@ if [[ "${1-missing}" == "-f" ]] ; then
 	version=$(git describe --tags --abbrev=0 --match "v[0-9]*" | cut -b 2-)
 fi
 if [[ "$version" == "" ]] ; then
-	echo "current commit is not a tagged GRIDSS release" 2>&1
-	exit 1
+	version=$(git symbolic-ref --short HEAD)-$(git rev-parse --short HEAD)
 fi
+
 echo Building GRIDSS $version 2>&1
 rm -rf release/
 mkdir release

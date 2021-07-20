@@ -11,6 +11,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	zlib1g-dev \
 	libbz2-dev \
 	liblzma-dev \
+	libdeflate-dev \
 	build-essential \
 	autotools-dev \
 	autoconf \
@@ -25,9 +26,9 @@ ARG GRIDSS_VERSION
 COPY src/main/c /opt/gridss/src/main/c
 COPY src/test/resources /opt/gridss/src/test/resources
 RUN cd /opt/gridss/src/main/c/gridsstools/htslib && \
-	autoconf && autoheader && make -j 8 && \
+	autoconf && autoheader && ./configure && make -j 8 && \
 	cd .. && \
-	autoconf && autoheader && make -j 8 && \
+	autoconf && autoheader && ./configure && make -j 8 && \
 	cp gridsstools /opt/gridss/
 # compile GRIDSS Java code
 FROM maven:3.6.3-jdk-8 AS gridss_builder_java
@@ -61,6 +62,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		zlib1g \
 		libbz2-1.0 \
 		liblzma5 \
+		libdeflate0 \
 		libomp5 \
 	&& rm -rf /var/lib/apt/lists/*
 # Hack a fake Rscript so that insert size metrics dont break when creating the histogram
@@ -154,9 +156,9 @@ RUN mkdir /opt/edirect && \
 	cd /opt/ && \
 	wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz && \
 	tar zxf edirect.tar.gz && \
-	rm edirect.tar.gz &&
-	cd /opt/edirect/ &&
-	sed -i 's/if \[ -z "$prfx" ]/if false/' setup.sh &&
+	rm edirect.tar.gz && \
+	cd /opt/edirect/ && \
+	sed -i 's/if \[ -z "$prfx" ]/if false/' setup.sh && \
 	./setup.sh
 ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:$PATH"
 # configure repeatmasker
