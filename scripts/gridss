@@ -2,7 +2,7 @@
 #
 # GRIDSS: a sensitive structural variant calling toolkit
 #
-# Example ../scripts/gridss -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../../ref/hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -j ../target/gridss-*-gridss-jar-with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
+# Example ../scripts/gridss -t 4 -b wgEncodeDacMapabilityConsensusExcludable.bed -r ../../ref/hg19.fa -w out -o out/gridss.full.chr12.1527326.DEL1024.vcf -j ../release/gridss*with-dependencies.jar --jvmheap 8g chr12.1527326.DEL1024.bam
 
 getopt --test
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
@@ -33,6 +33,7 @@ blacklist=""
 metricsrecords=10000000
 steps="all"
 config_file=""
+skipsoftcliprealignment=false
 maxcoverage=50000
 long_read_length_threshold=1000
 labels=""
@@ -69,6 +70,7 @@ Usage: gridss [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> i
 	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS
 	--jvmheap: size of JVM heap for assembly and variant calling. (Default: $jvmheap)
 	--otherjvmheap: size of JVM heap for all other steps. Useful to prevent java out of memory errors when using large (>4Gb reference genomes) (Default: $otherjvmheap)
+	--skipsoftcliprealignment: skip soft clip realignment. Reduces runtime for aligners that report split read alignments (e.g. bwa mem)
 	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored. (Default: $maxcoverage)
 	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
 	--useproperpair: use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
@@ -80,7 +82,7 @@ Usage: gridss [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> i
 	"
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,otherjvmheap:,includeIndels:,includeSR:,includeSC:,includeOEA:,includeDP:,includeUnmapped:,minClipLength:,minIndelSize:
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,otherjvmheap:,includeIndels:,includeSR:,includeSC:,includeOEA:,includeDP:,includeUnmapped:,minClipLength:,minIndelSize:,skipsoftcliprealignment
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
@@ -148,6 +150,10 @@ while true; do
 		--maxcoverage)
 			maxcoverage=$2
 			shift 2
+			;;
+		--skipsoftcliprealignment)
+			skipsoftcliprealignment="true"
+			shift 1
 			;;
 		--picardoptions)
 			picardoptions=$2
@@ -676,7 +682,7 @@ if [[ $do_preprocess == true ]] ; then
 			fi
 			max_read_length=$(grep -A 1 "^MAX_READ_LENGTH" $tmp_idsv_metrics_file | cut -f 1 | tail -1)
 			if [[ "${max_read_length}" -ge $long_read_length_threshold ]] ; then
-				write_status "Treating	$f	as long read data. Warning: GRIDSS required error corrected/HiFi long read sequences."
+				write_status "Treating	$f	as long read data. Warning: GRIDSS requires error corrected/HiFi long read sequences."
 				write_status "*****"
 				write_status "Raw uncorrected ONT/PacBoio are not yet supported."
 				write_status "*****"
@@ -779,8 +785,12 @@ if [[ $do_preprocess == true ]] ; then
 							/dev/stdin \
 					; } 1>&2 2>> $logfile
 				fi
-				if [[ "$externalaligner" == "true" ]] ; then
+				if [[ "$externalaligner" == "true" ]] || [[ $skipsoftcliprealignment == "true" ]] ; then
 					write_status "Running	ComputeSamTags|samtools	$f"
+					preprocess_sort_args=""
+					if [[ $skipsoftcliprealignment == "true" ]] ; then
+						preprocess_sort_args="--write-index"
+					fi
 					rm -f $tmp_prefix.coordinate-tmp*
 					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-cp $gridss_jar gridss.ComputeSamTags \
@@ -800,41 +810,49 @@ if [[ $do_preprocess == true ]] ; then
 							-Obam \
 							-o $tmp_prefix.coordinate.bam \
 							-@ $threads \
+							$preprocess_sort_args \
 							/dev/stdin \
 					; } 1>&2 2>> $logfile
 					$rmcmd $tmp_prefix.namedsorted.bam
-					write_status "Running	SoftClipsToSplitReads	$f"
-					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
-							-Dsamjdk.create_index=false \
-							-cp $gridss_jar gridss.SoftClipsToSplitReads \
-							TMP_DIR=$workingdir \
-							WORKING_DIR=$workingdir \
-							REFERENCE_SEQUENCE=$reference \
-							I=$tmp_prefix.coordinate.bam \
-							O=$tmp_prefix.sc2sr.primary.sv.bam \
-							OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
-							WORKER_THREADS=$threads \
-							$aligner_args_bwa \
-							$picardoptions \
-					&& $rmcmd $tmp_prefix.coordinate.bam \
-					&& $timecmd samtools sort \
-							-@ $threads \
-							-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
-							-Obam \
-							-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
-							$tmp_prefix.sc2sr.supp.sv.bam \
-					&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
-					&& $timecmd samtools merge \
-							-@ $threads \
-							$prefix.sv.tmp.bam \
-							$tmp_prefix.sc2sr.primary.sv.bam \
-							$tmp_prefix.sc2sr.suppsorted.sv.bam \
-					&& $timecmd samtools index $prefix.sv.tmp.bam \
-					&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
-					&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
-					&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
-					&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
-					; } 1>&2 2>> $logfile
+					if [[ $skipsoftcliprealignment == "true" ]] ; then
+						write_status "Skipping	SoftClipsToSplitReads	$f"
+						mv $tmp_prefix.coordinate.bam $prefix.sv.bam
+						mv $tmp_prefix.coordinate.bam.csi $prefix.sv.bam.csi
+						touch $prefix.sv.bam.csi # make sure the index file is older so we don't get htsjdk WARNING spam
+					else
+						write_status "Running	SoftClipsToSplitReads	$f"
+						{ $timecmd java -Xmx$otherjvmheap $jvm_args \
+								-Dsamjdk.create_index=false \
+								-cp $gridss_jar gridss.SoftClipsToSplitReads \
+								TMP_DIR=$workingdir \
+								WORKING_DIR=$workingdir \
+								REFERENCE_SEQUENCE=$reference \
+								I=$tmp_prefix.coordinate.bam \
+								O=$tmp_prefix.sc2sr.primary.sv.bam \
+								OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
+								WORKER_THREADS=$threads \
+								$aligner_args_bwa \
+								$picardoptions \
+						&& $rmcmd $tmp_prefix.coordinate.bam \
+						&& $timecmd samtools sort \
+								-@ $threads \
+								-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
+								-Obam \
+								-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
+								$tmp_prefix.sc2sr.supp.sv.bam \
+						&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
+						&& $timecmd samtools merge \
+								-@ $threads \
+								$prefix.sv.tmp.bam \
+								$tmp_prefix.sc2sr.primary.sv.bam \
+								$tmp_prefix.sc2sr.suppsorted.sv.bam \
+						&& $timecmd samtools index $prefix.sv.tmp.bam \
+						&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
+						&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
+						&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
+						&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+						; } 1>&2 2>> $logfile
+					fi
 				else
 					write_status "Running	PreprocessForBreakendAssembly|samtools	$f"
 					rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
