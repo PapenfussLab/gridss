@@ -90,10 +90,10 @@ public class AssemblyEvidenceSupport {
                 ((SAMEvidenceSource)(e.getEvidenceSource())).getSourceCategory(),
                 e.getBreakendQual());
     }
-    public static Ordering<AssemblyEvidenceSupport> ByEvidenceID = new Ordering<AssemblyEvidenceSupport>() {
+    public static Ordering<AssemblyEvidenceSupport> ByFragmentID = new Ordering<AssemblyEvidenceSupport>() {
         public int compare(AssemblyEvidenceSupport arg1, AssemblyEvidenceSupport arg2) {
             return ComparisonChain.start()
-                    .compare(arg1.evidenceID, arg2.evidenceID)
+                    .compare(arg1.fragmentID, arg2.fragmentID)
                     .result();
         }
     };

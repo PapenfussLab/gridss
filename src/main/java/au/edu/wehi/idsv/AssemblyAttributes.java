@@ -174,7 +174,7 @@ public class AssemblyAttributes {
 		if (aes == null || aes.size() == 0) {
 			return;
 		}
-		Collections.sort(aes, AssemblyEvidenceSupport.ByEvidenceID);
+		Collections.sort(aes, AssemblyEvidenceSupport.ByFragmentID);
 		byte[] type = new byte[aes.size()];
 		int[] category = new int[aes.size()];
 		int[] intervalStart = new int[aes.size()];
