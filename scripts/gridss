@@ -575,6 +575,8 @@ aligner_args_minimap2='
  ALIGNER_COMMAND_LINE=%3$d 
  ALIGNER_COMMAND_LINE=%1$s 
  '
+ 
+samtools_sort="samtools sort --no-PG -@ $threads"
 
 if [[ "$useproperpair" == "true" ]] ; then
 	readpairing_args="READ_PAIR_CONCORDANT_PERCENT=null"
@@ -741,12 +743,11 @@ if [[ $do_preprocess == true ]] ; then
 							UNMAPPED_READS=$includeUnmapped \
 							INCLUDE_DUPLICATES=true \
 							$picardoptions \
-					| $timecmd samtools sort \
+					| $timecmd $samtools_sort \
 							-n \
 							-T $tmp_prefix.namedsorted-tmp \
 							-Obam \
 							-o $tmp_prefix.namedsorted.bam \
-							-@ $threads \
 							/dev/stdin \
 					; } 1>&2 2>> $logfile
 				else
@@ -776,12 +777,11 @@ if [[ $do_preprocess == true ]] ; then
 							MIN_CLIP_LENGTH=5 \
 							INCLUDE_DUPLICATES=true \
 							$picardoptions \
-					| $timecmd samtools sort \
+					| $timecmd $samtools_sort \
 							-n \
 							-T $tmp_prefix.namedsorted-tmp \
 							-Obam \
 							-o $tmp_prefix.namedsorted.bam \
-							-@ $threads \
 							/dev/stdin \
 					; } 1>&2 2>> $logfile
 				fi
@@ -805,11 +805,10 @@ if [[ $do_preprocess == true ]] ; then
 							REMOVE_TAGS=SA \
 							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
-					| $timecmd samtools sort \
+					| $timecmd $samtools_sort \
 							-T $tmp_prefix.coordinate-tmp \
 							-Obam \
 							-o $tmp_prefix.coordinate.bam \
-							-@ $threads \
 							$preprocess_sort_args \
 							/dev/stdin \
 					; } 1>&2 2>> $logfile
@@ -834,8 +833,7 @@ if [[ $do_preprocess == true ]] ; then
 								$aligner_args_bwa \
 								$picardoptions \
 						&& $rmcmd $tmp_prefix.coordinate.bam \
-						&& $timecmd samtools sort \
-								-@ $threads \
+						&& $timecmd $samtools_sort \
 								-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 								-Obam \
 								-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
@@ -869,8 +867,7 @@ if [[ $do_preprocess == true ]] ; then
 							ALIGNER_BATCH_SIZE=1000000 \
 							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
-					| $timecmd samtools sort \
-							-@ $threads \
+					| $timecmd $samtools_sort \
 							-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 							-Obam \
 							-o $prefix.sv.tmp.bam \
@@ -986,8 +983,7 @@ if [[ $do_assemble == true ]] ; then
 					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
 					$aligner_args_bwa \
 					$picardoptions \
-			&& $timecmd samtools sort \
-					-@ $threads \
+			&& $timecmd $samtools_sort \
 					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 					-Obam \
 					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
@@ -1022,8 +1018,7 @@ if [[ $do_assemble == true ]] ; then
 					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
 					COMPRESSION_LEVEL=0 \
 					$picardoptions \
-			| $timecmd samtools sort \
-					-@ $threads \
+			| $timecmd $samtools_sort \
 					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 					-Obam \
 					-o $prefix.sv.tmp.bam \
