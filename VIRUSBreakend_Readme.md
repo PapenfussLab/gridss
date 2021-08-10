@@ -67,6 +67,8 @@ This download the NCBI taxonomic information, sequences, virushostdb, the `krake
 The index is around 54GB in size.
 Be aware that the kraken2 build process requires around 150GB of intermediate disk space to download from NCBI and build the index.
 
+*WARNING:* downloading from NCBI fails regularly. It is likely you will have to manually rerun each failing step in `virusbreakend-build` to get a functioning database.
+
 `virusbreakend-build` requires:
 
 * An internet connection
