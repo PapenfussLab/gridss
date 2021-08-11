@@ -1,5 +1,19 @@
 #!/usr/bin/env Rscript
 library(argparser)
+thisFile <- function() { # https://stackoverflow.com/questions/1815606/determine-path-of-the-executing-script
+	cmdArgs <- commandArgs(trailingOnly = FALSE)
+	needle <- "--file="
+	match <- grep(needle, cmdArgs)
+	if (length(match) > 0) {
+		# Rscript
+		return(normalizePath(sub(needle, "", cmdArgs[match])))
+	} else if (is.null(sys.frames()[[1]]$ofile)) {
+		return("./")
+	} else {
+		# 'source'd via R console
+		return(normalizePath(sys.frames()[[1]]$ofile))
+	}
+}
 argp = arg_parser("Filters a raw GRIDSS VCF into somatic call subsets.")
 argp = add_argument(argp, "--pondir", default=NA, help="Directory containing Panel Of Normal bed/bedpe used to filter FP somatic events. Use gridss.GeneratePonBedpe to generate the PON.")
 argp = add_argument(argp, "--ref", default="", help="Reference genome to use. Must be a valid installed BSgenome package")
@@ -9,7 +23,7 @@ argp = add_argument(argp, "--fulloutput", help="Full call set excluding obviousl
 argp = add_argument(argp, "--plotdir", default="", help="Output directory for plots")
 argp = add_argument(argp, "--normalordinal", type="integer", default=1, help="Ordinal of matching normal sample in the VCF")
 argp = add_argument(argp, "--tumourordinal", type="integer", nargs=Inf, help="Ordinal of tumour sample(s) in the VCF. Defaults to all samples not listed as matched normals")
-argp = add_argument(argp, "--scriptdir", default=ifelse(sys.nframe() == 0, "./", dirname(sys.frame(1)$ofile)), help="Path to libgridss.R script")
+argp = add_argument(argp, "--scriptdir", default=thisFile(), help="Path to libgridss.R script")
 argp = add_argument(argp, "--configdir", default=".", help="Path to gridss.config.R script relative to scriptdir. Defaults to '.' (same directory as libgridss.R)")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 # argv = parse_args(argp, argv=c("--input", "../../../gridss-purple-linx/test/gridss/COLO829v001R_COLO829v001T.gridss.vcf", "--output", "../../../temp/somatic.vcf", "-f", "../../../temp/full.vcf", "-p", "../../../gridss-purple-linx/refdata/hg19/dbs/gridss/pon3792v1", "--scriptdir", "../", "--gc"))
@@ -94,6 +108,7 @@ if (any(argv$tumourordinal > nsamples)) {
 write(paste("Tumour samples:", paste(colnames(geno(raw_vcf)$VF)[argv$tumourordinal], collapse = ",")), stderr())
 write(paste("Matched normals:", paste(colnames(geno(raw_vcf)$VF)[argv$normalordinal], collapse = ",")), stderr())
 if (argv$plotdir != "") {
+	dir.create(argv$plotdir, showWarnings=FALSE, recursive=TRUE)
   # QUAL distributions of each sample
   plotdf = data.frame(
   		sample=rep(colnames(geno(raw_vcf)$QUAL), each=length(raw_vcf)),
