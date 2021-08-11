@@ -147,7 +147,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 				getBreakendEvidenceCountAssemblyReadPair() + 
 				getBreakendEvidenceCountAssemblySoftClip();
 	}
-	public int getBreakendEvidenceCount() { return getBreakendEvidenceCountAssembly() + getBreakendEvidenceCountReadPair() + getBreakendEvidenceCountSoftClip(); }
+	public int getBreakendEvidenceCount() { return getInt(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS, 0); }
+	public int getBreakendEvidenceCount(int category) { return getInt(category, VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS, 0); }
 	public int getBreakendEvidenceCountAssembly() { return getInt(VcfInfoAttributes.BREAKEND_ASSEMBLY_COUNT, 0); }
 	public int getBreakendEvidenceCountAssemblyReadPair() { return getInt(VcfInfoAttributes.BREAKEND_ASSEMBLY_READPAIR_COUNT, 0); }
 	public int getBreakendEvidenceCountAssemblySoftClip() { return getInt(VcfInfoAttributes.BREAKEND_ASSEMBLY_READ_COUNT, 0); }
@@ -162,6 +163,7 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getReferenceReadPairCount(int category)  { return getInt(category, VcfFormatAttributes.REFERENCE_READPAIR_COUNT, 0); }
 	
 	public int getBreakendSupportingFragmentCount() { return getInt(VcfInfoAttributes.BREAKEND_VARIANT_FRAGMENTS, 0); }
+	public int getBreakendSupportingFragmentCount(int category) { return getInt(category, VcfFormatAttributes.BREAKEND_VARIANT_FRAGMENTS, 0); }
 	/**
 	 * Assembled breakend sequence. 
 	 * @return Breakend assembly sequence, null if no assembly was found

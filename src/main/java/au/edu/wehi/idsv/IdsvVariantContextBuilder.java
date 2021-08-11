@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
  *
  */
 public class IdsvVariantContextBuilder extends VariantContextBuilder {
-	public static final String SOURCE_NAME = "idsv";
 	protected final GenomicProcessingContext processContext;
 	private final Set<EvidenceSource> sourceSet = Sets.newHashSet();
 	private final String sourceID;

@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.vcf;
 
+import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
@@ -35,7 +36,9 @@ public enum VcfFormatAttributes {
 	BREAKEND_ASSEMBLY_QUAL("BAQ", 1, VCFHeaderLineType.Float, "Pro-rata quality score contribution of assemblies supporting just local breakend"),
 	BREAKEND_UNMAPPEDMATE_QUAL("BUMQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs (with one read unmapped) supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_QUAL("BSCQ", 1, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend per category"),
-	BREAKEND_VARIANT_FRAGMENTS ("BVF", 1, VCFHeaderLineType.Integer, "Count of fragments providing breakend for the variant allele.");
+	BREAKEND_VARIANT_FRAGMENTS("BVF", 1, VCFHeaderLineType.Integer, "Count of fragments providing breakend for the variant allele."),
+	ALLELE_FRACTION(VCFConstants.ALLELE_FREQUENCY_KEY, VCFHeaderLineCount.A, VCFHeaderLineType.Float, "Allele fraction");
+
 
 	private final VCFFormatHeaderLine header;
 	private final String tag;

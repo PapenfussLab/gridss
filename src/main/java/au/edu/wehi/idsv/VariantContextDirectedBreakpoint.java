@@ -131,7 +131,8 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 				getBreakpointEvidenceCountAssemblyReadPair() + 
 				getBreakpointEvidenceCountAssemblySoftClip();
 	}
-	public int getBreakpointEvidenceCount() { return getBreakpointEvidenceCountAssembly() + getBreakpointEvidenceCountReadPair() + getBreakpointEvidenceCountSoftClip(); }
+	public int getBreakpointEvidenceCount() { return getInt(VcfInfoAttributes.BREAKPOINT_VARIANT_FRAGMENTS, 0); }
+	public int getBreakpointEvidenceCount(int category) { return getInt(category, VcfFormatAttributes.BREAKPOINT_VARIANT_FRAGMENTS, 0); }
 	public int getBreakpointEvidenceCountAssembly() { return getBreakpointEvidenceCountLocalAssembly() + getBreakpointEvidenceCountRemoteAssembly(); }
 	public int getBreakpointEvidenceCountLocalAssembly() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT, 0); }
 	public int getBreakpointEvidenceCountRemoteAssembly() { return getInt(VcfInfoAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, 0); }

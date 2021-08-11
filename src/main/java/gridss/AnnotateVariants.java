@@ -62,7 +62,8 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(ae.iterator(calls, threadpool), 128, 2, "AllocateEvidence");
 		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(arc.iterator(calls, threadpool), 128, 2, "AnnotateReferenceCoverage");
 		calls = ihom.iterator(calls, threadpool);
-		return calls;
+		AnnotateAlleleFraction aaf = new AnnotateAlleleFraction(new AlleleFractionAnnotator(getContext(), getSamEvidenceSources()));
+		return aaf.iterator(calls, threadpool);
 	}
 	public static void main(String[] argv) {
         System.exit(new AnnotateVariants().instanceMain(argv));
