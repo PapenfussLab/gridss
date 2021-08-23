@@ -815,7 +815,7 @@ if [[ ! -f $file_filtered_vcf ]] ; then
 		hosttaxid_arg="--TAXONOMY_IDS 9606"
 	fi
 	# TODO: filter to anything in the taxonomic tree
-	$timecmd java -Xmx64m $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
+	$timecmd java -Xmx4g $jvm_args -cp $gridss_jar gridss.VirusBreakendFilter \
 		--INPUT $file_rm_annotated_vcf \
 		--OUTPUT $file_filtered_vcf \
 		--REFERENCE_SEQUENCE $reference \
