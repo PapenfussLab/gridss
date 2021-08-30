@@ -37,7 +37,9 @@ Set the `GRIDSS_JAR` environment variable to the location of the GRIDSS jar file
 
 ## Reference data
 
-The VIRUSBreakend reference data can be downloaded from https://melbourne.figshare.com/articles/dataset/virusbreakenddb_20210401_tar_gz/14782299
+The VIRUSBreakend reference data can be downloaded from AWS: https://virusbreakend.s3.us-east-2.amazonaws.com/virusbreakenddb_20210401.tar.gz
+
+The VIRUSBreakend reference data can also be downloaded from https://melbourne.figshare.com/articles/dataset/virusbreakenddb_20210401_tar_gz/14782299
 
 ### Reference data contents
 
