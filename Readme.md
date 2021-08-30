@@ -16,20 +16,20 @@ Detailed documentation is being developed [here](https://github.com/PapenfussLab
 
 # Citation
 
-For citing GRIDSS and for an overview of the GRIDSS algorithms, refer to our open access article: http://genome.cshlp.org/content/early/2017/11/02/gr.222109.117.abstract
+The recommended minimal citations are:
 
-Daniel L. Cameron, Jan Schröder, Jocelyn Sietsma Penington, Hongdo Do, Ramyar Molania, Alexander Dobrovic, Terence P. Speed and Anthony T. Papenfuss.
-GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly.
-Genome Research, 2017
-doi: 10.1101/gr.222109.117
+- Breakpoint calling with GRIDSS version 1.x.y
+  - GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly
+  - http://genome.cshlp.org/content/early/2017/11/02/gr.222109.117.abstract
+- Somatic or single breakend calling
+  - GRIDSS2: comprehensive characterisation of somatic structural variation using single breakend variants and structural variant phasing
+  - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02423-x
+- Viral integration detection using VIRUSBreakend
+  - VIRUSBreakend: Viral Integration Recognition Using Single Breakends
+  - https://doi.org/10.1093/bioinformatics/btab343
+- Breakpoint calling with GRIDSS version 2.x.y
+  - Please cite both the GRIDSS and GRIDSS2 publications
 
-
-For single breakend, structural variant phasing, and somatic variant calling, refer to our preprint:
-
-GRIDSS2: harnessing the power of phasing and single breakends in somatic structural variant detection
-https://www.biorxiv.org/content/10.1101/2020.07.09.196527v1
-
-VIRUSBreakend usage should cite "VIRUSBreakend: Viral Integration Recognition Using Single Breakends" https://doi.org/10.1093/bioinformatics/btab343
 
 # Pre-requisites
 
