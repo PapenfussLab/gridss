@@ -10,7 +10,7 @@ GRIDSS makes extensive use of the [standard tags defined by SAM specifications](
 
 If you have any trouble running GRIDSS, please raise an issue using the Issues tab above. Based on feedback from users, a user guide will be produced outlining common workflows, pitfalls, and use cases.
 
-(**Use the quick start guide to get up and running quickly**)[https://github.com/PapenfussLab/gridss/blob/master/QuickStart.md]
+[**Use the quick start guide to get up and running quickly**](https://github.com/PapenfussLab/gridss/blob/master/QuickStart.md)
 
 [Click here to download GRIDSS](https://github.com/PapenfussLab/gridss/releases)
 
