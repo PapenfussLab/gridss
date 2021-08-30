@@ -2,6 +2,9 @@
 
 What do you want to do?
 
+- [Install GRIDSS](#install-gridss)
+  * [From conda](#from-conda)
+  * [From github releases](#from-github-releases)
 - [Call structural variants](#call-structural-variants)
   * [Which blacklist file should I use?](#which-blacklist-file-should-i-use-)
 - [Call somatic structural variants](#call-somatic-structural-variants)
@@ -12,13 +15,34 @@ What do you want to do?
 - [Annotate single breakend variant calls](#annotate-single-breakend-variant-calls)
   * [RepeatMasker](#repeatmasker)
   * [Kraken2](#kraken2)
-- [Optimise GRIDSS execution](#optimising-gridss-execution)
+- [Optimise GRIDSS execution](#optimise-gridss-execution)
   * [setupreference](#setupreference)
   * [preprocess](#preprocess)
   * [assembly](#assembly)
   * [Variant Calling](#variant-calling)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+# Install GRIDSS
+
+## From conda
+
+- Install [BioConda](https://bioconda.github.io/)
+
+- Create and use a GRIDSS environment
+
+```
+conda create -n gridss gridss
+conda activate gridss
+```
+
+## From github releases
+
+Download the latest release from https://github.com/PapenfussLab/gridss/releases.
+
+Install all [GRIDSS dependencies](https://github.com/PapenfussLab/gridss#pre-requisites)
 
 
 # Call structural variants
