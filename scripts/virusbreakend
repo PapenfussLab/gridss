@@ -738,6 +738,7 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		--includeIndels false \
 		--includeSR false \
 		--includeDP false \
+		--skipsoftcliprealignment \
 		$gridssargs \
 		$bam_list_args \
 		1>&2 2>> $logfile
