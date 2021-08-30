@@ -14,6 +14,10 @@ If you have any trouble running GRIDSS, please raise an issue using the Issues t
 
 Detailed documentation is being developed [here](https://github.com/PapenfussLab/gridss/wiki/GRIDSS-Documentation)
 
+# Quick start guide
+
+[**Use the quick start guide to get up and running quickly**](https://github.com/PapenfussLab/gridss/blob/master/QuickStart.md)
+
 # Citation
 
 The recommended minimal citations are:
