@@ -728,6 +728,7 @@ if [[ $do_preprocess == true ]] ; then
 				# but does not copy the coverage threshold bed as that is in
 				# host-coordinate space and we need to regenerate it
 				write_status "Running	CollectGridssMetricsAndExtractSVReads|samtools	$f"
+				rm -f $tmp_prefix.namedsorted-tmp*
 				{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 						-cp $gridss_jar gridss.CollectGridssMetricsAndExtractSVReads \
 						REFERENCE_SEQUENCE=$reference \
@@ -795,6 +796,7 @@ if [[ $do_preprocess == true ]] ; then
 						touch $prefix.sv.bam.csi # make sure the index file is older so we don't get htsjdk WARNING spam
 					else
 						write_status "Running	SoftClipsToSplitReads	$f"
+						rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
 						{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 								-Dsamjdk.create_index=false \
 								-cp $gridss_jar gridss.SoftClipsToSplitReads \
@@ -942,6 +944,7 @@ if [[ $do_assemble == true ]] ; then
 		#externalaligner=true # TODO: get JNI minimap2 working
 		if [[ "$externalaligner" == "true" ]] ; then
 			write_status "Running	SoftClipsToSplitReads	$assembly"
+			rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
 			{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
@@ -977,6 +980,7 @@ if [[ $do_assemble == true ]] ; then
 			; } 1>&2 2>> $logfile
 		else
 			write_status "Running	SoftClipsToSplitReads|samtools	$assembly"
+			rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
 			{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 					-Dgridss.async.buffersize=16 \
 					-Dsamjdk.create_index=false \
