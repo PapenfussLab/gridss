@@ -240,11 +240,6 @@ do_setupreference=false
 do_preprocess=false
 do_assemble=false
 do_call=false
-if [[ "$@" == "" ]] ; then
-	echo "$USAGE_MESSAGE"  1>&2
-	echo "At least one input bam must be specified." 1>&2
-	exit $EX_NOINPUT
-fi
 ##### --workingdir
 echo "Using working directory \"$workingdir\"" 1>&2
 if [[ "$workingdir" == "" ]] ; then
@@ -317,6 +312,7 @@ for step in $(echo $steps | tr ',' ' ' ) ; do
 		exit $EX_USAGE
 	fi
 done
+
 ### Find the jars
 find_jar() {
 	env_name=$1
@@ -341,7 +337,13 @@ if [ ! -f $reference ] ; then
 	write_status "Missing reference genome $reference. Specify reference location using the --reference command line argument"
 	exit $EX_USAGE
 fi
-
+if [[ "$steps" != "setupreference" ]] ; then
+	if [[ "$@" == "" ]] ; then
+		write_status "$USAGE_MESSAGE"
+		write_status "At least one input bam must be specified."
+		exit $EX_NOINPUT
+	fi
+fi
 ##### --output
 if [[ $do_call == "true" ]] ; then
 	if [[ "$output_vcf" == "" ]] ; then
@@ -358,16 +360,28 @@ if [[ $do_call == "true" ]] ; then
 fi
 
 ##### --assembly
-if [[ "$assembly" == "" ]] ; then
-	assembly=$output_vcf.assembly.bam
-fi
-if [[ $do_assemble == "true" ]] ; then
-	mkdir -p $(dirname $assembly)
-	if [[ ! -d $(dirname $assembly) ]] ; then
-		write_status "Unable to parent create directory for $assembly"
-		exit $EX_CANTCREAT
+if [[ $do_assemble == "true" ]] || [[ $do_call == "true" ]]; then
+	if [[ "$assembly" == "" ]] ; then
+		if [[ "$output_vcf" == "" ]] ; then
+			write_status "Either the assembly output file must explicitly specified with -a, or the output VCF specified with -o"
+			exit $EX_USAGE
+		fi
+		assembly=$output_vcf.assembly.bam
 	fi
 	write_status "Using assembly bam $assembly"
+	if [[ $do_assemble == "true" ]] ; then
+		mkdir -p $(dirname $assembly)
+		if [[ ! -d $(dirname $assembly) ]] ; then
+			write_status "Unable to parent create directory for $assembly"
+			exit $EX_CANTCREAT
+		fi
+	else
+		if [[ ! -f $assembly ]] ; then
+			write_status "Missing assembly file $assembly"
+			write_status "Ensure the GRIDSS assembly step has been run"
+			exit $EX_NOINPUT
+		fi
+	fi
 fi
 
 ##### --threads
@@ -873,7 +887,7 @@ if [[ $do_preprocess == true ]] ; then
 		fi
 	done
 else
-	write_status "Skipping pre-processing."
+	write_status "Skipping pre-processing"
 fi
 if [[ $sanityCheck == "true" ]] ; then 
 	write_status "Sanity checking *.sv.bam"
@@ -1096,6 +1110,8 @@ if [[ $do_call == true ]] ; then
 		write_status  "Skipping variant calling	$output_vcf"
 	fi
 	write_status "Complete calling	$output_vcf"
+else
+	write_status "Skipping variant calling	$output_vcf"
 fi
 if [[ -f $logfile ]] ; then
 	write_status "Run complete with $(grep WARNING $logfile | wc -l) warnings and $(grep ERROR $logfile | wc -l) errors."
