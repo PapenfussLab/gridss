@@ -506,7 +506,7 @@ if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
 	exit 1
 fi
 
-ulimit -n $(ulimit -Hn) # Reduce likelihood of running out of open file handles 
+ulimit -n $(ulimit -Hn) || true # Reduce likelihood of running out of open file handles 
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 write_status "Max file handles: $(ulimit -n)" 1>&2 
 
