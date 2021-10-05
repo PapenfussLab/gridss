@@ -148,7 +148,9 @@ public class GeneratePonBedpe extends CommandLineProgram {
 			return 1;
 		} catch (InterruptedException e) {
 		}
-		log.error("Imprecise call inclusion not recommended due to overly aggressive PON matching.");
+		if (INCLUDE_IMPRECISE_CALLS) {
+			log.error("Imprecise call inclusion not recommended due to overly aggressive PON matching.");
+		}
 		return 0;
  	}
  	private static Pair<BreakendSummary, Integer> toPair(SAMSequenceDictionary dictionary, BEDFeature feat) {
