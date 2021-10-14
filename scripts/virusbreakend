@@ -725,6 +725,7 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 	write_status "Calling structural variants"
 	# backup metrics
 	for f in $(find $adjusteddir -name '*_metrics') ; do cp $f $f.bak ; done
+	# TODO: verify --skipsoftcliprealignment actually works
 	$timecmd gridss \
 		-w $adjusteddir \
 		-t $threads \
@@ -738,7 +739,6 @@ if [[ ! -f $file_gridss_vcf ]] ; then
 		--includeIndels false \
 		--includeSR false \
 		--includeDP false \
-		--skipsoftcliprealignment \
 		$gridssargs \
 		$bam_list_args \
 		1>&2 2>> $logfile
