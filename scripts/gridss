@@ -85,59 +85,59 @@ OPTIONS=r:o:a:t:j:w:b:s:c:l:
 LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,otherjvmheap:,includeIndels:,includeSR:,includeSC:,includeOEA:,includeDP:,includeUnmapped:,minClipLength:,minIndelSize:,skipsoftcliprealignment
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-    # e.g. return value is 1
-    #  then getopt has complained about wrong arguments to stdout
+	# e.g. return value is 1
+	#  then getopt has complained about wrong arguments to stdout
 	echo "$USAGE_MESSAGE" 1>&2
-    exit $EX_USAGE
+	exit $EX_USAGE
 fi
 eval set -- "$PARSED"
 while true; do
-    case "$1" in
-        -r|--reference)
-            reference="$2"
-            shift 2
-            ;;
+	case "$1" in
+		-r|--reference)
+			reference="$2"
+			shift 2
+			;;
 		-l|--labels)
-            labels="$2"
-            shift 2
-            ;;
+			labels="$2"
+			shift 2
+			;;
 		-s|--steps)
-            steps="${2,,}"
-            shift 2
-            ;;
+			steps="${2,,}"
+			shift 2
+			;;
 		-w|--workingdir)
-            workingdir="$2"
-            shift 2
-            ;;
-        -o|--output)
-            output_vcf="$2"
-            shift 2
-            ;;
+			workingdir="$2"
+			shift 2
+			;;
+		-o|--output)
+			output_vcf="$2"
+			shift 2
+			;;
 		-a|--assembly)
-            if [[ "$assembly" == "" ]] ; then
+			if [[ "$assembly" == "" ]] ; then
 				assembly="$2"
 			else
 				assembly="$assembly $2"
 			fi
 			# TODO: support multiple assembly files
-            shift 2
-            ;;
+			shift 2
+			;;
 		-b|--blacklist)
-            blacklist="$2"
-            shift 2
-            ;;
+			blacklist="$2"
+			shift 2
+			;;
 		-j|--jar)
-            GRIDSS_JAR="$2"
-            shift 2
-            ;;
+			GRIDSS_JAR="$2"
+			shift 2
+			;;
 		--jvmheap)
-            jvmheap="$2"
-            shift 2
-            ;;
+			jvmheap="$2"
+			shift 2
+			;;
 		--otherjvmheap)
-            otherjvmheap="$2"
-            shift 2
-            ;;
+			otherjvmheap="$2"
+			shift 2
+			;;
 		-t|--threads)
 			printf -v threads '%d\n' "$2" 2>/dev/null
 			printf -v threads '%d' "$2" 2>/dev/null
@@ -227,14 +227,14 @@ while true; do
 			shift 2
 			;;
 		--)
-            shift
-            break
-            ;;
-        *)
-            echo "Programming error"
-            exit 1
-            ;;
-    esac
+			shift
+			break
+			;;
+		*)
+			echo "Programming error"
+			exit 1
+			;;
+	esac
 done
 do_setupreference=false
 do_preprocess=false
