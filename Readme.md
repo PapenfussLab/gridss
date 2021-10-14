@@ -121,15 +121,19 @@ gridsstools|C/htslib implementation of performance-critical steps. Currently use
 Usage: gridss --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 30g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 ```
 
-argument|description
+required argument|description
 ---|---
 -o, --output|output VCF
--a, --assembly|location of the GRIDSS assembly BAM. This file will be created by GRIDSS
 -r, --reference|reference genome to use. Must have a .fai index file and a bwa index
--t, --threads|number of threads to use. Defaults to the number of cores available.
--j, --jar|location of GRIDSS jar
+
+optional argument|description
+---|---
+-a, --assembly|location of the GRIDSS assembly BAM. This file will be created by GRIDSS. The default filename adds a `.assembly.bam` suffix to the output file.
+-t, --threads|number of threads to use. Defaults to 8 cores.
+-j, --jar|location of GRIDSS jar. Can also be specified using the GRIDSS_JAR environment variable.
 -b/--blacklist|BED file containing regions to ignore. The ENCODE DAC blacklist is recommended for hg19. (Optional)
---jvmheap|size of JVM heap for assembly and variant calling. Defaults to 30g to ensure GRIDSS runs on cloud instances with 32gb memory.
+--jvmheap|size of JVM heap for the high-memory part of the assembly and variant calling. Defaults to 30g to ensure GRIDSS runs on cloud instances with 32gb memory.
+--otherjvmheap| size of JVM heap for everything else. Useful to prevent java out of memory errors when using large (>4Gb) reference genomes.  Note that some parts of assembly and variant calling use this heap size so if you get an OutOfMemory error during during these steps even after increasing jvmheap, you may need to increase otherjvmheap as well. (Default: 4gb)
 --maxcoverage|maximum coverage. Regions with coverage in excess of this are ignored. (Default: 50000)
 --labels|comma separated labels to use in the output VCF for the input files. Must have same number of entries as there are input files. Input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 --steps|processing steps to run. Defaults to all steps. Multiple steps are specified using comma separators. Available steps are preprocess,assemble,call. Useful to improve parallelisation on a cluster as preprocess of each input file is independent, and can be performed in parallel, and has lower memory requirements than the assembly step.
