@@ -68,8 +68,8 @@ Usage: gridss [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> i
 	-c/--configuration: configuration file use to override default GRIDSS settings.
 	-l/--labels: comma separated labels to use in the output VCF for the input files. Supporting read counts for input files with the same label are aggregated (useful for multiple sequencing runs of the same sample). Labels default to input filenames, unless a single read group with a non-empty sample name exists in which case the read group sample name is used (which can be disabled by \"useReadGroupSampleNameCategoryLabel=false\" in the configuration file). If labels are specified, they must be specified for all input files.
 	--externalaligner: use the system version of bwa instead of the in-process version packaged with GRIDSS
-	--jvmheap: size of JVM heap for assembly and variant calling. (Default: $jvmheap)
-	--otherjvmheap: size of JVM heap for all other steps. Useful to prevent java out of memory errors when using large (>4Gb reference genomes) (Default: $otherjvmheap)
+	--jvmheap: size of JVM heap for the high-memory component of assembly and variant calling. (Default: $jvmheap)
+	--otherjvmheap: size of JVM heap for everything else. Useful to prevent java out of memory errors when using large (>4Gb) reference genomes. Note that some parts of assembly and variant calling use this heap size.(Default: $otherjvmheap)
 	--skipsoftcliprealignment: skip soft clip realignment. Reduces runtime for aligners that report split read alignments (e.g. bwa mem)
 	--maxcoverage: maximum coverage. Regions with coverage in excess of this are ignored. (Default: $maxcoverage)
 	--picardoptions: additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
