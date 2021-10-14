@@ -45,6 +45,12 @@ if (is.na(argv$input) || is.null(argv$input) || !file.exists(argv$input)) {
   print(argp)
   stop(msg)
 }
+if ((is.na(argv$output) || is.null(argv$output)) && is.na(argv$fulloutput) || is.null(argv$fulloutput)) {
+  msg = "Must specify at least one of --output and --fulloutput"
+  write(msg, stderr())
+  print(argp)
+  stop(msg)
+}
 if (is.na(argv$pondir)) {
   argv$pondir = NULL
 } else if (!dir.exists(argv$pondir)) {
