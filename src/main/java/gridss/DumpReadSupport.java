@@ -3,6 +3,7 @@ package gridss;
 import au.edu.wehi.idsv.*;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
 import htsjdk.samtools.Cigar;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
@@ -10,6 +11,7 @@ import org.broadinstitute.barclay.argparser.Argument;
 import picard.cmdline.StandardOptionDefinitions;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.concurrent.ExecutorService;
 
 public class DumpReadSupport extends FullEvidenceCommandLineProgram {
@@ -40,7 +42,7 @@ public class DumpReadSupport extends FullEvidenceCommandLineProgram {
                 bedpe = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(OUTPUT_BEDPE)));
             }
             if (OUTPUT_BED != null) {
-                bed = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(OUTPUT_BEDPE)));
+                bed = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(OUTPUT_BED)));
             }
             export(bedpe, bed);
             bedpe.close();
@@ -52,7 +54,6 @@ public class DumpReadSupport extends FullEvidenceCommandLineProgram {
     }
 
     public void export(BufferedWriter bedpe, BufferedWriter bed) throws IOException {
-        String commonFields = "\ttype\tcigar\teid";
         if (bedpe != null) {
             writeBreakpointHeaderLine(bedpe);
         }
@@ -72,33 +73,34 @@ public class DumpReadSupport extends FullEvidenceCommandLineProgram {
         }
     }
     public void writeBreakpointHeaderLine(BufferedWriter writer) throws IOException {
-        writer.append("#chrom1\tstart1\tend1\tchrom2\tstart2\tname\tscore\tstrand1\tstrand2");
+        writer.append("#chrom1\tstart1\tend1\tchrom2\tstart2\tend2\tname\tscore\tstrand1\tstrand2");
         writeCommonHeaderFields(writer);
         writer.append("\tins\tinslen");
         writer.append("\tnompos1\tnompos2");
         writer.append("\trcigar\trlength");
+        writer.append("\trmapq");
         writer.newLine();
     }
+    private static final DecimalFormat df = new DecimalFormat("#.##");
     public void writeBreakpoint(BufferedWriter writer, DirectedBreakpoint e) throws IOException {
         BreakpointSummary bs = e.getBreakendSummary();
-        writer.append(String.format("%s\t%d\t%d\t%s\t%d\t%d\t%s\t%.1f\t%s\t%s",
-                getReference().getSequenceDictionary().getSequence(bs.referenceIndex).getSequenceName(),
-                bs.start,
-                bs.end,
-                getReference().getSequenceDictionary().getSequence(bs.referenceIndex2).getSequenceName(),
-                bs.start2,
-                bs.end2,
-                e.getUnderlyingSAMRecord().getReadName(),
-                e.getBreakpointQual(),
-                bs.direction.toBedChar(),
-                bs.direction2.toBedChar()));
+        writer.append(getReference().getSequenceDictionary().getSequence(bs.referenceIndex).getSequenceName() +
+                '\t' + bs.start +
+                '\t' + bs.end +
+                '\t' + getReference().getSequenceDictionary().getSequence(bs.referenceIndex2).getSequenceName() +
+                '\t' + bs.start2 +
+                '\t' + bs.end2 +
+                '\t' + e.getUnderlyingSAMRecord().getReadName() +
+                '\t' + df.format(e.getBreakpointQual()) +
+                '\t' + bs.direction.toBedChar() +
+                '\t' + bs.direction2.toBedChar());
         writeCommon(writer, e);
-        writer.append(String.format("\t%s\t%d",
-                e.getUntemplatedSequence(),
-                e.getUntemplatedSequence().length()));
-        writer.append(String.format("\t%d\t%d",
-                bs.nominal,
-                bs.nominal2));
+        writer.append(
+                "\t" + e.getUntemplatedSequence() +
+                "\t" + e.getUntemplatedSequence().length());
+        writer.append(
+                "\t" + bs.nominal +
+                "\t" + bs.nominal2);
         Cigar rcigar = null;
         if (e instanceof DiscordantReadPair) {
             rcigar = ((DiscordantReadPair) e).getNonReferenceRead().getCigar();
@@ -107,9 +109,10 @@ public class DumpReadSupport extends FullEvidenceCommandLineProgram {
         } else if (e instanceof IndelEvidence) {
             rcigar = ((IndelEvidence) e).getSAMRecord().getCigar();
         }
-        writer.append(String.format("\t%s\t%d",
-            rcigar,
-            e.getBreakendSequence().length));
+        writer.append(
+                "\t" + rcigar +
+                "\t" + (e.getBreakendSequence() == null ? 0 : e.getBreakendSequence().length));
+        writer.append("\t" + e.getUnderlyingSAMRecord().getMappingQuality());
         writer.newLine();
     }
     public void writeBreakendHeaderLine(BufferedWriter writer) throws IOException {
@@ -121,32 +124,35 @@ public class DumpReadSupport extends FullEvidenceCommandLineProgram {
     }
     public void writeBreakend(BufferedWriter writer, DirectedEvidence e) throws IOException {
         BreakendSummary bs = e.getBreakendSummary();
-        writer.append(String.format("%s\t%d\t%d\t%d\t%.2f\t%s",
-                getReference().getSequenceDictionary().getSequence(bs.referenceIndex).getSequenceName(),
-                bs.start,
-                bs.end,
-                e.getUnderlyingSAMRecord().getReadName(),
-                e.getBreakendQual(),
-                bs.direction.toBedChar()));
+        writer.append(
+                getReference().getSequenceDictionary().getSequence(bs.referenceIndex).getSequenceName() +
+                "\t" + bs.start +
+                "\t" + bs.end +
+                "\t" + e.getUnderlyingSAMRecord().getReadName() +
+                "\t" + e.getBreakendQual() +
+                "\t" + bs.direction.toBedChar());
         writeCommon(writer, e);
-        writer.append(String.format("\t%s\t%d",
-                new String(e.getBreakendSequence()),
-                e.getBreakendSequence().length));
-        writer.append(String.format("\t%d",
-                bs.nominal));
+        writer.append(
+                "\t" + (e.getBreakendSequence() == null ? "" : new String(e.getBreakendSequence())) +
+                "\t" + (e.getBreakendSequence() == null ? 0 : e.getBreakendSequence().length));
+        writer.append("\t" + bs.nominal);
         writer.newLine();
     }
     public void writeCommonHeaderFields(BufferedWriter writer) throws IOException {
-        writer.append("\ttype\teid\tcigar\tlength\tnm");
+        writer.append("\ttype\teid\tcigar\tlength\tnm\tmapq");
+    }
+    private static String nm(SAMRecord r) {
+        Integer nm = r.getIntegerAttribute(SAMTag.NM.name());
+        return nm == null ? "" : Integer.toString(nm);
     }
     public void writeCommon(BufferedWriter writer, DirectedEvidence e) throws IOException {
-        writer.append(String.format("\t%s\t%s\t%s\t%d\t%d\t",
-                evidenceType(e),
-                e.getEvidenceID(),
-                e.getUnderlyingSAMRecord().getCigarString(),
-                e.getAnchorSequence().length,
-                e.getUnderlyingSAMRecord().getIntegerAttribute(SAMTag.NM.name())));
-
+        writer.append(
+                "\t" + evidenceType(e) +
+                "\t" + e.getEvidenceID() +
+                "\t" + e.getUnderlyingSAMRecord().getCigarString() +
+                "\t" + (e.getAnchorSequence() == null ? 0 : e.getAnchorSequence().length) +
+                "\t" + nm(e.getUnderlyingSAMRecord()) +
+                "\t" + e.getUnderlyingSAMRecord().getMappingQuality());
     }
     public static String evidenceType(DirectedEvidence e) {
         if (AssemblyAttributes.isAssembly(e)) {
@@ -174,7 +180,7 @@ public class DumpReadSupport extends FullEvidenceCommandLineProgram {
         return aes().iterator();
     }
     private AggregateEvidenceSource aes() {
-        AggregateEvidenceSource aes = new AggregateEvidenceSource(getContext(), getSamEvidenceSources(), getAssemblySource(), SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
+        AggregateEvidenceSource aes = new AggregateEvidenceSource(getContext(), getSamEvidenceSources(), null/*getAssemblySource()*/, SAMEvidenceSource.EvidenceSortOrder.EvidenceStartPosition);
         return aes;
     }
 }

@@ -15,19 +15,22 @@ public enum BreakendDirection {
 	 * AAAA.
 	 *    ^
 	 */
-	Forward('f'),
+	Forward('f', '+'),
 	/**
 	 * The breakpoint includes reference bases after but not at the breakpoint position.
 	 * 
 	 * .AAAA
 	 * ^
 	 */
-	Backward('b');
-	private BreakendDirection(char c) {
-		this.c = c;
+	Backward('b', '-');
+	private BreakendDirection(char internalChar, char bedChar) {
+		this.internalChar = internalChar;
+		this.bedChar = bedChar;
 	}
-	private final char c;
-	public char toChar() { return c; }
+	private final char internalChar;
+	private final char bedChar;
+	public char toChar() { return internalChar; }
+	public char toBedChar() { return bedChar; }
 	/**
 	 * @return Opposite direction of the given breakend direction 
 	 */

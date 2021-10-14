@@ -232,5 +232,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	public int getRemoteChimericAlignmentReadOffset() {
 		return remoteAlignment.getFirstAlignedBaseReadOffset();
 	}
-
+	public ChimericAlignment getRemoteChimericAlignment() {
+		return remoteAlignment;
+	}
 }
