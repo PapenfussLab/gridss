@@ -535,6 +535,7 @@ else
 fi
 
 jvm_args="$jvm_args \
+	-XX:ParallelGCThreads=$threads \
 	-Dsamjdk.reference_fasta=$reference \
 	-Dsamjdk.use_async_io_read_samtools=true \
 	-Dsamjdk.use_async_io_write_samtools=true \
