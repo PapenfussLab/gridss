@@ -21,8 +21,8 @@ public class ScoringComparisonTest extends TestHelper {
 				int mapq2 = mapq[j];
 				for (int scLength = 0; scLength < sc.size(); scLength += 5) {
 					System.out.println(String.format("%d,%d,%d,%f,%f", mapq1, mapq2, scLength,
-							model1.scoreSplitRead(metrics, scLength, mapq1, mapq2),
-							model2.scoreSplitRead(metrics, scLength, mapq1, mapq2)));
+							model1.scoreSplitRead(metrics, null, scLength, mapq1, mapq2),
+							model2.scoreSplitRead(metrics, null, scLength, mapq1, mapq2)));
 				}
 			}
 		}
@@ -32,8 +32,8 @@ public class ScoringComparisonTest extends TestHelper {
 			int mapq1 = mapq[i];
 			for (int scLength = 0; scLength < sc.size(); scLength += 5) {
 				System.out.println(String.format("%d,%d,%f,%f", mapq1, scLength,
-						model1.scoreSoftClip(metrics, scLength, mapq1),
-						model2.scoreSoftClip(metrics, scLength, mapq1)));
+						model1.scoreSoftClip(metrics, null, scLength, mapq1),
+						model2.scoreSoftClip(metrics, null, scLength, mapq1)));
 			}
 		}
 	}

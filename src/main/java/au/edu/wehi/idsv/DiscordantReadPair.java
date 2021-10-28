@@ -30,6 +30,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	public float getBreakendQual() {
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreReadPair(
 				getEvidenceSource().getMetrics(),
+				this,
 				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead(), PairOrientation.FR),
 				getLocalMapq(),
 				Integer.MAX_VALUE);
@@ -38,6 +39,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	public float getBreakpointQual() {
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreReadPair(
 				getEvidenceSource().getMetrics(),
+				this,
 				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead(), PairOrientation.FR),
 				getLocalMapq(),
 				getRemoteMapq());

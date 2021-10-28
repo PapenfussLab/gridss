@@ -160,6 +160,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 			softClipLength = SAMRecordUtil.getSoftClipLength(caPrimary.cigar.getCigarElements(), primaryDirectionTowardThis);
 		}
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreSplitRead(getEvidenceSource().getMetrics(),
+				this,
 				softClipLength,
 				getLocalMapq(), getRemoteMapq());
 	}
@@ -170,7 +171,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null);
 		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
 		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
-		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(this,
 				rp, rpq,
 				sc, scq,
 				getLocalMapq(),

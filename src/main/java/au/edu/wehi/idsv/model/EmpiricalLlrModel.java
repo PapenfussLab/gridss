@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.model;
 
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.util.MathUtil;
 import com.google.common.primitives.Doubles;
@@ -24,35 +25,35 @@ public class EmpiricalLlrModel implements VariantScoringModel {
 	}
 	
 	@Override
-	public double scoreSplitRead(IdsvSamFileMetrics metrics, int softclipLength, int mapq1, int mapq2) {
+	public double scoreSplitRead(IdsvSamFileMetrics metrics, DirectedEvidence e, int softclipLength, int mapq1, int mapq2) {
 		double prEgivenMR = MathUtil.phredToPr(metrics.getCigarDistribution().getPhred(CigarOperator.SOFT_CLIP, softclipLength)); 
 		double prEgivenMV = MathUtil.phredToPr(metrics.getCigarDistribution().getPhred(CigarOperator.SOFT_CLIP, 0));
 		return llr(prEgivenMR, prEgivenMV, mapq1, mapq2);
 	}
 
 	@Override
-	public double scoreSoftClip(IdsvSamFileMetrics metrics, int softclipLength, int mapq) {
+	public double scoreSoftClip(IdsvSamFileMetrics metrics, DirectedEvidence e, int softclipLength, int mapq) {
 		double prEgivenMR = MathUtil.phredToPr(metrics.getCigarDistribution().getPhred(CigarOperator.SOFT_CLIP, softclipLength)); 
 		double prEgivenMV = MathUtil.phredToPr(metrics.getCigarDistribution().getPhred(CigarOperator.SOFT_CLIP, 0));
 		return llr(prEgivenMR, prEgivenMV, mapq);
 	}
 	
 	@Override
-	public double scoreIndel(IdsvSamFileMetrics metrics, CigarOperator op, int length, int mapq) {
+	public double scoreIndel(IdsvSamFileMetrics metrics, DirectedEvidence e, CigarOperator op, int length, int mapq) {
 		double prEgivenMR = MathUtil.phredToPr(metrics.getCigarDistribution().getPhred(op, length)); 
 		double prEgivenMV = MathUtil.phredToPr(metrics.getCigarDistribution().getPhred(op, 0));
 		return llr(prEgivenMR, prEgivenMV, mapq);
 	}
 
 	@Override
-	public double scoreReadPair(IdsvSamFileMetrics metrics, int fragmentSize, int mapq1, int mapq2) {
+	public double scoreReadPair(IdsvSamFileMetrics metrics, DirectedEvidence e, int fragmentSize, int mapq1, int mapq2) {
 		double prEgivenMR = MathUtil.phredToPr(metrics.getReadPairPhred(fragmentSize));
 		double prEgivenMV = 0.5; // TODO: actually calculate the inferred variant fragment size
 		return llr(prEgivenMR, prEgivenMV, mapq1, mapq2);
 	}
 
 	@Override
-	public double scoreUnmappedMate(IdsvSamFileMetrics metrics, int mapq) {
+	public double scoreUnmappedMate(IdsvSamFileMetrics metrics, DirectedEvidence e, int mapq) {
 		IdsvMetrics im = metrics.getIdsvMetrics();
 		// completely unmapped read pairs are excluded for consistency with sc and dp calculation
 		double readPairs = im.READ_PAIRS - im.READ_PAIRS_ZERO_MAPPED;

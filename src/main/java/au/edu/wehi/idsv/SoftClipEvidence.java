@@ -61,7 +61,7 @@ public class SoftClipEvidence extends SingleReadEvidence {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
 			return scoreAssembly();
 		}
-		return (float)source.getContext().getConfig().getScoring().getModel().scoreSoftClip(source.getMetrics(), clipLength, getLocalMapq());
+		return (float)source.getContext().getConfig().getScoring().getModel().scoreSoftClip(source.getMetrics(), this, clipLength, getLocalMapq());
 	}
 	private float scoreAssembly() {
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
@@ -70,7 +70,7 @@ public class SoftClipEvidence extends SingleReadEvidence {
 		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null);
 		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
 		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
-		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreBreakendAssembly(
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreBreakendAssembly(this,
 				rp, rpq,
 				sc, scq,
 				getLocalMapq());

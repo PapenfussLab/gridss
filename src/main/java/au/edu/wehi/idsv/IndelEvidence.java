@@ -122,7 +122,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 				e = indel.get(i);
 			}
 		}
-		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreIndel(getEvidenceSource().getMetrics(), e.getOperator(), e.getLength(), getLocalMapq());
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreIndel(getEvidenceSource().getMetrics(), this, e.getOperator(), e.getLength(), getLocalMapq());
 	}
 	@Override
 	public float getBreakpointQual() {
@@ -135,7 +135,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null);
 		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
 		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
-		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(this,
 				rp, rpq,
 				sc, scq,
 				getLocalMapq(),

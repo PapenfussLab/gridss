@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.model;
 
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import htsjdk.samtools.CigarOperator;
 
@@ -11,35 +12,35 @@ import htsjdk.samtools.CigarOperator;
  */
 public class ReadCountModel implements VariantScoringModel {
 	@Override
-	public double scoreSplitRead(IdsvSamFileMetrics metrics, int softclipLength, int mapq1, int mapq2) {
+	public double scoreSplitRead(IdsvSamFileMetrics metrics, DirectedEvidence e, int softclipLength, int mapq1, int mapq2) {
 		return 1;
 	}
 
 	@Override
-	public double scoreSoftClip(IdsvSamFileMetrics metrics, int softclipLength, int mapq) {
+	public double scoreSoftClip(IdsvSamFileMetrics metrics, DirectedEvidence e, int softclipLength, int mapq) {
 		return 1;
 	}
 	
 	@Override
-	public double scoreIndel(IdsvSamFileMetrics metrics, CigarOperator op, int length, int mapq) {
+	public double scoreIndel(IdsvSamFileMetrics metrics, DirectedEvidence e, CigarOperator op, int length, int mapq) {
 		return 1;
 	}
 
 	@Override
-	public double scoreReadPair(IdsvSamFileMetrics metrics, int fragmentSize, int mapq1, int mapq2) {
+	public double scoreReadPair(IdsvSamFileMetrics metrics, DirectedEvidence e, int fragmentSize, int mapq1, int mapq2) {
 		return 1;
 	}
 
 	@Override
-	public double scoreUnmappedMate(IdsvSamFileMetrics metrics, int mapq) {
+	public double scoreUnmappedMate(IdsvSamFileMetrics metrics, DirectedEvidence e, int mapq) {
 		return 1;
 	}
 	@Override
-	public double scoreAssembly(int rp, double rpq, int sc, double scq, int localMapq, int remoteMapq) {
+	public double scoreAssembly(DirectedEvidence e, int rp, double rpq, int sc, double scq, int localMapq, int remoteMapq) {
 		return rp + sc;
 	}
 	@Override
-	public double scoreBreakendAssembly(int rp, double rpq, int sc, double scq, int localMapq) {
+	public double scoreBreakendAssembly(DirectedEvidence e, int rp, double rpq, int sc, double scq, int localMapq) {
 		return rp + sc;
 	}
 }

@@ -25,6 +25,9 @@ public class ScoringConfiguration {
 			case "ReadCount":
 				model = new ReadCountModel();
 				break;
+			case "ReadNameWeighted":
+				model = new ReadNameWeightedModel(config.getString("readWeightedRegex"));
+				break;
 			default:
 				throw new IllegalArgumentException(String.format("Unrecognised variant scoring model \"%s\"", config.getString("model")));
 		}

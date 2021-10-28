@@ -42,6 +42,6 @@ public class EmpiricalReferenceLikelihoodModelTest extends TestHelper {
 					new int[] { 1, 2, 3,},
 					new double[] { 1, 8, 1, }),
 				new ArrayList<CigarDetailMetrics>());
-		assertEquals(10, model.scoreReadPair(metrics, 3, 1000, 1000), 0.001);
+		assertEquals(10, model.scoreReadPair(metrics, null, 3, 1000, 1000), 0.001);
 	}
 }
