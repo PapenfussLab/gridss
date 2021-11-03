@@ -38,12 +38,12 @@ WORKDIR /opt/gridss/
 COPY pom.xml /opt/gridss/
 COPY repo /opt/gridss/repo
 #RUN mvn -Dmaven.artifact.threads=8 dependency:go-offline
-# run all stages so all dependencies are 
+# run all stages so all dependencies are
 RUN mvn -Dmaven.artifact.threads=8 verify && rm -rf target
 # Build GRIDSS jar
 ARG GRIDSS_VERSION
 COPY src /opt/gridss/src
-RUN mvn -T 1C -Drevision=${GRIDSS_VERSION} package && \
+RUN mvn -T 1C -Drevision=${GRIDSS_VERSION} package -Dmaven.test.skip=true && \
 	cp target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
 
 FROM gridss_base_closest_mirror AS gridss_minimal
@@ -152,14 +152,9 @@ RUN mkdir /opt/kraken2 && \
 	./install_kraken2.sh /opt/kraken2 && \
 	cd .. && \
 	rm -r kraken2-$KRAKEN_VERSION v*.tar.gz
-RUN mkdir /opt/edirect && \
-	cd /opt/ && \
-	wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz && \
-	tar zxf edirect.tar.gz && \
-	rm edirect.tar.gz && \
-	cd /opt/edirect/ && \
-	sed -i 's/if \[ -z "$prfx" ]/if false/' setup.sh && \
-	./setup.sh
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y curl
+RUN sh -c "$(wget -q ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/install-edirect.sh -O -)" && \
+	mv $HOME/edirect /opt/edirect
 ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:$PATH"
 # configure repeatmasker
 RUN cd /opt/RepeatMasker && \
