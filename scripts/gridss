@@ -780,10 +780,6 @@ if [[ $do_preprocess == true ]] ; then
 				; } 1>&2 2>> $logfile
 				if [[ "$externalaligner" == "true" ]] || [[ $skipsoftcliprealignment == "true" ]] ; then
 					write_status "Running	ComputeSamTags|samtools	$f"
-					# preprocess_sort_args=""
-					# if [[ $skipsoftcliprealignment == "true" ]] ; then
-					# 	preprocess_sort_args="--write-index"
-					# fi
 					rm -f $tmp_prefix.coordinate-tmp*
 					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-cp $gridss_jar gridss.ComputeSamTags \
