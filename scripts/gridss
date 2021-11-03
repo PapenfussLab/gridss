@@ -449,7 +449,7 @@ if [[ "$labels" != "" ]] ; then
 		input_args="$input_args INPUT_LABEL=$label"
 		write_status "label is $label"
 	done
-	
+
 fi
 
 for f1 in $@ ; do
@@ -478,7 +478,7 @@ for tool in Rscript samtools java bwa ; do #minimap2
 done
 if $(samtools --version-only 2>&1 >/dev/null) ; then
 	write_status "samtools version: $(samtools --version-only 2>&1)"
-else 
+else
 	write_status "Your samtools version is so old it does not support --version-only. Update samtools."
 	exit $EX_CONFIG
 fi
@@ -506,9 +506,9 @@ if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
 	exit 1
 fi
 
-ulimit -n $(ulimit -Hn) || true # Reduce likelihood of running out of open file handles 
+ulimit -n $(ulimit -Hn) || true # Reduce likelihood of running out of open file handles
 unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
-write_status "Max file handles: $(ulimit -n)" 1>&2 
+write_status "Max file handles: $(ulimit -n)" 1>&2
 
 steps_message="Running GRIDSS steps:"
 if [[ $do_setupreference == "true" ]] ; then
@@ -525,7 +525,7 @@ if [[ $do_call == "true" ]] ; then
 fi
 write_status "$steps_message"
 
-# For debugging purposes, we want to keep all our 
+# For debugging purposes, we want to keep all our
 if [[ $keepTempFiles == "true" ]] ; then
 	rmcmd="echo rm"
 	jvm_args="-Dgridss.keepTempFiles=true"
@@ -554,45 +554,45 @@ if [[ "$nojni" == "true" ]] ; then
 	externalaligner="true"
 fi
 
-aligner_args_bwa=' 
- ALIGNER_COMMAND_LINE=null 
- ALIGNER_COMMAND_LINE=bwa 
- ALIGNER_COMMAND_LINE=mem 
- ALIGNER_COMMAND_LINE=-K 
- ALIGNER_COMMAND_LINE=10000000 
- ALIGNER_COMMAND_LINE=-L 
- ALIGNER_COMMAND_LINE=0,0 
- ALIGNER_COMMAND_LINE=-t 
- ALIGNER_COMMAND_LINE=%3$d 
- ALIGNER_COMMAND_LINE=%2$s 
- ALIGNER_COMMAND_LINE=%1$s 
+aligner_args_bwa='
+ ALIGNER_COMMAND_LINE=null
+ ALIGNER_COMMAND_LINE=bwa
+ ALIGNER_COMMAND_LINE=mem
+ ALIGNER_COMMAND_LINE=-K
+ ALIGNER_COMMAND_LINE=10000000
+ ALIGNER_COMMAND_LINE=-L
+ ALIGNER_COMMAND_LINE=0,0
+ ALIGNER_COMMAND_LINE=-t
+ ALIGNER_COMMAND_LINE=%3$d
+ ALIGNER_COMMAND_LINE=%2$s
+ ALIGNER_COMMAND_LINE=%1$s
  '
-aligner_args_bowtie2=' 
- ALIGNER_COMMAND_LINE=null 
- ALIGNER_COMMAND_LINE=bowtie2 
- ALIGNER_COMMAND_LINE=--threads 
- ALIGNER_COMMAND_LINE=%3$d 
- ALIGNER_COMMAND_LINE=--local 
- ALIGNER_COMMAND_LINE=--mm 
- ALIGNER_COMMAND_LINE=--reorder 
- ALIGNER_COMMAND_LINE=-x 
- ALIGNER_COMMAND_LINE=%2$s 
- ALIGNER_COMMAND_LINE=-U 
- ALIGNER_COMMAND_LINE=%1$s 
+aligner_args_bowtie2='
+ ALIGNER_COMMAND_LINE=null
+ ALIGNER_COMMAND_LINE=bowtie2
+ ALIGNER_COMMAND_LINE=--threads
+ ALIGNER_COMMAND_LINE=%3$d
+ ALIGNER_COMMAND_LINE=--local
+ ALIGNER_COMMAND_LINE=--mm
+ ALIGNER_COMMAND_LINE=--reorder
+ ALIGNER_COMMAND_LINE=-x
+ ALIGNER_COMMAND_LINE=%2$s
+ ALIGNER_COMMAND_LINE=-U
+ ALIGNER_COMMAND_LINE=%1$s
  '
-aligner_args_minimap2=' 
- ALIGNER_COMMAND_LINE=null 
- ALIGNER_COMMAND_LINE=minimap2 
- ALIGNER_COMMAND_LINE=%2$s.idx 
- ALIGNER_COMMAND_LINE=-x 
- ALIGNER_COMMAND_LINE=sr 
- ALIGNER_COMMAND_LINE=-Y 
- ALIGNER_COMMAND_LINE=-a 
- ALIGNER_COMMAND_LINE=-t 
- ALIGNER_COMMAND_LINE=%3$d 
- ALIGNER_COMMAND_LINE=%1$s 
+aligner_args_minimap2='
+ ALIGNER_COMMAND_LINE=null
+ ALIGNER_COMMAND_LINE=minimap2
+ ALIGNER_COMMAND_LINE=%2$s.idx
+ ALIGNER_COMMAND_LINE=-x
+ ALIGNER_COMMAND_LINE=sr
+ ALIGNER_COMMAND_LINE=-Y
+ ALIGNER_COMMAND_LINE=-a
+ ALIGNER_COMMAND_LINE=-t
+ ALIGNER_COMMAND_LINE=%3$d
+ ALIGNER_COMMAND_LINE=%1$s
  '
- 
+
 samtools_sort="samtools sort --no-PG -@ $threads"
 
 if [[ "$useproperpair" == "true" ]] ; then
@@ -780,10 +780,10 @@ if [[ $do_preprocess == true ]] ; then
 				; } 1>&2 2>> $logfile
 				if [[ "$externalaligner" == "true" ]] || [[ $skipsoftcliprealignment == "true" ]] ; then
 					write_status "Running	ComputeSamTags|samtools	$f"
-					preprocess_sort_args=""
-					if [[ $skipsoftcliprealignment == "true" ]] ; then
-						preprocess_sort_args="--write-index"
-					fi
+					# preprocess_sort_args=""
+					# if [[ $skipsoftcliprealignment == "true" ]] ; then
+					# 	preprocess_sort_args="--write-index"
+					# fi
 					rm -f $tmp_prefix.coordinate-tmp*
 					{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 							-cp $gridss_jar gridss.ComputeSamTags \
@@ -802,15 +802,13 @@ if [[ $do_preprocess == true ]] ; then
 							-T $tmp_prefix.coordinate-tmp \
 							-Obam \
 							-o $tmp_prefix.coordinate.bam \
-							$preprocess_sort_args \
 							/dev/stdin \
 					; } 1>&2 2>> $logfile
 					$rmcmd $tmp_prefix.namedsorted.bam
 					if [[ $skipsoftcliprealignment == "true" ]] ; then
 						write_status "Skipping	SoftClipsToSplitReads	$f"
 						mv $tmp_prefix.coordinate.bam $prefix.sv.bam
-						mv $tmp_prefix.coordinate.bam.csi $prefix.sv.bam.csi
-						touch $prefix.sv.bam.csi # make sure the index file is older so we don't get htsjdk WARNING spam
+						$timecmd samtools index -@ $threads $prefix.sv.bam
 					else
 						write_status "Running	SoftClipsToSplitReads	$f"
 						rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
@@ -838,7 +836,7 @@ if [[ $do_preprocess == true ]] ; then
 								$prefix.sv.tmp.bam \
 								$tmp_prefix.sc2sr.primary.sv.bam \
 								$tmp_prefix.sc2sr.suppsorted.sv.bam \
-						&& $timecmd samtools index $prefix.sv.tmp.bam \
+						&& $timecmd samtools index -@ $threads $prefix.sv.tmp.bam \
 						&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
 						&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
 						&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
@@ -867,7 +865,7 @@ if [[ $do_preprocess == true ]] ; then
 							-o $prefix.sv.tmp.bam \
 							/dev/stdin \
 					&& $rmcmd $tmp_prefix.namedsorted.bam \
-					&& $timecmd samtools index $prefix.sv.tmp.bam \
+					&& $timecmd samtools index -@ $threads $prefix.sv.tmp.bam \
 					&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
 					&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 					; } 1>&2 2>> $logfile
@@ -892,7 +890,7 @@ if [[ $do_preprocess == true ]] ; then
 else
 	write_status "Skipping pre-processing"
 fi
-if [[ $sanityCheck == "true" ]] ; then 
+if [[ $sanityCheck == "true" ]] ; then
 	write_status "Sanity checking *.sv.bam"
 	java -Xmx$jvmheap $jvm_args \
 		-cp $gridss_jar gridss.SanityCheckEvidence \
@@ -989,7 +987,7 @@ if [[ $do_assemble == true ]] ; then
 					$prefix.sv.tmp.bam \
 					$tmp_prefix.sc2sr.primary.sv.bam \
 					$tmp_prefix.sc2sr.suppsorted.sv.bam \
-			&& $timecmd samtools index $prefix.sv.tmp.bam \
+			&& $timecmd samtools index -@ $threads $prefix.sv.tmp.bam \
 			&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
 			&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
 			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
@@ -1019,7 +1017,7 @@ if [[ $do_assemble == true ]] ; then
 					-Obam \
 					-o $prefix.sv.tmp.bam \
 					/dev/stdin \
-			&& $timecmd samtools index $prefix.sv.tmp.bam \
+			&& $timecmd samtools index -@ $threads $prefix.sv.tmp.bam \
 			&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
 			&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
 			; } 1>&2 2>> $logfile
@@ -1033,7 +1031,7 @@ assembly_args=""
 for ass in $assembly ; do
 	assembly_args="$assembly_args ASSEMBLY=$ass"
 done
-if [[ $sanityCheck == "true" ]] ; then 
+if [[ $sanityCheck == "true" ]] ; then
 	write_status "Running sanity checks"
 	java -Xmx$jvmheap $jvm_args \
 		-cp $gridss_jar gridss.SanityCheckEvidence \
