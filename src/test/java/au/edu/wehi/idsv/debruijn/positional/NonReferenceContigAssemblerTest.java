@@ -1,16 +1,21 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -587,4 +592,5 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		}
 		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 	}
+
 }

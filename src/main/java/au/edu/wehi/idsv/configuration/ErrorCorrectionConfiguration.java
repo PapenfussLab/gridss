@@ -8,6 +8,8 @@ public class ErrorCorrectionConfiguration {
 		config = config.subset(CONFIGURATION_PREFIX);
 		kmerErrorCorrectionMultiple = config.getFloat("kmerErrorCorrectionMultiple");
 		k = config.getInt("k");
+		maxCorrectionsInKmer = config.getInt("maxCorrectionsInKmer");
+		deduplicateReadKmers = config.getBoolean("deduplicateReadKmers");
 	}
 	/**
 	 * Extent to which an adjacent kmer should be more supported before error correction
@@ -17,4 +19,12 @@ public class ErrorCorrectionConfiguration {
 	 * error correction kmer size
 	 */
 	public int k;
+	/**
+	 * Maximum number of corrections in a kmer before abandoning error correction
+	 */
+	public int maxCorrectionsInKmer;
+	/**
+	 * Count kmers once per read, or once per occurrence.
+	 */
+	public boolean deduplicateReadKmers;
 }

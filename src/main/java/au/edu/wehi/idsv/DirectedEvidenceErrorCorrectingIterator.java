@@ -14,6 +14,8 @@ public class DirectedEvidenceErrorCorrectingIterator implements Iterator<Directe
     private final float kmerErrorCorrectionMultiple;
     private final int bucketSize;
     private final Iterator<DirectedEvidence> in;
+    private final boolean deduplicateReadKmers;
+    private final int maxCorrectionsInKmer;
     private Deque<DirectedEvidence> lastBucket = new ArrayDeque<>();
     private Deque<DirectedEvidence> currentBucket = new ArrayDeque<>();
     private long currentBucketStart;
@@ -27,13 +29,17 @@ public class DirectedEvidenceErrorCorrectingIterator implements Iterator<Directe
             int maxMappedReadLength,
             SAMEvidenceSource.EvidenceSortOrder eso,
             float kmerErrorCorrectionMultiple,
-            int k) {
+            int k,
+            int maxCorrectionsInKmer,
+            boolean deduplicateReadKmers) {
         if (eso != SAMEvidenceSource.EvidenceSortOrder.SAMRecordStartPosition) throw new IllegalArgumentException("NYI");
         int maxErrorCorrectSamRecordStartDelta = maxConcordantFragmentSize - minConcordantFragmentSize + 2 * maxReadLength - k;
         this.bucketSize = Math.max(maxErrorCorrectSamRecordStartDelta, 2 * maxMappedReadLength); 
         this.linear = linear;
         this.k = k;
+        this.maxCorrectionsInKmer = maxCorrectionsInKmer;
         this.kmerErrorCorrectionMultiple = kmerErrorCorrectionMultiple;
+        this.deduplicateReadKmers = deduplicateReadKmers;
         this.in = in;
         fillCurrentBucket();
     }
@@ -51,7 +57,7 @@ public class DirectedEvidenceErrorCorrectingIterator implements Iterator<Directe
         fillCurrentBucket();
         // Error correct both buckets as since RPs could be spread across
         // multiple buckets due to differences in actual fragment size
-        ReadErrorCorrector.errorCorrect(k, kmerErrorCorrectionMultiple, Iterables.concat(lastBucket, currentBucket));
+        ReadErrorCorrector.errorCorrect(k, kmerErrorCorrectionMultiple, maxCorrectionsInKmer, deduplicateReadKmers, Iterables.concat(lastBucket, currentBucket));
     }
 
     private void fillCurrentBucket() {

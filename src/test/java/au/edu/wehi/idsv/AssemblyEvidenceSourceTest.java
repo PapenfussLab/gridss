@@ -1,6 +1,9 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.debruijn.positional.*;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
 import com.google.common.collect.ImmutableList;
@@ -10,14 +13,19 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -391,5 +399,30 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		List<SAMRecord> asm = getRecords(aes.getFile());
 		Assert.assertEquals(1, asm.size());
 		Assert.assertEquals(correctSeq, asm.get(0).getReadString());
+	}
+	@Test
+	public void line_regression_should_not_introduce_anchoring_snvs() throws IOException {
+		File dir = new File("src/test/resources/anchor_misassembly/");
+		File ref = new File(dir, "ref.fa");
+		ReferenceLookup rl = new TwoBitBufferedReferenceSequenceFile(new IndexedFastaSequenceFile(ref));
+		FileSystemContext fsc = new FileSystemContext(dir, 500000);
+		ProcessingContext pc = new ProcessingContext(fsc, ref, rl, new ArrayList<Header>(), getConfig());
+		pc.getConfig().getAssembly().errorCorrection.kmerErrorCorrectionMultiple = 10;
+		pc.getConfig().getAssembly().errorCorrection.deduplicateReadKmers = false;
+		pc.registerCategory("test");
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, new File(dir, "anchor_misassembly.bam"), null, 0);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
+		aes.assembleBreakends(null);
+		List<SAMRecord> asm = getRecords(aes.getFile());
+
+		aes.getFile().delete();
+		pc.getConfig().getAssembly().errorCorrection.deduplicateReadKmers = true;
+		aes.assembleBreakends(null);
+		List<SAMRecord> asm2 = getRecords(aes.getFile());
+
+		// Without repeat deduplication nothing ends up being safe except for polyA this causes over-correction of signal-containing reads
+		Assert.assertFalse(asm.stream().anyMatch(r -> r.getReadString().contains("AAAAAAAAAAGAAACAAAGTGGTGGGACTCAGGAAAGGCCTCAA")));
+		// With repeat deduplication, we keep our correct kmers
+		Assert.assertTrue(asm2.stream().anyMatch(r -> r.getReadString().contains("AAAAAAAAAAGAAACAAAGTGGTGGGACTCAGGAAAGGCCTCAA")));
 	}
 }

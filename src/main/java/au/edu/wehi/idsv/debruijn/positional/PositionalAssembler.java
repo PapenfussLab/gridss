@@ -107,7 +107,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		} catch (AssemblyThresholdReachedException atre) {
 			Set<DirectedEvidence> reloadRecoverySet = getEvidenceInCurrentAssembler();
 			// really aggressive error correction of every read might simplify our assembly graph
-			ReadErrorCorrector.errorCorrect(context.getAssemblyParameters().errorCorrection.k, context.getAssemblyParameters().errorCorrection.kmerErrorCorrectionMultiple / 2, reloadRecoverySet);
+			ReadErrorCorrector.errorCorrect(context.getAssemblyParameters().errorCorrection.k, context.getAssemblyParameters().errorCorrection.kmerErrorCorrectionMultiple / 2, context.getAssemblyParameters().errorCorrection.maxCorrectionsInKmer, context.getAssemblyParameters().errorCorrection.deduplicateReadKmers, reloadRecoverySet);
 			Set<DirectedEvidence> downsampledRecoverySet = downsampleEvidenceInRegion(reloadRecoverySet, atre.getRange());
 			// restart assembly using the downsampled set of reads
 			closeCurrentAssembler();

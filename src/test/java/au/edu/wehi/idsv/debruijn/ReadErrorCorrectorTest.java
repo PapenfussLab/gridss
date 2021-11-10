@@ -21,14 +21,14 @@ public class ReadErrorCorrectorTest extends TestHelper {
         SAMRecord r = Read(0, 1, "100M");
         reads.add(r);
         r.setReadBases(B(seq));
-        ReadErrorCorrector rec = new ReadErrorCorrector(k, threshold);
+        ReadErrorCorrector rec = new ReadErrorCorrector(k, threshold, 100, false);
         reads.stream().forEach(x -> rec.countKmers(x, false));
         rec.errorCorrect(r, false);
         return r.getReadString();
     }
     @Test
     public void should_correct_to_neighbour_sequence() {
-        ReadErrorCorrector rec = new ReadErrorCorrector(21, 10);
+        ReadErrorCorrector rec = new ReadErrorCorrector(21, 10, 100, false);
         List<SAMRecord> reads = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             SAMRecord r = withSequence(B(SEQ), Read(0, 1, "100M"))[0];
@@ -83,7 +83,7 @@ public class ReadErrorCorrectorTest extends TestHelper {
     }
     @Test
     public void should_not_chain_extend_error_correction() {
-        ReadErrorCorrector rec = new ReadErrorCorrector(4, 5);
+        ReadErrorCorrector rec = new ReadErrorCorrector(4, 5, 100, false);
         SAMRecord r = withSequence(B("AACTAAAAAAAAAAAAAAAAAAAACGTAACCGGTT"), Read(0, 1, "13M"))[0];
         rec.countKmers(r, false);
         rec.errorCorrect(r, false);
@@ -126,7 +126,7 @@ public class ReadErrorCorrectorTest extends TestHelper {
         dprn[1].setReadBases(B("T" + SEQ.substring(1)));
         evidence.add(NRRP(ses, dprn));
 
-        ReadErrorCorrector.errorCorrect(21, 5, evidence);
+        ReadErrorCorrector.errorCorrect(21, 5, 100, false, evidence);
         Assert.assertEquals(SEQ, dpfp[0].getReadString());
         Assert.assertEquals(SequenceUtil.reverseComplement(SEQ), dpfp[1].getReadString());
         Assert.assertEquals(SEQ, dpfn[0].getReadString());
@@ -146,6 +146,54 @@ public class ReadErrorCorrectorTest extends TestHelper {
                 evidence.add(NRRP(ses, DP(0, 1, i + "M", false, 1, 1, j + "M", true)));
             }
         }
-        ReadErrorCorrector.errorCorrect(21, 5, evidence);
+        ReadErrorCorrector.errorCorrect(21, 5, 100, false, evidence);
+    }
+    @Test
+    public void should_not_correct_trusted_kmer() {
+        ReadErrorCorrector rec = new ReadErrorCorrector(4, 2, 100, false);
+        List<SAMRecord> reads = new ArrayList<>();
+        reads.add(withSequence("AAAATGGG", Read(0, 1, "8M"))[0]);
+        for (int i = 0; i < 100; i++) {
+            reads.add(withSequence("AAAA", Read(0, 1, "4M"))[0]);
+            reads.add(withSequence("TGGG", Read(0, 1, "4M"))[0]);
+        }
+        reads.stream().forEach(r -> rec.countKmers(r, false));
+        reads.stream().forEach(r -> rec.errorCorrect(r, false));
+        Assert.assertEquals("AAAATGGG", reads.get(0).getReadString());
+    }
+    @Test
+    public void deduplicateReadKmers_should_count_kmers_once() {
+        ReadErrorCorrector rec = new ReadErrorCorrector(4, 2, 100, false);
+        List<SAMRecord> reads = new ArrayList<>();
+        reads.add(withSequence("AAAAAAAT", Read(0, 1, "8M"))[0]);
+        reads.stream().forEach(r -> rec.countKmers(r, false));
+        reads.stream().forEach(r -> rec.errorCorrect(r, false));
+        Assert.assertEquals("AAAAAAAA", reads.get(0).getReadString());
+
+        ReadErrorCorrector rec2 = new ReadErrorCorrector(4, 2, 100, true);
+        List<SAMRecord> reads2 = new ArrayList<>();
+        reads2.add(withSequence("AAAAAAAT", Read(0, 1, "8M"))[0]);
+        reads2.stream().forEach(r -> rec2.countKmers(r, false));
+        reads2.stream().forEach(r -> rec2.errorCorrect(r, false));
+        Assert.assertEquals("AAAAAAAT", reads2.get(0).getReadString());
+    }
+    @Test
+    public void should_not_correct_more_than_maxCorrectionsInKmer() {
+        {
+            ReadErrorCorrector rec = new ReadErrorCorrector(10, 2, 2, false);
+            List<SAMRecord> reads = new ArrayList<>();
+            reads.add(withSequence("AAAAAAAAAAAAAAAAAAAATATAT", Read(0, 1, "25M"))[0]);
+            reads.stream().forEach(r -> rec.countKmers(r, false));
+            reads.stream().forEach(r -> rec.errorCorrect(r, false));
+            Assert.assertEquals("AAAAAAAAAAAAAAAAAAAATATAT", reads.get(0).getReadString());
+        }
+        {
+            ReadErrorCorrector rec = new ReadErrorCorrector(10, 3, 3, false);
+            List<SAMRecord> reads = new ArrayList<>();
+            reads.add(withSequence("AAAAAAAAAAAAAAAAAAAATATAT", Read(0, 1, "25M"))[0]);
+            reads.stream().forEach(r -> rec.countKmers(r, false));
+            reads.stream().forEach(r -> rec.errorCorrect(r, false));
+            Assert.assertEquals("AAAAAAAAAAAAAAAAAAAAAAAAA", reads.get(0).getReadString());
+        }
     }
 }

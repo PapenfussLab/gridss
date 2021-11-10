@@ -356,7 +356,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				getMaxReadMappedLength(),
 				EvidenceSortOrder.SAMRecordStartPosition,
 				ap.errorCorrection.kmerErrorCorrectionMultiple,
-				ap.errorCorrection.k);
+				ap.errorCorrection.k,
+				ap.errorCorrection.maxCorrectionsInKmer,
+				ap.errorCorrection.deduplicateReadKmers);
 		return out;
 	}
 	private Iterator<DirectedEvidence> throttled(Iterator<DirectedEvidence> it, IntervalBed downsampledRegions) {

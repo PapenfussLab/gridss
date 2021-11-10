@@ -28,6 +28,10 @@ public class PackedSequence implements Serializable {
 		this.packed = packed;
 		this.baseCount = baseCount;
 	}
+	public PackedSequence(PackedSequence ps) {
+		this.packed = ps.packed.clone();
+		this.baseCount = ps.baseCount;
+	}
 	public PackedSequence(byte[] bases, boolean reverse, boolean complement) {
 		packed = new long[IntMath.divide(bases.length, BASES_PER_WORD, RoundingMode.CEILING)];
 		baseCount = bases.length;
