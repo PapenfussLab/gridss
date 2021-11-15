@@ -83,13 +83,9 @@ cd gridss
 git submodule init
 git submodule update
 cd src/main/c/gridsstools/htslib/
-autoheader
-autoconf
-./configure && make
+autoreconf -i && ./configure && make
 cd ..
-autoheader
-autoconf
-./configure && make all
+autoreconf -i && ./configure && make all
 ```
 
 ## Conda issues
