@@ -3,7 +3,7 @@
 #include "config.h"
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.0"
+#define PACKAGE_VERSION "1.1"
 #endif
 
 int main_extractFragmentsToFastq(int argc, char *argv[]);
