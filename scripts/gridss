@@ -822,6 +822,7 @@ if [[ $do_preprocess == true ]] ; then
 						INCLUDE_DUPLICATES=true \
 						$picardoptions \
 				| $timecmd $samtools_sort \
+						-l 1 \
 						-n \
 						-T $tmp_prefix.namedsorted-tmp \
 						-Obam \
@@ -849,6 +850,7 @@ if [[ $do_preprocess == true ]] ; then
 							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd $samtools_sort \
+							-l 1 \
 							-T $tmp_prefix.coordinate-tmp \
 							-Obam \
 							-o $tmp_prefix.coordinate.bam \
@@ -860,7 +862,6 @@ if [[ $do_preprocess == true ]] ; then
 						write_status "Skipping	SoftClipsToSplitReads	$f"
 						mv $tmp_prefix.coordinate.bam $prefix.sv.bam
 						mv $tmp_prefix.coordinate.bam.csi $prefix.sv.bam.csi
-						touch $prefix.sv.bam.csi # make sure the index file is older so we don't get htsjdk WARNING spam
 					else
 						write_status "Running	SoftClipsToSplitReads	$f"
 						rm -f $tmp_prefix.sc2sr.suppsorted.sv-tmp*
@@ -872,27 +873,29 @@ if [[ $do_preprocess == true ]] ; then
 								REFERENCE_SEQUENCE=$reference \
 								I=$tmp_prefix.coordinate.bam \
 								O=$tmp_prefix.sc2sr.primary.sv.bam \
+								COMPRESSION_LEVEL=1 \
 								OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 								WORKER_THREADS=$threads \
 								$aligner_args_bwa \
 								$picardoptions \
 						&& $rmcmd $tmp_prefix.coordinate.bam \
 						&& $timecmd $samtools_sort \
+								-l 1 \
 								-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 								-Obam \
 								-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 								$tmp_prefix.sc2sr.supp.sv.bam \
 						&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
 						&& $timecmd samtools merge \
+								--write-index \
 								-@ $threads \
 								$prefix.sv.tmp.bam \
 								$tmp_prefix.sc2sr.primary.sv.bam \
 								$tmp_prefix.sc2sr.suppsorted.sv.bam \
-						&& $timecmd samtools index $prefix.sv.tmp.bam \
 						&& $rmcmd $tmp_prefix.sc2sr.primary.sv.bam \
 						&& $rmcmd $tmp_prefix.sc2sr.suppsorted.sv.bam \
 						&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
-						&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+						&& mv $prefix.sv.tmp.bam.csi $prefix.sv.bam.csi \
 						; } 1>&2 2>> $logfile
 					fi
 				else
@@ -912,14 +915,14 @@ if [[ $do_preprocess == true ]] ; then
 							MODIFICATION_SUMMARY_FILE=$prefix.computesamtags.changes.tsv \
 							$picardoptions \
 					| $timecmd $samtools_sort \
+							--write-index \
 							-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
 							-Obam \
 							-o $prefix.sv.tmp.bam \
 							/dev/stdin \
 					&& $rmcmd $tmp_prefix.namedsorted.bam \
-					&& $timecmd samtools index $prefix.sv.tmp.bam \
 					&& mv $prefix.sv.tmp.bam $prefix.sv.bam \
-					&& mv $prefix.sv.tmp.bam.bai $prefix.sv.bam.bai \
+					&& mv $prefix.sv.tmp.bam.csi $prefix.sv.bam.csi \
 					; } 1>&2 2>> $logfile
 				fi
 			fi
@@ -933,6 +936,10 @@ if [[ $do_preprocess == true ]] ; then
 			if [[ ! -f $prefix.sv.bam ]] ; then
 				write_status "pre-processing failed for $f"
 				exit 1
+			fi
+			if [[ -f $prefix.sv.bam.csi ]] ; then
+				# make sure the index file is older so we don't get htsjdk WARNING spam
+				touch $prefix.sv.bam.csi
 			fi
 			write_status "Complete pre-processing	$f"
 		else
