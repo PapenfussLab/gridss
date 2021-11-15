@@ -45,7 +45,7 @@ public class AlignerFactory {
 					sswjniLoaded = true;
 				} catch (UnsatisfiedLinkError e) {
 					sswjniLoaded = false;
-					log.debug("Unable to load sswjni library");
+					log.debug(e, "Unable to load sswjni library");
 				}
 				try {
 					if (!sswjniLoaded) {
@@ -57,7 +57,7 @@ public class AlignerFactory {
 							System.load(destination.getAbsolutePath());
 							sswjniLoaded = true;
 						} catch (IOException e) {
-							log.error("Unable to extract sswjni native library to " + destination.toString());
+							log.error(e, "Unable to extract sswjni native library to " + destination.toString());
 						}
 					}
 				} catch (UnsatisfiedLinkError e) {
