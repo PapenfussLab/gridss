@@ -37,6 +37,17 @@ public class BwaAligner implements Closeable {
         return this.aligner;
     }
 
+    /***
+     * Ensure java.io.tmpdir actually exists before attempting
+     */
+    static {
+        File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+        if (!tmpDir.exists()) {
+            if (!tmpDir.mkdir()) {
+                log.info("Created " + tmpDir);
+            }
+        }
+    }
     public BwaAligner(File reference, SAMSequenceDictionary dict, int threads) {
         this.index = getBwaIndexFor(reference);
         this.dict = dict;
