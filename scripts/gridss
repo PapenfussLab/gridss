@@ -9,6 +9,8 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
 	echo 'WARNING: "getopt --test"` failed in this environment.' 1>&2
 	echo "WARNING: The version of getopt(1) installed on this system might not be compatible with the GRIDSS driver script." 1>&2
 fi
+unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
+ulimit -n $(ulimit -Hn 2>/dev/null) 2>/dev/null # Reduce likelihood of running out of open file handles 
 set -o errexit -o pipefail -o noclobber -o nounset
 last_command=""
 current_command=""
@@ -506,8 +508,6 @@ if ! java -Xms$jvmheap -cp $gridss_jar gridss.Echo ; then
 	exit 1
 fi
 
-ulimit -n $(ulimit -Hn) || true # Reduce likelihood of running out of open file handles 
-unset DISPLAY # Prevents errors attempting to connecting to an X server when starting the R plotting device
 write_status "Max file handles: $(ulimit -n)" 1>&2 
 
 steps_message="Running GRIDSS steps:"
