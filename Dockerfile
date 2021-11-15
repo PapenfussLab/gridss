@@ -113,6 +113,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		libtext-soundex-perl \
 		python3-h5py \
 		rsync \
+		curl \
 	&& rm -rf /var/lib/apt/lists/*
 # R packages used by GRIDSS - R package need the C toolchain installed
 ENV R_INSTALL_STAGED=false
@@ -152,14 +153,8 @@ RUN mkdir /opt/kraken2 && \
 	./install_kraken2.sh /opt/kraken2 && \
 	cd .. && \
 	rm -r kraken2-$KRAKEN_VERSION v*.tar.gz
-RUN mkdir /opt/edirect && \
-	cd /opt/ && \
-	wget ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/edirect.tar.gz && \
-	tar zxf edirect.tar.gz && \
-	rm edirect.tar.gz && \
-	cd /opt/edirect/ && \
-	sed -i 's/if \[ -z "$prfx" ]/if false/' setup.sh && \
-	./setup.sh
+RUN sh -c "$(wget -q ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/install-edirect.sh -O -)" && \
+	mv $HOME/edirect /opt/edirect
 ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:$PATH"
 # configure repeatmasker
 RUN cd /opt/RepeatMasker && \
