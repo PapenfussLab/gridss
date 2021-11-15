@@ -26,9 +26,9 @@ ARG GRIDSS_VERSION
 COPY src/main/c /opt/gridss/src/main/c
 COPY src/test/resources /opt/gridss/src/test/resources
 RUN cd /opt/gridss/src/main/c/gridsstools/htslib && \
-	autoconf && autoheader && ./configure && make -j 8 && \
+	autoreconf -i && ./configure && make -j 8 && \
 	cd .. && \
-	autoconf && autoheader && ./configure && make -j 8 && \
+	autoreconf -i && ./configure && make -j 8 && \
 	cp gridsstools /opt/gridss/
 # compile GRIDSS Java code
 FROM maven:3.6.3-jdk-8 AS gridss_builder_java

@@ -10,11 +10,19 @@ if [[ "$version" == "" ]] ; then
 	version=$(git symbolic-ref --short HEAD)-$(git rev-parse --short HEAD)
 fi
 
+if [[ ! -d src/main/c/gridsstools/htslib ]] ; then
+	echo "git submodule not initialised" 1>&2 && exit 1
+fi
+if [[ ! -d src/main/c/gridsstools/htslib/ ]] ; then
+	echo "git submodule not initialised" 1>&2 && exit 1
+fi
+
 echo Building GRIDSS $version 2>&1
 rm -rf release/
 mkdir release
 (cd src/main/c/gridsstools && make clean)
 (cd src/main/c/gridsstools/htslib && make clean)
+(cd src/main/c/gridsstools && git submodule update --init --recursive) # htscodecs gets deleted by the clean - we need them back
 (cd src/main/c/ && tar czf gridsstools-src-$version.tar.gz gridsstools)
 mv src/main/c/gridsstools-src-$version.tar.gz release/
 cp LICENSE release/ # https://bioconda.github.io/contributor/linting.html#gpl-requires-license-distributed
