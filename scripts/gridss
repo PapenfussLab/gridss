@@ -225,7 +225,7 @@ while true; do
 			shift 1
 			;;
 		--internalaligner)
-			externalaligner="true"
+			externalaligner="false"
 			shift 1
 			;;
 		--nojni)
