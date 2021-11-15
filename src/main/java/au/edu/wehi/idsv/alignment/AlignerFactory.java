@@ -19,6 +19,11 @@ public class AlignerFactory {
 	private static final IntelSmithWaterman isw;
 	static {
     	File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+    	if (!tmpDir.exists()) {
+    		if (!tmpDir.mkdir()) {
+				log.info("Created " + tmpDir);
+			}
+		}
     	log.debug("Loading Intel GKL library");
 		IntelSmithWaterman initialisingIsw = new IntelSmithWaterman();
 		if (Defaults.NO_LIBGKL || !initialisingIsw.load(tmpDir)) {
@@ -70,7 +75,6 @@ public class AlignerFactory {
 				try {
 					log.debug("Testing ssw alignment");
 					Aligner sswAligner = create(1, -4, -4, 6, 1);
-
 					sswAligner.align_smith_waterman(new byte[]{'A'}, new byte[]{'A'});
 					log.info("sswjni library loading successful.");
 				} catch (Exception e) {
