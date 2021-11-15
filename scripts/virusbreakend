@@ -368,6 +368,17 @@ else
 	write_status "Your samtools version is so old it does not support --version-only. Update samtools."
 	exit $EX_CONFIG
 fi
+if [[ "$(samtools --version-only)" =~ ^([0-9]+)[.]([0-9]+) ]] ; then
+	samtools_major_version=${BASH_REMATCH[1]}
+	samtools_minor_version=${BASH_REMATCH[2]}
+	if [[ "$samtools_major_version" -le 1 ]] && [[ "$samtools_minor_version" -lt 13 ]] ; then
+		write_status "samtools 1.13 or later is required."
+		exit $EX_CONFIG
+	fi
+else
+	write_status "Unable to determine samtools version"
+	exit $EX_CONFIG
+fi
 write_status "R version: $(Rscript --version 2>&1)"
 write_status "bwa $(bwa 2>&1 | grep Version || echo -n)"
 write_status "$(kraken2 --version | head -1)"
