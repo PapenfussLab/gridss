@@ -1,3 +1,5 @@
+include htslib/htslib_static.mk
+
 all: gridsstools test
 
 CC = @CC@
@@ -22,7 +24,7 @@ htslib:
 	$(MAKE) -C htslib libhts.a
 
 gridsstools: htslib $(COBJ)
-	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) htslib/libhts.a $(LIBS) -lz -lm -lbz2 -llzma -lcurl -lcrypto -lpthread -ldeflate
+	$(CC) $(HTSLIB_LDFLAGS) $(LDFLAGS) -o $@ $(COBJ) htslib/libhts.a $(LIBS) $(HTSLIB_static_LIBS)
 
 test: \
 	testUnmappedSequencesToFastq \
