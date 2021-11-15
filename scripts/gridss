@@ -46,7 +46,7 @@ useproperpair="false"
 readpairpdistribution="0.995"
 keepTempFiles="false"
 sanityCheck="false"
-externalaligner="false"
+externalaligner="true"
 nojni="false"
 includeIndels=true
 includeSR=true
@@ -88,6 +88,8 @@ Usage: gridss [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> i
         specified for all input files.
     --externalaligner: use the system version of bwa instead of the in-process
         version packaged with GRIDSS (default)
+    --internalaligner: use the in-process version of bwa instead of system
+        version. Faster but alignment results can change between runs.
     --jvmheap: size of JVM heap for the high-memory component of assembly and
         variant calling. (Default: $jvmheap)
     --otherjvmheap: size of JVM heap for everything else. Useful to prevent
@@ -117,7 +119,7 @@ Usage: gridss [options] -r <reference.fa> -o <output.vcf.gz> -a <assembly.bam> i
     "
 
 OPTIONS=r:o:a:t:j:w:b:s:c:l:
-LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,nojni,otherjvmheap:,includeIndels:,includeSR:,includeSC:,includeOEA:,includeDP:,includeUnmapped:,minClipLength:,minIndelSize:,skipsoftcliprealignment
+LONGOPTS=reference:,output:,assembly:,threads:,jar:,workingdir:,jvmheap:,blacklist:,steps:,configuration:,maxcoverage:,labels:,picardoptions:,jobindex:,jobnodes:,useproperpair,concordantreadpairdistribution:,keepTempFiles,sanityCheck,externalaligner,internalaligner,nojni,otherjvmheap:,includeIndels:,includeSR:,includeSC:,includeOEA:,includeDP:,includeUnmapped:,minClipLength:,minIndelSize:,skipsoftcliprealignment
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
 	# e.g. return value is 1
@@ -219,6 +221,10 @@ while true; do
 			shift 1
 			;;
 		--externalaligner)
+			externalaligner="true"
+			shift 1
+			;;
+		--internalaligner)
 			externalaligner="true"
 			shift 1
 			;;
