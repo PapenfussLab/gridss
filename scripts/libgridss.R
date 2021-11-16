@@ -313,9 +313,18 @@ is_shadow_breakpoint = function(bpgr, begr, vcf, breakendQualMultiple=3) {
   bpgr$overlapQUAL = 0
   bpgr$overlapQUAL[bestOverlap$queryHits] = bestOverlap$beQUAL
   i <- info(vcf[bpgr$sourceId])
+  # Fields renamed from BANSRQ to ANSRQ in v2.13.0
+  ansrq = i$ANSRQ
+  if (is.null(ansrq)) {
+  	ansrq = i$BANSRQ
+  }
+  ansrq = i$ANRPQ
+  if (is.null(ansrq)) {
+  	ansrq = i$BANRPQ
+  }
   better_call_filter = !is_short_event(bpgr) &
     bpgr$overlapQUAL > gridss.shadow_breakend_multiple * bpgr$QUAL &
-    i$BANSRQ + i$BANRPQ > i$ASQ
+  	ansrq + ansrq > i$ASQ
   return(as.logical(better_call_filter))
 }
 
