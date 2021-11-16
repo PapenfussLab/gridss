@@ -23,10 +23,10 @@ public enum VcfInfoAttributes {
 	//BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT("ASCRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs not directly supporting breakpoint incorporated into any breakpoint assembly"),
 	//BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT("ASCSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split, soft clipped or indel-containing reads not directly supporting breakpoint incorporated into any breakpoint assemblies"),
 	
-	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT("BANRP", 1, VCFHeaderLineType.Integer, "Count of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
-	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT("BANSR", 1, VCFHeaderLineType.Integer, "Count of split reads at this breakend assembled into a contig that does not support the breakpoint."),
-	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL("BANRPQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
-	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL("BANSRQ", 1, VCFHeaderLineType.Float, "Quality score of split reads at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_COUNT("ANRP", 1, VCFHeaderLineType.Integer, "Count of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_COUNT("ANSR", 1, VCFHeaderLineType.Integer, "Count of split reads at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_READPAIR_QUAL("ANRPQ", 1, VCFHeaderLineType.Float, "Quality score of read pairs at this breakend assembled into a contig that does not support the breakpoint."),
+	BREAKPOINT_ASSEMBLED_NONSUPPORTING_SPLITREAD_QUAL("ANSRQ", 1, VCFHeaderLineType.Float, "Quality score of split reads at this breakend assembled into a contig that does not support the breakpoint."),
 	
 	
 	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint"),
