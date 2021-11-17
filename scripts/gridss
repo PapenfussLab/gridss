@@ -642,6 +642,7 @@ aligner_args_minimap2='
  ALIGNER_COMMAND_LINE=%3$d 
  ALIGNER_COMMAND_LINE=%1$s 
  '
+aligner_args=$aligner_args_bwa
  
 samtools_sort="samtools sort --no-PG -@ $threads"
 
@@ -876,7 +877,7 @@ if [[ $do_preprocess == true ]] ; then
 								COMPRESSION_LEVEL=1 \
 								OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 								WORKER_THREADS=$threads \
-								$aligner_args_bwa \
+								$aligner_args \
 								$picardoptions \
 						&& $rmcmd $tmp_prefix.coordinate.bam \
 						&& $timecmd $samtools_sort \
@@ -1033,7 +1034,7 @@ if [[ $do_assemble == true ]] ; then
 					OUTPUT_UNORDERED_RECORDS=$tmp_prefix.sc2sr.supp.sv.bam \
 					REALIGN_ENTIRE_READ=true \
 					READJUST_PRIMARY_ALIGNMENT_POSITION=true \
-					$aligner_args_bwa \
+					$aligner_args \
 					$picardoptions \
 			&& $timecmd $samtools_sort \
 					-T $tmp_prefix.sc2sr.suppsorted.sv-tmp \
@@ -1154,6 +1155,10 @@ if [[ $do_call == true ]] ; then
 		; } 1>&2 2>> $logfile
 		$rmcmd $prefix.unallocated.vcf
 		write_status "Running	AnnotateInsertedSequence	$output_vcf"
+		aligner_args=""
+		if [[ $externalaligner == "false" ]] ; then
+			aligner_args=""
+		fi
 		{ $timecmd java -Xmx$otherjvmheap $jvm_args \
 				-Dgridss.output_to_temp_file=true \
 				-cp $gridss_jar gridss.AnnotateInsertedSequence \
@@ -1163,6 +1168,7 @@ if [[ $do_call == true ]] ; then
 				WORKER_THREADS=$threads \
 				INPUT=$prefix.allocated.vcf \
 				OUTPUT=$output_vcf \
+				$aligner_args \
 				$picardoptions \
 		&& $rmcmd $prefix.allocated.vcf \
 		; } 1>&2 2>> $logfile
