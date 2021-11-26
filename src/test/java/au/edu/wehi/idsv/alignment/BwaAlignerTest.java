@@ -8,9 +8,11 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import sun.security.action.GetPropertyAction;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.AccessController;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -121,6 +123,8 @@ public class BwaAlignerTest extends TestHelper {
     }
     @Test
     public void sanity_check_can_create_temp_file() throws IOException {
+        File dir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
+        System.err.println("TMP_DIR=" + dir);
         File f = File.createTempFile("prefix", "suffix");
         f.deleteOnExit();
         Assert.assertTrue(f.exists());
