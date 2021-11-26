@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import sun.security.action.GetPropertyAction;
@@ -24,6 +25,13 @@ import static org.junit.Assert.assertTrue;
 public class BwaAlignerTest extends TestHelper {
     public static List<SAMRecord> hitsFor(String readname, List<SAMRecord> hits) {
         return hits.stream().filter(x -> x.getReadName().equals(readname)).collect(Collectors.toList());
+    }
+    @Before
+    public void ensure_temp_dir() {
+        File dir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
     }
     @Test
     public void should_create_index_from_reference() throws IOException {
@@ -125,6 +133,9 @@ public class BwaAlignerTest extends TestHelper {
     public void sanity_check_can_create_temp_file() throws IOException {
         File dir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
         System.err.println("TMP_DIR=" + dir);
+        if (!dir.exists()) {
+            System.err.println("Missing " + dir);
+        }
         File f = File.createTempFile("prefix", "suffix");
         f.deleteOnExit();
         Assert.assertTrue(f.exists());
