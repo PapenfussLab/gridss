@@ -119,4 +119,10 @@ public class BwaAlignerTest extends TestHelper {
             }
         }
     }
+    @Test
+    public void sanity_check_can_create_temp_file() throws IOException {
+        File f = File.createTempFile("prefix", "suffix");
+        f.deleteOnExit();
+        Assert.assertTrue(f.exists());
+    }
 }
