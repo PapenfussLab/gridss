@@ -1,8 +1,10 @@
 package gridss;
 
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.alignment.JniAlignerTests;
 import com.google.common.io.Files;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +13,7 @@ import static org.junit.Assert.assertTrue;
 
 public class PrepareReferenceTest extends IntermediateFilesTest {
     @Test
+    @Category(JniAlignerTests.class)
     public void should_create_dictionary_bwaimage_gridsscache() throws IOException {
         File fa = testFolder.newFile("test.fa");
         File fai = testFolder.newFile("test.fa.fai");

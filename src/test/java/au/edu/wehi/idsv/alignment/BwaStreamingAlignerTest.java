@@ -4,6 +4,7 @@ import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.fastq.FastqRecord;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 import java.util.function.Supplier;
@@ -13,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 public class BwaStreamingAlignerTest extends TestHelper {
     @Test
+    @Category(JniAlignerTests.class)
     public void should_align_reads() throws IOException {
         BwaStreamingAligner bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1000);
         for (FastqRecord fq : ImmutableList.of(
@@ -31,6 +33,7 @@ public class BwaStreamingAlignerTest extends TestHelper {
         assertTrue(i >= 4);
     }
     @Test(expected = IllegalStateException.class)
+    @Category(JniAlignerTests.class)
     public void should_batch_records_for_processing() throws IOException {
         BwaStreamingAligner bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1000);
         for (FastqRecord fq : ImmutableList.of(
@@ -53,6 +56,7 @@ public class BwaStreamingAlignerTest extends TestHelper {
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void counts_should_match_aligner_state_when_batch_processed() throws IOException, InterruptedException {
         final BwaStreamingAligner bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1);
         bwamem.asyncAlign(new FastqRecord("noHit", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"));
@@ -62,6 +66,7 @@ public class BwaStreamingAlignerTest extends TestHelper {
         bwamem.close();
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void flush_should_force_processing_and_block_till_completed() throws IOException, InterruptedException {
         final BwaStreamingAligner bwamem = new BwaStreamingAligner(SMALL_FA_FILE, SMALL_FA.getSequenceDictionary(), 2, 1000);
         bwamem.asyncAlign(new FastqRecord("noHit", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"));
