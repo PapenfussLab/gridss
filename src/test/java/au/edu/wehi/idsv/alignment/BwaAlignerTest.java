@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@Category(JniAlignerTests.class)
 public class BwaAlignerTest extends TestHelper {
     public static List<SAMRecord> hitsFor(String readname, List<SAMRecord> hits) {
         return hits.stream().filter(x -> x.getReadName().equals(readname)).collect(Collectors.toList());
@@ -36,6 +35,7 @@ public class BwaAlignerTest extends TestHelper {
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void should_create_index_from_reference() throws IOException {
         TemporaryFolder testFolder = new TemporaryFolder();
         try {
@@ -50,6 +50,7 @@ public class BwaAlignerTest extends TestHelper {
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void should_lazily_create_from_bwa_index_files() throws IOException {
         TemporaryFolder testFolder = new TemporaryFolder();
         try {
@@ -69,12 +70,14 @@ public class BwaAlignerTest extends TestHelper {
         }
     }
     @Test(expected = RuntimeException.class)
+    @Category(JniAlignerTests.class)
     public void should_except_if_missing_index() {
         try (BwaAligner ba = new BwaAligner(new File("src/test/resources/missing_index"), SMALL_FA.getSequenceDictionary(), 2)) {
             List<SAMRecord> result = ba.align(ImmutableList.of(new FastqRecord("read", "A", "", "A")));
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void should_run_bwa_jni() throws IOException {
         try (BwaAligner ba = new BwaAligner(new File("src/test/resources/small.fa"), SMALL_FA.getSequenceDictionary(), 2)) {
             Collection<FastqRecord> input = ImmutableList.of(
@@ -93,6 +96,7 @@ public class BwaAlignerTest extends TestHelper {
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void should_return_soft_clips() throws IOException {
         try (BwaAligner ba = new BwaAligner(new File("src/test/resources/small.fa"), SMALL_FA.getSequenceDictionary(), 2)) {
             Collection<FastqRecord> input = ImmutableList.of(
@@ -104,6 +108,7 @@ public class BwaAlignerTest extends TestHelper {
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void should_have_min_alignment_length() throws IOException {
         String s = S(getPolyA(120));
         try (BwaAligner ba = new BwaAligner(new File("src/test/resources/small.fa"), SMALL_FA.getSequenceDictionary(), 2)) {
@@ -118,6 +123,7 @@ public class BwaAlignerTest extends TestHelper {
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void should_handle_Ns() throws IOException {
         String s = S(getPolyA(120));
         try (BwaAligner ba = new BwaAligner(new File("src/test/resources/small.fa"), SMALL_FA.getSequenceDictionary(), 2)) {
@@ -132,6 +138,7 @@ public class BwaAlignerTest extends TestHelper {
         }
     }
     @Test
+    @Category(JniAlignerTests.class)
     public void sanity_check_can_create_temp_file() throws IOException {
         File dir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
         System.err.println("TMP_DIR=" + dir);
