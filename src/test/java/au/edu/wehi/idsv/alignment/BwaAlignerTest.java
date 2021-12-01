@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 import sun.security.action.GetPropertyAction;
 
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Category(JniAlignerTests.class)
 public class BwaAlignerTest extends TestHelper {
     public static List<SAMRecord> hitsFor(String readname, List<SAMRecord> hits) {
         return hits.stream().filter(x -> x.getReadName().equals(readname)).collect(Collectors.toList());
