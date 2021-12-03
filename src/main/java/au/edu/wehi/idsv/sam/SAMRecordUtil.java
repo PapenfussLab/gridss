@@ -1808,6 +1808,13 @@ public class SAMRecordUtil {
 		r.setAlignmentStart(r.getAlignmentStart() + alignmentOffset);
 		boolean hasAlignedBase = cigar.stream().anyMatch(ce -> ce.getOperator().consumesReferenceBases());
 		r.setReadUnmappedFlag(!hasAlignedBase);
+		if (!hasAlignedBase) {
+			// Workaround until https://github.com/samtools/htsjdk/issues/1584 gets fixed
+			r.setMappingQuality(0);
+			r.setSupplementaryAlignmentFlag(false);
+			r.setSecondaryAlignment(false);
+			r.setProperPairFlag(false);
+		}
 		return true;
 	}
 

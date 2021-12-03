@@ -1538,4 +1538,11 @@ public class SAMRecordUtilTest extends TestHelper {
 		Assert.assertEquals("9S", r.getCigarString());
 		assertTrue(r.getReadUnmappedFlag());
 	}
+	@Test
+	public void fixTerminalCigar_unmapped_reads_should_remove_mapq_score_due_to_htsjdk_validation_error() {
+		SAMRecord r = Read(2, 1, "10S10I10S");
+		assertTrue(SAMRecordUtil.clipTerminalIndelCigars(r));
+		Assert.assertNull(r.isValid());
+		Assert.assertEquals(0, r.getMappingQuality());
+	}
 }
