@@ -12,6 +12,7 @@ import com.google.common.collect.Ordering;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -592,5 +593,20 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		}
 		assertEquals(0, aa.getSupportingReadCount(output.get(0).getReadLength(), null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
 	}
+	@Test
+	@Ignore // TODO: better approach to reassembly after detecting misassembly
+	public void should_assemble_across_repeat() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 5;
+		pc.getAssemblyParameters().minReads = 1;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
+		MockSAMEvidenceSource ses = new MockSAMEvidenceSource(pc, 0, 50);
+		SAMRecord[] rp = DP(0, 100, "20M", true, 0, 1000, "20M", false);
+		rp[0].setReadBases(B("ACGTAAAAAAAAAAAAATTC"));
+		rp[1].setReadBases(B("AAATTCAAAAAAAAAGTGAT"));
+		List<SAMRecord> output = go(pc, FWD, NonReferenceReadPair.create(rp[0], rp[1], ses));
 
+		assertEquals(1, output.size());
+		assertEquals("ACGTAAAAAAAAAAAAATTCAAAAAAAAAGTGAT", S(output.get(0).getReadBases()));
+	}
 }
