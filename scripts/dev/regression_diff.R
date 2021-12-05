@@ -2,7 +2,7 @@ library(StructuralVariantAnnotation)
 library(argparser)
 library(tidyverse)
 baseline_filename = "v2.9.3/colo829/somatic.vcf.bgz"
-latest_filename = "vdev-3e50fa60/colo829_10_internalaligner/somatic.vcf.bgz"
+latest_filename = "vdev-c45021b5/colo829_10_externalaligner/somatic.vcf.bgz"
 
 ann_hit_matches = function(hitdf, queryGr, queryVcf, subjectGr, subjectVcf) {
 	hitdf = hitdf |>
@@ -27,7 +27,11 @@ ann_hit_matches = function(hitdf, queryGr, queryVcf, subjectGr, subjectVcf) {
 									"SB","SC","SR","SRQ","VF")) {
 		qval = iq[[field]][hitdf$queryHits]
 		sval = is[[field]][hitdf$subjectHits]
-		hitdf[[paste0("match", field)]] = ifelse(is.na(qval) | is.na(sval), is.na(qval) & is.na(sval), qval == sval)
+		if (xor(is.null(qval),is.null(sval))) {
+			hitdf[[paste0("match", field)]] = TRUE
+		} else {
+			hitdf[[paste0("match", field)]] = ifelse(is.na(qval) | is.na(sval), is.na(qval) & is.na(sval), qval == sval)
+		}
 	}
 	match_mat = as.matrix(hitdf |> dplyr::select(starts_with("match")))
 	name_mat = matrix(ncol=length(colnames(match_mat)), rep(str_remove(colnames(match_mat), "^match"), each=nrow(match_mat)))
