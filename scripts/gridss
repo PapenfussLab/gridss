@@ -681,7 +681,18 @@ if [[ $do_setupreference == true ]] ; then
 	#	write_status "Running	minimap2 index	(once-off setup for reference genome)"
 	#	$timecmd minimap2 -d ${reference}.idx ${reference} 1>&2 2>> $logfile
 	#fi
-	if [[ ! -s ${reference}.gridsscache ]] || [[ ! -s ${reference}.img ]] || [[ ! -s ${reference}.dict ]] ; then
+	missing_gridss_reference_prebuilt_file=false
+	build_bwa_files=false
+	if [[ ! -s ${reference}.dict ]] ; then
+		missing_gridss_reference_prebuilt_file=true
+	fi
+	if [[ $externalaligner == false ]] ; then
+		if [[ ! -s ${reference}.gridsscache ]] || [[ ! -s ${reference}.img ]] ; then
+			build_bwa_files=true
+			missing_gridss_reference_prebuilt_file=true
+		fi
+	fi
+	if [[ $missing_gridss_reference_prebuilt_file == true ]] ; then
 		if mkdir $lock_file ; then
 			for suffix in gridsscache img dict ; do
 				if [[ -f ${reference}.$suffix ]] && [[ ! -s ${reference}.$suffix ]] ; then
@@ -693,6 +704,9 @@ if [[ $do_setupreference == true ]] ; then
 			$timecmd java -Xmx$otherjvmheap $jvm_args \
 				-cp $gridss_jar gridss.PrepareReference \
 				REFERENCE_SEQUENCE=$reference \
+				CREATE_SEQUENCE_DICTIONARY=true \
+				CREATE_GRIDSS_REFERENCE_CACHE=$build_bwa_files \
+				CREATE_BWA_INDEX_IMAGE=$build_bwa_files \
 				1>&2 2>> $logfile
 			rmdir $lock_file
 		else
