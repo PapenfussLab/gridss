@@ -25,6 +25,17 @@ What do you want to do?
 
 # Install GRIDSS
 
+## From github releases
+
+Download the latest release from https://github.com/PapenfussLab/gridss/releases.
+
+Install all [GRIDSS dependencies](https://github.com/PapenfussLab/gridss#pre-requisites)
+
+## From the docker image
+
+A docker image is available for GRIDSS. Use `docker run gridss/gridss:latest` for the latest version.
+
+
 ## From conda
 
 - Install [BioConda](https://bioconda.github.io/)
@@ -35,13 +46,6 @@ What do you want to do?
 conda create -n gridss gridss
 conda activate gridss
 ```
-
-## From github releases
-
-Download the latest release from https://github.com/PapenfussLab/gridss/releases.
-
-Install all [GRIDSS dependencies](https://github.com/PapenfussLab/gridss#pre-requisites)
-
 
 # Call structural variants
 

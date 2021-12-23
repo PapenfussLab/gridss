@@ -49,7 +49,7 @@ To run GRIDSS the following must be installed:
     * StructuralVariantAnnotation
     * rtracklayer
     * BSgenome package for your reference genome (optional)
-* samtools 1.10 or later
+* samtools 1.13 or later
 * bwa
 * bash
 * getopt(1) (part of [util-linux](https://en.wikipedia.org/wiki/Util-linux))
@@ -68,7 +68,7 @@ Just [download the latest release](https://github.com/PapenfussLab/gridss/releas
 If you wish to contribute to GRIDSS development, it can be built from source using maven with `mvn package`.
 
 A prebuilt docker image is available as `gridss/gridss:latest` so building a docker image yourself is not necessary.
-If you do wish to build the docker image yourself, you need to run `scripts/dev/create_release.sh` so the necessary build artifacts exist in your environment.
+If you do wish to build the docker image yourself, ensure that you perform a recursive git checkout. If you don't, you'll be missing htslib and `gridsstools` won't compile.
 
 ### Building gridsstools
 
@@ -78,11 +78,8 @@ If this precompiled version does not run on your system you will need to build i
 
 To build `gridsstools` from source run the following:
 ```
-git clone http://github.com/PapenfussLab/gridss/
-cd gridss
-git submodule init
-git submodule update
-cd src/main/c/gridsstools/htslib/
+git clone --recurse-submodules http://github.com/PapenfussLab/gridss/
+cd gridss/src/main/c/gridsstools/htslib/
 autoreconf -i && ./configure && make
 cd ..
 autoreconf -i && ./configure && make all
@@ -126,7 +123,7 @@ optional argument|description
 ---|---
 -a, --assembly|location of the GRIDSS assembly BAM. This file will be created by GRIDSS. The default filename adds a `.assembly.bam` suffix to the output file.
 -t, --threads|number of threads to use. Defaults to 8 cores.
--j, --jar|location of GRIDSS jar. Can also be specified using the GRIDSS_JAR environment variable.
+-j, --jar|location of GRIDSS jar. Can also be specified using the `GRIDSS_JAR` environment variable.
 -b/--blacklist|BED file containing regions to ignore. The ENCODE DAC blacklist is recommended for hg19. (Optional)
 --jvmheap|size of JVM heap for the high-memory part of the assembly and variant calling. Defaults to 30g to ensure GRIDSS runs on cloud instances with 32gb memory.
 --otherjvmheap| size of JVM heap for everything else. Useful to prevent java out of memory errors when using large (>4Gb) reference genomes.  Note that some parts of assembly and variant calling use this heap size so if you get an OutOfMemory error during during these steps even after increasing jvmheap, you may need to increase otherjvmheap as well. (Default: 4gb)
@@ -142,13 +139,13 @@ argument|description
 ---|---
 -c, --configuration|configuration file use to override default GRIDSS settings
 --externalaligner|use the system version of bwa instead of the in-process version packaged with GRIDSS
---picardoptions|additional standard Picard command line options. Useful options include VALIDATION_STRINGENCY=LENIENT and COMPRESSION_LEVEL=0. See https://broadinstitute.github.io/picard/command-line-overview.html
+--picardoptions|additional standard Picard command line options. Useful options include `VALIDATION_STRINGENCY=LENIENT` and `COMPRESSION_LEVEL=0`. See https://broadinstitute.github.io/picard/command-line-overview.html
 --useproperpair|use SAM 'proper pair' flag to determine whether a read pair is discordant. Default: use library fragment size distribution to determine read pair concordance
 --concordantreadpairdistribution|portion of read pairs distribution considered concordantly mapped. Default: 0.995
 --keepTempFiles|keep intermediate files. Not recommended except for debugging due to the high disk usage.
 --nojni|do not use JNI native code acceleration libraries (snappy, GKL, ssw, bwa).
 	
-_Warning_: all somatic R scripts treat the first bam file to be the matched normal, and any subsequent as tumour sample. If you are doing somatic calling, make sure you follow this convention.
+_Warning_: the somatic filtering script treats the first bam file as the matched normal, and all subsequent as tumour samples. If you are doing somatic calling, it is strongly recommended to follow this convention.
 
 ### gridss steps
 
