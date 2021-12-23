@@ -29,5 +29,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          push: true
+          # TODO: remove the v from the tag prefix (or change the docker naming convention)
+          # TODO: push the correct image. I think it's pushing gridss_export_build_artefacts not gridss
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
