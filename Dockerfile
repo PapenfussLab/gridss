@@ -12,6 +12,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	libbz2-dev \
 	liblzma-dev \
 	libdeflate-dev \
+	libncurses5-dev \
 	build-essential \
 	autotools-dev \
 	autoconf \
@@ -20,9 +21,11 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	wget \
 	libomp-dev \
 	&& rm -rf /var/lib/apt/lists/*
+
 FROM gridss_c_build_environment AS gridss_builder_c
 RUN mkdir /opt/gridss/
 ARG GRIDSS_VERSION
+# compile gridsstools
 COPY src/main/c /opt/gridss/src/main/c
 COPY src/test/resources /opt/gridss/src/test/resources
 RUN cd /opt/gridss/src/main/c/gridsstools/htslib && \
@@ -46,45 +49,6 @@ COPY src /opt/gridss/src
 RUN mvn -T 1C -Drevision=${GRIDSS_VERSION} package && \
 	cp target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
 
-FROM gridss_base_closest_mirror AS gridss_minimal
-# Setup CRAN ubuntu package repository
-# apt-get clean not required for ubuntu images
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-		apt-utils \
-		gawk \
-		openjdk-11-jre-headless \
-		samtools \
-		bwa \
-		time \
-		libssl1.1 \
-		libcurl4 \
-		libxml2 \
-		zlib1g \
-		libbz2-1.0 \
-		liblzma5 \
-		libdeflate0 \
-		libomp5 \
-	&& rm -rf /var/lib/apt/lists/*
-# Hack a fake Rscript so that insert size metrics dont break when creating the histogram
-RUN echo "!/bin/sh" > /usr/local/bin/Rscript && chmod +x /usr/local/bin/Rscript
-ENV PATH="/opt/gridss/:$PATH"
-# Install GRIDSS
-ARG GRIDSS_VERSION
-ENV GRIDSS_VERSION=${GRIDSS_VERSION}
-ENV GRIDSS_JAR=/opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar
-LABEL software="GRIDSS"
-LABEL software.version="$GRIDSS_VERSION"
-LABEL about.summary="Genomic Rearrangement IDentification Software Suite"
-LABEL about.home="https://github.com/PapenfussLab/gridss"
-LABEL about.tags="Genomics"
-RUN mkdir /opt/gridss/ /data
-COPY --from=gridss_builder_c /opt/gridss/gridsstools /opt/gridss/
-COPY --from=gridss_builder_java /opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
-COPY scripts/gridss /opt/gridss/
-RUN chmod +x /opt/gridss/*
-WORKDIR /data/
-
-
 FROM gridss_c_build_environment AS gridss
 # Setup CRAN ubuntu package repository
 # apt-get clean not required for ubuntu images
@@ -101,7 +65,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		apt-utils \
 		gawk \
 		openjdk-11-jre-headless \
-		samtools \
 		bwa \
 		hmmer \
 		bedtools \
@@ -115,11 +78,18 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		rsync \
 		curl \
 	&& rm -rf /var/lib/apt/lists/*
-# R packages used by GRIDSS - R package need the C toolchain installed
-ENV R_INSTALL_STAGED=false
-RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");install.packages(c( "tidyverse", "assertthat", "testthat", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite" ))'
-RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c( "copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene" ))'
-
+# samtools needs to be installed from source since the OS package verion is too old
+RUN mkdir /opt/samtools && \
+	cd /opt/samtools && \
+	wget https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2 && \
+	tar -jxf samtools-1.14.tar.bz2 && \
+	cd samtools-1.14 && \
+	autoheader && \
+	autoconf -Wno-syntax && \
+	./configure && \
+	make install && \
+	cd ~ && \
+	rm -rf /opt/samtools
 ### Repeat Masker and dependencies
 RUN mkdir /opt/trf && \
 	cd /opt/trf && \
@@ -163,6 +133,10 @@ RUN cd /opt/RepeatMasker && \
 		-rmblast_dir /opt/rmblast \
 		-trf_prgm /opt/trf/trf \
 		-hmmer_dir /usr/local/bin
+# R packages used by GRIDSS - R package need the C toolchain installed
+ENV R_INSTALL_STAGED=false
+RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");install.packages(c( "tidyverse", "assertthat", "testthat", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite" ))'
+RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c( "copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene" ))'
 # Install GRIDSS
 ARG GRIDSS_VERSION
 ENV GRIDSS_VERSION=${GRIDSS_VERSION}
