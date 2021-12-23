@@ -517,10 +517,10 @@ for tool in Rscript samtools java bwa ; do #minimap2
 	fi
 	write_status "Found $(which $tool)"
 done
-if $(samtools --version-only 2>&1 >/dev/null) ; then
+if $(samtools --version-only >/dev/null) ; then
 	write_status "samtools version: $(samtools --version-only 2>&1)"
 else 
-	write_status "Your samtools version is so old it does not support --version-only. Update samtools."
+	write_status "Your samtools version does not support --version-only. Update samtools."
 	exit $EX_CONFIG
 fi
 if [[ "$(samtools --version-only)" =~ ^([0-9]+)[.]([0-9]+) ]] ; then
