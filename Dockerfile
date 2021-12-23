@@ -96,12 +96,12 @@ RUN mkdir /opt/trf && \
 	wget http://tandem.bu.edu/trf/downloads/trf407b.linux64 && \
 	chmod +x trf*.linux64 && \
 	ln -s trf*.linux64 trf
+# Turns out we need makeblastdb as well as rmblastn (https://github.com/PapenfussLab/gridss/issues/535)
 RUN mkdir /opt/rmblast && \
 	cd /opt/rmblast && \
-	wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/rmblast/2.2.28/ncbi-rmblastn-2.2.28-x64-linux.tar.gz && \
-	tar zxf ncbi-rmblastn-*.tar.gz && \
-	mv ncbi-rmblastn-*/bin/* . && \
-	rm -r ncbi-rmblastn-*
+	wget http://www.repeatmasker.org/rmblast-2.11.0+-x64-linux.tar.gz && \
+	tar --no-anchored --strip-components 2 -xvzf rmblast-2.11.0+-x64-linux.tar.gz rmblastn makeblastdb && \
+	rm rmblast-2.11.0+-x64-linux.tar.gz
 RUN cd /opt/ && \
 	wget http://www.repeatmasker.org/RepeatMasker/RepeatMasker-4.1.2-p1.tar.gz && \
 	tar zxf RepeatMasker-*.tar.gz && \
