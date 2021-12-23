@@ -9,6 +9,7 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.vcf.InsertedSequenceAnnotator;
 import au.edu.wehi.idsv.vcf.VcfInfoAttributes;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -50,7 +51,7 @@ public class AnnotateInsertedSequence extends ReferenceCommandLineProgram {
             + " The aligner must support using \"-\" as the input filename when reading from stdin."
             + "Java argument formatting is used with %1$s being the fastq file to align, "
             + "%2$s the reference genome, and %3$d the number of threads to use.", optional = true)
-    public List<String> ALIGNER_COMMAND_LINE = null;
+    public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
     @Argument(doc = "Number of records to buffer when performing in-process or streaming alignment. Not applicable when performing external alignment.", optional = true)
     public int ALIGNER_BATCH_SIZE = MAX_RECORDS_IN_RAM;
     @Argument(doc = "Whether to align inserted sequences to REFERENCE_GENOME. Valid values are:" +

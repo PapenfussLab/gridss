@@ -3,6 +3,7 @@ package gridss.cmdline;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
+import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
@@ -21,9 +22,26 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ReferenceCommandLineProgram.class);
+	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of(
+			"bwa",
+			"mem",
+			"-K", "10000000",
+			"-L", "0,0",
+			"-t", "%3$d",
+			"%2$s",
+			"%1$s");
+	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of(
+			"bowtie2",
+			"--threads", "%3$d",
+			"--local",
+			"--mm",
+			"--reorder",
+			"-x", "%2$s",
+			"-U", "%1$s");
 	// --- intermediate file parameters ---
     @Argument(doc = "Directory to place intermediate results directories. Default location is the same directory"
     		+ " as the associated input or output file.", optional = true)
