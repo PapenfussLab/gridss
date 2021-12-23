@@ -28,7 +28,6 @@ mv src/main/c/gridsstools-src-$version.tar.gz release/
 cp LICENSE release/ # https://bioconda.github.io/contributor/linting.html#gpl-requires-license-distributed
 docker build --build-arg GRIDSS_VERSION=$version --target gridss_export_build_artefacts --output type=local,dest=release . # --progress=plain
 docker build --build-arg GRIDSS_VERSION=$version --target gridss -t gridss/gridss:$version -t gridss/gridss:latest .
-docker build --build-arg GRIDSS_VERSION=$version --target gridss_minimal -t gridss/gridss_minimal:$version -t gridss/gridss_minimal:latest .
 docker build --build-arg GRIDSS_VERSION=$version --target gridss -t gridss/virusbreakend:$version -t gridss/virusbreakend:latest .
 cd release
 chmod +x *
@@ -36,8 +35,6 @@ chmod -x *.R *.jar
 tar czf gridss-$version.tar.gz *
 echo docker push gridss/gridss:$version 
 echo docker push gridss/gridss:latest
-echo docker push gridss/gridss_minimal:$version
-echo docker push gridss/gridss_minimal:latest 
 echo docker push gridss/virusbreakend:$version
 echo docker push gridss/virusbreakend:latest 
 

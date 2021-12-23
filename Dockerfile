@@ -1,8 +1,9 @@
 ARG UBUNTU_VERSION=20.04
-# Use the closest mirror so apt-get doesnt take ages
 FROM ubuntu:$UBUNTU_VERSION AS gridss_base_closest_mirror
+# Use the closest mirror so apt-get doesnt take ages
 RUN sed -i -e 's/http:\/\/archive\.ubuntu\.com\/ubuntu\//mirror:\/\/mirrors\.ubuntu\.com\/mirrors\.txt/' /etc/apt/sources.list
-# compile GRIDSS C code
+
+# Set up a C build environment for gridsstools, samtools, and R packages
 FROM gridss_base_closest_mirror AS gridss_c_build_environment
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	libssl-dev \
@@ -12,7 +13,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	libbz2-dev \
 	liblzma-dev \
 	libdeflate-dev \
-	libncurses5-dev \
 	build-essential \
 	autotools-dev \
 	autoconf \
@@ -22,10 +22,10 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	libomp-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
+# compile gridsstools
 FROM gridss_c_build_environment AS gridss_builder_c
 RUN mkdir /opt/gridss/
 ARG GRIDSS_VERSION
-# compile gridsstools
 COPY src/main/c /opt/gridss/src/main/c
 COPY src/test/resources /opt/gridss/src/test/resources
 RUN cd /opt/gridss/src/main/c/gridsstools/htslib && \
@@ -33,6 +33,7 @@ RUN cd /opt/gridss/src/main/c/gridsstools/htslib && \
 	cd .. && \
 	autoreconf -i && ./configure && make -j 8 && \
 	cp gridsstools /opt/gridss/
+
 # compile GRIDSS Java code
 FROM maven:3.6.3-jdk-8 AS gridss_builder_java
 RUN mkdir /opt/gridss/
@@ -40,8 +41,7 @@ WORKDIR /opt/gridss/
 # Download maven dependencies first so docker can cache them
 COPY pom.xml /opt/gridss/
 COPY repo /opt/gridss/repo
-#RUN mvn -Dmaven.artifact.threads=8 dependency:go-offline
-# run all stages so all dependencies are 
+# run all stages so all dependencies are cached
 RUN mvn -Dmaven.artifact.threads=8 verify && rm -rf target
 # Build GRIDSS jar
 ARG GRIDSS_VERSION
