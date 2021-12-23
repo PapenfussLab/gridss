@@ -1,8 +1,8 @@
 library(StructuralVariantAnnotation)
 library(argparser)
 library(tidyverse)
-baseline_filename = "v2.9.3/colo829/somatic.vcf.bgz"
-latest_filename = "vdev-c45021b5/colo829_10_externalaligner/somatic.vcf.bgz"
+baseline_filename = "vdev-c45021b5/colo829_10_externalaligner/somatic.vcf.bgz"
+latest_filename = "vdev-c45021b5/colo829_6_externalaligner/somatic.vcf.bgz"
 
 ann_hit_matches = function(hitdf, queryGr, queryVcf, subjectGr, subjectVcf) {
 	hitdf = hitdf |>
@@ -19,7 +19,7 @@ ann_hit_matches = function(hitdf, queryGr, queryVcf, subjectGr, subjectVcf) {
 	iq = as.data.frame(info(queryVcf))
 	is = as.data.frame(info(subjectVcf))
 	#"CIPOS","CIRPOS","IHOMPOS","HOMLEN","HOMSEQ",
-	for (field in c("AS","ASC","ASQ","ASRP","ASSR","BA","BANRP","BANRPQ","BANSR",
+	for (field in c("AS","ASC","ASQ","ASRP","ASSR","ANRP","ANSR","BA","BANRP","BANRPQ","BANSR",
 									"BANSRQ","BAQ","BASRP","BASSR","BMQ","BMQN","BMQX","BQ","BSC",
 									"BSCQ","BUM","BUMQ","BVF","CAS","CASQ","CQ",
 									"IC","IMPRECISE","INSRMP","INSRMRC","INSRMRO","INSRMRT","IQ",
@@ -27,7 +27,9 @@ ann_hit_matches = function(hitdf, queryGr, queryVcf, subjectGr, subjectVcf) {
 									"SB","SC","SR","SRQ","VF")) {
 		qval = iq[[field]][hitdf$queryHits]
 		sval = is[[field]][hitdf$subjectHits]
-		if (xor(is.null(qval),is.null(sval))) {
+		if (is.null(qval) && is.null(sval)) {
+			hitdf[[paste0("match", field)]] = TRUE
+		} else if (xor(is.null(qval),is.null(sval))) {
 			hitdf[[paste0("match", field)]] = TRUE
 		} else {
 			hitdf[[paste0("match", field)]] = ifelse(is.na(qval) | is.na(sval), is.na(qval) & is.na(sval), qval == sval)
