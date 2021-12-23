@@ -977,6 +977,7 @@ if [[ $sanityCheck == "true" ]] ; then
 		$config_args \
 		ASSEMBLY=ignored \
 		OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt \
+		$picardoptions \
 		1>&2 2>> $logfile
 fi
 if [[ $do_assemble == true ]] ; then
@@ -1118,7 +1119,8 @@ if [[ $sanityCheck == "true" ]] ; then
 		$config_args \
 		$assembly_args \
 		$readpairing_args \
-		OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt
+		OUTPUT_ERROR_READ_NAMES=reads_failing_sanity_check.txt \
+		$picardoptions
 fi
 if [[ $do_call == true ]] ; then
 	write_status "Start calling	$output_vcf"
@@ -1147,6 +1149,7 @@ if [[ $do_call == true ]] ; then
 				$config_args \
 				$assembly_args \
 				OUTPUT_VCF=$prefix.unallocated.vcf \
+				$picardoptions \
 				$readpairing_args \
 		; } 1>&2 2>> $logfile
 		write_status "Running	AnnotateVariants	$output_vcf"
