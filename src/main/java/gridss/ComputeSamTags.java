@@ -263,6 +263,14 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		if (tags.contains(SAMTag.Q2.name())) {
 			SAMRecordUtil.calculateTagQ2(segments);
 		}
+		for (SAMRecord r : records) {
+			if(r.getReadUnmappedFlag()){
+				r.setMappingQuality(0);
+				r.setSupplementaryAlignmentFlag(false);
+				r.setSecondaryAlignment(false);
+				r.setProperPairFlag(false);
+			}
+		}
 		return records;
 	}
 	protected boolean isReferenceRequired() {
