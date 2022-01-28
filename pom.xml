@@ -197,6 +197,17 @@
 			<version>0.8.6</version>
 		</dependency>
 	</dependencies>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-bom</artifactId>
+				<version>2.17.1</version>
+				<scope>import</scope>
+				<type>pom</type>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<scm>
 		<developerConnection>Daniel Cameron</developerConnection>
 		<url>https://github.com/PapenfussLab/gridss</url>
