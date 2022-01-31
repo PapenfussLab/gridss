@@ -23,7 +23,7 @@ public class SynchronousReferenceLookupAdapterTest {
 		for (int t = 0; t < th.length; t++) {
 			th[t] = new Thread(() -> {
 				try {
-					Random rng = new Random();
+					Random rng = new Random(0);
 					for (int i = 0; i < 4096; i++) {
 						int pos = rng.nextInt(100000000);
 						assertEquals(a.getBase(indexed.getSequenceDictionary().getSequence("chr4").getSequenceIndex(),pos),

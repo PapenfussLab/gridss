@@ -8,9 +8,6 @@ public class RandomBaseGenerator {
 	public RandomBaseGenerator(int seed) {
 		random = new Random(seed);
 	}
-	public RandomBaseGenerator() {
-		random = new Random();
-	}
 	public byte[] getBases(int length) {
 		byte[] bases = new byte[length];
 		for (int i = 0; i < length; i++) {
