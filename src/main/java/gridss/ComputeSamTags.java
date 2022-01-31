@@ -224,6 +224,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			}
 		}
 		// TODO: support secondary alignments by switching to templateBySegmentByAlignmentGroup() and handling split secondary reads
+		List<SAMRecord> outRecords = new ArrayList<>(records.size());
 		List<List<SAMRecord>> segments = SAMRecordUtil.templateBySegment(records);
 		for (List<SAMRecord> segment : segments) {
 			if (fixTruncated) {
@@ -231,6 +232,14 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			}
 			if (softenHardClips) {
 				SAMRecordUtil.softenHardClips(segment);
+			}
+			// Strip out all unmapped segments
+			if (anyMapped(segment)) {
+				for (int i = segment.size() - 1; i >= 0; i--) {
+					if (segment.get(i).getReadUnmappedFlag()) {
+						segment.remove(i);
+					}
+				}
 			}
 			if (recalculateSupplementary) {
 				SAMRecordUtil.reinterpretAsSplitReadAlignment(segment, supplementaryOverlap);
@@ -240,7 +249,9 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			if (Sets.intersection(tags, ImmutableSet.of(SAMTag.CC.name(), SAMTag.CP.name(), SAMTag.HI.name(), SAMTag.IH.name())).size() > 0) {
 				SAMRecordUtil.calculateMultimappingTags(tags, segment);
 			}
+			outRecords.addAll(segment);
 		}
+		records = outRecords; // SAMRecords could have been removed from segments - need to reflect that in records
 		if (fixMates || tags.contains(SAMTag.MC.name()) || tags.contains(SAMTag.MQ.name())) {
 			SAMRecordUtil.matchReadPairPrimaryAlignments(segments);
 			if (segments.size() >= 2) {
@@ -264,6 +275,12 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 			SAMRecordUtil.calculateTagQ2(segments);
 		}
 		return records;
+	}
+	private static boolean anyMapped(List<SAMRecord> records) {
+		for (SAMRecord r : records) {
+			if (!r.getReadUnmappedFlag()) return true;
+		}
+		return false;
 	}
 	protected boolean isReferenceRequired() {
 		return TAGS.contains(SAMTag.NM.name()) ||
