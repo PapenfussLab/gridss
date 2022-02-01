@@ -901,6 +901,7 @@ if [[ $do_preprocess == true ]] ; then
 								-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 								$tmp_prefix.sc2sr.supp.sv.bam \
 						&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
+						&& $rmcmd -f $prefix.sv.tmp.bam $prefix.sv.tmp.bam.bai \
 						&& $timecmd samtools merge \
 								-c \
 								-p \
@@ -1059,6 +1060,7 @@ if [[ $do_assemble == true ]] ; then
 					-o $tmp_prefix.sc2sr.suppsorted.sv.bam \
 					$tmp_prefix.sc2sr.supp.sv.bam \
 			&& $rmcmd $tmp_prefix.sc2sr.supp.sv.bam \
+			&& $rmcmd -f $prefix.sv.tmp.bam $prefix.sv.tmp.bam.bai \
 			&& $timecmd samtools merge \
 					-c \
 					-p \
