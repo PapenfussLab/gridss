@@ -3,16 +3,17 @@
  */
 package au.edu.wehi.idsv;
 
-import com.sun.org.apache.xpath.internal.functions.FuncSubstringAfter;
-import htsjdk.samtools.*;
-import it.unimi.dsi.fastutil.objects.*;
+import htsjdk.samtools.SAMRecord;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 
-import javax.sound.midi.Track;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Daniel Cameron

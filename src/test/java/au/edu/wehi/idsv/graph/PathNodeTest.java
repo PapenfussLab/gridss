@@ -3,8 +3,6 @@ package au.edu.wehi.idsv.graph;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

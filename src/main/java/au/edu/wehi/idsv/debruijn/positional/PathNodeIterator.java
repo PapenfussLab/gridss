@@ -9,7 +9,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import htsjdk.samtools.util.Log;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 /**
  * Transforms a start position sorted sequence of non-overlapping KmerAggregateNode to a

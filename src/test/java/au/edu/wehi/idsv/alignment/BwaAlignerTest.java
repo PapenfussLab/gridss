@@ -10,11 +10,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
-import sun.security.action.GetPropertyAction;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.AccessController;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -28,11 +27,8 @@ public class BwaAlignerTest extends TestHelper {
         return hits.stream().filter(x -> x.getReadName().equals(readname)).collect(Collectors.toList());
     }
     @Before
-    public void ensure_temp_dir() {
-        File dir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+    public void ensure_temp_dir() throws IOException {
+        File.createTempFile("BwaAlignerTest", ".test");
     }
     @Test
     @Category(JniAlignerTests.class)
@@ -140,13 +136,14 @@ public class BwaAlignerTest extends TestHelper {
     @Test
     @Category(JniAlignerTests.class)
     public void sanity_check_can_create_temp_file() throws IOException {
-        File dir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
-        System.err.println("TMP_DIR=" + dir);
-        if (!dir.exists()) {
-            System.err.println("Missing " + dir);
+        File dir = Files.createTempDirectory("sanity_check_can_create_temp_file").toFile();
+        File f = Files.createTempFile("sanity_check_can_create_temp_file", "").toFile();
+        if (!f.exists() || !dir.exists()) {
+            System.err.println("Missing " + f);
         }
-        File f = File.createTempFile("prefix", "suffix");
         f.deleteOnExit();
+        dir.deleteOnExit();
         Assert.assertTrue(f.exists());
+        Assert.assertTrue(dir.exists());
     }
 }

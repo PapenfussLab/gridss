@@ -8,7 +8,6 @@ import com.google.common.collect.Range;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
 import org.apache.commons.configuration.ConfigurationException;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;

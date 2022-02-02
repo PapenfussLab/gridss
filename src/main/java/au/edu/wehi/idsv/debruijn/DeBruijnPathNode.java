@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.graph.PathNode;
-import au.edu.wehi.idsv.graph.WeightedDirectedGraph;
 
 import java.util.Collection;
 

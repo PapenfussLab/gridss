@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;

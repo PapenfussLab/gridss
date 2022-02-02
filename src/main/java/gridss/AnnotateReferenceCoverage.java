@@ -1,6 +1,9 @@
 package gridss;
 
-import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.SequentialCoverageAnnotator;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
 

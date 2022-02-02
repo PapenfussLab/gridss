@@ -5,11 +5,9 @@ import au.edu.wehi.idsv.kraken.KrakenReportLine;
 import au.edu.wehi.idsv.kraken.SeqIdToTaxIdMap;
 import au.edu.wehi.idsv.ncbi.MinimalTaxonomyNode;
 import au.edu.wehi.idsv.ncbi.TaxonomyHelper;
-import au.edu.wehi.idsv.ncbi.TaxonomyLevel;
 import au.edu.wehi.idsv.ncbi.TaxonomyNode;
 import com.google.common.collect.Streams;
 import gridss.cmdline.ReferenceCommandLineProgram;
-import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
@@ -21,9 +19,6 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.broadinstitute.barclay.argparser.Argument;
@@ -39,7 +34,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toMap;
 
 @CommandLineProgramProperties(
         summary = "Processes a Kraken2 report and extracts the sequences with the most hits",

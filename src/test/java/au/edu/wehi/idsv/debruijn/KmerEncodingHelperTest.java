@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn;
 
 import au.edu.wehi.idsv.TestHelper;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.junit.Assert;

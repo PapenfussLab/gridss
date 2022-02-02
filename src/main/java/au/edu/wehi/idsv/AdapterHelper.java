@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.debruijn.PackedSequence;
 import com.google.common.collect.ImmutableList;
 import htsjdk.samtools.SAMRecord;

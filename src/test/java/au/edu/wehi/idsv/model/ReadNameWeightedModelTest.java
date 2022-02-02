@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.model;
 
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import org.junit.Test;
 

@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
-
 /**
  * KmerNode representing an individual kmer of a KmerPathNode
  * @author Daniel Cameron

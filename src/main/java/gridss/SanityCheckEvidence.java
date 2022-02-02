@@ -1,6 +1,5 @@
 package gridss;
 
-import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;

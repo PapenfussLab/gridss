@@ -1,7 +1,6 @@
 package assfolder;
 
 import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.TestHelper;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 

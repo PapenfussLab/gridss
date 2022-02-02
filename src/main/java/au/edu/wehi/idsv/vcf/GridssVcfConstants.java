@@ -1,6 +1,9 @@
 package au.edu.wehi.idsv.vcf;
 
-import htsjdk.variant.vcf.*;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFStandardHeaderLines;
 
 public class GridssVcfConstants {
 	public static final String VCF42BREAKEND = ".";

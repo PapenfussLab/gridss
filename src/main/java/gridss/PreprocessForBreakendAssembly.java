@@ -1,13 +1,15 @@
 package gridss;
 
-import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.SAMRecordChangeTracker;
+import au.edu.wehi.idsv.StreamingSplitReadRealigner;
 import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.StreamingAligner;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.AsyncReadTaskRunner;
@@ -20,10 +22,8 @@ import picard.cmdline.StandardOptionDefinitions;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.Set;
 
 @CommandLineProgramProperties(
 		summary = "Preprocesses a readname sorted file for use in the GRIDSS assembler. " +

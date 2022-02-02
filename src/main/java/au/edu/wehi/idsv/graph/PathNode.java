@@ -3,7 +3,10 @@ package au.edu.wehi.idsv.graph;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class PathNode<T> implements WeightedSequenceGraphNode {
 	/**

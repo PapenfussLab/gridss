@@ -4,8 +4,8 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import htsjdk.samtools.CigarOperator;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.*;
 
 /**
  * Custom evidence weighting model. The evidence weighting is encoded in the "weight" named group of the read name regex.

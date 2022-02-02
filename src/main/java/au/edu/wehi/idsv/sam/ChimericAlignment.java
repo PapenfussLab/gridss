@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.sam;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.VariantContextRepeatMaskerAnnotator;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;

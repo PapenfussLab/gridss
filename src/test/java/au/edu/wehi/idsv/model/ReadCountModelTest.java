@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.model;
 
-import au.edu.wehi.idsv.DirectedEvidence;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

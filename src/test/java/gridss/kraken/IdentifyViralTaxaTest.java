@@ -1,22 +1,15 @@
 package gridss.kraken;
 
-import au.edu.wehi.VirusbreakenddbTests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ncbi.TaxonomyLevel;
 import com.google.common.collect.ImmutableList;
-import htsjdk.samtools.reference.FastaSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequence;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.List;
 
 // for f in $(find src/test/resources/kraken        -name '*.fa') ; do grep ">" $f | cut -b 2- | awk '{ split($0,a,"|"); split($0,b," ") ; print b[1] "\t" a[2]  } ' >> $(dirname $f)/seqid2taxid.map ; done

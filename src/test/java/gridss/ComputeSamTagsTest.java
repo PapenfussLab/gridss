@@ -4,7 +4,6 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import gridss.cmdline.CommandLineProgramHelper;
@@ -20,8 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
 
 public class ComputeSamTagsTest extends IntermediateFilesTest {
     @Test

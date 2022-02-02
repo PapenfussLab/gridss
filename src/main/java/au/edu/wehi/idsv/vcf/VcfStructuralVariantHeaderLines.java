@@ -1,6 +1,9 @@
 package au.edu.wehi.idsv.vcf;
 
-import htsjdk.variant.vcf.*;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 public class VcfStructuralVariantHeaderLines {
 	//http://www.1000genomes.org/wiki/Analysis/Variant%20Call%20Format/vcf-variant-call-format-version-41

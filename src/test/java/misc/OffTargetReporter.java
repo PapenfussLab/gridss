@@ -1,14 +1,12 @@
 package misc;
 
 import au.edu.wehi.idsv.Hg19Tests;
-import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedSequence;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.Log;
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;

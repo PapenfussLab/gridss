@@ -2,9 +2,6 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.ImmutableList;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;

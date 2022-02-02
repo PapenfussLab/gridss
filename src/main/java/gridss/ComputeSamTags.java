@@ -8,7 +8,6 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.util.ParallelTransformIterator;
 import au.edu.wehi.idsv.util.UngroupingIterator;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import gridss.cmdline.ReferenceCommandLineProgram;

@@ -7,7 +7,6 @@ import au.edu.wehi.idsv.StreamingSplitReadRealigner;
 import au.edu.wehi.idsv.alignment.BwaStreamingAligner;
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
 import au.edu.wehi.idsv.alignment.ExternalProcessStreamingAligner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMFileWriterFactory;
