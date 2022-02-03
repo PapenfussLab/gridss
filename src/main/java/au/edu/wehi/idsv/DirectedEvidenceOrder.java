@@ -7,19 +7,7 @@ import htsjdk.samtools.SAMRecord;
 import java.util.Comparator;
 
 public abstract class DirectedEvidenceOrder {
-    public static final Comparator<? super DirectedEvidence> BySAMStartDeterministic = (o1, o2) -> {
-		SAMRecord s1 = o1.getUnderlyingSAMRecord();
-		SAMRecord s2 = o2.getUnderlyingSAMRecord();
-		int cmp = new SAMRecordCoordinateOnlyComparator().fileOrderCompare(s1, s2);
-		if (cmp != 0) return cmp;
-		cmp = ComparisonChain.start()
-				.compare(s1.getFlags(), s2.getFlags())
-				.compare(s1.getReadName(), s2.getReadName())
-				.result();
-		if (cmp != 0) return cmp;
-		// force deterministic ordering
-		return o1.getEvidenceID().compareTo(o2.getEvidenceID());
-	};
+	public static final Comparator<? super DirectedEvidence> BySAMStart = Ordering.from(new SAMRecordCoordinateOnlyComparator()).onResultOf(x -> x.getUnderlyingSAMRecord());
 	public static Ordering<DirectedEvidence> ByStartEndStart2End2 = new Ordering<DirectedEvidence>() {
 		public int compare(DirectedEvidence arg1, DirectedEvidence arg2) {
 			BreakendSummary loc1 = arg1.getBreakendSummary();
@@ -53,7 +41,9 @@ public abstract class DirectedEvidenceOrder {
 			        .compare(arg1_nominal2, arg2_nominal2)
 			        .result();
 			if (cmp != 0) return cmp;
-			return BySAMStartDeterministic.compare(arg1, arg2);
+			cmp = BySAMStart.compare(arg1, arg2);
+			if (cmp != 0) return cmp;
+			return arg1.getEvidenceID().compareTo(arg2.getEvidenceID());
 		}
 	};
 	/**
