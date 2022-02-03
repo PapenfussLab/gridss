@@ -2,6 +2,7 @@ package gridss.cmdline;
 
 import au.edu.wehi.idsv.*;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.DeterministicIterators;
 import au.edu.wehi.idsv.util.FileHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -81,7 +82,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		Iterator<IdsvVariantContext> nonbeIt = Iterators.filter(idsvIt, variant -> !(variant instanceof VariantContextDirectedEvidence));
 		// sort back to nominal VCF position
 		Iterator<VariantContextDirectedEvidence> bpit = new VariantContextWindowedSortingIterator<>(getContext(), SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), breakendCalls);
-		Iterator<IdsvVariantContext> mergedIt = Iterators.mergeSorted(ImmutableList.of(bpit, nonbeIt), IdsvVariantContext.ByLocationStart); 
+		Iterator<IdsvVariantContext> mergedIt = DeterministicIterators.mergeSorted(ImmutableList.of(bpit, nonbeIt), IdsvVariantContext.ByLocationStart);
 		return new AutoClosingIterator<>(mergedIt, vcfReader, it);
 	}
 	protected void saveVcf(File file, Iterator<IdsvVariantContext> calls) throws IOException {

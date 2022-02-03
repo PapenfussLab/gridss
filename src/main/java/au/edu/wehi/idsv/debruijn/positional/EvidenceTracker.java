@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -9,6 +10,9 @@ import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,14 +26,29 @@ import static au.edu.wehi.idsv.Defaults.SANITY_CHECK_EVIDENCE_TRACKER;
  *
  */
 public class EvidenceTracker {
+	private static final Log log = Log.getInstance(EvidenceTracker.class);
 	//public static EvidenceTracker TEMP_HACK_CURRENT_TRACKER = null;
 	private final Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>> lookup = new Long2ObjectOpenHashMap<>();
 	private final Object2ObjectOpenHashMap<String, List<KmerEvidence>> id = new Object2ObjectOpenHashMap<>();
 	private long evidenceTotal = 0;
+	private PrintWriter debugFile = null;
 	/**
 	 * Tracks evidence emitted from the given iterator
 	 */
 	public EvidenceTracker() {
+	}
+	public void setDebugFileOutput(File file) {
+		try {
+			debugFile = new PrintWriter(file);
+		} catch (FileNotFoundException e) {
+			log.error(e, "Can't write evidence tracking to file");
+		}
+	}
+	public void closeDebugFileOutput() {
+		if (debugFile != null) {
+			debugFile.close();
+			debugFile = null;
+		}
 	}
 	/**
 	 * Tracks the given evidence
@@ -50,6 +69,10 @@ public class EvidenceTracker {
 			evidenceTotal++;
 			idvalue = new ArrayList<>();
 			id.put(evidenceId, idvalue);
+			if (debugFile != null) {
+				debugFile.write("Add," + evidenceId);
+				debugFile.write('\n');
+			}
 		}
 		if (!idvalue.contains(ke)) {
 			idvalue.add(ke);
@@ -75,9 +98,13 @@ public class EvidenceTracker {
 		return evidenceToRemove;
 	}
 	private void addToRemoveList(KmerEvidence evidence, Set<KmerEvidence> removeSet, LongSortedSet kmersInSet) {
+		String evidenceId = evidence.evidence().getEvidenceID();
+		if (this.debugFile != null) {
+			debugFile.write("Remove," + evidence.evidence().getEvidenceID());
+		}
 		// Need to remove all KmerEvidence associated with the evidence
 		// Read pairs can have two: one each of the anchored and unanchored reads
-		Collection<KmerEvidence> trackedKmerEvidenceForEvidence = id.remove(evidence.evidence().getEvidenceID());
+		Collection<KmerEvidence> trackedKmerEvidenceForEvidence = id.remove(evidenceId);
 		if (trackedKmerEvidenceForEvidence == null) {
 			// Will happen when we attempt to remove the second KmerEvidence in a read pair
 			return;
@@ -196,6 +223,8 @@ public class EvidenceTracker {
 	public boolean isTracked(String evidenceId) {
 		return id.keySet().contains(evidenceId);
 	}
+
+
 	public class PathNodeAssertionInterceptor implements Iterator<KmerPathNode> {
 		private final Iterator<KmerPathNode> underlying;
 		private final String id;

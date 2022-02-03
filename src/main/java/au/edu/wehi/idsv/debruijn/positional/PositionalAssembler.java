@@ -81,6 +81,9 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		}
 	}
 	private void closeCurrentAssembler() {
+		if (evidenceTracker != null) {
+			evidenceTracker.closeDebugFileOutput();
+		}
 		if (currentAssembler != null && currentAssembler.getExportTracker() != null) {
 			try {
 				currentAssembler.getExportTracker().close();
@@ -316,6 +319,13 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(inputIterator, referenceIndex);
 		evidenceTracker = new EvidenceTracker();
+		VisualisationConfiguration vis = context.getConfig().getVisualisation();
+		if (vis.evidenceTracker) {
+			String filename = String.format("evidenceTracker-%s_%d-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), firstPosition, direction);
+			filename = FilenameUtil.stripInvalidFilenameCharacters(filename);
+			File file = new File(vis.directory, filename);
+			evidenceTracker.setDebugFileOutput(file);
+		}
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, Math.max(2 * source.getMaxReadLength(), source.getMaxConcordantFragmentSize()), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
@@ -328,7 +338,6 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
 		}
 		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward, excludedRegions, safetyRegions);
-		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s_%d-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), firstPosition, direction);
 			filename = FilenameUtil.stripInvalidFilenameCharacters(filename);

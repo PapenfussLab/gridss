@@ -16,7 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Iterator that automatically closes the the underlying resources when their respective end of stream has been reached.
+ * Iterator that automatically closes the underlying resources when their respective end of stream has been reached.
  * 
  * @author Daniel Cameron
  *
@@ -32,19 +32,16 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 	private int emitCount = 0;
 	public AutoClosingMergedIterator(final Iterable<? extends Iterator<? extends T>> iterators, final Comparator<? super T> comparator) {
 		this.comparator = comparator;
-		this.stillOpen = Lists.newArrayList(Iterables.transform(iterators, new Function<Iterator<? extends T>, AutoClosingIterator<T>>() {
-			@Override
-			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
-				AutoClosingIterator<T> it = new AutoClosingIterator<T>(input);
-				if (Defaults.SANITY_CHECK_ITERATORS) {
-					CountingIterator<T> cit = new CountingIterator<T>(it);
-					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(cit, comparator), it);
-					counts.add(cit);
-				}
-				return it;
+		this.stillOpen = Lists.newArrayList(Iterables.transform(iterators, (input) -> {
+			AutoClosingIterator<T> it = new AutoClosingIterator<T>(input);
+			if (Defaults.SANITY_CHECK_ITERATORS) {
+				CountingIterator<T> cit = new CountingIterator<T>(it);
+				it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(cit, comparator), it);
+				counts.add(cit);
 			}
+			return it;
 		}));
-		this.merged = Iterators.mergeSorted(stillOpen, comparator);
+		this.merged = DeterministicIterators.mergeSorted(stillOpen, comparator);
 	}
 	@Override
 	public boolean hasNext() {

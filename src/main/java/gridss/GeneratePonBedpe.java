@@ -7,6 +7,7 @@ import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.DeterministicIterators;
 import au.edu.wehi.idsv.util.WindowedSortingIterator;
 import au.edu.wehi.idsv.vcf.VcfFormatAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
@@ -123,7 +124,7 @@ public class GeneratePonBedpe extends CommandLineProgram {
 			}
 			GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), TMP_DIR.get(0), MAX_RECORDS_IN_RAM), REFERENCE_SEQUENCE, null);
 			pc.setCommandLineProgram(this);
-			Iterator<Pair<BreakendSummary, Integer>> mergedIt = Iterators.mergeSorted(ImmutableList.of(
+			Iterator<Pair<BreakendSummary, Integer>> mergedIt = DeterministicIterators.mergeSorted(ImmutableList.of(
 					filteredMerge(pc, INPUT, NORMAL_ORDINAL),
 					getExistingPON(pc.getDictionary(), INPUT_BEDPE, INPUT_BED)), ByBreakendStartEnd);
 			BedpeMergingCounter pe = new BedpeMergingCounter();
@@ -172,7 +173,7 @@ public class GeneratePonBedpe extends CommandLineProgram {
 		BEDCodec codec = new BEDCodec();
 		AbstractFeatureReader<BEDFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(bedFile.getPath(), codec, false);
 		Iterator<Pair<BreakendSummary, Integer>> seItTransformed = Iterators.transform(reader.iterator(), (BEDFeature x) -> toPair(dictionary, x));
-		return new AutoClosingIterator<>(Iterators.mergeSorted(ImmutableList.of(peItTransformed, seItTransformed), ByBreakendStartEnd), reader, peIt);
+		return new AutoClosingIterator<>(DeterministicIterators.mergeSorted(ImmutableList.of(peItTransformed, seItTransformed), ByBreakendStartEnd), reader, peIt);
 	}
 	private static <T> Iterable<T> expand(Pair<T, Integer> pair) {
 		List<T> result = new ArrayList<>(pair.getSecond());
@@ -212,10 +213,10 @@ public class GeneratePonBedpe extends CommandLineProgram {
 				.collect(Collectors.groupingBy(it -> counter.getAndIncrement() % size))
 				.values()
 				.stream()
-				.map(list -> list.size() == 1 ? list.get(0) : Iterators.mergeSorted(list, ByBreakendStartEnd))
+				.map(list -> list.size() == 1 ? list.get(0) : DeterministicIterators.mergeSorted(list, ByBreakendStartEnd))
 				.map(it -> new AsyncBufferedIterator<>(it,"AsyncVCF"))
 				.collect(Collectors.toList());
-		Iterator<Pair<BreakendSummary, Integer>> mergedIt = new AsyncBufferedIterator<>(Iterators.mergeSorted(partitioned, ByBreakendStartEnd), "Merged VCF reader");
+		Iterator<Pair<BreakendSummary, Integer>> mergedIt = new AsyncBufferedIterator<>(DeterministicIterators.mergeSorted(partitioned, ByBreakendStartEnd), "Merged VCF reader");
 		return mergedIt;
 	}
 	private CloseableIterator<Pair<BreakendSummary, Integer>> getFilteredIterator(GenomicProcessingContext pc, File file, List<Integer> ordinals) {

@@ -29,7 +29,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(SCE(FWD, Read(0, 10, "5M5S")));
 		input.add(SCE(BWD, Read(0, 100, "5S5M")));
 		input.add(SCE(FWD, Read(0, 100, "5M5S")));
-		input.sort(DirectedEvidenceOrder.ByStartEnd);
+		input.sort(DirectedEvidenceOrder.ByStartEndStart2End2);
 		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator(), null, null));
 		assertEquals(4, r.size());
 	}
@@ -47,7 +47,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		//       MMMMMMMMSSSSSS
 		input.add(SCE(FWD, withSequence(        "ACGTTGGTTA", Read(0, 10, "5M5S"))[0]));
 		input.add(SCE(FWD, withSequence("TTTTTGCAACGTTGGTTAA", Read(0, 2, "13M6S"))[0]));
-		input.sort(DirectedEvidenceOrder.ByStartEnd);
+		input.sort(DirectedEvidenceOrder.ByStartEndStart2End2);
 		List<SingleReadEvidence> r = asAssemblyEvidence(aes, Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator(), null, null)));
 		assertEquals(1, r.size());
 		assertEquals(new BreakendSummary(0, FWD, 14), r.get(0).getBreakendSummary());
@@ -82,7 +82,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(SCE(FWD, withSequence("ACGTTGGTTA", Read(0, 10, "5M5S"))[0]));
 		input.add(SCE(FWD, withSequence("TTTTTGCAACGTTGGTTAA", Read(0, 2, "13M6S"))[0]));
 		input.add(NRRP(withSequence("TTTTTGCAACGTTGGTTAA", DP(0, 2, "13M6S", true, 1, 1, "19M", false))));
-		input.sort(DirectedEvidenceOrder.ByStartEnd);
+		input.sort(DirectedEvidenceOrder.ByStartEndStart2End2);
 		List<SingleReadEvidence> r = asAssemblyEvidence(aes, Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator(), null, null)));
 		assertEquals(2, r.size());
 		// race condition w.r.t which assembly returns first
@@ -127,7 +127,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
 		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
 		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
-		input.sort(DirectedEvidenceOrder.ByStartEnd);
+		input.sort(DirectedEvidenceOrder.ByStartEndStart2End2);
 		SAMRecord r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator(), null, null)).get(0);
 		assertEquals(2, new AssemblyAttributes(r).getSupportingReadCount(6, null, null, null));
 	}
@@ -143,7 +143,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		//         MMMM>>>>
 		e.add(SCE(FWD, withSequence("ACGTCCGGACGG", Read(1, 1, "4M8S"))[0]));
 		e.add(SCE(FWD, withSequence("ACGGTTGT", Read(1, 9, "4M4S"))[0]));
-		e.sort(DirectedEvidenceOrder.ByStartEnd);
+		e.sort(DirectedEvidenceOrder.ByStartEndStart2End2);
 		ArrayList<SAMRecord> output = Lists.newArrayList(new PositionalAssembler(pc, AES(pc), new SequentialIdGenerator("asm"), e.iterator(), BreakendDirection.Forward, null, null));
 		for (SAMRecord r : output) {
 			assertEquals(BreakendDirection.Forward, new AssemblyAttributes(r).getAssemblyDirection());
