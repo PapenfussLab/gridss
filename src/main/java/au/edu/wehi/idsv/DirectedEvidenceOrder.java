@@ -41,8 +41,10 @@ public abstract class DirectedEvidenceOrder {
 			        .compare(arg1_nominal2, arg2_nominal2)
 			        .result();
 			if (cmp != 0) return cmp;
-			cmp = BySAMStart.compare(arg1, arg2);
-			if (cmp != 0) return cmp;
+			if (arg1.getUnderlyingSAMRecord() != null && arg2.getUnderlyingSAMRecord() != null) {
+				cmp = BySAMStart.compare(arg1, arg2);
+				if (cmp != 0) return cmp;
+			}
 			return arg1.getEvidenceID().compareTo(arg2.getEvidenceID());
 		}
 	};
