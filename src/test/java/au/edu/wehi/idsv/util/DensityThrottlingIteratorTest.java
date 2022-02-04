@@ -45,4 +45,40 @@ public class DensityThrottlingIteratorTest {
 		List<Integer> result = Lists.newArrayList(new IntDensityThrottlingIterator(input.iterator(), 4, 2.0, 4.0));
 		assertEquals(2048, result.size(), 64);
 	}
+	public class IntRecord {
+		public final int value;
+		public final long position;
+		public IntRecord(int value, long position) {
+			this.value = value;
+			this.position = position;
+		}
+	}
+	public class IntRecordRecordDensityThrottlingIterator extends DensityThrottlingIterator<IntRecord> {
+		public IntRecordRecordDensityThrottlingIterator(Iterator<IntRecord> it, int windowSize, double acceptDensity, double targetDensity) {
+			super(it, windowSize, acceptDensity, targetDensity);
+		}
+		@Override
+		protected long getPosition(IntRecord record) {
+			return record.position;
+		}
+
+		@Override
+		protected boolean excludedFromThrottling(IntRecord record) {
+			return false;
+		}
+	}
+	@Test
+	public void should_be_deterministic() {
+		List<IntRecord> input = new ArrayList<IntRecord>();
+		for (int i = 0; i < 1024; i++) {
+			int value = ~i & 0xFF;
+			for (long pos = 0; pos < 128; pos++) {
+				input.add(new IntRecord(value, pos));
+			}
+		}
+		List<IntRecord> result1 = Lists.newArrayList(new IntRecordRecordDensityThrottlingIterator(input.iterator(), 4, 2.0, 4.0));
+		List<IntRecord> result2 = Lists.newArrayList(new IntRecordRecordDensityThrottlingIterator(input.iterator(), 4, 2.0, 4.0));
+
+		assertEquals(result1, result2);
+	}
 }

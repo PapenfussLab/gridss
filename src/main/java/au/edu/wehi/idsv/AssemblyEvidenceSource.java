@@ -7,9 +7,11 @@ import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
+import au.edu.wehi.idsv.util.DebugSpammingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Iterators;
 import com.google.common.util.concurrent.MoreExecutors;
 import gridss.SoftClipsToSplitReads;
 import gridss.cmdline.CommandLineProgramHelper;
@@ -233,9 +235,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded, EvidenceSortOrder.SAMRecordStartPosition)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input, downsampledRegions);
 			Iterator<DirectedEvidence> errorCorrectedIt = errorCorrected(throttledIt);
-			PositionalAssembler assembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, errorCorrectedIt, direction, excludedRegions, safetyRegions);
+			PositionalAssembler positionalAssembler = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, errorCorrectedIt, direction, excludedRegions, safetyRegions);
 			if (telemetry != null) {
-				assembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
+				positionalAssembler.setTelemetry(telemetry.getTelemetry(chunkNumber, direction));
+			}
+			Iterator<SAMRecord> assembler = positionalAssembler;
+			if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+				assembler = Iterators.peekingIterator(new DebugSpammingIterator<>(assembler, "AssemblyEvidenceSource.assembler"));
 			}
 			while (assembler.hasNext()) {
 				SAMRecord asm = assembler.next();

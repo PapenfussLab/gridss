@@ -35,8 +35,6 @@ public abstract class DensityThrottlingIterator<T> implements PeekingIterator<T>
 	/**
 	 * @param it iterator to filter. Cannot contain null elements
 	 * @param windowSize Size of window to track density over
-	 * @param acceptAllCount number of record in window before throttling starts
-	 * @param maxCount maximum average number of records in window 
 	 */
 	public DensityThrottlingIterator(Iterator<T> it, int windowSize, double acceptDensity, double targetDensity) {
 		this.underlying = it;

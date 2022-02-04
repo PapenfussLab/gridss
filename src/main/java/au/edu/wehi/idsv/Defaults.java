@@ -7,6 +7,7 @@ public class Defaults {
 	public static final boolean SANITY_CHECK_EVIDENCE_TRACKER;
 	public static final boolean SANITY_CHECK_CLIQUE;
 	public static final boolean SANITY_CHECK_ITERATORS;
+	public static final boolean SANITY_CHECK_DUMP_ITERATORS;
 	public static final boolean SANITY_CHECK_MEMOIZATION;
 	public static final boolean SANITY_CHECK_MEMOIZATION_ALL_OPERATIONS;
 	public static final boolean SINGLE_THREAD_LIBSSW;
@@ -23,6 +24,7 @@ public class Defaults {
 		SANITY_CHECK_EVIDENCE_TRACKER = Boolean.valueOf(System.getProperty("sanitycheck.evidencetracker", "false"));
 		SANITY_CHECK_CLIQUE = Boolean.valueOf(System.getProperty("sanitycheck.clique", "false"));
 		SANITY_CHECK_ITERATORS = Boolean.valueOf(System.getProperty("sanitycheck.iterators", "false"));
+		SANITY_CHECK_DUMP_ITERATORS = Boolean.valueOf(System.getProperty("sanitycheck.dumpIterators", "false"));
 		SANITY_CHECK_MEMOIZATION = Boolean.valueOf(System.getProperty("sanitycheck.memoization", "false"));
 		SANITY_CHECK_MEMOIZATION_ALL_OPERATIONS = Boolean.valueOf(System.getProperty("sanitycheck.memoization.alloperations", "false"));
 		SINGLE_THREAD_LIBSSW = Boolean.valueOf(System.getProperty("sswjni.sync", "false"));

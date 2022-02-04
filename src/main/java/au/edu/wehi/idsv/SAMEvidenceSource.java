@@ -219,9 +219,15 @@ public class SAMEvidenceSource extends EvidenceSource {
 		// ignore blacklisted regions
 		IntervalBed queryInterval = new IntervalBed(getContext().getLinear(), expandedIntervals);
 		queryInterval.remove(getBlacklistedRegions());
-		SAMRecordIterator it = tryOpenReader(reader, queryInterval.asQueryInterval());
+		CloseableIterator it = tryOpenReader(reader, queryInterval.asQueryInterval());
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			it = new AutoClosingIterator<>(new DebugSpammingIterator<>(it, "SAMEvidenceSource.iterator().rawiterator"));
+		}
 		Iterator<DirectedEvidence> eit = asEvidence(it, eso);
 		eit = Iterators.filter(eit, e -> QueryIntervalUtil.overlaps(intervals, e.getBreakendSummary()));
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			eit = new AutoClosingIterator<>(new DebugSpammingIterator<>(eit, "SAMEvidenceSource.iterator(QueryInterval[]).filter"));
+		}
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	/**
@@ -253,6 +259,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		SAMRecordIterator it = reader.iterator();
 		it.assertSorted(SortOrder.coordinate);
 		Iterator<DirectedEvidence> eit = asEvidence(it, eso);
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			eit = new AutoClosingIterator<>(new DebugSpammingIterator<>(eit, "SAMEvidenceSource.iterator()"));
+		}
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	protected SamReader getReader() {
@@ -276,10 +285,22 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it, EvidenceSortOrder eso) {
 		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved
 		it = Iterators.filter(it, r -> !shouldFilterPreTransform(r));
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			it = new AutoClosingIterator<>(new DebugSpammingIterator<>(it, "SAMEvidenceSource.shouldFilterPreTransform"));
+		}
 		it = Iterators.transform(it, r -> transform(r));
-		it = Iterators.filter(it, r -> !shouldFilter(r));		
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			it = new AutoClosingIterator<>(new DebugSpammingIterator<>(it, "SAMEvidenceSource.transform"));
+		}
+		it = Iterators.filter(it, r -> !shouldFilter(r));
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			it = new AutoClosingIterator<>(new DebugSpammingIterator<>(it, "SAMEvidenceSource.shouldFilter(SAMRecord)"));
+		}
 		Iterator<DirectedEvidence> eit = new DirectedEvidenceIterator(it, this, minIndelSize());
 		eit = Iterators.filter(eit, e -> !shouldFilter(e));
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			it = new AutoClosingIterator<>(new DebugSpammingIterator<>(it, "SAMEvidenceSource.shouldFilter(DirectedEvidence)"));
+		}
 		switch (eso) {
 			case SAMRecordStartPosition:
 				// already sorted by coordinate
@@ -294,6 +315,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 				break;
 			default:
 				throw new IllegalArgumentException("Sort order must be specified");
+		}
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			eit = new DebugSpammingIterator<>(eit, "asEvidence");
 		}
 		return eit;
 	}
@@ -552,6 +576,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 			toMerge.add(it);
 		}
 		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, eso == EvidenceSortOrder.EvidenceStartPosition ? DirectedEvidenceOrder.ByNatural : DirectedEvidenceOrder.BySAMStart);
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			merged = new AutoClosingIterator<>(new DebugSpammingIterator<>(merged, "mergedIterator"));
+		}
 		return merged;
 	}
 	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source, final QueryInterval[] intervals, EvidenceSortOrder eso) {
@@ -561,6 +588,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 			toMerge.add(it);
 		}
 		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge,  eso == EvidenceSortOrder.EvidenceStartPosition ? DirectedEvidenceOrder.ByNatural : DirectedEvidenceOrder.BySAMStart);
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			merged = new AutoClosingIterator<>(new DebugSpammingIterator<>(merged, "mergedIterator"));
+		}
 		return merged;
 	}
 	/**

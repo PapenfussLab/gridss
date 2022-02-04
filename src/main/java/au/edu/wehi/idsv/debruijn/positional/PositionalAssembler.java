@@ -8,9 +8,7 @@ import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.debruijn.ReadErrorCorrector;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SamTags;
-import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.util.FilenameUtil;
-import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.*;
 import au.edu.wehi.idsv.visualisation.AssemblyTelemetry.AssemblyChunkTelemetry;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import com.google.common.collect.*;
@@ -317,7 +315,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 		int referenceIndex = inputIterator.peek().getBreakendSummary().referenceIndex;
 		int firstPosition = inputIterator.peek().getBreakendSummary().start;
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
-		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(inputIterator, referenceIndex);
+		PeekingIterator<DirectedEvidence> evidenceIt = new ReferenceIndexIterator(inputIterator, referenceIndex);
 		evidenceTracker = new EvidenceTracker();
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.evidenceTracker) {
@@ -326,16 +324,30 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			File file = new File(vis.directory, filename);
 			evidenceTracker.setDebugFileOutput(file);
 		}
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, Math.max(2 * source.getMaxReadLength(), source.getMaxConcordantFragmentSize()), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
-		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			evidenceIt = Iterators.peekingIterator(new DebugSpammingIterator<>(it, "PositionalAssembler.evidenceIt"));
+		}
+		SupportNodeIterator supportIt_raw = new SupportNodeIterator(k, evidenceIt, Math.max(2 * source.getMaxReadLength(), source.getMaxConcordantFragmentSize()), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
+		PeekingIterator<KmerSupportNode> supportIt = supportIt_raw;
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			supportIt = Iterators.peekingIterator(new DebugSpammingIterator<>(supportIt, "PositionalAssembler.SupportNodeIterator"));
+		}
+		AggregateNodeIterator agIt_raw = new AggregateNodeIterator(supportIt);
+		PeekingIterator<KmerNode> agIt = agIt_raw;
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			agIt = Iterators.peekingIterator(new DebugSpammingIterator<>(agIt, "PositionalAssembler.AggregateNodeIterator"));
+		}
 		Iterator<KmerNode> knIt = agIt;
 		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			knIt = evidenceTracker.new AggregateNodeAssertionInterceptor(knIt);
 		}
-		PathNodeIterator pathNodeIt = new PathNodeIterator(knIt, maxPathLength, k); 
+		PathNodeIterator pathNodeIt = new PathNodeIterator(knIt, maxPathLength, k);
 		Iterator<KmerPathNode> pnIt = pathNodeIt;
 		if (Defaults.SANITY_CHECK_ASSEMBLY_GRAPH) {
 			pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
+		}
+		if (Defaults.SANITY_CHECK_DUMP_ITERATORS) {
+			pnIt = Iterators.peekingIterator(new DebugSpammingIterator<>(pnIt, "PositionalAssembler.PathNodeIterator"));
 		}
 		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, assemblyNameGenerator, evidenceTracker, currentContig, BreakendDirection.Forward, excludedRegions, safetyRegions);
 		if (vis.assemblyProgress) {
@@ -344,7 +356,7 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			File file = new File(vis.directory, filename);
 			PositionalDeBruijnGraphTracker exportTracker;
 			try {
-				exportTracker = new PositionalDeBruijnGraphTracker(file, supportIt, agIt, pathNodeIt, null, evidenceTracker, currentAssembler);
+				exportTracker = new PositionalDeBruijnGraphTracker(file, supportIt_raw, agIt_raw, pathNodeIt, null, evidenceTracker, currentAssembler);
 				exportTracker.writeHeader();
 				currentAssembler.setExportTracker(exportTracker);
 			} catch (IOException e) {
