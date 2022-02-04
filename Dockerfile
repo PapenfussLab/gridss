@@ -35,7 +35,7 @@ RUN cd /opt/gridss/src/main/c/gridsstools/htslib && \
 	cp gridsstools /opt/gridss/
 
 # compile GRIDSS Java code
-FROM maven:3.6.3-jdk-8 AS gridss_builder_java
+FROM maven:3.8.4-jdk-11 AS gridss_builder_java
 RUN mkdir /opt/gridss/
 WORKDIR /opt/gridss/
 # Download maven dependencies first so docker can cache them

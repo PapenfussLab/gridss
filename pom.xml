@@ -40,12 +40,11 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.9.0</version>
 				<configuration>
-					<!--
 					<source>1.8</source>
 					<target>1.8</target>
-					-->
 					<release>8</release>
-					<multiReleaseOutput>true</multiReleaseOutput>
+					<!-- don't have multi-release output in the java8 configuration because we want it to be in the default location at the jar root -->
+					<!--<multiReleaseOutput>true</multiReleaseOutput>-->
 				</configuration>
 			</plugin>
 			<plugin>
