@@ -107,7 +107,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 	}
 	private VariantContextDirectedBreakpoint toVariant(String event, RectangleGraphNode node, BreakpointSummary breakpoint, boolean isHighBreakend) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event);
+		builder.attribute(VcfSvConstants.EVENT_ID_KEY, event);
 		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (isHighBreakend ? BREAKPOINT_ID_SUFFIX_LOW : BREAKPOINT_ID_SUFFIX_HIGH));
 		builder.id(event + (isHighBreakend ? BREAKPOINT_ID_SUFFIX_HIGH : BREAKPOINT_ID_SUFFIX_LOW));
 		if (isHighBreakend) {

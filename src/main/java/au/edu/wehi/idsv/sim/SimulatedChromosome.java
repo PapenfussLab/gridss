@@ -4,8 +4,9 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
+import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import au.edu.wehi.idsv.vcf.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -14,6 +15,8 @@ import com.google.common.io.Files;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +31,7 @@ public class SimulatedChromosome {
 	protected final byte[] seq;
 	protected final int referenceIndex;
 	protected final int margin;
-	protected final ReferenceLookup ref;
+	protected ReferenceLookup ref;
 	protected final String chr;
 	protected final GenomicProcessingContext context;
 	protected Fragment createFragment(int genomicStart, int length, boolean reversed) {
@@ -40,7 +43,7 @@ public class SimulatedChromosome {
 	 */
 	public SimulatedChromosome(GenomicProcessingContext context, String chr, int margin, int seed) {
 		this.context = context;
-		this.ref = context.getReference();
+		this.ref = new BufferedReferenceSequenceFile(context.getReference());
 		this.referenceIndex = ref.getSequenceDictionary().getSequence(chr).getSequenceIndex();
 		this.chr = ref.getSequenceDictionary().getSequence(chr).getSequenceName();
 		this.seq = ref.getSequence(chr).getBases();
@@ -48,7 +51,17 @@ public class SimulatedChromosome {
 		this.rng = new Random(seed);
 	}
 	protected void writeVcf(File vcf, Iterable<VariantContext> calls) {
-		VariantContextWriter writer = context.getVariantContextWriter(vcf, true);
+		VariantContextWriterBuilder builder = context.getVariantContextWriterBuilder(vcf, true);
+		VariantContextWriter writer = builder.build();
+		VCFHeader header = new VCFHeader();
+		// Standard SV headers we use
+		SimpleEvent.addVcfHeaders(header);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_START_POSITION);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_LENGTH);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_SEQUENCE);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.MATE_BREAKEND_ID);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.EVENT_ID);
+		writer.writeHeader(header);
 		for (VariantContext vc : calls) {
 			writer.add(vc);
 		}
@@ -118,7 +131,7 @@ public class SimulatedChromosome {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakpoint(bp, "")
 			.id(event + (bp.isLowBreakend() ? "o" : "h"))
-			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event)
+			.attribute(VcfSvConstants.EVENT_ID_KEY, event)
 			.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"))
 			.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"));
 		return builder;

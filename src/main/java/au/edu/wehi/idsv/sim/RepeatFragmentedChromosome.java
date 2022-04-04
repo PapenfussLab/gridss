@@ -18,8 +18,8 @@ public class RepeatFragmentedChromosome extends FragmentedChromosome {
 	private static final Log log = Log.getInstance(RepeatFragmentedChromosome.class);
 	private File repeatMaskerOutput;
 	private String repeatClassFamily;
-	public RepeatFragmentedChromosome(GenomicProcessingContext context, String chr, int breakMargin, int fragmentLength, File repeatMaskerOutput, String repeatClassFamily, int seed) {
-		super(context, chr, breakMargin, fragmentLength, seed);
+	public RepeatFragmentedChromosome(GenomicProcessingContext context, String chr, int telomereLength, int breakMargin, int fragmentLength, File repeatMaskerOutput, String repeatClassFamily, int seed) {
+		super(context, chr, telomereLength, breakMargin, fragmentLength, seed);
 		this.repeatMaskerOutput = repeatMaskerOutput;
 		this.repeatClassFamily = repeatClassFamily;
 	}
@@ -41,6 +41,9 @@ public class RepeatFragmentedChromosome extends FragmentedChromosome {
 				@Override
 				public Fragment apply(RepeatMaskerRepeat r) {
 					Fragment f = null;
+					// TODO: break at random position in the repeat instead of always including the full repeat unit in the fragment
+					// TODO: allow the other side to also fall within a repeat
+					// TODO: prevent/allow overlapping fragments/amplified regions
 					if (rng.nextBoolean()) {
 						// start with repeat
 						f = createFragment(r.begin, fragmentLength, true);

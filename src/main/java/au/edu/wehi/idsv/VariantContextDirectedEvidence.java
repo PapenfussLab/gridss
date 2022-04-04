@@ -115,7 +115,7 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 			cigar = TextCigarCodec.decode(getAttributeAsString(VcfInfoAttributes.SUPPORT_CIGAR.attribute(), null));
 		}
 		r.setCigar(cigar);
-		r.setReadName(getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, getID()));
+		r.setReadName(getAttributeAsString(VcfSvConstants.EVENT_ID_KEY, getID()));
 		byte[] bases = new byte[cigar.getReadLength()];
 		Arrays.fill(bases, (byte)'N');
 		r.setReadBases(bases);

@@ -75,7 +75,7 @@ public class BreakendMaximalEvidenceCliqueIterator implements Iterator<VariantCo
 		BreakendSummary breakend = new BreakendSummary(referenceIndex, direction, (start + end) / 2, start, end);
 		String id = idGenerator.generate(breakend);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
+		builder.attribute(VcfSvConstants.EVENT_ID_KEY, id);
 		builder.id(id + BREAKEND_ID_SUFFIX);
 		builder.breakend(breakend, "");
 		builder.phredScore(qual);

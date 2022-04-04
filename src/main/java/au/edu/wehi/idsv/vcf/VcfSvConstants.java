@@ -40,7 +40,8 @@ public class VcfSvConstants {
 	 /** ID of partner breakend */
 	 public static final String PARTNER_BREAKEND_ID_KEY = "PARID";
 	 /** ID of event associated to breakend */
-	 public static final String BREAKEND_EVENT_ID_KEY = "EVENT";
+	 public static final String EVENT_ID_KEY = "EVENT";
+	public static final String EVENTTYPE_KEY = "EVENTTYPE";
 	 /** Read Depth of segment containing breakend */
 	 public static final String BREAKEND_READ_DEPTH_KEY = "DP";
 	 /** Read Depth of adjacency */

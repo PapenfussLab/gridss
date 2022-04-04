@@ -69,11 +69,11 @@ public class VcfBreakendToReadPairTest extends IntermediateFilesTest {
 		List<IdsvVariantContext> in = new ArrayList<IdsvVariantContext>();
 		in.add(new IdsvVariantContextBuilder(pc, BP("test1o", new BreakpointSummary(0, FWD, 2, 1, 2, 3, BWD, 4, 4, 5)))
 			.phredScore(6)
-			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, "test1")
+			.attribute(VcfSvConstants.EVENT_ID_KEY, "test1")
 			.make());
 		in.add(new IdsvVariantContextBuilder(pc, BP("test1h", new BreakpointSummary(3, BWD, 4, 4, 5, 0, FWD, 1, 1, 2)))
 			.phredScore(6)
-			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, "test1")
+			.attribute(VcfSvConstants.EVENT_ID_KEY, "test1")
 			.make());
 		List<SAMRecord> list = go(pc, in).get(0);
 		assertEquals("test1", list.get(0).getReadName());

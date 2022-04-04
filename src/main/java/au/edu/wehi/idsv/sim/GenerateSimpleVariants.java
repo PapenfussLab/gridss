@@ -16,21 +16,35 @@ import java.util.Locale;
         programGroup = gridss.cmdline.programgroups.Benchmarking.class
 )
 public class GenerateSimpleVariants extends SimulationGenerator {
-
     @Argument(doc="List of variants to insert. Valid variants are {INS, DEL, INV, DUP} for novel sequence insertion, deletion, inversion, and tandem duplication", optional=true)
     public List<SvType> TYPE = Lists.newArrayList(SvType.INS, SvType.DEL, SvType.INV, SvType.DUP);
     @Argument(doc="Variant sizes", optional=true)
-	public List<Integer> SIZE = Lists.newArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, 288, 320, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536);
+	public List<Integer> SIZE = Lists.newArrayList(
+	        1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            12,
+            16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64,
+            72, 80,
+            96, 112, 128,
+            160, 192, 224, 256, 288, 320,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536);
     @Argument(doc="Number of copies of each variant (type,size) pairing to insert. Defaults to as many copies as possible ", optional=true)
     public Integer COPIES;
-    //private static Log log = Log.getInstance(GenerateSimpleVariants.class);
+	@Argument(doc="Determines whether to output the variant as direct alternative sequence, or as a symbolic allele", optional=true)
+    public boolean SYMBOLIC = true;
     @Override
 	protected int doWork() {
     	try {
         	java.util.Locale.setDefault(Locale.ROOT);
-        	IOUtil.assertFileIsReadable(REFERENCE);
+        	IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
         	GenomicProcessingContext pc = getProcessingContext();
-        	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, PADDING, RANDOM_SEED);
+        	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, UNAMBIGUOUS_MARGIN, RANDOM_SEED, SYMBOLIC);
         	gen.assemble(FASTA, VCF, INCLUDE_REFERENCE, TYPE, SIZE, COPIES == null ? Integer.MAX_VALUE : COPIES);
         } catch (Exception e) {
 			e.printStackTrace();

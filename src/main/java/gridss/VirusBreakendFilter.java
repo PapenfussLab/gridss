@@ -161,8 +161,8 @@ public class VirusBreakendFilter extends ReferenceCommandLineProgram {
 				hostBuilder.attribute(attr.attribute(), vc.getAttribute(attr.attribute()));
 			}
 		}
-		hostBuilder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, vc.getID());
-		virusBuilder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, vc.getID());
+		hostBuilder.attribute(VcfSvConstants.EVENT_ID_KEY, vc.getID());
+		virusBuilder.attribute(VcfSvConstants.EVENT_ID_KEY, vc.getID());
 		hostBuilder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, virusBuilder.getID());
 		virusBuilder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, hostBuilder.getID());
 		hostBuilder.attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());

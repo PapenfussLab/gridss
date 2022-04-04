@@ -251,7 +251,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				}
 			}
 		} else {
-			String event = parent.getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null);
+			String event = parent.getAttributeAsString(VcfSvConstants.EVENT_ID_KEY, null);
 			CalledBreakpointPositionLookup.NominalPosition np = calledBreakpointLookup.removeUpper(event);
 			boolean isExact;
 			if (np == null) {

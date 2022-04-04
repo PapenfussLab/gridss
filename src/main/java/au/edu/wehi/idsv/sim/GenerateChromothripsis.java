@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.sim;
 
 import au.edu.wehi.idsv.GenomicProcessingContext;
-import htsjdk.samtools.util.IOUtil;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 
@@ -23,6 +22,8 @@ public class GenerateChromothripsis extends SimulationGenerator {
     public Integer FRAGMENTS = 1000;
     @Argument(doc="Size of each fragment", optional=true)
     public Integer FRAGMENT_SIZE = 2000;
+	@Argument(doc="Length of telomeric sequence to retain at the start/end of the rearranged chromosome", optional=true)
+	public Integer TELOMERE_LENGTH = 50000;
     @Argument(doc="Uncompressed RepeatMasker output file. If a file is specified, one side of each fragment will be of the specified repeat", shortName="RM", optional=true)
     public File REPEATMASKER_OUTPUT = null;
     @Argument(doc="Repeat class/family as output by repeatmasker", shortName="CF", optional=true)
@@ -30,13 +31,12 @@ public class GenerateChromothripsis extends SimulationGenerator {
     protected int doWork() {
         try {
         	java.util.Locale.setDefault(Locale.ROOT);
-        	IOUtil.assertFileIsReadable(REFERENCE);
         	GenomicProcessingContext pc = getProcessingContext();
         	FragmentedChromosome fc;
         	if (REPEATMASKER_OUTPUT == null) {
-        		fc = new FragmentedChromosome(pc, CHR, PADDING, FRAGMENT_SIZE, RANDOM_SEED);
+        		fc = new FragmentedChromosome(pc, CHR, TELOMERE_LENGTH, UNAMBIGUOUS_MARGIN, FRAGMENT_SIZE, RANDOM_SEED);
         	} else {
-        		fc = new RepeatFragmentedChromosome(pc, CHR, PADDING, FRAGMENT_SIZE, REPEATMASKER_OUTPUT, CLASS_FAMILY, RANDOM_SEED);
+        		fc = new RepeatFragmentedChromosome(pc, CHR, TELOMERE_LENGTH, UNAMBIGUOUS_MARGIN, FRAGMENT_SIZE, REPEATMASKER_OUTPUT, CLASS_FAMILY, RANDOM_SEED);
         	}
         	fc.assemble(FASTA, VCF, FRAGMENTS, INCLUDE_REFERENCE);
         } catch (Exception e) {

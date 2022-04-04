@@ -12,6 +12,8 @@ public class VcfStructuralVariantHeaderLines {
 	/** Indicates a novel structural variation */
 	public static final VCFInfoHeaderLine NOVEL = new VCFInfoHeaderLine(VcfSvConstants.NOVEL_KEY, 0, VCFHeaderLineType.Flag, "Indicates a novel structural variation");
 	/** Type of structural variant */
+	public static final VCFInfoHeaderLine END = new VCFInfoHeaderLine(VcfSvConstants.END_KEY, 1, VCFHeaderLineType.Integer, "End position of the variant described in this record");
+	/** Type of structural variant */
 	public static final VCFInfoHeaderLine SV_TYPE = new VCFInfoHeaderLine(VcfSvConstants.SV_TYPE_KEY, 1, VCFHeaderLineType.String, "Type of structural variant");
 	/** Difference in length between REF and ALT alleles */
 	public static final VCFInfoHeaderLine SV_LENGTH = new VCFInfoHeaderLine(VcfSvConstants.SV_LENGTH_KEY, VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Difference in length between REF and ALT alleles");
@@ -42,7 +44,9 @@ public class VcfStructuralVariantHeaderLines {
 	/** ID of partner breakend */
 	public static final VCFInfoHeaderLine PARTNER_BREAKEND_ID = new VCFInfoHeaderLine(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, 1, VCFHeaderLineType.String, "ID of partner breakend");
 	/** ID of event associated to breakend */
-	public static final VCFInfoHeaderLine BREAKEND_EVENT_ID = new VCFInfoHeaderLine(VcfSvConstants.BREAKEND_EVENT_ID_KEY, 1, VCFHeaderLineType.String, "ID of event associated to breakend");
+	public static final VCFInfoHeaderLine EVENT_ID = new VCFInfoHeaderLine(VcfSvConstants.EVENT_ID_KEY, 1, VCFHeaderLineType.String, "ID of event associated with variant");
+	/** ID of event associated to breakend */
+	public static final VCFInfoHeaderLine EVENT_TYPE = new VCFInfoHeaderLine(VcfSvConstants.EVENTTYPE_KEY, 1, VCFHeaderLineType.String, "Type of event");
 	/** Read Depth of segment containing breakend */
 	public static final VCFInfoHeaderLine BREAKEND_READ_DEPTH = new VCFInfoHeaderLine(VcfSvConstants.BREAKEND_READ_DEPTH_KEY, 1, VCFHeaderLineType.Integer, "Read Depth of segment containing breakend");
 	/** Read Depth of adjacency */

@@ -8,6 +8,7 @@ import htsjdk.samtools.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,13 +22,15 @@ import java.util.List;
 public class FragmentedChromosome extends SimulatedChromosome {
 	private static final Log log = Log.getInstance(FragmentedChromosome.class);
 	protected final int fragmentLength;
+	private final int telomereLength;
+
 	/**
-	 * @param reference reference genome
 	 * @param breakMargin number of unambiguous bases around the breakpoint
 	 */
-	public FragmentedChromosome(GenomicProcessingContext context, String chr, int breakMargin, int fragmentLength, int seed) {
+	public FragmentedChromosome(GenomicProcessingContext context, String chr, int telomereLength, int breakMargin, int fragmentLength, int seed) {
 		super(context, chr, breakMargin, seed);
 		this.fragmentLength = fragmentLength;
+		this.telomereLength = telomereLength;
 	}
 	private class RandomFragmentIterator implements Iterator<Fragment> {
 		@Override
@@ -57,6 +60,10 @@ public class FragmentedChromosome extends SimulatedChromosome {
 			}
 			invalid.add(Range.closedOpen(f.getLowBreakend().start - margin, f.getHighBreakend().end + 1 + margin));
 			fragList.add(f);
+		}
+		if (telomereLength > 0) {
+			fragList.add(0, createFragment(1, telomereLength, false));
+			fragList.add(createFragment(seq.length - telomereLength + 1, telomereLength, false));
 		}
 		log.info(String.format("%d fragments created", fragList.size()));
 		assemble(fasta, vcf, fragList, includeReference);

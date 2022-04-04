@@ -52,7 +52,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 			this.variant = call;
 			this.id = call.hasID() ? call.getID() : null;
 			this.mateid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, null) : null;
-			this.eventid = (String)call.getAttribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null);
+			this.eventid = (String)call.getAttribute(VcfSvConstants.EVENT_ID_KEY, null);
 			this.score = (float)call.getPhredScaledQual();
 			assert(this.score >= 0); // variant must have score set
 			this.location = call.getBreakendSummary();
@@ -312,7 +312,7 @@ public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceA
 				flip ^= ((IndelEvidence)evidence).getBreakendSummary().isHighBreakend();
 			}
 		} else if (evidence instanceof VariantContextDirectedEvidence) {
-			commonIdentifier = ((VariantContextDirectedEvidence)evidence).getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, evidence.getEvidenceID());
+			commonIdentifier = ((VariantContextDirectedEvidence)evidence).getAttributeAsString(VcfSvConstants.EVENT_ID_KEY, evidence.getEvidenceID());
 		} else {
 			commonIdentifier = evidence.getEvidenceID();
 		}
