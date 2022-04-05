@@ -134,7 +134,7 @@ public class SimpleEvent {
      * @return
      */
     public VariantContextBuilder asVariantContextBuilder(ReferenceLookup ref, boolean useSymbolicAllele) {
-        String refActual = getSeq(ref, start, start + getGenomicWidth());
+        String refActual = getSeq(ref, start, 1 + getGenomicWidth());
         String refSymbolic = refActual.substring(0, 1);
         String altSymbolic = "<" + type + ">";
         String altActual = getVariantSeq(ref, 1, 0);
@@ -151,13 +151,15 @@ public class SimpleEvent {
         if (type != INS) {
             builder.attribute(VcfSvConstants.END_KEY, end);
         }
+        if (refActual.equals(altActual)) {
+            builder.filter(VcfFilter.REFERENCE_ALLELE.filter());
+            // htsjdk doesn't support identical alleles so we need to force it to be symbolic
+            useSymbolicAllele = true;
+        }
         if (useSymbolicAllele) {
             builder.alleles(refSymbolic, altSymbolic);
         } else {
             builder.alleles(refActual, altActual);
-        }
-        if (refActual.equals(altActual)) {
-            builder.filter(VcfFilter.REFERENCE_ALLELE.filter());
         }
         return builder;
     }
