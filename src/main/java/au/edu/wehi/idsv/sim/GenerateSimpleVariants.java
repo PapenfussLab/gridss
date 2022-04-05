@@ -29,11 +29,11 @@ public class GenerateSimpleVariants extends SimulationGenerator {
             512,
             1024,
             2048,
-            4096,
-            8192,
-            16384,
-            32768,
-            65536);
+            4096);
+            //8192,
+            //16384,
+            //32768,
+            //65536);
     @Argument(doc="Number of copies of each variant (type,size) pairing to insert. Defaults to as many copies as possible ", optional=true)
     public Integer COPIES;
 	@Argument(doc="Determines whether to output the variant as direct alternative sequence, or as a symbolic allele", optional=true)
