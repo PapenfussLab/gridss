@@ -21,15 +21,17 @@ import java.util.List;
  */
 public class FragmentedChromosome extends SimulatedChromosome {
 	private static final Log log = Log.getInstance(FragmentedChromosome.class);
-	protected final int fragmentLength;
+	protected final int minFragmentLength;
+	protected final int maxFragmentLength;
 	private final int telomereLength;
 
 	/**
 	 * @param breakMargin number of unambiguous bases around the breakpoint
 	 */
-	public FragmentedChromosome(GenomicProcessingContext context, String chr, int telomereLength, int breakMargin, int fragmentLength, int seed) {
+	public FragmentedChromosome(GenomicProcessingContext context, String chr, int telomereLength, int breakMargin, int minFragmentLength, int maxFragmentLength, int seed) {
 		super(context, chr, breakMargin, seed);
-		this.fragmentLength = fragmentLength;
+		this.minFragmentLength = minFragmentLength;
+		this.maxFragmentLength = maxFragmentLength;
 		this.telomereLength = telomereLength;
 	}
 	private class RandomFragmentIterator implements Iterator<Fragment> {
@@ -39,18 +41,23 @@ public class FragmentedChromosome extends SimulatedChromosome {
 		}
 		@Override
 		public Fragment next() {
+			int fragmentLength = getRandomFragmentLength();
 			return createFragment(1 + rng.nextInt(seq.length - fragmentLength), fragmentLength, rng.nextBoolean());
 		}
 		@Override
 		public void remove() {
 		}
 	}
+	public int getRandomFragmentLength() {
+		int fragmentLength = minFragmentLength + rng.nextInt(maxFragmentLength - minFragmentLength + 1);
+		return fragmentLength;
+	}
 	protected Iterator<Fragment> candidateFragments() {
 		return new RandomFragmentIterator();
 	}
 	public void assemble(File fasta, File vcf, int fragments, boolean includeReference) throws IOException {
 		List<Fragment> fragList = new ArrayList<Fragment>();
-		RangeSet<Integer> invalid = calcInvalidBreakPositions(margin + fragmentLength);
+		RangeSet<Integer> invalid = calcInvalidBreakPositions(margin + maxFragmentLength);
 		Iterator<Fragment> it = candidateFragments();
 		while (it.hasNext() && fragList.size() < fragments) {
 			Fragment f = it.next();
