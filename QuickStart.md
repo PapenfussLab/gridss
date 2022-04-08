@@ -6,7 +6,7 @@ What do you want to do?
   * [From conda](#from-conda)
   * [From github releases](#from-github-releases)
 - [Call structural variants](#call-structural-variants)
-  * [Which blacklist file should I use?](#which-blacklist-file-should-i-use-)
+  * [Which exclude list file should I use?](#which-exclude-list-file-should-i-use-)
 - [Call somatic structural variants](#call-somatic-structural-variants)
 - [Find viral integration sites in a human genome](#find-viral-integration-sites-in-a-human-genome)
 - [Find viral integration sites in a non-human genome](#find-viral-integration-sites-in-a-non-human-genome)
@@ -55,7 +55,7 @@ gridss \
   -r reference.fa \
   -j gridss-2.X.Y-gridss-jar-with-dependencies.jar \
   -o output.vcf \
-  -b blacklist.bed \
+  -b exclude_list.bed \
   input1.bam \
   input2.bam
 ```
@@ -63,11 +63,11 @@ gridss \
 
 If your input files are aligned with `bwa mem` or another aligner that reports split read alignments using the `SA` tag, then runtime can be reduced by specifying `--skipsoftcliprealignment`.
 
-## Which blacklist file should I use?
+## Which exclude list file should I use?
 
-We recommend using the ENCODE Blacklist files when using human data:
+We recommend using the ENCODE exclude list files when using human data:
 
-|Genome|Blacklist|
+|Genome|Exclude list|
 |-|-|
 |hg19 (NCBI chr notation)|ENCFF001TDO.bed|
 |hg38 (UCSC chr notation)|ENCFF356LFX.bed|
@@ -84,7 +84,7 @@ gridss \
   -r reference.fa \
   -j gridss-2.X.Y-gridss-jar-with-dependencies.jar \
   -o all_calls.vcf \
-  -b blacklist.bed \
+  -b exclude_list.bed \
   normal.bam \
   tumour.bam
 ```
