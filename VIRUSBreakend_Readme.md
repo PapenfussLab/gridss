@@ -53,7 +53,7 @@ The reference file database contains the following files:
 |library/added/\*.fna|NCBI viral neighbour genomes|
 |\*.fai|samtools index of associated .fna file|
 |\*.fna.dict|Picard tools sequence dictionary  of associated .fna file|
-|opts.k2d|Kraken2 database file|
+|hash.k2d|Kraken2 database file|
 |taxo.k2d|Kraken2 database file|
 |opts.k2d|Kraken2 database file|
 |taxonomy/nodes.dmp|Snapshot of NCBI taxonomy nodes at time of database creation|
