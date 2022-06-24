@@ -19,19 +19,25 @@ Detailed documentation is being developed [here](https://github.com/PapenfussLab
 
 # Citation
 
+If you use GRIDSS, please cite:
+
+Cameron DL, Schröder J, Penington JS, Do H, Molania R, Dobrovic A, Speed TP, Papenfuss AT. GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly. Genome Research, 2017 Dec;27(12):2050-2060.
+
+Cameron DL, Baber J, Shale C, Valle-Inclan JE, Besselink N, van Hoeck A, Janssen R, Cuppen E, Priestley P, Papenfuss AT. GRIDSS2: comprehensive characterisation of somatic structural variation using single breakend variants and structural variant phasing. Genome Biol. 2021 Jul 12;22(1):202.
+
 The recommended minimal citations are:
 
+- Breakpoint calling with GRIDSS version 2.x.y
+  - Please cite both the GRIDSS2 and GRIDSS publications
+- Single breakend calling
+  - GRIDSS2: comprehensive characterisation of somatic structural variation using single breakend variants and structural variant phasing
+  - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02423-x
 - Breakpoint calling with GRIDSS version 1.x.y
   - GRIDSS: sensitive and specific genomic rearrangement detection using positional de Bruijn graph assembly
   - http://genome.cshlp.org/content/early/2017/11/02/gr.222109.117.abstract
-- Somatic or single breakend calling
-  - GRIDSS2: comprehensive characterisation of somatic structural variation using single breakend variants and structural variant phasing
-  - https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02423-x
 - Viral integration detection using VIRUSBreakend
   - VIRUSBreakend: Viral Integration Recognition Using Single Breakends
   - https://doi.org/10.1093/bioinformatics/btab343
-- Breakpoint calling with GRIDSS version 2.x.y
-  - Please cite both the GRIDSS and GRIDSS2 publications
 
 
 # Pre-requisites
@@ -111,7 +117,7 @@ gridsstools|C/htslib implementation of performance-critical steps. Currently use
 ## gridss command-line arguments
 
 ```
-Usage: gridss --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 30g] [--blacklist <blacklist.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
+Usage: gridss --reference <reference.fa> --output <output.vcf.gz> --assembly <assembly.bam> [--threads n] [--jar gridss.jar] [--workingdir <directory>] [--jvmheap 30g] [--blacklist <exclude_list.bed>] [--steps All|PreProcess|Assemble|Call] [--configuration gridss.properties] [--maxcoverage 50000] [--labels input1,input2,...] input1.bam [input2.bam [...]]
 ```
 
 required argument|description
@@ -556,10 +562,10 @@ File to write breakend assemblies to. It is strongly recommended that the assemb
 
 ### BLACKLIST
 
-BED blacklist of regions to exclude from analysis. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
+BED exclude-list of regions to exclude from analysis. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
 is recommended when aligning against hg19.
 
-Unlike haplotype assemblers such as TIGRA and GATK, GRIDSS does not abort assembly when complex assembly graphs are encountered. Processing of these graphs slows down the assembly process considerably, so if regions such as telomeric and centromeric regions are to be excluded from downstream analysis anyway, assembly of these regions is not required. It is recommended that a blacklist such as the [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/) be used to filter such regions. Inclusion of additional mappability-based blacklists is not required as GRIDSS already considers the read mapping quality.
+Unlike haplotype assemblers such as TIGRA and GATK, GRIDSS does not abort assembly when complex assembly graphs are encountered. Processing of these graphs slows down the assembly process considerably, so if regions such as telomeric and centromeric regions are to be excluded from downstream analysis anyway, assembly of these regions is not required. It is recommended that a exclude-list such as the [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/) be used to filter such regions. Inclusion of additional mappability-based exclude-lists is not required as GRIDSS already considers the read mapping quality.
 
 ### READ_PAIR_CONCORDANT_PERCENT
 
