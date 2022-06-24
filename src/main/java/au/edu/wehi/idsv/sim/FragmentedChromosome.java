@@ -3,12 +3,12 @@ package au.edu.wehi.idsv.sim;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -55,7 +55,7 @@ public class FragmentedChromosome extends SimulatedChromosome {
 	protected Iterator<Fragment> candidateFragments() {
 		return new RandomFragmentIterator();
 	}
-	public void assemble(File fasta, File vcf, int fragments, boolean includeReference) throws IOException {
+	public SAMSequenceDictionary assemble(File fasta, File vcf, File bedpe, int fragments, boolean includeReference) throws IOException {
 		List<Fragment> fragList = new ArrayList<Fragment>();
 		RangeSet<Integer> invalid = calcInvalidBreakPositions(margin + maxFragmentLength);
 		Iterator<Fragment> it = candidateFragments();
@@ -73,6 +73,6 @@ public class FragmentedChromosome extends SimulatedChromosome {
 			fragList.add(createFragment(seq.length - telomereLength + 1, telomereLength, false));
 		}
 		log.info(String.format("%d fragments created", fragList.size()));
-		assemble(fasta, vcf, fragList, includeReference);
+		return assemble(fasta, vcf, bedpe, fragList, includeReference);
 	}
 }

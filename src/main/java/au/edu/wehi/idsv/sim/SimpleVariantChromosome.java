@@ -1,14 +1,16 @@
 package au.edu.wehi.idsv.sim;
 
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.bed.BedpeRecord;
+import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.sim.SequentialVariantPlacer.ContigExhaustedException;
 import au.edu.wehi.idsv.vcf.SvType;
-import au.edu.wehi.idsv.vcf.VcfFilter;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import com.google.common.io.Files;
-import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,34 +32,82 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 		this.baseGen = new RandomBaseGenerator(seed);
 		this.useSymbolicAllele = useSymbolicAllele;
 	}
-	public void assemble(File fasta, File vcf, boolean includeReference, List<SvType> type, List<Integer> size, int countPerEventTypeSize) throws IOException {
+	public SAMSequenceDictionary assemble(File fasta, File vcf, File breakpointPositionsBedpe, boolean includeReference, List<SvType> type, List<Integer> size, int countPerEventTypeSize) throws IOException {
 		List<SimpleEvent> variantList = populateEvents(type, size, countPerEventTypeSize);
 		// ensure counts are the same
 		variantList.subList(0, variantList.size() - variantList.size() % countPerEventTypeSize);
 		variantList.sort(Comparator.comparingInt(o -> o.start));
 		List<VariantContext> list = new ArrayList<VariantContext>();
-		StringBuilder sb = new StringBuilder(">variant." + getChr() + "\n");
+		String variantContigName = "variant." + getChr();
+		StringBuilder variantSeq = new StringBuilder();
+		List<BedpeRecord> breakpointLocations = new ArrayList<>();
 
 		int genomicPosition = 0; // emitted up to and including this genomic position
 		for (SimpleEvent e : variantList) {
 			String beforeVariantSequence = ref.getSubsequenceAt(chr, genomicPosition + 1, e.start).getBaseString();
 			String variantSequence = e.getVariantSeq(ref, 0, 0);
-			sb.append(beforeVariantSequence);
-			sb.append(variantSequence);
+			variantSeq.append(beforeVariantSequence);
+			int positionBefore = variantSeq.length();
+			variantSeq.append(variantSequence);
+			int positionAfter = variantSeq.length();
 			list.add(e.asVariantContextBuilder(ref, useSymbolicAllele).make());
 			genomicPosition = e.start + e.getGenomicWidth();
+			switch (e.type) {
+				case INS:
+				case DEL:
+					breakpointLocations.add(new BedpeRecord(e.getID(ref), new BreakpointSummary(
+							0, BreakendDirection.Forward, positionBefore,
+							0, BreakendDirection.Backward, positionAfter + 1),
+							Integer.toString(e.size)));
+					break;
+				case DUP:
+					breakpointLocations.add(new BedpeRecord(e.getID(ref), new BreakpointSummary(
+							0, BreakendDirection.Forward, positionBefore + e.size,
+							0, BreakendDirection.Backward, positionBefore + e.size + 1),
+							Integer.toString(e.size)));
+					break;
+				case INV:
+					breakpointLocations.add(new BedpeRecord(e.getID(ref), new BreakpointSummary(
+							0, BreakendDirection.Forward, positionBefore,
+							0, BreakendDirection.Backward, positionBefore + 1),
+							Integer.toString(e.size)));
+					breakpointLocations.add(new BedpeRecord(e.getID(ref), new BreakpointSummary(
+							0, BreakendDirection.Forward, positionAfter,
+							0, BreakendDirection.Backward, positionAfter + 1),
+							Integer.toString(e.size)));
+					break;
+				case BND:
+				case CNV:
+					throw new RuntimeException("NYI/Unreachable code detected");
+			}
 		}
-		sb.append(new String(seq, genomicPosition, margin));
+		variantSeq.append(new String(seq, genomicPosition, margin));
 		genomicPosition += margin;
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord(variantContigName, genomicPosition));
+		StringBuilder fsb = new StringBuilder();
+		fsb.append(">" + variantContigName + "\n");
+		fsb.append(variantSeq);
 		if (includeReference) {
-			sb.append("\n>");
-			sb.append(getChr());
-			sb.append("\n");
-			sb.append(new String(seq, 0, genomicPosition));
-			sb.append("\n");
+			fsb.append("\n>");
+			fsb.append(getChr());
+			fsb.append("\n");
+			fsb.append(new String(seq, 0, genomicPosition));
+			fsb.append("\n");
+			dict.addSequence(new SAMSequenceRecord(getChr(), genomicPosition));
 		}
-		Files.asCharSink(fasta, StandardCharsets.US_ASCII).write(sb.toString());
+		Files.asCharSink(fasta, StandardCharsets.US_ASCII).write(fsb.toString());
+		//ReferenceCommandLineProgram.ensureSequenceDictionary(fasta);
 		writeVcf(vcf, list);
+		if (breakpointPositionsBedpe != null) {
+			try (BedpeWriter writer = new BedpeWriter(dict, breakpointPositionsBedpe)) {
+				writer.writeHeader(false, false);
+				for (BedpeRecord r : breakpointLocations) {
+					writer.write(r);
+				}
+			}
+		}
+		return dict;
 	}
 	private List<SimpleEvent> populateEvents(List<SvType> typeList, List<Integer> sizeList, int max) {
 		SequentialVariantPlacer placer = new SequentialVariantPlacer(seq, margin);

@@ -1,9 +1,8 @@
 package au.edu.wehi.idsv.sim;
 
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.IdsvVariantContextBuilder;
+import au.edu.wehi.idsv.*;
+import au.edu.wehi.idsv.bed.BedpeRecord;
+import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.vcf.*;
@@ -12,6 +11,8 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 import com.google.common.io.Files;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
@@ -21,10 +22,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class SimulatedChromosome {
 	protected final Random rng;
@@ -96,36 +94,58 @@ public class SimulatedChromosome {
 		invalid.add(Range.closedOpen(seq.length - basesBuffer - 1, seq.length));
 		return invalid;
 	}
-	protected void assemble(File fasta, File vcf, List<Fragment> fragList, boolean includeReference) throws IOException {
-		StringBuilder sb = new StringBuilder();
-		if (includeReference) {
-			sb.append(">");
-			sb.append( getChr());
-			sb.append("\n");
-			sb.append(new String(seq, StandardCharsets.US_ASCII));
-			sb.append("\n");
-		}
-		sb.append(">chromothripsis." + getChr() + "\n");
+	protected SAMSequenceDictionary assemble(File fasta, File vcf, File bedpe, List<Fragment> fragList, boolean includeReference) throws IOException {
 		List<IdsvVariantContext> calls = Lists.newArrayList();
+		List<BedpeRecord> breakpointLocations = new ArrayList<>();
 		Fragment last = null;
+		int lastPosition = 0;
+		StringBuilder variantSeq = new StringBuilder();
 		for (int i = 0; i < fragList.size(); i++) {
 			Fragment f = fragList.get(i);
-			sb.append(f.getSequence());
+			variantSeq.append(f.getSequence());
+			int position = variantSeq.length();
 			if (last != null) {
 				BreakpointSummary bp = new BreakpointSummary(last.getEndBreakend(), f.getStartBreakend());
 				String event = String.format("truth_%d_", i);
 				calls.add(create(bp, event).make());
 				calls.add(create(bp.remoteBreakpoint(), event).make());
+				breakpointLocations.add(new BedpeRecord(event,
+						new BreakpointSummary(0, BreakendDirection.Forward, lastPosition, 0, BreakendDirection.Backward, lastPosition + 1),
+						"1"));
 			}
 			last = f;
+			lastPosition = position;
+		}
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		String variantContigName = "chromothripsis." + getChr();
+		StringBuilder sb = new StringBuilder();
+		sb.append(">" + variantContigName + "\n");
+		sb.append(variantSeq);
+		dict.addSequence(new SAMSequenceRecord(variantContigName, variantSeq.length()));
+		if (includeReference) {
+			sb.append(">");
+			sb.append(getChr());
+			sb.append("\n");
+			sb.append(new String(seq, StandardCharsets.US_ASCII));
+			sb.append("\n");
+			dict.addSequence(new SAMSequenceRecord(getChr(), seq.length));
 		}
 		Collections.sort(calls, IdsvVariantContext.ByLocationStart);
 		Files.asCharSink(fasta, StandardCharsets.US_ASCII).write(sb.toString());
-		VariantContextWriter writer = context.getVariantContextWriter(vcf, true);
-		for (VariantContext vc : calls) {
-			writer.add(vc);
+		try (VariantContextWriter writer = context.getVariantContextWriter(vcf, true)) {
+			for (VariantContext vc : calls) {
+				writer.add(vc);
+			}
 		}
-		writer.close();
+		if (bedpe != null) {
+			try (BedpeWriter writer = new BedpeWriter(dict, bedpe)) {
+				writer.writeHeader(false, false);
+				for (BedpeRecord r : breakpointLocations) {
+					writer.write(r);
+				}
+			}
+		}
+		return dict;
 	}
 	protected IdsvVariantContextBuilder create(BreakpointSummary bp, String event) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);

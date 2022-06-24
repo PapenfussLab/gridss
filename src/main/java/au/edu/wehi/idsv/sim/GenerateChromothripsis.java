@@ -40,7 +40,7 @@ public class GenerateChromothripsis extends SimulationGenerator {
         	} else {
         		fc = new RepeatFragmentedChromosome(pc, CHR, TELOMERE_LENGTH, UNAMBIGUOUS_MARGIN, MIN_FRAGMENT_SIZE, MAX_FRAGMENT_SIZE, REPEATMASKER_OUTPUT, CLASS_FAMILY, RANDOM_SEED);
         	}
-        	fc.assemble(FASTA, VCF, FRAGMENTS, INCLUDE_REFERENCE);
+        	fc.assemble(FASTA, VCF, BEDPE, FRAGMENTS, INCLUDE_REFERENCE);
         } catch (Exception e) {
 			e.printStackTrace();
 			return 1;

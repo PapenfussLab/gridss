@@ -19,6 +19,8 @@ public abstract class SimulationGenerator extends ReferenceCommandLineProgram {
     public File VCF;
     @Argument(doc="Resultant sequence", shortName="FA")
     public File FASTA;
+    @Argument(doc="Breakpoint locations in the resultant sequence fasta")
+    public File BEDPE;
     @Argument(doc="Minimum of bases of unambiguous reference sequence around breakpoints", optional=true)
     public int UNAMBIGUOUS_MARGIN = 1500;
     @Argument(doc="Seed for random number generator", optional=true)

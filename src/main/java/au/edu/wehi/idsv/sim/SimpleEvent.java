@@ -129,6 +129,9 @@ public class SimpleEvent {
         header.addMetaDataLine(VcfStructuralVariantHeaderLines.EVENT_TYPE);
         header.addMetaDataLine(VcfFilter.REFERENCE_ALLELE.header());
     }
+    public String getID(ReferenceLookup ref) {
+        return String.format("%s.%d.%s%d", ref.getSequenceDictionary().getSequence(referenceIndex).getSequenceName(), start, type, size);
+    }
     /**
      * Convert to VCF notation
      * @return
@@ -141,7 +144,7 @@ public class SimpleEvent {
         VariantContextBuilder builder = new VariantContextBuilder();
         int end = start + (type == SvType.INS ? 0 : size);
         String chr = ref.getSequenceDictionary().getSequence(referenceIndex).getSequenceName();
-        builder.id(String.format("%s.%d.%s%d", chr, start, type, size))
+        builder.id(getID(ref))
                 .chr(chr)
                 .start(start)
                 .stop(end)

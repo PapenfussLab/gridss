@@ -63,6 +63,9 @@ public class BedpeWriter implements Closeable {
 		str += "\n";
 		os.write(str.getBytes(StandardCharsets.UTF_8));
 	}
+	public void write(BedpeRecord r) throws IOException {
+		write(r.bp, r.name, r.score, r.fields);
+	}
 	public void write(VariantContextDirectedBreakpoint variant) throws IOException {
 		BreakpointSummary bp = variant.getBreakendSummary();
 		List<String> args = new ArrayList<>();

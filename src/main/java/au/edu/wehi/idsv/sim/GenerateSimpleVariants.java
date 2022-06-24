@@ -45,7 +45,7 @@ public class GenerateSimpleVariants extends SimulationGenerator {
         	IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
         	GenomicProcessingContext pc = getProcessingContext();
         	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, UNAMBIGUOUS_MARGIN, RANDOM_SEED, SYMBOLIC);
-        	gen.assemble(FASTA, VCF, INCLUDE_REFERENCE, TYPE, SIZE, COPIES == null ? Integer.MAX_VALUE : COPIES);
+        	gen.assemble(FASTA, VCF, BEDPE, INCLUDE_REFERENCE, TYPE, SIZE, COPIES == null ? Integer.MAX_VALUE : COPIES);
         } catch (Exception e) {
 			e.printStackTrace();
 			return 1;

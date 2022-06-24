@@ -18,9 +18,7 @@ public class BedpeRecord {
 	public final String score;
 	/**
 	 * Parses a BEDPE record
-	 * @param annotateInexactHomologyBedpe
 	 * @param line
-	 * @param untemplatedSequenceColumn
 	 */
 	public BedpeRecord(SAMSequenceDictionary dict, String line) {
 		fields = line.split("\t");
@@ -29,6 +27,12 @@ public class BedpeRecord {
 		bp = new BreakpointSummary(
 				parseBreakend(dict, fields[0], fields[1], fields[2], fields[8], BreakendDirection.Forward),
 				parseBreakend(dict, fields[3], fields[4], fields[5], fields[9], BreakendDirection.Backward));
+	}
+	public BedpeRecord(String name, BreakpointSummary bp, String score, String... fields) {
+		this.name = name;
+		this.bp = bp;
+		this.score = score;
+		this.fields = fields;
 	}
 	private static BreakendSummary parseBreakend(SAMSequenceDictionary dict, String chr, String strStart, String strEnd, String strDirection, BreakendDirection defaultDirection) {
 		int start = Integer.parseInt(strStart) + 1; // convert back to 1-based
