@@ -3,7 +3,7 @@
 
 ## Summary
 
-GRIDSS analyses multiple bams from a single patient simulataneously, thus
+GRIDSS analyses multiple bams from a single patient simultaneously, thus
 achieving high sensitivity and consistency between samples. This software
 package provides docker images and helper scripts to easily run GRIDSS on bam files from a
 cohort of patients with one or more samples per patient.

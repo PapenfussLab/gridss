@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	else if (strcmp(argv[1], "extractFragmentsToBam") == 0) return main_extractFragmentsToBam(argc-1, argv+1);
 	else if (strcmp(argv[1], "unmappedSequencesToFastq") == 0) return main_unmappedSequencesToFastq(argc-1, argv+1);
 	else if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0) {
-		fprintf(stdout, "%s\n", PACKAGE_STRING);
+		fprintf(stdout, "%s\n", PACKAGE_VERSION);
 		return 0;
 	} else {
 		fprintf(stderr, "[main] unrecognized command '%s'\n", argv[1]);
