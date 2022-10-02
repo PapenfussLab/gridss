@@ -24,16 +24,18 @@ import static au.edu.wehi.idsv.vcf.SvType.INS;
 public class SimpleVariantChromosome extends SimulatedChromosome {
 	private final boolean useSymbolicAllele;
 	private final RandomBaseGenerator baseGen;
+	private final RandomReferenceSequenceGenerator sequenceGen;
 	/**
 	 * @param margin number of unambiguous bases around the breakpoint
 	 */
 	public SimpleVariantChromosome(GenomicProcessingContext context, String chr, int margin, int seed, boolean useSymbolicAllele) {
 		super(context, chr, margin, seed);
 		this.baseGen = new RandomBaseGenerator(seed);
+		this.sequenceGen = new RandomReferenceSequenceGenerator(seed, seq);
 		this.useSymbolicAllele = useSymbolicAllele;
 	}
-	public SAMSequenceDictionary assemble(File fasta, File vcf, File breakpointPositionsBedpe, boolean includeReference, List<SvType> type, List<Integer> size, int countPerEventTypeSize) throws IOException {
-		List<SimpleEvent> variantList = populateEvents(type, size, countPerEventTypeSize);
+	public SAMSequenceDictionary assemble(File fasta, File vcf, File breakpointPositionsBedpe, boolean includeReference, List<SvType> type, List<Integer> size, int countPerEventTypeSize, boolean templatedInsertions) throws IOException {
+		List<SimpleEvent> variantList = populateEvents(type, size, countPerEventTypeSize, templatedInsertions);
 		// ensure counts are the same
 		variantList.subList(0, variantList.size() - variantList.size() % countPerEventTypeSize);
 		variantList.sort(Comparator.comparingInt(o -> o.start));
@@ -109,7 +111,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 		}
 		return dict;
 	}
-	private List<SimpleEvent> populateEvents(List<SvType> typeList, List<Integer> sizeList, int max) {
+	private List<SimpleEvent> populateEvents(List<SvType> typeList, List<Integer> sizeList, int max, boolean templatedInsertions) {
 		SequentialVariantPlacer placer = new SequentialVariantPlacer(seq, margin);
 		List<SimpleEvent> variantList = new ArrayList<SimpleEvent>();
 		try {
@@ -117,7 +119,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 				for (int size : sizeList) {
 					for (SvType type : typeList) {
 						int width = SimpleEvent.getGenomicWidth(type, size);
-						String insSeq = type != INS ? "" : new String(baseGen.getBases(size));
+						String insSeq = type != INS ? "" : new String((templatedInsertions ? sequenceGen : baseGen).getBases(size));
 						variantList.add(new SimpleEvent(type, referenceIndex, size, placer.getNext(width + 1), insSeq));
 					}
 				}

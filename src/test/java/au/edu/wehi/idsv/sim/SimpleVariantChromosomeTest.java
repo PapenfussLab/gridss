@@ -8,19 +8,14 @@ import au.edu.wehi.idsv.bed.BedpeRecord;
 import au.edu.wehi.idsv.vcf.SvType;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -43,7 +38,7 @@ public class SimpleVariantChromosomeTest extends IntermediateFilesTest {
 	@Test
 	public void should_space_variants_with_margin_padding() throws IOException {
 		SimpleVariantChromosome svc = new SimpleVariantChromosome(getContext(), "polyACGT", 1, 0, true);
-		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1);
+		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1, false);
 		// 123456  78901234  5
 		// ACGTAC  GTACGTAC  G
 		// ||  ||  ||  ||    |
@@ -59,7 +54,7 @@ public class SimpleVariantChromosomeTest extends IntermediateFilesTest {
 	@Test
 	public void should_output_breakpoint_positions() throws IOException {
 		SimpleVariantChromosome svc = new SimpleVariantChromosome(getContext(), "polyACGT", 1, 0, true);
-		SAMSequenceDictionary dict = svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1);
+		SAMSequenceDictionary dict = svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1, false);
 		// 123456  78901234  5
 		// ACGTAC  GTACGTAC  G
 		// ||  ||  ||  ||    |
@@ -77,7 +72,7 @@ public class SimpleVariantChromosomeTest extends IntermediateFilesTest {
 	@Test
 	public void should_output_variant_sequence() throws IOException {
 		SimpleVariantChromosome svc = new SimpleVariantChromosome(getContext(), "polyACGT", 1, 0, true);
-		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1);
+		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1, false);
 		// 123456  78901234  5
 		// ACGTAC  GTACGTAC  G
 		// ||  ||  ||  ||    |
@@ -90,7 +85,7 @@ public class SimpleVariantChromosomeTest extends IntermediateFilesTest {
 	@Test
 	public void should_output_corresponding_reference_sequences_only() throws IOException {
 		SimpleVariantChromosome svc = new SimpleVariantChromosome(getContext(), "polyACGT", 1, 0, true);
-		svc.assemble(input, output, outputBedpe, true, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1);
+		svc.assemble(input, output, outputBedpe, true, Lists.newArrayList(SvType.DEL, SvType.INS, SvType.INV, SvType.DUP), Lists.newArrayList(2), 1, false);
 		// 123456  78901234  5
 		// ACGTAC  GTACGTAC  G
 		// ||  ||  ||  ||    |
@@ -107,7 +102,7 @@ public class SimpleVariantChromosomeTest extends IntermediateFilesTest {
 		//           *|      *|
 		//           v1      v2
 		SimpleVariantChromosome svc = new SimpleVariantChromosome(getContext(), "Npower2", 2, 0, true);
-		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL), Lists.newArrayList(1), 5);
+		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.DEL), Lists.newArrayList(1), 5, false);
 		List<IdsvVariantContext> vcf = super.getVcf(output, null);
 		assertEquals("6", vcf.get(0).getAttribute("HOMLEN"));
 		assertEquals(11, vcf.get(0).getStart());
@@ -122,7 +117,7 @@ public class SimpleVariantChromosomeTest extends IntermediateFilesTest {
 		// ACGTACGT
 		//   *||
 		SimpleVariantChromosome svc = new SimpleVariantChromosome(getContext(), "polyACGT", 0, 0, true);
-		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.INV), Lists.newArrayList(2), 1);
+		svc.assemble(input, output, outputBedpe, false, Lists.newArrayList(SvType.INV), Lists.newArrayList(2), 1, false);
 		List<IdsvVariantContext> vcf = super.getVcf(output, null);
 		assertEquals(1, vcf.get(0).getStart());
 		assertTrue(vcf.get(0).getFilters().contains("REF"));

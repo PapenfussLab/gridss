@@ -16,6 +16,16 @@ import java.util.Locale;
         programGroup = gridss.cmdline.programgroups.Benchmarking.class
 )
 public class GenerateSimpleVariants extends SimulationGenerator {
+	public enum InsertionSequence {
+		/**
+		 * Complete random sequence with 50% GC bias
+		 */
+		Random,
+		/**
+		 * Sequence taken from random non-N location from the reference CHR
+		 */
+		Templated,
+	}
     @Argument(doc="List of variants to insert. Valid variants are {INS, DEL, INV, DUP} for novel sequence insertion, deletion, inversion, and tandem duplication", optional=true)
     public List<SvType> TYPE = Lists.newArrayList(SvType.INS, SvType.DEL, SvType.INV, SvType.DUP);
     @Argument(doc="Variant sizes", optional=true)
@@ -38,6 +48,8 @@ public class GenerateSimpleVariants extends SimulationGenerator {
     public Integer COPIES;
 	@Argument(doc="Determines whether to output the variant as direct alternative sequence, or as a symbolic allele", optional=true)
     public boolean SYMBOLIC = true;
+	@Argument(doc="Determines whether to output the variant as direct alternative sequence, or as a symbolic allele", optional=true)
+	public InsertionSequence INSERTED_SEQUENCE;
     @Override
 	protected int doWork() {
     	try {
@@ -45,7 +57,7 @@ public class GenerateSimpleVariants extends SimulationGenerator {
         	IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
         	GenomicProcessingContext pc = getProcessingContext();
         	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, UNAMBIGUOUS_MARGIN, RANDOM_SEED, SYMBOLIC);
-        	gen.assemble(FASTA, VCF, BEDPE, INCLUDE_REFERENCE, TYPE, SIZE, COPIES == null ? Integer.MAX_VALUE : COPIES);
+        	gen.assemble(FASTA, VCF, BEDPE, INCLUDE_REFERENCE, TYPE, SIZE, COPIES == null ? Integer.MAX_VALUE : COPIES, INSERTED_SEQUENCE == InsertionSequence.Templated);
         } catch (Exception e) {
 			e.printStackTrace();
 			return 1;

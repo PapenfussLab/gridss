@@ -2,7 +2,7 @@ package au.edu.wehi.idsv.sim;
 
 import java.util.Random;
 
-public class RandomBaseGenerator {
+public class RandomBaseGenerator implements RandomSequenceGenerator {
 	private final Random random;
 	private static final byte[] DNA_BASES = {'A', 'T', 'C', 'G', };
 	public RandomBaseGenerator(int seed) {
