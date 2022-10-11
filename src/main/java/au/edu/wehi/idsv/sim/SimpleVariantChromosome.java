@@ -25,13 +25,22 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 	private final boolean useSymbolicAllele;
 	private final RandomBaseGenerator baseGen;
 	private final RandomReferenceSequenceGenerator sequenceGen;
+	private final String insSrcChr;
+
 	/**
 	 * @param margin number of unambiguous bases around the breakpoint
 	 */
 	public SimpleVariantChromosome(GenomicProcessingContext context, String chr, int margin, int seed, boolean useSymbolicAllele) {
+		this(context, chr, margin, seed, useSymbolicAllele, null);
+	}
+	/**
+	 * @param margin number of unambiguous bases around the breakpoint
+	 */
+	public SimpleVariantChromosome(GenomicProcessingContext context, String chr, int margin, int seed, boolean useSymbolicAllele, String insertChr) {
 		super(context, chr, margin, seed);
 		this.baseGen = new RandomBaseGenerator(seed);
-		this.sequenceGen = new RandomReferenceSequenceGenerator(seed, seq);
+		this.insSrcChr = insertChr == null ? chr : insertChr;
+		this.sequenceGen = new RandomReferenceSequenceGenerator(seed, context.getReference().getSequence(insSrcChr).getBases());
 		this.useSymbolicAllele = useSymbolicAllele;
 	}
 	public SAMSequenceDictionary assemble(File fasta, File vcf, File breakpointPositionsBedpe, boolean includeReference, List<SvType> type, List<Integer> size, int countPerEventTypeSize, boolean templatedInsertions) throws IOException {
@@ -112,6 +121,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 		return dict;
 	}
 	private List<SimpleEvent> populateEvents(List<SvType> typeList, List<Integer> sizeList, int max, boolean templatedInsertions) {
+		RandomSequenceGenerator seqGen = templatedInsertions ? sequenceGen : baseGen;
 		SequentialVariantPlacer placer = new SequentialVariantPlacer(seq, margin);
 		List<SimpleEvent> variantList = new ArrayList<SimpleEvent>();
 		try {
@@ -119,8 +129,9 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 				for (int size : sizeList) {
 					for (SvType type : typeList) {
 						int width = SimpleEvent.getGenomicWidth(type, size);
-						String insSeq = type != INS ? "" : new String((templatedInsertions ? sequenceGen : baseGen).getBases(size));
-						variantList.add(new SimpleEvent(type, referenceIndex, size, placer.getNext(width + 1), insSeq));
+						String insSeq = type != INS ? "" : new String(seqGen.getBases(size));
+						String insSrc = seqGen.lastStartPosition() == null ? null : String.format("%s:%d-%d", this.insSrcChr, seqGen.lastStartPosition(), seqGen.lastEndPosition());
+						variantList.add(new SimpleEvent(type, referenceIndex, size, placer.getNext(width + 1), insSeq, insSrc));
 					}
 				}
 			}

@@ -11,6 +11,9 @@ public class RandomReferenceSequenceGenerator implements RandomSequenceGenerator
     private static final boolean ALLOW_N = false;
     private final Random random;
     private final byte[] seq;
+    private int lastStartPos;
+    private int lastEndPos;
+
     public RandomReferenceSequenceGenerator(int seed, byte[] seq) {
         this.random = new Random(seed);
         this.seq = seq;
@@ -29,8 +32,12 @@ public class RandomReferenceSequenceGenerator implements RandomSequenceGenerator
                     }
                 }
             }
+            this.lastStartPos = start;
+            this.lastEndPos = start + subseq.length - 1;
             break;
         }
         return subseq;
     }
+    public Integer lastStartPosition() { return lastStartPos; }
+    public Integer lastEndPosition() { return lastEndPos; }
 }

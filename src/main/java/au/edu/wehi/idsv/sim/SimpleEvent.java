@@ -8,6 +8,8 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -25,7 +27,7 @@ public class SimpleEvent {
      * @param size size of event
      * @param start 1-based start position of event
      */
-    public SimpleEvent(SvType type, int referenceIndex, int size, int start, String insertedSequence) {
+    public SimpleEvent(SvType type, int referenceIndex, int size, int start, String insertedSequence, String insertedSequenceSource) {
         if (type == INS) {
             assert(insertedSequence.length() == size);
         } else {
@@ -36,6 +38,7 @@ public class SimpleEvent {
         this.start = start;
         this.size = size;
         this.insertedSequence = insertedSequence;
+        this.insertedSequenceSource = insertedSequenceSource;
     }
     public final int referenceIndex;
     public final SvType type;
@@ -48,6 +51,7 @@ public class SimpleEvent {
      */
     public final int size;
     private final String insertedSequence;
+    private final String insertedSequenceSource;
 
     /**
      * Gets sequence in 1-based genomic coordinates
@@ -128,6 +132,7 @@ public class SimpleEvent {
         header.addMetaDataLine(VcfStructuralVariantHeaderLines.EVENT_ID);
         header.addMetaDataLine(VcfStructuralVariantHeaderLines.EVENT_TYPE);
         header.addMetaDataLine(VcfFilter.REFERENCE_ALLELE.header());
+        header.addMetaDataLine(new VCFInfoHeaderLine("INS_SRC", 1, VCFHeaderLineType.String, "Location of inserted sequence"));
     }
     public String getID(ReferenceLookup ref) {
         return String.format("%s.%d.%s%d", ref.getSequenceDictionary().getSequence(referenceIndex).getSequenceName(), start, type, size);
@@ -163,6 +168,9 @@ public class SimpleEvent {
             builder.alleles(refSymbolic, altSymbolic);
         } else {
             builder.alleles(refActual, altActual);
+        }
+        if (insertedSequenceSource != null) {
+            builder.attribute("INS_SRC", insertedSequenceSource);
         }
         return builder;
     }

@@ -50,13 +50,18 @@ public class GenerateSimpleVariants extends SimulationGenerator {
     public boolean SYMBOLIC = true;
 	@Argument(doc="Determines whether to output the variant as direct alternative sequence, or as a symbolic allele", optional=true)
 	public InsertionSequence INSERTED_SEQUENCE;
+	@Argument(doc="Determines which chromosome to sample inserted sequence from. Defaults to same as CHR", optional=true)
+	public String INSERTED_SEQUENCE_CHR = null;
     @Override
 	protected int doWork() {
     	try {
+    		if (INSERTED_SEQUENCE_CHR == null) {
+    			INSERTED_SEQUENCE_CHR = CHR;
+			}
         	java.util.Locale.setDefault(Locale.ROOT);
         	IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
         	GenomicProcessingContext pc = getProcessingContext();
-        	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, UNAMBIGUOUS_MARGIN, RANDOM_SEED, SYMBOLIC);
+        	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, UNAMBIGUOUS_MARGIN, RANDOM_SEED, SYMBOLIC, INSERTED_SEQUENCE_CHR);
         	gen.assemble(FASTA, VCF, BEDPE, INCLUDE_REFERENCE, TYPE, SIZE, COPIES == null ? Integer.MAX_VALUE : COPIES, INSERTED_SEQUENCE == InsertionSequence.Templated);
         } catch (Exception e) {
 			e.printStackTrace();
