@@ -30,7 +30,7 @@ Cameron DL, Schröder J, Penington JS, Do H, Molania R, Dobrovic A, Speed TP, Pa
 
 **If you use VIRUSBreakend, please cite:**
 
-Daniel L Cameron, Nina Jacobs, Paul Roepman, Peter Priestley, Edwin Cuppen, Anthony T Papenfuss, VIRUSBreakend: Viral Integration Recognition Using Single Breakends, Bioinformatics, Volume 37, Issue 19, 1 October 2021, Pages 3115–3119
+Cameron DL, Jacobs N, Roepman P, Priestley P, Cuppen E, Papenfuss AT; VIRUSBreakend. Viral Integration Recognition Using Single Breakends, Bioinformatics, Volume 37, Issue 19, 1 October 2021, Pages 3115–3119
 
 Cameron DL, Baber J, Shale C, Valle-Inclan JE, Besselink N, van Hoeck A, Janssen R, Cuppen E, Priestley P, Papenfuss AT. GRIDSS2: comprehensive characterisation of somatic structural variation using single breakend variants and structural variant phasing. Genome Biol. 2021 Jul 12;22(1):202.
 
@@ -47,7 +47,7 @@ Cameron DL, Schröder J, Penington JS, Do H, Molania R, Dobrovic A, Speed TP, Pa
 
 **If you use LINX with GRIDSS (v2+), please cite:**
 
-Charles Shale, Daniel L. Cameron, Jonathan Baber, Marie Wong, Mark J. Cowley, Anthony T. Papenfuss, Edwin Cuppen, Peter Priestley; Unscrambling cancer genomes via integrated analysis of structural variation and copy number, Cell Genomics, Volume 2, Issue 4, 2022
+Charles Shale, Daniel L. Cameron, Jonathan Baber, Marie Wong, Mark J. Cowley, Anthony T. Papenfuss, Edwin Cuppen, Peter Priestley. Unscrambling cancer genomes via integrated analysis of structural variation and copy number, Cell Genomics, Volume 2, Issue 4, 2022
 
 Cameron DL, Baber J, Shale C, Valle-Inclan JE, Besselink N, van Hoeck A, Janssen R, Cuppen E, Priestley P, Papenfuss AT. GRIDSS2: comprehensive characterisation of somatic structural variation using single breakend variants and structural variant phasing. Genome Biol. 2021 Jul 12;22(1):202.
 
