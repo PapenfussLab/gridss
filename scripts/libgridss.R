@@ -777,7 +777,7 @@ align_breakpoints <- function(vcf, align=c("centre"), is_higher_breakend=names(v
   } else {
     stop("Only centre alignment is currently implemented.")
   }
-  isbp = str_detect(VariantAnnotation::fixed(vcf)$ALT, "[\\]\\[]")
+  isbp = str_detect(as.vector(VariantAnnotation::fixed(vcf)$ALT, "[\\]\\[]"))
   is_adjusted_bp =  isbp & !is.na(adjust_by) & adjust_by != 0
   rowRanges(vcf) = shift(rowRanges(vcf), ifelse(!is_adjusted_bp, 0, adjust_by))
   info(vcf)$CIPOS = info(vcf)$CIPOS - adjust_by
