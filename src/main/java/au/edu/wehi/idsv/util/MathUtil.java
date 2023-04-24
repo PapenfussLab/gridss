@@ -2,11 +2,11 @@ package au.edu.wehi.idsv.util;
 
 public class MathUtil {
 	public static double phredToPr(double phred) {
-		return Math.pow(10, -phred / 10);
+		return StrictMath.pow(10, -phred / 10);
 	}
 	public static double prToPhred(double pr) {
 		if (pr == 0) return 0;
-		return -10 * Math.log10(pr);
+		return -10 * StrictMath.log10(pr);
 	}
 	/**
 	 * Returns the phred-scaled error probability of no
