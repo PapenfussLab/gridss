@@ -1196,7 +1196,7 @@ if [[ $do_call == true ]] ; then
 		&& $rmcmd $prefix.allocated.vcf \
 		; } 1>&2 2>> $logfile
 	else
-		write_status  "Skipping variant calling	$output_vcf"
+		write_status  "Skipping variant calling	as $output_vcf already exists."
 	fi
 	write_status "Complete calling	$output_vcf"
 else
