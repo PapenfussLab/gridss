@@ -13,7 +13,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @CommandLineProgramProperties(
         summary = "Annotates breakpoint variant calls",  
@@ -60,7 +62,9 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		copyInputs(ihom);
 		ae.INPUT_VCF = INPUT_VCF; // needed for caching 
 		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(ae.iterator(calls, threadpool), 128, 2, "AllocateEvidence");
+		//List<VariantContextDirectedEvidence> callsList = calls.stream().collect(Collectors.toList());
 		calls = new AsyncBufferedIterator<VariantContextDirectedEvidence>(arc.iterator(calls, threadpool), 128, 2, "AnnotateReferenceCoverage");
+
 		calls = ihom.iterator(calls, threadpool);
 		AnnotateAlleleFraction aaf = new AnnotateAlleleFraction(new AlleleFractionAnnotator(getContext(), getSamEvidenceSources()));
 		return aaf.iterator(calls, threadpool);

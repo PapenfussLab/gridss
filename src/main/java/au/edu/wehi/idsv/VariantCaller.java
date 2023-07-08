@@ -32,7 +32,7 @@ public class VariantCaller {
 		this.samEvidence = samEvidence;
 		this.assemblyEvidence = assemblyEvidence;
 	}
-	public void callBreakends(File vcf, ExecutorService threadpool) throws IOException {
+	public void callBreakends(File vcf, ExecutorService threadpool, int job_index, int job_nodes) throws IOException {
 		samEvidence.stream().forEach(ses -> ses.assertPreprocessingComplete());
 		for (AssemblyEvidenceSource aes : assemblyEvidence) {
 			aes.assertPreprocessingComplete();
@@ -47,16 +47,25 @@ public class VariantCaller {
 		List<Future<Void>> tasks = new ArrayList<>();
 		
 		for (int i = 0; i < chunks.size(); i++) {
-			QueryInterval[] chunk = chunks.get(i);
-			File f = processContext.getFileSystemContext().getVariantCallChunkVcf(vcf, i);
-			int chunkNumber = i;
-			calledChunk.add(f);
-			if (!f.exists()) {
-				tasks.add(threadpool.submit(() -> { callChunk(f, es, chunkNumber, chunk); return null; }));
+			if (i % job_nodes == job_index) {
+				QueryInterval[] chunk = chunks.get(i);
+				File f = processContext.getFileSystemContext().getVariantCallChunkVcf(vcf, i);
+				int chunkNumber = i;
+				calledChunk.add(f);
+				if ( (job_index > 1 ) || (!f.exists())) {
+					tasks.add(threadpool.submit(() -> {
+						callChunk(f, es, chunkNumber, chunk);
+						return null;
+					}));
+				}
 			}
 		}
 		runTasks(tasks);
-		
+		if (job_nodes > 1) {
+			log.info("Not merging annotated files since not all chunks were called.");
+			return;
+		}
+
 		log.info("Merging identified breakpoints");
 		File mergedOut = FileSystemContext.getWorkingFileFor(vcf, "gridss.merged.");
 		VcfFileUtil.concat(processContext.getReference().getSequenceDictionary(), calledChunk, mergedOut);
