@@ -32,6 +32,8 @@ public class VariantCallingConfiguration {
 		callFullyAnchoredAssemblyVariants = config.getBoolean("callFullyAnchoredAssemblyVariants");
 		ignoreMissingAssemblyFile = config.getBoolean("ignoreMissingAssemblyFile");
 		minimumImpreciseDeletion = config.getInt("minimumImpreciseDeletion");
+		requireReadPair = config.getBoolean("requireReadPair");
+		requireSplitRead = config.getBoolean("requireSplitRead");
 	}
 	/**
 	 * Ignore missing assembly file
@@ -107,6 +109,8 @@ public class VariantCallingConfiguration {
 	 * edge of the library fragment size distribution.
 	 */
 	public int minimumImpreciseDeletion;
+	public boolean requireReadPair;
+	public boolean requireSplitRead;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));
@@ -174,7 +178,7 @@ public class VariantCallingConfiguration {
 		Collection<String> filters = new HashSet<>(variant.getFilters());
 		if (variant instanceof VariantContextDirectedBreakpoint) {
 			VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)variant;
-			if (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
+			if (!callUnassembledBreakpoints && (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) ){
 				filters.add(VcfFilter.NO_ASSEMBLY.filter());
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
 				filters.add(VcfFilter.SINGLE_ASSEMBLY.filter());
@@ -186,7 +190,7 @@ public class VariantCallingConfiguration {
 				filters.add(VcfFilter.LOW_QUAL.filter());
 			}
 		} else {
-			if (variant.getBreakendEvidenceCountAssembly() == 0) {
+			if (!callUnassembledBreakends && (variant.getBreakendEvidenceCountAssembly() == 0) ){
 				filters.add(VcfFilter.NO_ASSEMBLY.filter());
 			}
 			if (variant.getPhredScaledQual() < processContext.getVariantCallingParameters().breakendLowQuality) {
@@ -203,10 +207,10 @@ public class VariantCallingConfiguration {
 			if (Math.abs(bebias) > breakendMaxAssemblySupportBias) {
 				filters.add(VcfFilter.ASSEMBLY_BIAS.filter());
 			}
-			if (bsc == 0) {
+			if ( (bsc == 0) && (requireSplitRead) ) {
 				filters.add(VcfFilter.NO_SR.filter());
 			}
-			if (bum == 0) {
+			if ((bum == 0) && (requireReadPair)) {
 				filters.add(VcfFilter.NO_RP.filter());
 			}
 		}
