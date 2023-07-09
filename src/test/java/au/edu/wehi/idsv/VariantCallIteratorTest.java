@@ -127,6 +127,6 @@ public class VariantCallIteratorTest extends IntermediateFilesTest {
 		MockAssemblyEvidenceSource aes = new MockAssemblyEvidenceSource(getContext(), sess, new File("src/test/resources/empty.bam"));
 		VariantCaller vc = new VariantCaller(getContext(), sess, ImmutableList.of(aes));
 		ExecutorService threadpool = Executors.newFixedThreadPool(2, new ThreadFactoryBuilder().setDaemon(true).setNameFormat("Test275-%d").build());
-		vc.callBreakends(new File(testFolder.getRoot(), "out275.vcf"), threadpool);
+		vc.callBreakends(new File(testFolder.getRoot(), "out275.vcf"), threadpool,0,1);
 	}
 }

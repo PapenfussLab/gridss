@@ -40,7 +40,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of(aes));
 		ExecutorService threadpool = Executors.newSingleThreadExecutor();
-		vc.callBreakends(output, threadpool);
+		vc.callBreakends(output, threadpool, 0, 1);
 		threadpool.shutdown();
 		//List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
 		List<IdsvVariantContext> calls = getVcf(output, null);
@@ -87,7 +87,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of(aes));
-		vc.callBreakends(output, MoreExecutors.newDirectExecutorService());
+		vc.callBreakends(output, MoreExecutors.newDirectExecutorService(), 0,1);
 		//vc.annotateBreakpoints(MoreExecutors.newDirectExecutorService());
 		//List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
 		return getVcf(output, null);
@@ -135,7 +135,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 			ses.evidence.add(NonReferenceReadPair.create(dp[1], dp[0], ses));
 			Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 			VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of());
-			vc.callBreakends(output, MoreExecutors.newDirectExecutorService());
+			vc.callBreakends(output, MoreExecutors.newDirectExecutorService(), 0, 1);
 			List<IdsvVariantContext> result = getVcf(output, null);
 			if (writeFiltered) {
 				Assert.assertTrue(result.size() > 3);
