@@ -24,21 +24,15 @@ argp = add_argument(argp, "--configdir", default=".", help="Path to gridss.confi
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 argv = parse_args(argp)
 
-argv <- list(
-  input = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann.vcf",
-  output = "/Users/mayalevy/Downloads/gridss/output.txt",
-  fulloutput = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann_output_of_r.vcf",
-  ref = "BSgenome.Hsapiens.UCSC.hg38",
-  scriptdir = "/Users/mayalevy/PycharmProjects/gridss/scripts/",
-  configdir = ".",
-  gc = TRUE
-)
-# #argv_input = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_hap_out_sorted_ua.aln_sorted_empty.ann.no_single_assmebly_fix.vcf"
-# argv_input = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann.vcf"
-# argv_ref = "BSgenome.Hsapiens.UCSC.hg38"
-# argv_output = "/Users/mayalevy/Downloads/gridss/output.txt"
-# #argv_fulloutput = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_hap_out_sorted_ua.aln_sorted_empty.ann.no_single_assmebly_fix_output_of_r.vcf"
-# argv_fulloutput = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann_output_of_r.vcf"
+# argv <- list(
+#   input = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann.vcf",
+#   output = "/Users/mayalevy/Downloads/gridss/output.txt",
+#   fulloutput = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann_output_of_r.vcf",
+#   ref = "BSgenome.Hsapiens.UCSC.hg38",
+#   scriptdir = "/Users/mayalevy/PycharmProjects/gridss/scripts/",
+#   configdir = ".",
+#   gc = TRUE
+# )
 
 
 for (argname in c("input")) {
@@ -139,7 +133,7 @@ if (length(bpgr) > 0) {
   info(full_vcf[names(bpgr)])$TAF = bpgr$af_str
 }
 write(paste(Sys.time(), "Filtering breakpoints", argv$input), stderr())
-bpfiltered = gridss_breakpoint_filter(bpgr, full_vcf, bsgenome=refgenome, pon_dir=NULL, normalOrdinal=NULL, tumourOrdinal=1, somatic_filters=FALSE)
+bpfiltered = gridss_breakpoint_filter(bpgr, full_vcf, bsgenome=refgenome, pon_dir=NULL, normalOrdinal=NULL, tumourOrdinal=1, somatic_filters=FALSE, min_support_filters=FALSE)
 filters[names(bpgr)] = bpfiltered
 if (argv$gc) { gc() }
 
@@ -321,7 +315,16 @@ filters[names(full_vcf)[fails_qual_without_rescue]] = paste0(filters[names(full_
 
 ################
 # Write outputs
+
+#remove unnecessary filters
+filters <- gsub("NoAssembledRP", "", filters)
+
+# Optionally, remove extra semicolons
+filters <- gsub(";{2,}", ";", filters) # Replace multiple semicolons with a single one
+filters <- gsub("^;|;$", "", filters)  # Remove leading and trailing semicolons
+
 VariantAnnotation::fixed(full_vcf)$FILTER = ifelse(str_remove(filters, "^;") == "", "PASS", str_remove(filters, "^;"))
+
 if (argv$gc) { gc() }
 if (!is.na(argv$output)) {
   write(paste(Sys.time(),"Writing ", argv$output), stderr())
