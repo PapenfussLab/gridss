@@ -34,6 +34,7 @@ public class VariantCallingConfiguration {
 		minimumImpreciseDeletion = config.getInt("minimumImpreciseDeletion");
 		requireReadPair = config.getBoolean("requireReadPair");
 		requireSplitRead = config.getBoolean("requireSplitRead");
+		includeSingleAssemblyFilter = config.getBoolean("includeSingleAssemblyFilter");
 	}
 	/**
 	 * Ignore missing assembly file
@@ -111,6 +112,10 @@ public class VariantCallingConfiguration {
 	public int minimumImpreciseDeletion;
 	public boolean requireReadPair;
 	public boolean requireSplitRead;
+	/**
+	 * Include single_assembly filtering in output vcf
+	 */
+	public boolean includeSingleAssemblyFilter;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));
@@ -180,7 +185,7 @@ public class VariantCallingConfiguration {
 			VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)variant;
 			if (!callUnassembledBreakpoints && (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) ){
 				filters.add(VcfFilter.NO_ASSEMBLY.filter());
-			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
+			} else if (includeSingleAssemblyFilter && (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0)) {
 				filters.add(VcfFilter.SINGLE_ASSEMBLY.filter());
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() + v.getBreakpointEvidenceCountRemoteAssembly() + v.getBreakpointEvidenceCountCompoundAssembly() > 0 &&
 					v.getBreakpointEvidenceCountReadPair() + v.getBreakpointEvidenceCountSoftClip() + v.getBreakpointEvidenceCountIndel() == 0) {

@@ -78,14 +78,14 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		CloseableIterator<DirectedEvidence> rawReads = new AsyncBufferedIterator<>(getReadIterator(), "mergedReads-allocation");
 		CloseableIterator<DirectedEvidence> reads = new AsyncBufferedIterator<>(annotateAssembly(rawReads), "annotate-associated-assembly");
 		CloseableIterator<DirectedEvidence> assemblies = new AsyncBufferedIterator<>(getAssemblyIterator(), "assembly-allocation");
-		List<DirectedEvidence> assemblyList = assemblies.stream().collect(Collectors.toList());
-		for (DirectedEvidence as: assemblyList){
-			if (as instanceof DirectedBreakpoint){
-				log.debug(as.getUnderlyingSAMRecord().getReadName());
-			} else {
-				log.debug(as.getUnderlyingSAMRecord().getReadName() + "not" + as.getClass());
-			}
-		}
+//		List<DirectedEvidence> assemblyList = assemblies.stream().collect(Collectors.toList());
+//		for (DirectedEvidence as: assemblyList){
+//			if (as instanceof DirectedBreakpoint){
+//				log.debug(as.getUnderlyingSAMRecord().getReadName());
+//			} else {
+//				log.debug(as.getUnderlyingSAMRecord().getReadName() + "not" + as.getClass());
+//			}
+//		}
 
 		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, reads, assemblies, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), true);
 		CloseableIterator<VariantEvidenceSupport> bufferedAnnotator = new AsyncBufferedIterator<>(annotator, "annotator", 2, 8);
