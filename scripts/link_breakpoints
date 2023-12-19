@@ -24,10 +24,11 @@ argp = add_argument(argp, "--configdir", default=".", help="Path to gridss.confi
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 argv = parse_args(argp)
 
+
 # argv <- list(
-#   input = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann.vcf",
+#   input = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv10_do_realignment_hap_out_sorted_ua.aln_sorted_realigned_mapq60_no_decoy_bitwise_sorted_empty.ann.vcf",
 #   output = "/Users/mayalevy/Downloads/gridss/output.txt",
-#   fulloutput = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv9_non_ref_trim_hap_out_sorted_ua.aln_sorted_empty.ann_output_of_r.vcf",
+#   fulloutput = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv10_do_realignment_hap_out_sorted_ua.aln_sorted_realigned_mapq60_no_decoy_bitwise_sorted_empty.ann_output_of_r.vcf",
 #   ref = "BSgenome.Hsapiens.UCSC.hg38",
 #   scriptdir = "/Users/mayalevy/PycharmProjects/gridss/scripts/",
 #   configdir = ".",
@@ -84,6 +85,7 @@ if (!is.null(argv$ref) & !is.na(argv$ref) & argv$ref != "") {
 }
 
 raw_vcf = readVcf(argv$input)
+
 nsamples = ncol(geno(raw_vcf)$VF)
 # hard filter variants that are obviously not somatic
 #full_vcf = raw_vcf[geno(raw_vcf)$QUAL[,argv$normalordinal] / VariantAnnotation::fixed(raw_vcf)$QUAL < 4 * gridss.allowable_normal_contamination]
@@ -198,6 +200,8 @@ link_df = bind_rows(asm_linked_df, transitive_df) %>%
 
 write(paste(Sys.time(),"Calculating bebe insertion links", argv$input), stderr())
 # Insertion linkage
+
+
 bebeins_link_df = linked_by_breakend_breakend_insertion_classification(begr) %>%
   group_by(linked_by) %>%
   mutate(pass=passes_final_filters(vcf[sourceId])) %>%
@@ -205,6 +209,7 @@ bebeins_link_df = linked_by_breakend_breakend_insertion_classification(begr) %>%
   ungroup() %>%
   filter(pass) %>%
   mutate(type="bebeins")
+
 write(paste(Sys.time(),"Calculating bebp insertion links", argv$input), stderr())
 bebpins_link_df = linked_by_breakpoint_breakend_insertion_classification(bpgr, begr) %>%
   group_by(linked_by) %>%
@@ -332,6 +337,7 @@ if (!is.na(argv$output)) {
   vcf = vcf[is.na(info(vcf)$MATEID) | info(vcf)$MATEID %in% names(vcf)]
   writeVcf(vcf, argv$output, index=TRUE)
 }
+
 if (!is.na(argv$fulloutput)) {
   write(paste(Sys.time(),"Writing ", argv$fulloutput), stderr())
   vcf = full_vcf[passes_very_hard_filters(filters)]
@@ -391,13 +397,11 @@ if (!is.na(argv$fulloutput)) {
   alt(vcf[is.na(info(vcf)$MATEID) & (info(vcf)$LOCAL_LINKED_BY !="")]) = character_list
   info(vcf[is.na(info(vcf)$MATEID) & (info(vcf)$LOCAL_LINKED_BY !="")])$EVENT = vcf_linked_by
   info(vcf[is.na(info(vcf)$MATEID) & (info(vcf)$LOCAL_LINKED_BY !="")])$MATEID = mateids
-  
   # remove largeNoRP
   filters_before_write <- rowRanges(vcf)$FILTER
   filters_before_write <- gsub("largeNoRP;", "", filters_before_write)   # If largeNoRP is at the beginning followed by another tag.
   filters_before_write <- gsub(";largeNoRP", "", filters_before_write)   # If largeNoRP is at the end after another tag.
   filters_before_write <- gsub("^largeNoRP$", "", filters_before_write)  # If largeNoRP is the only tag.
-
   VariantAnnotation::fixed(vcf)$FILTER <- filters_before_write
   writeVcf(vcf, argv$fulloutput, index=TRUE)
 }

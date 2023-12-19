@@ -20,7 +20,9 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	make \
 	wget \
 	libomp-dev \
-	&& rm -rf /var/lib/apt/lists/*
+    python3-pip \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& pip3 install pysam
 
 # compile gridsstools
 FROM gridss_c_build_environment AS gridss_builder_c
@@ -77,6 +79,22 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 		python3-h5py \
 		rsync \
 		curl \
+		libxml2-dev \
+		libcairo2-dev \
+		libgit2-dev \
+		default-libmysqlclient-dev \
+		libpq-dev \
+		libsasl2-dev \
+		libsqlite3-dev \
+		libssh2-1-dev \
+		libxtst6 \
+		libharfbuzz-dev \
+		libfribidi-dev \
+		libfreetype6-dev \
+		libpng-dev \
+		libtiff5-dev \
+		libjpeg-dev \
+		unixodbc-dev \
 	&& rm -rf /var/lib/apt/lists/*
 # samtools needs to be installed from source since the OS package verion is too old
 RUN mkdir /opt/samtools && \
@@ -93,15 +111,15 @@ RUN mkdir /opt/samtools && \
 ### Repeat Masker and dependencies
 RUN mkdir /opt/trf && \
 	cd /opt/trf && \
-	wget http://tandem.bu.edu/trf/downloads/trf407b.linux64 && \
+	wget https://github.com/Benson-Genomics-Lab/TRF/releases/download/v4.09.1/trf409.linux64 && \
 	chmod +x trf*.linux64 && \
 	ln -s trf*.linux64 trf
 # Turns out we need makeblastdb as well as rmblastn (https://github.com/PapenfussLab/gridss/issues/535)
 RUN mkdir /opt/rmblast && \
 	cd /opt/rmblast && \
-	wget http://www.repeatmasker.org/rmblast-2.11.0+-x64-linux.tar.gz && \
-	tar --no-anchored --strip-components 2 -xvzf rmblast-2.11.0+-x64-linux.tar.gz rmblastn makeblastdb && \
-	rm rmblast-2.11.0+-x64-linux.tar.gz
+	wget https://www.repeatmasker.org/rmblast/rmblast-2.14.1+-x64-linux.tar.gz && \
+	tar --no-anchored --strip-components 2 -xvzf rmblast-2.14.1+-x64-linux.tar.gz rmblastn makeblastdb && \
+	rm rmblast-2.14.1+-x64-linux.tar.gz
 RUN cd /opt/ && \
 	wget http://www.repeatmasker.org/RepeatMasker/RepeatMasker-4.1.2-p1.tar.gz && \
 	tar zxf RepeatMasker-*.tar.gz && \
@@ -136,7 +154,7 @@ RUN cd /opt/RepeatMasker && \
 # R packages used by GRIDSS - R package need the C toolchain installed
 ENV R_INSTALL_STAGED=false
 RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");install.packages(c( "tidyverse", "assertthat", "testthat", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite" ))'
-RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c( "copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene" ))'
+RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c( "copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene", "BSgenome.Hsapiens.UCSC.hg38", "BSgenome.Hsapiens.UCSC.hg19" ))'
 # Install GRIDSS
 ARG GRIDSS_VERSION
 ENV GRIDSS_VERSION=${GRIDSS_VERSION}
@@ -158,6 +176,8 @@ COPY scripts/gridss \
 	scripts/virusbreakend-build \
 	scripts/gridss.config.R \
 	scripts/libgridss.R \
+	scripts/link_breakpoints \
+	scripts/ua_realignment.py \
 	/opt/gridss/
 RUN chmod +x /opt/gridss/* && \
 	chmod -x /opt/gridss/*.R
