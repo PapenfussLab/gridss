@@ -124,6 +124,13 @@ RUN cd /opt/ && \
 	wget http://www.repeatmasker.org/RepeatMasker/RepeatMasker-4.1.2-p1.tar.gz && \
 	tar zxf RepeatMasker-*.tar.gz && \
 	rm RepeatMasker-*.tar.gz
+# Install GATK
+RUN mkdir /opt/gatk && \
+	cd /opt/gatk && \
+	 wget https://github.com/broadinstitute/gatk/releases/download/4.2.6.1/gatk-4.2.6.1.zip && \
+      unzip gatk-4.2.6.1.zip && \
+      rm gatk-4.2.6.1.zip
+RUN apt update && apt --yes install default-jdk
 ### Kraken2 and dependencies
 # dustmasker from e-direct: (or is this in ncbi-blast as well?)
 RUN mkdir /opt/blast && \
@@ -143,7 +150,7 @@ RUN mkdir /opt/kraken2 && \
 	rm -r kraken2-$KRAKEN_VERSION v*.tar.gz
 RUN sh -c "$(wget -q ftp://ftp.ncbi.nlm.nih.gov/entrez/entrezdirect/install-edirect.sh -O -)" && \
 	mv $HOME/edirect /opt/edirect
-ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:$PATH"
+ENV PATH="/opt/gridss/:/opt/RepeatMasker:/opt/rmblast/:/opt/trf:/opt/kraken2:/opt/blast:/opt/edirect:/opt/gatk:$PATH"
 # configure repeatmasker
 RUN cd /opt/RepeatMasker && \
 	perl configure \
