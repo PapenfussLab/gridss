@@ -21,3 +21,6 @@ Escherichia_coli_bl21_de3_.ASM956v1.*
 /scripts/virusbreakend_manuscript/publicdata
 /example/out*
 /scripts/virusbreakend_manuscript/scripts/gen
+gridss.Rproj
+scripts/.RData
+scripts/.Rhistory

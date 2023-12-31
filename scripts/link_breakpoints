@@ -203,8 +203,8 @@ write(paste(Sys.time(),"Calculating bebe insertion links", argv$input), stderr()
 
 
 bebeins_link_df = linked_by_breakend_breakend_insertion_classification(begr) %>%
-  group_by(linked_by) %>%
   mutate(pass=passes_final_filters(vcf[sourceId])) %>%
+  group_by(linked_by) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -212,8 +212,8 @@ bebeins_link_df = linked_by_breakend_breakend_insertion_classification(begr) %>%
 
 write(paste(Sys.time(),"Calculating bebp insertion links", argv$input), stderr())
 bebpins_link_df = linked_by_breakpoint_breakend_insertion_classification(bpgr, begr) %>%
-  group_by(linked_by) %>%
   mutate(pass=passes_final_filters(vcf[sourceId])) %>%
+  group_by(linked_by) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -221,8 +221,8 @@ bebpins_link_df = linked_by_breakpoint_breakend_insertion_classification(bpgr, b
 # Inversion linkage
 write(paste(Sys.time(),"Calculating simple inversions", argv$input), stderr())
 inv_link_df = linked_by_simple_inversion_classification(bpgr) %>%
-  group_by(linked_by) %>%
   mutate(pass=passes_final_filters(vcf[sourceId])) %>%
+  group_by(linked_by) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -238,8 +238,8 @@ inv_link_df = linked_by_simple_inversion_classification(bpgr) %>%
 # TODO: show this by modelling additional focal DSBs
 write(paste(Sys.time(),"Calculating dsb links", argv$input), stderr())
 dsb_link_df = linked_by_dsb(bpgr) %>%
-  group_by(linked_by) %>%
   mutate(pass=passes_final_filters(vcf[sourceId])) %>%
+  group_by(linked_by) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
   filter(pass) %>%
@@ -260,11 +260,13 @@ event_link_df = bind_rows(
   mutate(
     QUAL=rowRanges(vcf)[sourceId]$QUAL,
     hasPolyA=str_detect(as.character(unlist(rowRanges(vcf[sourceId])$ALT)), "A{16}")) %>%
+
+  mutate(supporting_fragment_count = ifelse(is.na(info(vcf[sourceId])$MATEID), info(vcf[sourceId])$BVF, info(vcf[sourceId])$VF)) %>%
   group_by(linked_by) %>%
   # filter events where supporting fragment counts differ by too much
   mutate(
-    max_supporting_fragment_count = max(ifelse(is.na(info(vcf[sourceId])$MATEID), info(vcf[sourceId])$BVF, info(vcf[sourceId])$VF)),
-    min_supporting_fragment_count = min(ifelse(is.na(info(vcf[sourceId])$MATEID), info(vcf[sourceId])$BVF, info(vcf[sourceId])$VF)),
+    max_supporting_fragment_count = max(supporting_fragment_count),
+    min_supporting_fragment_count = min(supporting_fragment_count),
     hasPolyA=any(hasPolyA)
     ) %>%
   filter(min_supporting_fragment_count >= gridss.min_rescue_portion * max_supporting_fragment_count | hasPolyA)
@@ -278,13 +280,17 @@ event_link_df = event_link_df %>%
   filter(QUAL == linkQUAL) %>%
   group_by(linked_by)
 # Don't event link to PON filtered variants
-event_link_df = event_link_df %>%
-  filter(!str_detect(filters[sourceId], "PON"))
+event_link_df = event_link_df %>% ungroup() %>%
+  mutate(ispon=str_detect(filters[sourceId], "PON")) %>%
+	group_by(linked_by) %>%
+	filter(!any(ispon))
 # Fix up pairing
 event_link_df = event_link_df %>%
   filter(n() == 2) %>%
   ungroup()
 
+event_link_df <- event_link_df %>%
+	dplyr::select(-ispon)
 # include both breakends of any linked breakpoints
 # as linkage can be breakend specific (e.g. assembly, bpbeins)
 link_rescue = bind_rows(link_df, event_link_df) %>% pull(sourceId) %>% unique()
@@ -345,7 +351,7 @@ if (!is.na(argv$fulloutput)) {
   # set MATEID be the id of the linked breakend
   vcf_ids = names(rowRanges(vcf[is.na(info(vcf)$MATEID) & (info(vcf)$LOCAL_LINKED_BY !="")]))
   vcf_linked_by = info(vcf[is.na(info(vcf)$MATEID) & (info(vcf)$LOCAL_LINKED_BY !="")])$LOCAL_LINKED_BY
-  
+
   vcf_chr = seqnames(rowRanges(vcf[is.na(info(vcf)$MATEID) & (info(vcf)$LOCAL_LINKED_BY !="")]))
   vcf_chr = as.numeric(gsub("\\D", "", vcf_chr))
   vcf_pos = start(rowRanges(vcf[is.na(info(vcf)$MATEID) & (info(vcf)$LOCAL_LINKED_BY !="")]))
@@ -356,15 +362,15 @@ if (!is.na(argv$fulloutput)) {
   vcf_linked_by <- str_replace(vcf_linked_by, ",.*$", "")
   mateids = rep(NA, length(vcf_ids))
   chr_pos = rep(NA, length(vcf_ids))
-  
+
   # Order chromosomes X, Y, and M correctly if they exist
   chr_order <- c(as.character(1:22), "X", "Y", "M")
   names(chr_order) <- chr_order
-  
+
   for (link in unique(vcf_linked_by)) {
     # Find the indices in vcf_linked_by that have this linkage value
     indices <- which(vcf_linked_by == link)
-    
+
     # Check if exactly two indices are found
     if (length(indices) == 2) {
       # Pair the two corresponding IDs
