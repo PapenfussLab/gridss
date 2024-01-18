@@ -184,7 +184,7 @@ COPY scripts/gridss \
 	scripts/gridss.config.R \
 	scripts/libgridss.R \
 	scripts/link_breakpoints \
-	scripts/ua_realignment.py \
+	scripts/revert_sup_low_mapq_ua_alignment.py \
 	/opt/gridss/
 RUN chmod +x /opt/gridss/* && \
 	chmod -x /opt/gridss/*.R

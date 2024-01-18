@@ -14,7 +14,7 @@ thisFile <- function() { # https://stackoverflow.com/questions/1815606/determine
 		return(normalizePath(sys.frames()[[1]]$ofile))
 	}
 }
-argp = arg_parser("Link a raw GRIDSS insertions")
+argp = arg_parser("Link GRIDSS breakends together to create SV. In that way we have start position and end breakends of the variant and it is considered as an SV variant")
 argp = add_argument(argp, "--ref", default="", help="Reference genome to use. Must be a valid installed BSgenome package")
 argp = add_argument(argp, "--input", help="GRIDSS VCF")
 argp = add_argument(argp, "--output", help="High confidence somatic subset")
@@ -23,17 +23,6 @@ argp = add_argument(argp, "--scriptdir", default=thisFile(), help="Path to libgr
 argp = add_argument(argp, "--configdir", default=".", help="Path to gridss.config.R script relative to scriptdir. Defaults to '.' (same directory as libgridss.R)")
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 argv = parse_args(argp)
-
-
-# argv <- list(
-#   input = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv10_do_realignment_hap_out_sorted_ua.aln_sorted_realigned_mapq60_no_decoy_bitwise_sorted_empty.ann.vcf",
-#   output = "/Users/mayalevy/Downloads/gridss/output.txt",
-#   fulloutput = "/Users/mayalevy/Downloads/gridss/output_prefix_chr9_matt_assmebly_sv10_do_realignment_hap_out_sorted_ua.aln_sorted_realigned_mapq60_no_decoy_bitwise_sorted_empty.ann_output_of_r.vcf",
-#   ref = "BSgenome.Hsapiens.UCSC.hg38",
-#   scriptdir = "/Users/mayalevy/PycharmProjects/gridss/scripts/",
-#   configdir = ".",
-#   gc = TRUE
-# )
 
 
 for (argname in c("input")) {

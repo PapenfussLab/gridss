@@ -39,6 +39,7 @@ public class FullEvidenceCommandLineProgramTest extends IntermediateFilesTest {
         cmd.INPUT = ImmutableList.of(n, t);
         cmd.INPUT_LABEL = ImmutableList.of("Normal", "Tumour");
         cmd.ASSEMBLY = ImmutableList.of(a1, a2);
+        cmd.SAMPLE_NAMES = ImmutableList.of();
         cmd.doWork();
     }
     @Test(expected=IllegalArgumentException.class)
@@ -62,6 +63,7 @@ public class FullEvidenceCommandLineProgramTest extends IntermediateFilesTest {
         cmd.INPUT = ImmutableList.of(n, t);
         cmd.INPUT_LABEL = ImmutableList.of("Normal", "Tumour");
         cmd.ASSEMBLY = ImmutableList.of(a1, a2);
+        cmd.SAMPLE_NAMES = ImmutableList.of();
         cmd.doWork();
     }
     @Test(expected=IllegalArgumentException.class)
@@ -85,6 +87,7 @@ public class FullEvidenceCommandLineProgramTest extends IntermediateFilesTest {
         cmd.INPUT = ImmutableList.of(n, t);
         cmd.INPUT_LABEL = ImmutableList.of("Normal", "Tumour");
         cmd.ASSEMBLY = ImmutableList.of(a1, a2);
+        cmd.SAMPLE_NAMES = ImmutableList.of();
         cmd.doWork();
     }
     @Test(expected=IllegalArgumentException.class)
@@ -108,6 +111,7 @@ public class FullEvidenceCommandLineProgramTest extends IntermediateFilesTest {
         cmd.INPUT = ImmutableList.of(n, t);
         cmd.INPUT_LABEL = ImmutableList.of("Normal", "Tumour");
         cmd.ASSEMBLY = ImmutableList.of(a1, a2);
+        cmd.SAMPLE_NAMES = ImmutableList.of();
         cmd.doWork();
     }
 }

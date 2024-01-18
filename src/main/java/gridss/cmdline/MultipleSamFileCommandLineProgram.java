@@ -13,6 +13,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import java.io.FileOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import org.apache.commons.configuration.ConfigurationException;
@@ -29,11 +30,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import htsjdk.samtools.*;
+import htsjdk.samtools.reference.FastaSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequence;
 
 public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(MultipleSamFileCommandLineProgram.class);
-	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
+	@Argument(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.", optional=true)
     public List<File> INPUT;
+
+	@Argument(doc="Supply list of sample names in the same order as in the assembly output, instead of INPUT files. This will skip generating candidates from the INPUT file, only from the assembly", optional=true)
+	public List<String> SAMPLE_NAMES;
 	//@Argument(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
     //public List<File> INPUT_NAME_SORTED;
 	@Argument(doc="Input label. Variant calling evidence breakdowns are reported for each label."
@@ -59,7 +66,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-	
+
 	private List<SAMEvidenceSource> samEvidence = null;
     private SAMEvidenceSource constructSamEvidenceSource(File file, File nameSortedFile, String label, int minFragSize, int maxFragSize) {
     	int category = getContext().registerCategory(label);
@@ -82,7 +89,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	if (file.exists() && getContext().getConfig().useReadGroupSampleNameCategoryLabel) {
     		try (SamReader reader = SamReaderFactory.makeDefault().referenceSequence(REFERENCE_SEQUENCE).open(file)) {
     			SAMFileHeader header = reader.getFileHeader();
-    			if (header.getReadGroups().size() == 1) {
+    			if (header.getReadGroups().stream().map(SAMReadGroupRecord::getSample).distinct().count() == 1) {
     				String sampleName = header.getReadGroups().get(0).getSample();
     				if (sampleName != null && sampleName.length() > 0) {
     					label = sampleName;
@@ -109,6 +116,57 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 	    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
 	    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
 	    	}
+			for (int i = 0; i < SAMPLE_NAMES.size(); i++) {
+				// in case we do not supply INPUT files, we can supply categories, and then we create an empty bam file for each category.
+				// in that way, the code can still run without generating candidates from the raw reads
+				String category_empty_filename = "categoty_empty_file." + getOffset(SAMPLE_NAMES, i, null)+".bam";
+				File newFile = new File(WORKING_DIR, category_empty_filename);
+				File indexFile = new File(WORKING_DIR,category_empty_filename + ".bai");
+				// Create a SAM file header with the specified content of first line, RG and some SQ lines
+				SAMFileHeader header = new SAMFileHeader();
+				header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+				// Unique RG id
+				SAMReadGroupRecord rg = new SAMReadGroupRecord(String.format("RG%d", i + 1));
+				// Set the sample name (SM tag) to category name
+				rg.setSample(getOffset(SAMPLE_NAMES, i, null));
+				header.addReadGroup(rg);
+
+				// add some SQ lines
+				FastaSequenceFile fastaFile = new FastaSequenceFile(new File(REFERENCE_SEQUENCE.getPath()), true);
+				ReferenceSequence seq;
+				while ((seq = fastaFile.nextSequence()) != null) {
+					SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(seq.getName(), seq.length());
+					header.addSequence(sequenceRecord);
+				}
+
+				// Create the BAM file with the specified header
+				try (SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, newFile)) {
+					// No SAMRecords are added, resulting in an empty BAM (except for the header)
+					// The writer is automatically closed at the end of this block.
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				try (SamReader reader = SamReaderFactory.makeDefault().open(newFile)) {
+					if (indexFile.exists()) {
+						// Attempt to delete the existing index file
+						boolean deleted = indexFile.delete();
+						if (!deleted) {
+							System.err.println("Could not delete existing index file: " + indexFile.getAbsolutePath());
+							// Handle this scenario as appropriate for your application
+						}
+					}
+					BAMIndexer.createIndex(reader, indexFile);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				samEvidence.add(constructSamEvidenceSource(
+						newFile,
+						null, // getOffset(INPUT_NAME_SORTED, i, null),
+						getOffset(SAMPLE_NAMES, i, null),
+						0,
+						0));
+			}
     	}
     	return samEvidence;
     }
@@ -153,15 +211,15 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	java.util.Locale.setDefault(Locale.ROOT);
 		// Spam output with gridss parameters used
 		getContext();
-		// *.sv.bam needs to be indexed if we are to do multi-threaded processing 
+		// *.sv.bam needs to be indexed if we are to do multi-threaded processing
 		SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(true);
 		// Force loading of aligner up-front
 		log.info("Loading aligner");
 		AlignerFactory.create();
 		// TODO: how do we make make sure our log message is printed before we crash the JVM
-		// with an IllegalInstruction when using libsswjni on an old computer? 
+		// with an IllegalInstruction when using libsswjni on an old computer?
 		//aligner.align_smith_waterman("ACGT".getBytes(), "ACGT".getBytes());
-		
+
     	ensureArgs();
     	ExecutorService threadpool = null;
     	try {
@@ -234,9 +292,6 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 		if (WORKER_THREADS < 1) {
 			return new String[] { "WORKER_THREADS must be at least one." };
 		}
-		if (INPUT == null || INPUT.size() == 0) {
-			return new String[] { "No INPUT files specified." };
-    	}
 		//if (INPUT_NAME_SORTED != null && INPUT_NAME_SORTED.size() > 0 && INPUT_NAME_SORTED.size() != INPUT.size()) {
     	//	return new String[] { "INPUT_NAME_SORTED must omitted or specified for every INPUT." };
     	//}

@@ -23,7 +23,9 @@ import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
-
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -279,7 +281,24 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public void assertPreprocessingComplete() {
 		File svFile = getSVFile();
 		if (svFile != null && !svFile.exists()) {
-			throw new IllegalStateException(String.format("Missing required file %s. See GRIDSS pipeline examples and documentation.", svFile));
+			try {
+				// Create the hard link
+				Path existingFile = Paths.get(getFile().getPath());  // The existing file
+				Path newLink = Paths.get(svFile.getPath());        // The path for the hard link
+
+				Files.createLink(newLink, existingFile);
+				log.debug("Hard link created successfully for input file");
+
+				Path existingIndexFile = Paths.get(getFile().getPath()+".bai");  // The existing file
+				Path newIndexLink = Paths.get(svFile.getPath()+".bai");        // The path for the hard link
+
+				Files.createLink(newIndexLink, existingIndexFile);
+				log.debug("Hard link created successfully for index file");
+			} catch (IOException e) {
+				// Handle the possibility of an IOException
+				e.printStackTrace();
+			}
+
 		}
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it, EvidenceSortOrder eso) {

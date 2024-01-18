@@ -1,0 +1,87 @@
+name: Build gridss Docker image
+
+on:
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: "Docker image tag, If omitted will use github short sha"
+        required: false
+        type: string
+
+permissions:
+  id-token: write # Required for assuming an AWS role
+  contents: read # Required for actions/checkout
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ROLE_NAME: github-actions-ecr
+  AWS_ACCOUNT: 337532070941
+
+  GCP_WORKLOAD_IDENTITY_PROVIDER: projects/55428976747/locations/global/workloadIdentityPools/devops-pool/providers/devops-pool-provider
+  GCP_SERVICE_ACCOUNT: gcr-push-sa@ultima-data-307918.iam.gserviceaccount.com
+
+  IMAGE: gridss
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Git Checkout
+        uses: actions/checkout@v4
+
+      - uses: benjlevesque/short-sha@v2.2
+        id: short-sha
+        with:
+          length: 7
+
+      - name: set tag
+        id: set-tag
+        if: ${{ inputs.image-tag == '' }}
+        run: |
+          if [ ${{ github.ref_name }} == 'master' ]; then
+            echo "imageTag=master_${{ steps.short-sha.outputs.sha }}" >>$GITHUB_OUTPUT;
+          else
+            echo "imageTag=test_${{ steps.short-sha.outputs.sha }}" >>$GITHUB_OUTPUT;
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT }}:role/${{ env.AWS_ROLE_NAME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+
+      - name: Login to GAR
+        id: gar-login
+        uses: docker/login-action@v2
+        with:
+          registry: us-central1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          provenance: false
+          target: gridss
+          push: true
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.IMAGE }}:${{ inputs.image-tag || steps.set-tag.outputs.imageTag }}
+            us-central1-docker.pkg.dev/ultima-data-307918/ultimagen/${{ env.IMAGE }}:${{ inputs.image-tag || steps.set-tag.outputs.imageTag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -55,7 +55,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
-		caller.callBreakends(output, MoreExecutors.newDirectExecutorService(),0,1);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
@@ -88,7 +88,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
-		caller.callBreakends(output, MoreExecutors.newDirectExecutorService(), 0 , 1);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
@@ -130,7 +130,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), ImmutableList.of(aes));
 		ExecutorService threadpool = Executors.newSingleThreadExecutor();
-		vc.callBreakends(output, threadpool,0,1);
+		vc.callBreakends(output, threadpool);
 		threadpool.shutdown();
 
 		cmd.INPUT_VCF = output;
@@ -181,7 +181,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
-		caller.callBreakends(output, MoreExecutors.newDirectExecutorService(),0,1);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
@@ -213,7 +213,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
-		caller.callBreakends(output, MoreExecutors.newDirectExecutorService(),0,1);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
@@ -242,7 +242,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		aes.assembleBreakends(null);
 		aes.ensureExtracted();
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), ImmutableList.of(aes));
-		caller.callBreakends(output, MoreExecutors.newDirectExecutorService(),0,1);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
@@ -289,7 +289,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource faes1 = new AssemblyEvidenceSource(pc, ImmutableList.of(fses1, fses2), a1);
 		AssemblyEvidenceSource faes2 = new AssemblyEvidenceSource(pc, ImmutableList.of(fses1, fses2), a2);
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(fses1, fses2), ImmutableList.of(faes1, faes2));
-		caller.callBreakends(output, MoreExecutors.newDirectExecutorService(),0,1);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);

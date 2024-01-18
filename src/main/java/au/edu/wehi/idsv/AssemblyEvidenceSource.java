@@ -13,6 +13,7 @@ import au.edu.wehi.idsv.visualisation.AssemblyTelemetry;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import com.google.common.util.concurrent.MoreExecutors;
+import gridss.IdentifyVariants;
 import gridss.SoftClipsToSplitReads;
 import gridss.cmdline.CommandLineProgramHelper;
 import htsjdk.samtools.*;
@@ -505,7 +506,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			List<String> extra = aes1.getAssemblyCategories().stream()
 					.filter(x -> !pcCategories.contains(x))
 					.collect(Collectors.toList());
-			if (extra.size() > 0) {
+			if (!extra.isEmpty() && !(pc.getCommandLineProgram() instanceof IdentifyVariants)){
 				String msg = String.format(
 						"Fatal error: Found %s in GRIDSS assembly files %s but not in input." +
 								" GRIDSS does not support including assembly of reads included in INPUT files." +

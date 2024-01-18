@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AssembleBreakendsTest extends IntermediateFilesTest {
@@ -21,6 +22,7 @@ public class AssembleBreakendsTest extends IntermediateFilesTest {
         cmd.INPUT = ImmutableList.of(new File(dir, "anchor_misassembly.bam"));
         cmd.setReference(new File(dir, "ref.fa"));
         cmd.WORKING_DIR = dir;
+        cmd.SAMPLE_NAMES = new ArrayList<>();
         cmd.TMP_DIR = ImmutableList.of(dir);
         cmd.doWork(MoreExecutors.newDirectExecutorService());
         List<SAMRecord> asm = getRecords(output);
