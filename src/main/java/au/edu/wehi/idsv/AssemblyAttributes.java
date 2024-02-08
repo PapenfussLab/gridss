@@ -13,6 +13,7 @@ import htsjdk.samtools.util.Log;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.google.common.collect.Range;
 
 public class AssemblyAttributes {
 	private static final Log log = Log.getInstance(AssemblyAttributes.class);
@@ -219,10 +220,20 @@ public class AssemblyAttributes {
 		}
 		return isUnique;
 	}
+
 	private Stream<AssemblyEvidenceSupport> filterSupport(Range<Integer> assemblyContigOffset, Set<Integer> supportingCategories, Set<AssemblyEvidenceSupport.SupportType> supportTypes, AssemblyEvidenceSource aes) {
 		Stream<AssemblyEvidenceSupport> stream = getSupport(aes).stream();
 		if (assemblyContigOffset != null) {
-			stream = stream.filter(s -> s.getAssemblyContigOffset().isConnected(assemblyContigOffset));
+			int requiredReadAndAssemblyBreakpointOverlap;
+			if (aes != null) {
+				requiredReadAndAssemblyBreakpointOverlap = aes.getContext().getConfig().getVariantCalling().requiredReadAndAssemblyBreakpointOverlap;
+			} else {
+				requiredReadAndAssemblyBreakpointOverlap = 0;
+			}
+			stream = stream.filter(s -> Range.range(Math.min(s.getAssemblyContigOffset().lowerEndpoint() + requiredReadAndAssemblyBreakpointOverlap, s.getAssemblyContigOffset().upperEndpoint() - requiredReadAndAssemblyBreakpointOverlap),
+					s.getAssemblyContigOffset().lowerBoundType(),
+					Math.max(s.getAssemblyContigOffset().upperEndpoint() - requiredReadAndAssemblyBreakpointOverlap, s.getAssemblyContigOffset().lowerEndpoint() + requiredReadAndAssemblyBreakpointOverlap),
+					s.getAssemblyContigOffset().upperBoundType()).isConnected(assemblyContigOffset));
 		}
 		if (supportingCategories != null) {
 			stream = stream.filter(s -> supportingCategories.contains(s.getCategory()));

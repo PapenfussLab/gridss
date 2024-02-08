@@ -5,6 +5,7 @@ RUN sed -i -e 's/http:\/\/archive\.ubuntu\.com\/ubuntu\//mirror:\/\/mirrors\.ubu
 
 # Set up a C build environment for gridsstools, samtools, and R packages
 FROM gridss_base_closest_mirror AS gridss_c_build_environment
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	libssl-dev \
 	libcurl4-openssl-dev \

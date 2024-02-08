@@ -77,6 +77,7 @@ public class GridssConfiguration {
 	 * Use a hashed evidenceID to save space and prevent read names exceeding the 254 character limit imposed by BAM 
 	 */
 	public boolean hashEvidenceID;
+
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
