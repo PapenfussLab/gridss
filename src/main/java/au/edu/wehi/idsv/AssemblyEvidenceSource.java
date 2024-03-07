@@ -266,19 +266,19 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
 		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.withsplitreads.");
 		ensureMetrics();
-		if (!svFile.exists()) {
-			log.info("Identifying split reads for " + getFile().getAbsolutePath());
-			SoftClipsToSplitReads program = new SoftClipsToSplitReads();
-			program.setReference(getProcessContext().getReference());
-			program.setFileSystemContext(getProcessContext().getFileSystemContext());
-			CommandLineProgramHelper cmd = new CommandLineProgramHelper(program);
-			cmd.addArg("WORKER_THREADS", getProcessContext().getWorkerThreadCount());
-			cmd.addArg("INPUT", getFile().getPath());
-			cmd.addArg("OUTPUT", svFile.getPath());
-			cmd.addArg("READJUST_PRIMARY_ALIGNMENT_POSITION", "true");
-			cmd.addArg("REALIGN_ENTIRE_READ=", getContext().getConfig().getAssembly().realignContigs);
-			execute(cmd);
-		}
+
+		log.info("Identifying split reads for " + getFile().getAbsolutePath());
+		SoftClipsToSplitReads program = new SoftClipsToSplitReads();
+		program.setReference(getProcessContext().getReference());
+		program.setFileSystemContext(getProcessContext().getFileSystemContext());
+		CommandLineProgramHelper cmd = new CommandLineProgramHelper(program);
+		cmd.addArg("WORKER_THREADS", getProcessContext().getWorkerThreadCount());
+		cmd.addArg("INPUT", getFile().getPath());
+		cmd.addArg("OUTPUT", svFile.getPath());
+		cmd.addArg("READJUST_PRIMARY_ALIGNMENT_POSITION", "true");
+		cmd.addArg("REALIGN_ENTIRE_READ=", getContext().getConfig().getAssembly().realignContigs);
+		execute(cmd);
+
 		SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
 	}
 	@Override

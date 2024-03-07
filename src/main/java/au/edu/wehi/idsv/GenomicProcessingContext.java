@@ -18,6 +18,7 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.samtools.reference.ReferenceSequence;
 import picard.cmdline.CommandLineProgram;
 
 import java.io.Closeable;
@@ -35,6 +36,10 @@ public class GenomicProcessingContext implements Closeable {
 	 */
 	public static final long LINEAR_COORDINATE_CHROMOSOME_BUFFER = 10000000000L;
 	private ReferenceLookup reference;
+
+	private ReferenceSequence referenceSequence;
+
+	private String referenceSequenceContig;
 	private CommandLineProgram program;
 	private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
@@ -254,6 +259,17 @@ public class GenomicProcessingContext implements Closeable {
 
 	public ReferenceLookup getReference() {
 		return reference;
+	}
+
+	public ReferenceSequence getReferenceSequence(String contig) {
+		if (reference == null) {
+			throw new IllegalStateException("Reference not loaded");
+		}
+		if(referenceSequenceContig == null || !referenceSequenceContig.equals(contig)) {
+			referenceSequence = reference.getSequence(contig);
+			referenceSequenceContig = contig;
+		}
+		return referenceSequence;
 	}
 
 	public File getReferenceFile() {

@@ -160,8 +160,8 @@ gridss_breakpoint_filter = function(gr, vcf, bsgenome, min_support_filters=TRUE,
 	  if (!is.null(bsgenome)) {
 	    filtered = .addFilter(filtered, "small.replacement.fp", is_indel_artefact(gr, bsgenome))
 	  }
-	  filtered = .addFilter(filtered, "cohortMinSize", is_too_small_event(gr))
 	}
+	filtered = .addFilter(filtered, "cohortMinSize", is_too_small_event(gr))
 	if (somatic_filters) {
 		#normalaf <- gridss_af(gr, vcf, normalOrdinal)
 	  filtered = .addFilter(filtered, "normalSupport", .genosum(g$VF,normalOrdinal) > gridss.allowable_normal_contamination * .genosum(g$VF,tumourOrdinal))
@@ -193,6 +193,7 @@ gridss_breakend_filter = function(gr, vcf, min_support_filters=TRUE, somatic_fil
     # noise from microsatellite sequences
     filtered = .addFilter(filtered, "NoAssembledRP", i$BASRP == 0)
     filtered = .addFilter(filtered, "LongPolyC", str_detect(gr$insSeq, "CCCCCCCCCCCCCCCC") | str_detect(gr$insSeq, "GGGGGGGGGGGGGGGG"))
+    filtered = .addFilter(filtered, "cohortMinSize", is_too_small_event(gr))
   }
   if (somatic_filters) {
     filtered = .addFilter(filtered, "normalSupport", .genosum(g$BVF,normalOrdinal) > gridss.allowable_normal_contamination * .genosum(g$BVF,tumourOrdinal))
@@ -294,6 +295,9 @@ is_too_small_event = function(gr, minSize=gridss.min_event_size) {
     bpgr = gr[isbp]
     svlen = abs(start(bpgr) - start(partner(bpgr))) + str_length(bpgr$insSeq) + ifelse(simpleEventType(bpgr) %in% c("DEL", "INS"), -1, 1)
     result[isbp] = simpleEventType(bpgr) %in% c("DEL", "DUP", "INS") & svlen < minSize
+  } else {
+    svlen = str_length(gr$insSeq)
+    result = simpleEventType(gr) %in% c("BE") & svlen < minSize
   }
   return(result)
 }
@@ -1093,10 +1097,13 @@ gridss_breakpoint_somatic_llr = function(vcf, normalOrdinal, tumourOrdinal, cont
   return (df$contamination_log_p - df$germline_het_log_p)
 }
 
-passes_final_filters = function(vcf, include.existing.filters=TRUE) {
+passes_final_filters = function(vcf, include.existing.filters=TRUE, has_pair = NULL) {
+  if (is.null(has_pair)) {
+    has_pair <- FALSE
+  }
   return(
     (!include.existing.filters | rowRanges(vcf)$FILTER %in% c(".", "PASS")) &
-    ifelse(is.na(info(vcf)$MATEID),
+    ifelse(is.na(info(vcf)$MATEID) & !has_pair,
          rowRanges(vcf)$QUAL >= gridss.min_qual * gridss.single_breakend_multiplier,
          rowRanges(vcf)$QUAL >= gridss.min_qual))
 }

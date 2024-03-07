@@ -21,6 +21,8 @@ import gridss.cmdline.CommandLineProgramHelper;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import java.nio.file.Files;
@@ -281,24 +283,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public void assertPreprocessingComplete() {
 		File svFile = getSVFile();
 		if (svFile != null && !svFile.exists()) {
-			try {
-				// Create the hard link
-				Path existingFile = Paths.get(getFile().getPath());  // The existing file
-				Path newLink = Paths.get(svFile.getPath());        // The path for the hard link
-
-				Files.createLink(newLink, existingFile);
-				log.debug("Hard link created successfully for input file");
-
-				Path existingIndexFile = Paths.get(getFile().getPath()+".bai");  // The existing file
-				Path newIndexLink = Paths.get(svFile.getPath()+".bai");        // The path for the hard link
-
-				Files.createLink(newIndexLink, existingIndexFile);
-				log.debug("Hard link created successfully for index file");
-			} catch (IOException e) {
-				// Handle the possibility of an IOException
-				e.printStackTrace();
-			}
-
+			throw new IllegalStateException(String.format("Missing required file %s. See GRIDSS pipeline examples and documentation.", svFile));
 		}
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it, EvidenceSortOrder eso) {
@@ -501,6 +486,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (config.adapters.isAdapterSoftClip(sce)) return true;
 			if (!AssemblyAttributes.isAssembly(sce.getSAMRecord())) {
 				// TODO: symmetrical identity and entropy filters on both sides
+				if(sce.getEvidenceSource().getFile().getPath().toLowerCase().endsWith(".cram")){
+					// in CRAM files, the MD and NM tags are not always present
+					htsjdk.samtools.util.SequenceUtil.calculateMdAndNmTags(sce.getSAMRecord(),
+							getContext().getReferenceSequence(sce.getSAMRecord().getContig()).getBases(), true, true);
+				}
 				if (SAMRecordUtil.getAlignedIdentity(sce.getSAMRecord()) < scc.minAnchorIdentity) return true;
 				if (SAMRecordUtil.alignedEntropy(sce.getSAMRecord()) < config.minAnchorShannonEntropy) return true;
 			}

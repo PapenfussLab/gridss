@@ -24,7 +24,6 @@ argp = add_argument(argp, "--configdir", default=".", help="Path to gridss.confi
 argp = add_argument(argp, "--gc", flag=TRUE, help="Perform garbage collection after freeing of large objects. ")
 argv = parse_args(argp)
 
-
 for (argname in c("input")) {
 	if (is.na(argv[argname]) || is.null(argv[argname])) {
 		msg = paste0("Required argument missing: --", argname)
@@ -192,7 +191,13 @@ write(paste(Sys.time(),"Calculating bebe insertion links", argv$input), stderr()
 
 
 bebeins_link_df = linked_by_breakend_breakend_insertion_classification(begr) %>%
-  mutate(pass=passes_final_filters(vcf[sourceId])) %>%
+  # Add a column indicating if 'linked_by' is shared with another row
+  group_by(linked_by) %>%
+  mutate(has_pair = n() > 1) %>%
+  ungroup() %>%
+  mutate(has_pair = ifelse(is.na(info(vcf[sourceId])$MATEID), has_pair, FALSE)) %>%
+  # Your existing logic to add 'pass' column
+  mutate(pass=passes_final_filters(vcf[sourceId], has_pair=has_pair)) %>%
   group_by(linked_by) %>%
   mutate(pass=any(pass)) %>%
   ungroup() %>%
@@ -244,7 +249,7 @@ event_link_df = bind_rows(
   bebpins_link_df,
   inv_link_df,
   dsb_link_df) %>%
-  dplyr::select(sourceId, linked_by) %>%
+  dplyr::select(sourceId, linked_by, has_pair) %>%
 	filter(sourceId %in% row.names(vcf)) %>%
   mutate(
     QUAL=rowRanges(vcf)[sourceId]$QUAL,
@@ -256,9 +261,10 @@ event_link_df = bind_rows(
   mutate(
     max_supporting_fragment_count = max(supporting_fragment_count),
     min_supporting_fragment_count = min(supporting_fragment_count),
-    hasPolyA=any(hasPolyA)
-    ) %>%
+    hasPolyA=any(hasPolyA),
+    sum_qual = if(any(has_pair, na.rm = TRUE)) { sum(QUAL, na.rm = TRUE) } else { 0 }) %>%
   filter(min_supporting_fragment_count >= gridss.min_rescue_portion * max_supporting_fragment_count | hasPolyA)
+  
 
 write(paste(Sys.time(),"Calculating final linkage annotation", argv$input), stderr())
 # Only keep the best QUAL event linkage
@@ -398,6 +404,48 @@ if (!is.na(argv$fulloutput)) {
   filters_before_write <- gsub(";largeNoRP", "", filters_before_write)   # If largeNoRP is at the end after another tag.
   filters_before_write <- gsub("^largeNoRP$", "", filters_before_write)  # If largeNoRP is the only tag.
   VariantAnnotation::fixed(vcf)$FILTER <- filters_before_write
+  # For insertions have qual of the sum of quals of both directions
+  match_vector <- match(row.names(vcf), event_link_df$sourceId[event_link_df$sum_qual != 0])
+  filtered_match_vector <- match_vector[!is.na(match_vector)]
+  aligned_qual_values <- event_link_df$sum_qual[filtered_match_vector]
+  qual(vcf)[!is.na(match_vector)] <- aligned_qual_values
+  
+  # union filter
+  # Filter event_link_df for rows with sum_qual != 0
+  filtered_df <- event_link_df %>%
+    dplyr::filter(sum_qual != 0) %>%
+    dplyr::select(sourceId, linked_by)
+  # Extract FILTER values for each sourceId in filtered_df from the VCF
+  filtered_df$vcf_filter <- sapply(filtered_df$sourceId, function(id) {
+    # Assuming `row.names(vcf)` or another identifier corresponds to sourceId
+    idx <- match(id, row.names(vcf))
+    if (!is.na(idx)) {
+      return(rowRanges(vcf)$FILTER[idx])
+    } else {
+      return(NA)
+    }
+  })
+
+  # Split the FILTER strings into vectors of individual filters, remove duplicates within each linked_by group, and collapse back to strings
+  filtered_df <- filtered_df %>%
+    group_by(linked_by) %>%
+    summarise(vcf_filter = paste(unique(unlist(strsplit(paste(unique(vcf_filter), collapse = ";"), split = ";"))), collapse = ";"),
+              .groups = 'drop') %>%
+    mutate(vcf_filter = ifelse(vcf_filter %in% c("PASS;cohortMinSize", "cohortMinSize;PASS"), "PASS", vcf_filter))
+
+  # Loop through each linked_by group to update the VCF FILTER values accordingly
+  for (i in 1:nrow(filtered_df)) {
+    linked_by_id <- filtered_df$linked_by[i]
+    filter_value <- filtered_df$vcf_filter[i]
+
+    # Find sourceIds belonging to the current linked_by group
+    source_ids_in_group <- event_link_df$sourceId[event_link_df$linked_by == linked_by_id]
+
+    # Update the FILTER values for these sourceIds in the VCF
+    vcf_idx_to_update <- which(row.names(vcf) %in% source_ids_in_group)
+    VariantAnnotation::fixed(vcf)$FILTER[vcf_idx_to_update]<- filter_value
+  }
+  
   writeVcf(vcf, argv$fulloutput, index=TRUE)
 }
 

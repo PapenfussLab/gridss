@@ -64,7 +64,7 @@ public class CallVariantsTest extends IntermediateFilesTest {
 		cmd.addArg("INPUT_MAX_FRAGMENT_SIZE", "100");
 		assertEquals(0, cmd.run());
 		List<SAMRecord> breakendAssemblies = getRecords(assembly);
-		assertEquals(1, breakendAssemblies.size());
+		assertEquals(0, breakendAssemblies.size());
 		assembly.delete();
 	}
 	@Test

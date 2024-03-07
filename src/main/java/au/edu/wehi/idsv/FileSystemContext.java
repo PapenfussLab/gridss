@@ -114,7 +114,7 @@ public class FileSystemContext {
 		return file;
 	}
 	public File getSVBam(File input) {
-		return getFile(String.format(FORMAT_SV_SAM, getIntermediateDirectory(input), getSource(input).getName()));
+		return input;
 	}
 	public File getBreakpointVcf(File input) {
 		return getFile(String.format(FORMAT_BREAKPOINT_VCF, getIntermediateDirectory(input), getSource(input).getName()));

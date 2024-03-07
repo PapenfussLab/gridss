@@ -31,7 +31,6 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		cmd.run();
 		ProcessingContext pc = getCommandlineContext();
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
-		FileHelper.copy(ses.getFile(), ses.getSVFile(), true);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.assembleBreakends(null);
 		File dir = new File(super.testFolder.getRoot(), "visualisation");
