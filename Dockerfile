@@ -191,6 +191,11 @@ RUN chmod +x /opt/gridss/* && \
 	chmod -x /opt/gridss/*.R
 WORKDIR /data/
 
+# Include licenses
+COPY ["LICENSE", "."]
+COPY ["third_party_licenses/gatk LICENSE.txt", "."]
+
+
 # Copy build artifact locally
 FROM scratch AS gridss_export_build_artefacts
 ARG GRIDSS_VERSION
