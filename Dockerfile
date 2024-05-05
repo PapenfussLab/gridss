@@ -23,7 +23,10 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	libomp-dev \
     python3-pip \
 	&& rm -rf /var/lib/apt/lists/* \
-	&& pip3 install pysam
+	&& pip3 install pysam==0.22.0 \
+	&& pip3 install biopython==1.83 \
+	&& pip3 install pyfaidx==0.8.1.1 \
+	&& pip3 install joblib==1.4.0
 
 # compile gridsstools
 FROM gridss_c_build_environment AS gridss_builder_c
@@ -186,6 +189,7 @@ COPY scripts/gridss \
 	scripts/libgridss.R \
 	scripts/link_breakpoints \
 	scripts/revert_sup_low_mapq_ua_alignment.py \
+	scripts/align_long_homopolymers.py \
 	/opt/gridss/
 RUN chmod +x /opt/gridss/* && \
 	chmod -x /opt/gridss/*.R
