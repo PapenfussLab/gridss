@@ -358,14 +358,10 @@ if (!is.na(argv$fulloutput)) {
   mateids = rep(NA, length(vcf_ids))
   chr_pos = rep(NA, length(vcf_ids))
 
-  # Order chromosomes X, Y, and M correctly if they exist
-  chr_order <- c(as.character(1:22), "X", "Y", "M")
-  names(chr_order) <- chr_order
-
   for (link in unique(vcf_linked_by)) {
     # Find the indices in vcf_linked_by that have this linkage value
     indices <- which(vcf_linked_by == link)
-
+    
     # Check if exactly two indices are found
     if (length(indices) == 2) {
       # Pair the two corresponding IDs
@@ -375,18 +371,8 @@ if (!is.na(argv$fulloutput)) {
       # Compare chromosomes first
       first_pos = indices[1]
       second_pos = indices[2]
-      if (chr_order[vcf_chr[indices[1]]] != chr_order[vcf_chr[indices[2]]]) {
-        if(chr_order[vcf_chr[indices[2]]] < chr_order[vcf_chr[indices[1]]]) {
-          first_pos = indices[2]
-          second_pos = indices[1]
-        }
-      } else {
-        # If chromosomes are the same, compare positions
-        if (vcf_pos[indices[2]] < vcf_pos[indices[1]]) {
-          first_pos = indices[2]
-          second_pos = indices[1]
-        }
-      }
+      stopifnot(vcf_chr[indices[1]] == vcf_chr[indices[2]])
+      
       # add the relevant part to ALT
       vcf_alt[first_pos] = paste0(vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]], '[chr', vcf_chr[[second_pos]],':',vcf_pos[[second_pos]],'[')
       vcf_alt[second_pos] = paste0(']chr', vcf_chr[first_pos],':',vcf_pos[first_pos],']', vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]])
