@@ -762,7 +762,7 @@ transitive_breakpoints <- function(
 #' In the case of an even width interval, centre alignment adjusts to the centre
 #' position closest to the initial location.
 #' Adjusts the nominal position of a breakpoints
-align_breakpoints <- function(vcf, align=c("centre"), is_higher_breakend=names(vcf) < info(vcf)$MATEID) {
+align_breakpoints <- function(vcf, align = c("centre"), is_higher_breakend = names(vcf) < info(vcf)$MATEID, refgenome = NULL) {
   if (length(vcf) == 0) {
     return(vcf)
   }
@@ -785,6 +785,7 @@ align_breakpoints <- function(vcf, align=c("centre"), is_higher_breakend=names(v
   }
   isbp = str_detect(unlist(as.character(VariantAnnotation::fixed(vcf)$ALT)), "[\\]\\[]")
   is_adjusted_bp =  isbp & !is.na(adjust_by) & adjust_by != 0
+  new_positions = nominal_start + ifelse(!is_adjusted_bp, 0, adjust_by)
   rowRanges(vcf) = shift(rowRanges(vcf), ifelse(!is_adjusted_bp, 0, adjust_by))
   info(vcf)$CIPOS = info(vcf)$CIPOS - adjust_by
   if (!is.null(info(vcf)$CIEND)) {
@@ -812,6 +813,15 @@ align_breakpoints <- function(vcf, align=c("centre"), is_higher_breakend=names(v
                                                   partner_alt[,5],
                                                   str_pad("", stringr::str_length(partner_alt[,6]), pad="N"))), "CharacterList")
   info(vcf)$CIRPOS = NULL # TODO: remove CIRPOS from GRIDSS entirely
+
+  # Update REF base to reflect new positions
+  if (!is.null(refgenome)) {
+    chr = seqnames(rowRanges(vcf))
+    ref_bases = getSeq(refgenome, names = chr, start = new_positions, end = new_positions)
+    ref_bases = as.character(ref_bases)
+    VariantAnnotation::fixed(vcf)$REF = DNAStringSet(ref_bases)
+  }
+
   return(vcf)
 }
 .vcfAltToStrandPair = function(alt) {
