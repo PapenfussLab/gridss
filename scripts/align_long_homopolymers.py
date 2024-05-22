@@ -192,6 +192,8 @@ def align_and_choose(read, sequence, global_aligner, local_aligner, fa_seq, edit
     @param sc_length: The length of soft clipping
     @param start_end_del_tuples: The start and end positions of the deletions
     @return: The read object, the CIGAR string, the start position, the reference start position, the choice of alignment, and the start and end positions of the deletions
+    the choice of alignment is 0 for the global alignment on the original sequence, 1 for the local alignment on the original sequence,
+    2 for the global alignment on the reverse complement, and 3 for the local alignment on the reverse complement
     """
     # run alignment on original sequence
     # global alignment
@@ -256,7 +258,7 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
     Find and realign homopolymers in reads in a CRAM file
     @param cram_path: The input CRAM file
     @param output_path: The output CRAM file
-    @param reference_path: The reference genome FASTA file
+    @param reference_path: The reference genome FASTA file path
     @param homopolymer_length: The length of homopolymers to search for
     @param contig: The contig to process
     """
@@ -274,11 +276,8 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
 
     # collect some statistics
     count = 0
-    count_homopolymere = 0
-    count_orig_local = 0
-    count_orig_glob = 0
-    count_rev_local = 0
-    count_rev_glob = 0
+    count_homopolymer = 0
+    choices = [0, 0, 0, 0]
 
     with pysam.AlignmentFile(cram_path) as cram:
         with pysam.AlignmentFile(output_path, mode='wb', header=cram.header) as output:
@@ -313,7 +312,7 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
 
                 if not skip_read and (len(start_end_del_tuples) > 0 or len(ref_start_end_del_tuples) > 0):
                     # we found long homopolymer and want to run alignment on that with homopolymere of the length of homopolymer_length
-                    count_homopolymere += 1
+                    count_homopolymer += 1
                     read, cigar, start_pos, r_start, choice, start_end_del_tuples = align_and_choose(read, sequence,
                                                                                                      global_aligner,
                                                                                                      local_aligner,
@@ -322,6 +321,12 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
                                                                                                      read.reference_start,
                                                                                                      sc_length,
                                                                                                      start_end_del_tuples)
+                    choices[choice] += 1
+
+                    if choice == 0 | choice == 1:
+                        read.is_reverse = False
+                    else:
+                        read.is_reverse = True
 
                     # Add insertions and deletions into the CIGAR string
                     updated_cigar = cigar
@@ -355,12 +360,9 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
                         read.cigar = cigar_string_to_cigartuples(adjusted_cigar)
                     output.write(read)
 
-    logger.info(f"Total reads: {count}")
-    logger.info(f"Total homopolymer reads: {count_homopolymere}")
-    logger.info(f"Total reads where original sequence is better: {count_orig_glob}")
-    logger.info(f"Total reads where original sequence is better (local): {count_orig_local}")
-    logger.info(f"Total reads where reverse complement sequence is better: {count_rev_glob}")
-    logger.info(f"Total reads where reverse complement sequence is better (local): {count_rev_local}")
+    reference.close()
+    return count, count_homopolymer, choices
+
 
 
 def convert_alignment_to_cigar(aligned, seq2_len):
@@ -540,12 +542,20 @@ with pysam.AlignmentFile(args.input, "rc") as cram_file:
         contigs[i] for i in range(len(contigs)) if contig_lengths[i] > MIN_CONTIG_LENGTH
     ]
 
-    Parallel(n_jobs=args.n_jobs, max_nbytes=None)(
+    results = Parallel(n_jobs=args.n_jobs, backend="multiprocessing", max_nbytes=None)(
         delayed(realign_homopolymers)(
             args.input, f"{args.output}{contig}.bam", args.reference, args.homopolymer_length, contig
         )
         for contig in large_contigs
     )
+    total_count = 0
+    total_count_homopolymer = 0
+    total_choices = [0, 0, 0, 0]
+    for count, count_homopolymer, choices in results:
+        total_count += count
+        total_count_homopolymer += count_homopolymer
+        total_choices = [total_choices[i] + choices[i] for i in range(4)]
+
     # sort and index the contig files
     for contig in large_contigs:
         pysam.sort("-o", f"{args.output}{contig}_sorted.bam", f"{args.output}{contig}.bam")
@@ -560,8 +570,10 @@ with pysam.AlignmentFile(args.input, "rc") as cram_file:
                         for read in contig_file:
                             output.write(read)
                 else:
+                    # copy the reads from the original file in case the contig is short
                     for read in cram.fetch(contig):
                             output.write(read)
+                            total_count +=1
 
     # remove the contig files
     for contig in large_contigs:
@@ -570,3 +582,11 @@ with pysam.AlignmentFile(args.input, "rc") as cram_file:
         os.remove(f"{args.output}{contig}_sorted.bam.bai")
 
     pysam.index(args.output)
+
+    logger.info(f"Total reads: {total_count}")
+    logger.info(f"Reads with homopolymers: {total_count_homopolymer}")
+    logger.info(f"Reads where original sequence is better: {total_choices[0]}")
+    logger.info(f"Reads where original sequence is better (local): {total_choices[1]}")
+    logger.info(f"Reads where reverse complement sequence is better: {total_choices[2]}")
+    logger.info(f"Reads where reverse complement sequence is better (local): {total_choices[3]}")
+
