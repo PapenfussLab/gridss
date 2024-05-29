@@ -263,7 +263,8 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
     @param contig: The contig to process
     """
     # Open the CRAM file
-    reference = pyfaidx.Fasta(reference_path)
+    reference = pyfaidx.Fasta(reference_path, build_index=False)
+
 
     match = 1
     mismatch = -4
@@ -533,6 +534,7 @@ parser.add_argument("--n_jobs", help="n_jobs of parallel on contigs", type=int, 
 args = parser.parse_args()
 
 MIN_CONTIG_LENGTH = 100000
+
 with pysam.AlignmentFile(args.input, "rc") as cram_file:
     # Get the list of contig names
     contigs = cram_file.references

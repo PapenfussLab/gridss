@@ -817,9 +817,10 @@ align_breakpoints <- function(vcf, align = c("centre"), is_higher_breakend = nam
   # Update REF base to reflect new positions
   if (!is.null(refgenome)) {
     chr = seqnames(rowRanges(vcf))
-    ref_bases = getSeq(refgenome, names = chr, start = new_positions, end = new_positions)
+    valid_positions = as.logical(chr %in% seqnames(refgenome))
+    ref_bases = getSeq(refgenome, names = chr[valid_positions], start = new_positions[valid_positions], end = new_positions[valid_positions])
     ref_bases = as.character(ref_bases)
-    VariantAnnotation::fixed(vcf)$REF = DNAStringSet(ref_bases)
+    VariantAnnotation::fixed(vcf)$REF[valid_positions] = DNAStringSet(ref_bases)[valid_positions]
   }
 
   return(vcf)
