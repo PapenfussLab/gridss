@@ -24,3 +24,5 @@ Escherichia_coli_bl21_de3_.ASM956v1.*
 gridss.Rproj
 scripts/.RData
 scripts/.Rhistory
+.vscode/launch.json
+.vscode/settings.json

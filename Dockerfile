@@ -52,7 +52,7 @@ RUN mvn -Dmaven.artifact.threads=8 verify && rm -rf target
 # Build GRIDSS jar
 ARG GRIDSS_VERSION
 COPY src /opt/gridss/src
-RUN mvn -T 1C -Drevision=${GRIDSS_VERSION} package && \
+RUN mvn -T 1C -Drevision=${GRIDSS_VERSION} package -Dmaven.test.skip=true && \
 	cp target/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
 
 FROM gridss_c_build_environment AS gridss
@@ -119,13 +119,13 @@ RUN mkdir /opt/trf && \
 	chmod +x trf*.linux64 && \
 	ln -s trf*.linux64 trf
 # Turns out we need makeblastdb as well as rmblastn (https://github.com/PapenfussLab/gridss/issues/535)
-RUN mkdir /opt/rmblast && \
-	cd /opt/rmblast && \
-	wget https://www.repeatmasker.org/rmblast/rmblast-2.14.1+-x64-linux.tar.gz && \
+RUN mkdir /opt/rmblast
+COPY rmblast-2.14.1+-x64-linux.tar.gz /opt/rmblast
+RUN cd /opt/rmblast && \
 	tar --no-anchored --strip-components 2 -xvzf rmblast-2.14.1+-x64-linux.tar.gz rmblastn makeblastdb && \
 	rm rmblast-2.14.1+-x64-linux.tar.gz
+COPY RepeatMasker-4.1.2-p1.tar.gz /opt/
 RUN cd /opt/ && \
-	wget http://www.repeatmasker.org/RepeatMasker/RepeatMasker-4.1.2-p1.tar.gz && \
 	tar zxf RepeatMasker-*.tar.gz && \
 	rm RepeatMasker-*.tar.gz
 # Install GATK
@@ -164,7 +164,7 @@ RUN cd /opt/RepeatMasker && \
 		-hmmer_dir /usr/local/bin
 # R packages used by GRIDSS - R package need the C toolchain installed
 ENV R_INSTALL_STAGED=false
-RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");install.packages(c( "tidyverse", "assertthat", "testthat", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite" ))'
+RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");install.packages(c( "tidyverse", "assertthat", "testthat", "randomForest", "stringdist", "stringr", "argparser", "R.cache", "BiocManager", "Rcpp", "blob", "RSQLite", "pbapply"))'
 RUN Rscript -e 'options(Ncpus=8L, repos="https://cloud.r-project.org/");BiocManager::install(ask=FALSE, pkgs=c( "copynumber", "StructuralVariantAnnotation", "VariantAnnotation", "rtracklayer", "BSgenome", "Rsamtools", "biomaRt", "org.Hs.eg.db", "TxDb.Hsapiens.UCSC.hg19.knownGene", "TxDb.Hsapiens.UCSC.hg38.knownGene", "BSgenome.Hsapiens.UCSC.hg38", "BSgenome.Hsapiens.UCSC.hg19" ))'
 # Install GRIDSS
 ARG GRIDSS_VERSION
@@ -190,6 +190,7 @@ COPY scripts/gridss \
 	scripts/link_breakpoints.R \
 	scripts/revert_sup_low_mapq_ua_alignment.py \
 	scripts/align_long_homopolymers.py \
+	scripts/convert_vcf_format.R \
 	/opt/gridss/
 RUN chmod +x /opt/gridss/* && \
 	chmod -x /opt/gridss/*.R
