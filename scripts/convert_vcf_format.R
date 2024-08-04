@@ -32,7 +32,6 @@ if(!interactive()){
 
 # Define the path to your VCF file
 # gs://cromwell-backend-ultima-data-307918/cromwell-execution/SVPipeline/9aaff528-f4e7-439e-b5b5-47ee747e2515/call-GermlineLinkVariants/NA24385_linked.vcf.bgz
-# vcf_file <-"/Users/mayalevy/Downloads/gridss/NA24385_linked.vcf.bgz"
 #vcf_file <- "/Users/mayalevy/Downloads/gridss/401882-CL10366-Z0082-CTCTGCTGTGCAATGAT_chr1_linked_orig.vcf.bgz"
 #vcf_file <- "/Users/mayalevy/Downloads/gridss/diploidSV.vcf.gz"
 # gsutil cp modified_vcf_wgs.vcf.bgz gs://ultimagen-users-data/maya/deepvariant/gridss/
@@ -202,13 +201,13 @@ process_variant <- function(i, vcf, short_del_indices, short_del_seqs, short_del
     full_ref_seq <- short_del_seqs[del_idx]
     result$alt <- as.character(ref(vcf)[i])
     result$ref <- DNAString(as.character(full_ref_seq))
-    result$end <- start(vcf)[i] + length(result$ref) - 1
+    result$end <- start(vcf)[i] + length(result$ref)
     
   } else if (i %in% del_indices && !(i %in% short_del_indices)) {
     # Handle long DEL variants
     result$alt <- CharacterList("<DEL>")
     result$ref <- DNAString(as.character(ref(vcf)[i]))
-    result$end <- start(vcf)[i] - info(vcf)$SVLEN[i] - 1
+    result$end <- start(vcf)[i] - info(vcf)$SVLEN[i]
   } else if (i %in% ins_indices) {
     # Update the REF and ALT fields for INS variants
     alt_field = as.character(alt(vcf)[i])
