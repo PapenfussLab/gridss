@@ -26,7 +26,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	&& pip3 install pysam==0.22.0 \
 	&& pip3 install biopython==1.83 \
 	&& pip3 install pyfaidx==0.8.1.1 \
-	&& pip3 install joblib==1.4.0
+	&& pip3 install joblib==1.4.0 \
+	&& ln -s /usr/bin/python3 /usr/bin/python
 
 # compile gridsstools
 FROM gridss_c_build_environment AS gridss_builder_c
@@ -70,7 +71,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 	apt-get update && apt-get install -y \
 		apt-utils \
 		gawk \
-		openjdk-11-jre-headless \
+		openjdk-17-jre-headless \
 		bwa \
 		hmmer \
 		bedtools \
@@ -129,11 +130,14 @@ RUN cd /opt/ && \
 	tar zxf RepeatMasker-*.tar.gz && \
 	rm RepeatMasker-*.tar.gz
 # Install GATK
-RUN mkdir /opt/gatk && \
-	cd /opt/gatk && \
-	 wget https://github.com/broadinstitute/gatk/releases/download/4.2.6.1/gatk-4.2.6.1.zip && \
-      unzip gatk-4.2.6.1.zip && \
-      rm gatk-4.2.6.1.zip
+RUN export GATK_VERSION="4.6.0.0" && \
+    mkdir -p /opt/gatk && \
+    cd /opt/gatk && \
+    wget https://github.com/broadinstitute/gatk/releases/download/${GATK_VERSION}/gatk-${GATK_VERSION}.zip && \
+    unzip gatk-${GATK_VERSION}.zip && \
+    rm gatk-${GATK_VERSION}.zip && \
+    ln -s /opt/gatk/gatk-${GATK_VERSION}/gatk /usr/local/bin/gatk
+# Install Java
 RUN apt update && apt --yes install default-jdk
 ### Kraken2 and dependencies
 # dustmasker from e-direct: (or is this in ncbi-blast as well?)
