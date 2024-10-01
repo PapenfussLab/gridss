@@ -375,8 +375,14 @@ if (!is.na(argv$fulloutput)) {
       stopifnot(vcf_chr[indices[1]] == vcf_chr[indices[2]])
       
       # add the relevant part to ALT
-      vcf_alt[first_pos] = paste0(vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]], '[chr', vcf_chr[[second_pos]],':',vcf_pos[[second_pos]],'[')
-      vcf_alt[second_pos] = paste0(']chr', vcf_chr[first_pos],':',vcf_pos[first_pos],']', vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]])
+      if (argv$ref == "BSgenome.Hsapiens.UCSC.hg19"){
+        vcf_alt[first_pos] = paste0(vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]], '[', vcf_chr[[second_pos]],':',vcf_pos[[second_pos]],'[')
+        vcf_alt[second_pos] = paste0(']', vcf_chr[first_pos],':',vcf_pos[first_pos],']', vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]])
+      
+      } else {
+        vcf_alt[first_pos] = paste0(vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]], '[chr', vcf_chr[[second_pos]],':',vcf_pos[[second_pos]],'[')
+        vcf_alt[second_pos] = paste0(']chr', vcf_chr[first_pos],':',vcf_pos[first_pos],']', vcf_alt_orig[[first_pos]], 'NNNNNNNNNN', vcf_alt_orig[[second_pos]])
+      }
     }
   }
   # add EVENT as local_linked_by

@@ -5,7 +5,7 @@ library(parallel, quietly = TRUE)
 library(pbapply, quietly = TRUE)
 library(stringr, quietly=TRUE)
 library(argparser, quietly=TRUE)
-
+library(GenomeInfoDb, quietly=TRUE)
 options(scipen = 999)
 # Create a parser object
 if(!interactive()){
@@ -30,6 +30,7 @@ if(!interactive()){
 #   n_jobs = -1
 # )
 
+
 # Define the path to your VCF file
 # gs://cromwell-backend-ultima-data-307918/cromwell-execution/SVPipeline/9aaff528-f4e7-439e-b5b5-47ee747e2515/call-GermlineLinkVariants/NA24385_linked.vcf.bgz
 #vcf_file <- "/Users/mayalevy/Downloads/gridss/401882-CL10366-Z0082-CTCTGCTGTGCAATGAT_chr1_linked_orig.vcf.bgz"
@@ -49,6 +50,7 @@ if (!is.null(argv$ref) & !is.na(argv$ref) & argv$ref != "") {
   write(msg, stderr())
 }
 
+write(paste(Sys.time(),"Read VCF file", argv$input_vcf), stderr())
 if (!is.na(argv$interval)) {
   matches <- regmatches(argv$interval, regexec("^(chr[^:]+):(\\d+)-(\\d+)$", argv$interval))
   chromosome <- matches[[1]][2]
@@ -65,9 +67,10 @@ if (!is.na(argv$interval)) {
 
 # Remove all SVTYPE values from the INFO field
 info(vcf)$SVTYPE <- NULL
-
+write(paste(Sys.time(),"Convert to breakpointRanges"), stderr())
 # Extract breakpoint ranges
 vcf_bp <- breakpointRanges(vcf, nominalPosition=FALSE, suffix="_bp", inferMissingBreakends = FALSE)
+write(paste(Sys.time(),"Assign simpleEventType"), stderr())
 
 # Determine the simple event types for each breakpoint
 vcf_bp$simpleEvent <- simpleEventType(vcf_bp)
@@ -80,10 +83,13 @@ svlens <- rep(NA, length(vcf))
 # Find the matching indices between the original VCF and vcf_bp
 matching_indices <- match(names(vcf), names(vcf_bp))
 
+write(paste(Sys.time(),"Assign simpleEventType to matching positions"), stderr())
+
 # Assign the simpleEvent information to the matching positions
 simpleEvent[!is.na(matching_indices)] <- vcf_bp$simpleEvent[na.omit(matching_indices)]
 svlens[!is.na(matching_indices)] <- vcf_bp$svLen[na.omit(matching_indices)]
 end_positions[!is.na(matching_indices)] <- start(vcf)[!is.na(matching_indices)] + vcf_bp$svLen[na.omit(matching_indices)]
+write(paste(Sys.time(),"Create Header records"), stderr())
 
 # Create a new header line for the END field
 end_header <- DataFrame(
@@ -128,46 +134,63 @@ header(vcf) <- vcf_header
 info(vcf)$SVTYPE <- simpleEvent
 info(vcf)$END <- end_positions
 info(vcf)$SVLEN <- svlens
+write(paste(Sys.time(),"Select only long variants"), stderr())
 
 # remove variants with svLen smaller than 30
 vcf = vcf[which(is.na(svlens) | abs(svlens) >= 30)]
 
 ### Remove MATE variant - keep only one variant  only in case of DEL or INS
+write(paste(Sys.time(),"Remove mates"), stderr())
 
 # Identify indices of deletions (DEL) in the VCF
 del_ins_indices <- which(!is.na(info(vcf)$SVTYPE) & ((info(vcf)$SVTYPE == "DEL") | ((info(vcf)$SVTYPE == "INS"))))
 
-# Extract MATEID for deletions
-mate_ids <- info(vcf)$MATEID[del_ins_indices]
+# Vectorized version of selection only a single insertion/deletion
+positions <- as.data.frame(rowRanges(vcf))
+infos <- as.data.frame(info(vcf))
 
-# Initialize a logical vector to keep track of variants to remove
-remove_indices <- rep(FALSE, length(vcf))
+# Select only deletions or insertions
+positions <- positions[del_ins_indices,]
+infos <- infos[del_ins_indices,]
 
-# Create a set to keep track of processed MATEIDs
-processed_mate_ids <- character()
-count=0
-# Iterate over deletion indices to remove only one of each mate pair
-for (i in seq_along(del_ins_indices)) {
-  current_index <- del_ins_indices[i]
-  mate_id <- info(vcf)$MATEID[[current_index]]
-  var_id <- names(vcf)[current_index]
-  
-  if (length(mate_id) > 0 && !is.na(mate_id) && var_id %in% processed_mate_ids) {
-    # If the mate ID has already been processed, mark the current variant for removal
-    remove_indices[current_index] <- TRUE
-  } else {
-    # Mark the mate ID as processed
-    processed_mate_ids <- c(processed_mate_ids, mate_id)
-    info(vcf)$MATEID[[current_index]]  <- NA_character_
-  }
-}
+# Remove locations with no MATEID
+zero.length <- lapply(infos$MATEID, length) == 0
+nas <- is.na(infos$MATEID)
+select.rows <- which((!nas)&(!zero.length))
+positions <- positions[select.rows,]
+infos <- infos[select.rows,]
 
-# Subset the VCF to remove the marked variants
-vcf <- vcf[!remove_indices]
+# Put the position of the mate
+infos$mateseq <- positions[unlist(infos$MATEID), 'seqnames']
+infos$matepos <- positions[unlist(infos$MATEID), 'start']
+
+# Select the left of the two ends of the breakpoint. Occasionally the two
+# breakpoints are on the same position, in this case we take the first 
+select <- which((positions$start < infos$matepos) | is.na(infos$matepos))
+drop <- which((positions$start > infos$matepos) & (!is.na(infos$matepos)))
+equal<- which((positions$start == infos$matepos))
+equal_select <- if (length(equal) == 0) c() else equal[seq(1, length(equal), 2)]
+equal_drop <- if (length(equal) == 0) c() else equal[seq(2, length(equal), 2)]
+select <- sort(c(select, equal_select))
+drop   <- sort(c(drop, equal_drop))
+select_ids <- row.names(infos)[select]
+drop_ids <- row.names(infos)[drop]
+
+# Remove MATEID from the ins/DEL that we keep, drop the ones that we drop
+info(vcf)[select_ids,'MATEID'] <- NA_character_
+remove_indices <- match(drop_ids, row.names(info(vcf)))
+remove_vector = rep(FALSE, length(vcf))
+remove_vector[remove_indices] = TRUE
+vcf <- vcf[!remove_vector]
+
+
+write(paste(Sys.time(),"Go over INVersions"), stderr())
 
 # Change SVTYPE from INV to BND for all INV variants
 inv_indices <- which(!is.na(info(vcf)$SVTYPE) & info(vcf)$SVTYPE == "INV")
 info(vcf)$SVTYPE[inv_indices] <- "BND"
+
+write(paste(Sys.time(),"Select short deletions"), stderr())
 
 # Collect start and end positions for DEL variants
 del_indices <- which(!is.na(info(vcf)$SVTYPE) & info(vcf)$SVTYPE == "DEL")
@@ -179,12 +202,20 @@ short_del_lengths <- del_lengths[del_lengths <= 329]
 short_del_starts <- start(vcf)[short_del_indices]
 short_del_ends <- short_del_starts + short_del_lengths - 1
 
+# The chromosome names in BSGenome start with chr, so we re-map all the names to UCSC convention
+if (argv$ref == "BSgenome.Hsapiens.UCSC.hg19"){
+  chr.names = as.vector(mapSeqlevels(as.vector(seqnames(vcf)[short_del_indices]),"UCSC"))
+} else {
+  chr.names = seqnames(vcf)[short_del_indices]
+}
+
 # Fetch sequences for short DEL variants in one call
 if (length(short_del_indices) > 0){
-  short_del_seqs <- getSeq(refgenome, names = seqnames(vcf)[short_del_indices], start = short_del_starts, end = short_del_ends)
+  short_del_seqs <- getSeq(refgenome, names = chr.names, start = short_del_starts, end = short_del_ends)
 } else {
   short_del_seqs <- NULL
 }
+write(paste(Sys.time(),"Select insertions"), stderr())
 
 # Collect indices for INS variants
 ins_indices <- which(!is.na(info(vcf)$SVTYPE) & info(vcf)$SVTYPE == "INS")
@@ -226,7 +257,7 @@ process_variant <- function(i, vcf, short_del_indices, short_del_seqs, short_del
       right_part <- sub('\\[.*.', '', right_part)
       result$right_svinsseq <- right_part
     } else {
-      result$alt <- gsub("\\[chr[0-9XY]+:[0-9]+\\[|\\]chr[0-9XY]+:[0-9]+\\]", "", alt_field)
+      result$alt <- gsub("\\[(chr){0,1}[0-9XY]+:[0-9]+\\[|\\](chr){0,1}[0-9XY]+:[0-9]+\\]", "", alt_field)
     }
     result$ref <- DNAString(as.character(ref(vcf)[i]))
     result$end <- start(vcf)[i] + length(result$ref) - 1
@@ -255,7 +286,10 @@ if (argv$n_jobs == -1) {
   num_cores <- argv$n_jobs
 }
 
+write(paste(Sys.time(),"Process sequences on ", num_cores, " cpu"), stderr())
+
 # Process variants in parallel with progress bar using pblapply
+pboptions(type = "txt")
 results <- pblapply(seq_along(vcf), process_variant, vcf = vcf, short_del_indices = short_del_indices, short_del_seqs = short_del_seqs, short_del_lengths = short_del_lengths, ins_indices = ins_indices, cl = num_cores)
 
 # Update the VCF object with results
