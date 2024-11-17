@@ -143,15 +143,15 @@ vcf = vcf[which(is.na(svlens) | abs(svlens) >= 30)]
 write(paste(Sys.time(),"Remove mates"), stderr())
 
 # Identify indices of deletions (DEL) in the VCF
-del_ins_indices <- which(!is.na(info(vcf)$SVTYPE) & ((info(vcf)$SVTYPE == "DEL") | ((info(vcf)$SVTYPE == "INS"))))
+del_ins_dup_indices <- which(!is.na(info(vcf)$SVTYPE) & ((info(vcf)$SVTYPE == "DEL") | (info(vcf)$SVTYPE == "INS") | (info(vcf)$SVTYPE == "DUP")))
 
 # Vectorized version of selection only a single insertion/deletion
 positions <- as.data.frame(rowRanges(vcf))
 infos <- as.data.frame(info(vcf))
 
 # Select only deletions or insertions
-positions <- positions[del_ins_indices,]
-infos <- infos[del_ins_indices,]
+positions <- positions[del_ins_dup_indices,]
+infos <- infos[del_ins_dup_indices,]
 
 # Remove locations with no MATEID
 zero.length <- lapply(infos$MATEID, length) == 0
@@ -220,8 +220,10 @@ write(paste(Sys.time(),"Select insertions"), stderr())
 # Collect indices for INS variants
 ins_indices <- which(!is.na(info(vcf)$SVTYPE) & info(vcf)$SVTYPE == "INS")
 
+dup_indices <- which(!is.na(info(vcf)$SVTYPE) & info(vcf)$SVTYPE == "DUP")
+
 # Function to process each variant
-process_variant <- function(i, vcf, short_del_indices, short_del_seqs, short_del_lengths, ins_indices) {
+process_variant <- function(i, vcf, short_del_indices, short_del_seqs, short_del_lengths, ins_indices, dup_indices) {
   result <- list()
   
   if (i %in% short_del_indices) {
@@ -261,6 +263,10 @@ process_variant <- function(i, vcf, short_del_indices, short_del_seqs, short_del
     }
     result$ref <- DNAString(as.character(ref(vcf)[i]))
     result$end <- start(vcf)[i] + length(result$ref) - 1
+  } else if(i %in% dup_indices) {
+        result$alt <- CharacterList("<DUP:TANDEM>")
+        result$ref <- DNAString(as.character(ref(vcf)[i]))
+        result$end <- start(vcf)[i] + info(vcf)$SVLEN[i]
   } else if (is.null(info(vcf)$SVTYPE[i])) {
     print(i)
     stop(paste("I think should not reach here. this code should be deleted", i, "."))
@@ -290,7 +296,7 @@ write(paste(Sys.time(),"Process sequences on ", num_cores, " cpu"), stderr())
 
 # Process variants in parallel with progress bar using pblapply
 pboptions(type = "txt")
-results <- pblapply(seq_along(vcf), process_variant, vcf = vcf, short_del_indices = short_del_indices, short_del_seqs = short_del_seqs, short_del_lengths = short_del_lengths, ins_indices = ins_indices, cl = num_cores)
+results <- pblapply(seq_along(vcf), process_variant, vcf = vcf, short_del_indices = short_del_indices, short_del_seqs = short_del_seqs, short_del_lengths = short_del_lengths, ins_indices = ins_indices, dup_indices = dup_indices, cl = num_cores)
 
 # Update the VCF object with results
 
