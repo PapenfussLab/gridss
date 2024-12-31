@@ -297,9 +297,10 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
                     if read.cigartuples[0][0] == 4:
                         # the read is soft clipped
                         sc_length = read.cigartuples[0][1]
+                    del_length = sum([length for op, length in read.cigartuples if op == 2])
                     fa_seq = reference[read.reference_name][
                              max(read.reference_start - sc_length, 0): read.reference_start + len(
-                                 sequence) - sc_length].seq.upper()
+                                 sequence) - sc_length + del_length].seq.upper()
                     edited_fa_seq, ref_start_end_del_tuples, ref_del_length = remove_long_homopolymers(fa_seq,
                                                                                                        homopolymer_length)
 

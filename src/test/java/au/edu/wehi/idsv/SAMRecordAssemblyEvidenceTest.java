@@ -116,8 +116,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssembly(e3));
 		assertFalse(e.isPartOfAssembly(b1));
 		
-		assertEquals(2, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null));
-		assertEquals(1, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null));
+		assertEquals(2, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null, null));
+		assertEquals(1, (int)e.getSupportingReadCount(1, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null, null));
 	}
 	@Test
 	public void should_track_read_name() {

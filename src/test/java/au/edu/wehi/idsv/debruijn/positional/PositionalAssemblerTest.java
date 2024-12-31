@@ -59,12 +59,12 @@ public class PositionalAssemblerTest extends TestHelper {
         AssemblyAttributes aa = new AssemblyAttributes(r.get(0).getSAMRecord());
                                   // A A C G T T G G T T A A
         int[] expected = new int[] {1,1,2,2,2,2,2,2,2,2,2,1,0,};
-        int[] actual = IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, null, null, null)).toArray();
+        int[] actual = IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, null, null, null, null)).toArray();
 		assertArrayEquals(expected, actual);
-        assertArrayEquals(expected, IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null)).toArray());
-        assertArrayEquals(expected, IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), aes)).toArray());
-        assertArrayEquals(new int[13], IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, ImmutableSet.of(1), null, aes)).toArray());
-        assertArrayEquals(new double[13], IntStream.range(0, 12+1).mapToDouble(i -> aa.getSupportingQualScore(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null)).toArray(), 0);
+        assertArrayEquals(expected, IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null, null)).toArray());
+        assertArrayEquals(expected, IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, ImmutableSet.of(0), ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), aes, null)).toArray());
+        assertArrayEquals(new int[13], IntStream.range(0, 12+1).map(i -> aa.getSupportingReadCount(i, ImmutableSet.of(1), null, aes, null)).toArray());
+        assertArrayEquals(new double[13], IntStream.range(0, 12+1).mapToDouble(i -> aa.getSupportingQualScore(i, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null, null)).toArray(), 0);
 	}
 	@Test
 	public void rp_anchor_should_set_non_reference_bases_as_anchoring() {
@@ -129,7 +129,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(IE(withSequence(seq, Read(0, 10, "5M100D5M"))[0]));
 		input.sort(DirectedEvidenceOrder.ByStartEndStart2End2);
 		SAMRecord r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator(), null, null)).get(0);
-		assertEquals(2, new AssemblyAttributes(r).getSupportingReadCount(6, null, null, null));
+		assertEquals(2, new AssemblyAttributes(r).getSupportingReadCount(6, null, null, null, null));
 	}
 	@Test
 	public void should_set_assembly_direction() {

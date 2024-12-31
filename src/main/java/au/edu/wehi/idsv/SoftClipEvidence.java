@@ -9,9 +9,11 @@ import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 public class SoftClipEvidence extends SingleReadEvidence {
 	private final int clipLength;
+	private static final Log log = Log.getInstance(SoftClipEvidence.class);
 	protected SoftClipEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd,
@@ -66,10 +68,10 @@ public class SoftClipEvidence extends SingleReadEvidence {
 	private float scoreAssembly() {
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
 		int pos = getBreakendAssemblyContigOffset();
-		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null);
-		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null);
-		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
-		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
+		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null, source.getContext());
+		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null, source.getContext());
+		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null, source.getContext());
+		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null, source.getContext());
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreBreakendAssembly(this,
 				rp, rpq,
 				sc, scq,

@@ -131,10 +131,10 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	private float scoreAssembly() {
 		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
 		int pos = getBreakendAssemblyContigOffset();
-		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null);
-		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null);
-		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
-		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null);
+		int rp = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null, source.getContext());
+		double rpq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.ReadPair), null, source.getContext());
+		int sc = attr.getSupportingReadCount(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null, source.getContext());
+		double scq = attr.getSupportingQualScore(pos, null, ImmutableSet.of(AssemblyEvidenceSupport.SupportType.Read), null, source.getContext());
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(this,
 				rp, rpq,
 				sc, scq,

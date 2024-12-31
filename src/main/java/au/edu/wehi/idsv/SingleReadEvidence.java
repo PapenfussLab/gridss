@@ -426,7 +426,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	public int constituentReads() {
 		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
 			AssemblyAttributes aa = new AssemblyAttributes(record);
-			return aa.getSupportingReadCount(getBreakendAssemblyContigOffset(), null, null, null);
+			return aa.getSupportingReadCount(getBreakendAssemblyContigOffset(), null, null, null, source.getContext());
 		}
 		return 1;
 	}
