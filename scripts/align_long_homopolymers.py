@@ -4,6 +4,7 @@
 
 import pysam
 import pyfaidx
+import tqdm.auto as tqdm
 import argparse
 import re
 from Bio import Align
@@ -252,8 +253,20 @@ def align_and_choose(read, sequence, global_aligner, local_aligner, fa_seq, edit
 
     return read, cigar, start_pos, r_start, choice, start_end_del_tuples
 
+def read_is_candidate_for_realign(read: pysam.AlignedSegment, min_required_softclip_length: int):
+    '''Check if the read is a candidate for realignment (if it has minimal softclip of at least min_required_softclip_length)
+    @param read: The read to check
+    @param min_required_softclip_length: The minimum required soft clip length in the alignment to attempt realignment
+    '''
+    if read.cigartuples is None:
+        return False
+    if read.cigartuples[0][0] == 4 and read.cigartuples[0][1] >= min_required_softclip_length:
+        return True
+    if read.cigartuples[-1][0] == 4 and read.cigartuples[-1][1] >= min_required_softclip_length:
+        return True
+    return False
 
-def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_length=10, contig=None):
+def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_length=10, contig=None, min_required_softclip_length=10):
     """
     Find and realign homopolymers in reads in a CRAM file
     @param cram_path: The input CRAM file
@@ -261,6 +274,7 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
     @param reference_path: The reference genome FASTA file path
     @param homopolymer_length: The length of homopolymers to search for
     @param contig: The contig to process
+    @param min_required_softclip_length: The minimum required soft clip length in the alignment to attempt realignment
     """
     # Open the CRAM file
     reference = pyfaidx.Fasta(reference_path, build_index=False)
@@ -288,6 +302,7 @@ def realign_homopolymers(cram_path, output_path, reference_path, homopolymer_len
                 sequence = read.query_sequence
                 # Skip reads without a query sequence, or with ambiguous bases
                 skip_read = sequence is None or not all(c in 'atgc' for c in sequence.lower())
+                skip_read = skip_read or not read_is_candidate_for_realign(read, min_required_softclip_length)
                 if not skip_read:
                     # Search for homopolymers in the sequence
                     edited_sequence, start_end_del_tuples, del_length = remove_long_homopolymers(read.query_sequence,
@@ -531,6 +546,7 @@ parser.add_argument('--input', required=True, help='The input CRAM file')
 parser.add_argument('--output', required=True, help='The output CRAM file')
 parser.add_argument('--reference', required=True, help='The reference genome FASTA file')
 parser.add_argument('--homopolymer_length', type=int, default=10, help='The length of homopolymers to search for')
+parser.add_argument('--min_required_softclip_length', type=int, default=10, help='The minimum required soft clip length in the alignment to attempt realignment')
 parser.add_argument("--n_jobs", help="n_jobs of parallel on contigs", type=int, default=-1)
 args = parser.parse_args()
 
@@ -547,9 +563,9 @@ with pysam.AlignmentFile(args.input, "rc") as cram_file:
 
     results = Parallel(n_jobs=args.n_jobs, backend="multiprocessing", max_nbytes=None)(
         delayed(realign_homopolymers)(
-            args.input, f"{args.output}{contig}.bam", args.reference, args.homopolymer_length, contig
+            args.input, f"{args.output}{contig}.bam", args.reference, args.homopolymer_length, contig, args.min_required_softclip_length
         )
-        for contig in large_contigs
+        for contig in tqdm.tqdm(large_contigs)
     )
     total_count = 0
     total_count_homopolymer = 0

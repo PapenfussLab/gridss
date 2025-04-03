@@ -182,6 +182,7 @@ LABEL about.tags="Genomics"
 RUN mkdir /opt/gridss/ /data
 COPY --from=gridss_builder_c /opt/gridss/gridsstools /opt/gridss/
 COPY --from=gridss_builder_java /opt/gridss/gridss-${GRIDSS_VERSION}-gridss-jar-with-dependencies.jar /opt/gridss/
+RUN pip3 install tqdm
 COPY scripts/gridss \
 	scripts/gridss_annotate_vcf_kraken2 \
 	scripts/gridss_annotate_vcf_repeatmasker \
@@ -192,7 +193,7 @@ COPY scripts/gridss \
 	scripts/gridss.config.R \
 	scripts/libgridss.R \
 	scripts/link_breakpoints.R \
-	scripts/revert_sup_low_mapq_ua_alignment.py \
+	scripts/choose_best_haplotype_realignment.py \
 	scripts/align_long_homopolymers.py \
 	scripts/convert_vcf_format.R \
 	/opt/gridss/
