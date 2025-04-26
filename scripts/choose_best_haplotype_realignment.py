@@ -5,10 +5,12 @@ import pysam
 import numpy as np
 import tqdm.auto as tqdm
 import logging
+import pandas as pd
 
 def comma_sep(x):
     xsp = x.split(',')
     return (xsp[0],xsp[1],xsp[2])
+
 def parse_args():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Merge haplotype alignments from multiple sources')
@@ -21,27 +23,8 @@ def parse_args():
     args.alignment_sources = args.alignment_source
     return args
 
-class MappingKey:
-     # keep read name, chromosome, read start, read end, mapping quality and if the alignment is supplementary
-    def __init__(self, rec:pysam.AlignedSegment):
-        self.name = rec.query_name
-        self.chrom = rec.reference_name
-        self.start = rec.query_alignment_start
-        self.end = rec.query_alignment_end
-        self.mapq = rec.mapping_quality
-        self.is_supplementary = rec.is_supplementary
-        self.sa_tag = None
-        if rec.has_tag('SA'):
-            self.sa_tag = rec.get_tag('SA')
-
-    def poor_sa(self, mq_threshold) -> bool:
-        if self.sa_tag is not None and 'decoy' in self.sa_tag:
-            return True
-        if self.is_supplementary and self.mapq < mq_threshold:
-            return True
-        return False 
     
-def _poor_mq_has_sa(mappings: list, mq_threshold: int) -> bool:
+def _poor_mq_has_sa(mappings: pd.DataFrame, mq_threshold: int) -> bool:
     '''Check if there is a poor mapping quality read with supplementary alignment
 
     Parameters
@@ -54,19 +37,18 @@ def _poor_mq_has_sa(mappings: list, mq_threshold: int) -> bool:
     bool
         True if there is a poor mapping quality read with supplementary alignment, False otherwise
     '''
-    has_sa = False
-    for mapping in mappings:
-        if mapping.is_supplementary:
-            has_sa = True
-            break
-    poor_mq = False
-    if has_sa:
-        for mapping in mappings:
-            if not mapping.is_supplementary and mapping.mapq < mq_threshold:
-                poor_mq = True
-                break
-            
-    return poor_mq
+    if len(mappings) > 1:
+        has_sa = True
+    else:
+        has_sa = False
+    if not has_sa:
+        return False
+    
+    return np.any(~mappings['is_supplementary'] & mappings['mapq'] < mq_threshold)
+    
+def _poor_mq(mappings: list) -> bool:
+    return np.any(mappings['poor_sa'])
+
 
 def _q_span(mappings: list) -> int:
     '''Calculate the query span of the mappings
@@ -81,7 +63,7 @@ def _q_span(mappings: list) -> int:
     int
         Query span
     '''
-    return max([x.end for x in mappings]) - min([x.start for x in mappings])
+    return max([x.qend for x in mappings]) - min([x.qstart for x in mappings])
 
 def compare_read_mappings(first: list, second: list, mq_threshold: int, idx1:int, idx2: int, tie_breaker_idx: int) -> int:
     '''Compare two lists of MappingKey objects. The comparison is based on the following criteria:
@@ -111,8 +93,9 @@ def compare_read_mappings(first: list, second: list, mq_threshold: int, idx1:int
     int
         1 if first > second, -1 if second > first, 0 if equal
     '''
-    first_poor_mq = _poor_mq_has_sa(first, mq_threshold) or np.any([x.poor_sa(mq_threshold) for x in first])
-    second_poor_mq = _poor_mq_has_sa(second, mq_threshold) or np.any([x.poor_sa(mq_threshold) for x in second])
+    first_poor_mq =  _poor_mq_has_sa(first, mq_threshold) or _poor_mq(first)
+    second_poor_mq =  _poor_mq_has_sa(second, mq_threshold) or _poor_mq(second)
+    
     if not first_poor_mq and second_poor_mq:
         return 1
     if first_poor_mq and not second_poor_mq:
@@ -141,15 +124,13 @@ def compare_read_mappings(first: list, second: list, mq_threshold: int, idx1:int
         return -1
     return 0
     
-def find_best_mapping_index(mappings: list, mq_threshold: int, tie_breaker_idx: int = None) -> int:
+def find_best_mapping_index(mappings: list, tie_breaker_idx: int = None) -> int:
     '''Find the best mapping index
 
     Parameters
     ----------
     mappings : list
-        List of MappingKey objects
-    mq_threshold : int
-        Mapping quality threshold
+        List of dataframes representing alignments of the same read
     tie_breaker_idx : int
         Provided if one of the alignments is from `tie_breakder_idx` source (e.g. giraffe)
     Returns
@@ -163,10 +144,64 @@ def find_best_mapping_index(mappings: list, mq_threshold: int, tie_breaker_idx: 
     '''
     best_index = 0
     for i in range(1, len(mappings)):
-        comp = compare_read_mappings(mappings[best_index], mappings[i], mq_threshold, best_index, i, tie_breaker_idx=tie_breaker_idx)
+        comp = compare_read_mappings(mappings[best_index], mappings[i], best_index, i, tie_breaker_idx=tie_breaker_idx)
         if comp == -1:
             best_index = i
     return best_index
+
+def _chunk_to_df(chunk: iter, mq_threshold: int):
+    '''Convert a chunk of mappings to a dataframe
+
+    Parameters
+    ----------
+    chunk : iter
+        Chunk of mappings
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe of mappings
+    '''
+    qvals = [ (x.query_name, x.reference_id, x.query_alignment_start, 
+               x.query_alignment_end, x.is_supplementary, x.mapping_quality, 
+               x.get_tag("SA") if x.has_tag("SA") else "" ) for x in chunk ]
+ 
+    df = pd.DataFrame(qvals)
+ 
+    df[1] = df[1].astype('int16')
+    df[5] = df[5].astype('int8')
+    df[2] = df[2].astype('int16')
+    df[3] = df[3].astype('int16')
+    df[6] = ((df[4] & df[5] < mq_threshold) | (df[6].str.contains('decoy'))).astype(bool)
+    df[0] = df[0].astype('string[pyarrow]')
+    df.columns = ['read_name', 'chrom','qstart', 'qend','is_supplementary','mapq','poor_sa']
+    return df
+
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    args = [iter(iterable)] * n
+    return itertools.zip_longest(fillvalue=fillvalue, *args)
+
+def get_alignment_df( input_file: str, mq_threshold: int):
+    '''Get the alignment dataframe from the input file
+
+    Parameters
+    ----------
+    input_file : str
+        Input file name
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe of mappings
+    '''
+    dfs = []
+    with pysam.AlignmentFile(input_file, "rb") as input:
+        for chunk in tqdm.tqdm(grouper(input, 500000)):
+            df = _chunk_to_df(chunk, mq_threshold)
+            dfs.append(df)
+    return pd.concat(dfs, ignore_index=True).sort_index()
 
 def run():
     args = parse_args()
@@ -178,13 +213,13 @@ def run():
     logger.info(f"Min mapping quality: {args.min_mapping_quality}")
     logger.info(f"Tie breaker index: {args.tie_breaker_idx}")
     logger.info("Reading alignment files and creating mapping keys:start")
-    mappings = [sorted([ MappingKey(rec) for rec in pysam.AlignmentFile(x, "rb") ], key=lambda x: x.name) for x in args.alignment_sources]
+
+    mappings = [ get_alignment_df(x).groupby("read_name") for x in args.alignment_sources ]
     logger.info("Reading alignment files and creating mapping keys:done")
-    mappings = [ {k: list(v) for k, v in itertools.groupby(x, key=lambda x: x.name)} for x in mappings]
     best_mappings = {}
     logger.info("Choosing best alignment per read: start")    
-    for k in mappings[0].keys():
-        best_mappings[k] = find_best_mapping_index([x[k] for x in mappings], args.min_mapping_quality, args.tie_breaker_idx)
+    for k in mappings[0].groups.keys():
+        best_mappings[k] = find_best_mapping_index([x.get_group(k) for x in mappings], args.tie_breaker_idx)
     logger.info("Choosing best alignment per read: end")    
 
 
