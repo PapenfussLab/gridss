@@ -168,6 +168,24 @@ def find_best_mapping_index(mappings: list, mq_threshold: int, tie_breaker_idx: 
             best_index = i
     return best_index
 
+def validate_sort_order(alignment_sources: list):
+    '''Validate that the sort order of the alignment sources is by queryname
+
+    Parameters
+    ----------
+    alignment_sources : list
+        List of alignment sources
+
+    Raises
+    ------
+    ValueError
+        If the sort order of the alignment sources is not the same
+    '''
+    sort_orders = [pysam.AlignmentFile(x, "rb").header.get('HD', {}).get('SO') for x in alignment_sources]
+    for i,so in enumerate(sort_orders):
+        if so != 'queryname':
+            raise ValueError(f"Alignment source {alignment_sources[i]} is not sorted by queryname")
+
 def run():
     args = parse_args()
     logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
@@ -177,7 +195,7 @@ def run():
     logger.info(f"Output: {args.output}")
     logger.info(f"Min mapping quality: {args.min_mapping_quality}")
     logger.info(f"Tie breaker index: {args.tie_breaker_idx}")
-    logger.info("Reading alignment files and creating mapping keys:start")
+    validate_sort_order(args.alignment_sources)
     mappings = zip(*(itertools.groupby(map(MappingKey, pysam.AlignmentFile(x, "rb")), lambda x: x.name) for x in args.alignment_sources))
     logger.info("Choosing best alignment per read: start")    
     counters = np.zeros(len(args.alignment_sources))
@@ -196,6 +214,7 @@ def run():
     for i in range(len(args.alignment_sources)):
         logger.info(f"Wrote {counters[i]} alignments from {args.alignment_sources[i]} to {args.output}")
     output.close()
+    logger.info("Choosing best alignment per read: start")    
 
 if __name__ == "__main__":
     run()                       
