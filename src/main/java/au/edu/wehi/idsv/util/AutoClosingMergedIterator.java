@@ -2,9 +2,7 @@ package au.edu.wehi.idsv.util;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
