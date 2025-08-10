@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
-import htsjdk.samtools.SAMRecord;
 
 import java.util.Comparator;
 
