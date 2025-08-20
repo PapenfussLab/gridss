@@ -552,13 +552,11 @@ for f in "$@" ; do
 		rm -f $exec_extract_reads
 		echo "#!/bin/bash" > $exec_extract_reads
 		cat >> $exec_extract_reads << EOF
-gridsstools extractFragmentsToFastq \
-	-@ $threads \
-	-r $file_readname \
-	-o $infile_fq \
-	-1 $infile_fq1 \
-	-2 $infile_fq2 \
-	$f
+
+samtools view -h -u -@ $threads -N $file_readname $f > $workingdir/reads.bam
+samtools collate -O -u -@ $threads $workingdir/reads.bam STDOUT | samtools fastq -@ $threads -1 $infile_fq1 -2 $infile_fq2 -0 $infile_fq -s /dev/null -n
+rm $workingdir/reads.bam 
+
 EOF
 		chmod +x $exec_extract_reads
 		$timecmd $exec_extract_reads 1>&2 2>> $logfile
