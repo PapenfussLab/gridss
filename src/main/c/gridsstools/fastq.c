@@ -31,7 +31,7 @@ int write_fastq(bam1_t *record, BGZF *out, kstring_t *linebuf, int start, int en
 	kputs("\n+\n", linebuf);
 	char *qual = bam_get_qual(record);
 	if (qual && *qual != '\xff') {
-		size_t qual_len = strnlen(qual, record->core.l_qseq);
+		size_t qual_len = record->core.l_qseq;
 		if (end <= qual_len) {
 			if (bam_is_rev(record)) {
 				for (i = end - 1; i >= start; i--) {
